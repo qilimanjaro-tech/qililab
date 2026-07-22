@@ -124,6 +124,8 @@ def fixture_stream_array_bus_map():
     platform = build_platform(runcard=copy.deepcopy(Galadriel.runcard))
     experiment_name = "test_stream_array"
     mock_database = MagicMock()
+    mock_database.add_measurement.return_value.bus_mapping = {"readout_q0": "feedline_input_output_bus"}
+    mock_database.add_measurement.return_value.result_path = "some/mock/path"
     db_manager = mock_database
 
     qprogram = QProgram()
@@ -318,6 +320,7 @@ class TestStreamArray:
                 assert (stream_array_bus_map.results == np.zeros(shape=stream_array_bus_map.shape)).all
                 assert stream_array_bus_map.loops == {"test_amp_loop": np.arange(0, 1, 2)}
                 assert stream_array_bus_map._get_debug() == debug_q1asm
+                assert stream_array_bus_map.measurement.bus_mapping == {"readout_q0": "feedline_input_output_bus"}
 
     def test_stream_array_instantiation_qubit_idx(self, stream_array_qubit_idx_bus_map: StreamArray):
         """Tests the instantiation of a StreamArray object with target and secondary indexes."""
@@ -522,6 +525,39 @@ class TestStreamArray:
 
                 assert 1.0 + 1.0j in stream_array_complex
                 assert (stream_array_complex[0] == 1.0 + 1.0j).all
+
+
+    def test_add_fitting(self, stream_array: StreamArray):
+        """Tests that add_fitting delegates to the measurement injecting the db session."""
+        mock_measurement = MagicMock()
+        updated_measurement = MagicMock()
+        mock_measurement.add_fitting.return_value = updated_measurement
+        stream_array.measurement = mock_measurement
+
+        result = stream_array.add_fitting(path="/test/fit.h5", parameters={"a": 1.0})
+
+        mock_measurement.add_fitting.assert_called_once_with(
+            stream_array.db_manager, "/test/fit.h5", {"a": 1.0}
+        )
+        assert stream_array.measurement == updated_measurement
+        assert result == updated_measurement
+
+    def test_add_fitting_raises_runtime_error_no_measurement(self, stream_array: StreamArray):
+        """Tests that add_fitting raises if called before the context manager has created a measurement."""
+        stream_array.measurement = None
+        with pytest.raises(
+            RuntimeError, match="add_fitting must be called after the StreamArray context has exited."
+        ):
+            stream_array.add_fitting(path="/test/fit.h5")
+
+    def test_add_fitting_raises_not_implemented_autocalibration(self, stream_array: StreamArray):
+        """Tests that add_fitting is not supported for autocalibration measurements."""
+        stream_array.measurement = MagicMock()
+        stream_array.autocalibration = True
+        with pytest.raises(
+            NotImplementedError, match="Autocalibration fitting management does not depend on StreamArray."
+        ):
+            stream_array.add_fitting(path="/test/fit.h5")
 
 
 class TestRawStreamArray:

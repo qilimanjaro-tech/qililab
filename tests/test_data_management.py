@@ -30,13 +30,13 @@ class TestPlatformData:
         """Test the `save_platform` function with a path that doesn't end in .yml."""
         platform = build_platform(Galadriel.runcard)
         path = save_platform(path="tests/", platform=platform)
-        assert path == f"tests/{Galadriel.name}.yml"
+        assert Path(path) == Path(f"tests/{Galadriel.name}.yml")
         Path(path).unlink(missing_ok=True)
 
     def test_save_platform_with_yml_path(self):
         """Test the `save_platform` function with a path that ends in .yml."""
         path = save_platform(path="tests/test.yml", platform=build_platform(Galadriel.runcard))
-        assert path == "tests/test.yml"
+        assert Path(path) == Path("tests/test.yml")
         Path(path).unlink(missing_ok=True)
 
 
