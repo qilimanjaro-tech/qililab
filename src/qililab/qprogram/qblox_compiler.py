@@ -52,6 +52,9 @@ from qililab.qprogram.operations import (
 from qililab.qprogram.qprogram import QProgram
 from qililab.waveforms import Arbitrary, FlatTop, IQWaveform, Square, Waveform
 
+if TYPE_CHECKING:
+    from qililab.pulse_distortion.pulse_distortion import PulseDistortion
+
 SIGN_BIT = 2**31  # 2147483648 -> values >= this are "negative" in 2's complement (MSB = 1)
 NEG_ONE_TO_THREE = (2**32) - 3  # 4294967293 == -3 in 2's complement
 
@@ -271,6 +274,7 @@ class QbloxCompiler:
         ext_trigger: bool = False,
         qblox_buses: list[str] | None = None,
         single_channel: list[str] | None = None,
+        bus_distortions: dict[str, list["PulseDistortion"]] | None = None,
         crosstalk: CrosstalkMatrix | None = None,
     ) -> QbloxCompilationOutput:
         """Compile QProgram to qpysequence.Sequence
@@ -341,6 +345,8 @@ class QbloxCompiler:
             )
         if crosstalk is not None:
             self._qprogram = self._qprogram.with_crosstalk_qblox(crosstalk=crosstalk)
+        if bus_distortions is not None:
+            self._qprogram = self._qprogram.with_distortions(bus_distortions=bus_distortions)
 
         self._qblox_buses = qblox_buses if qblox_buses else []
 

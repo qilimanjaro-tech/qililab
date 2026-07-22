@@ -51,6 +51,7 @@ from qililab.yaml import yaml
 
 if TYPE_CHECKING:
     from qililab.extra.quantum_machines.qprogram.quantum_machines_compiler import QuantumMachinesCompilationOutput
+    from qililab.pulse_distortion.pulse_distortion import PulseDistortion
     from qililab.qprogram.qblox_compiler import QbloxCompilationOutput
     from qililab.qprogram.qdac_compiler import QdacCompilationOutput
 
@@ -1040,6 +1041,41 @@ class QProgram(StructuredProgram):
 
         copied_qprogram = deepcopy(self)
         traverse(copied_qprogram.body)
+        return copied_qprogram
+
+    def with_distortions(self, bus_distortions: dict[str, list["PulseDistortion"]]) -> "QProgram":
+        """...
+
+        Args:
+            bus_distortions (dict[str, list[PulseDistortion]])]): ...
+
+        Returns:
+            QProgram: A new instance of QProgram with updated...
+        """
+
+        def traverse(block: Block):
+            for index, element in enumerate(block.elements):
+                if isinstance(element, Block):
+                    traverse(element)
+                elif isinstance(element, (Play, Measure, MeasureReset)):
+                    if element.bus in bus_distortions.keys():
+                        waveform = element.waveform
+                        for distortion in bus_distortions[element.bus]:
+                            if isinstance(waveform, IQPair):
+                                distorted_waveform_I = Arbitrary(distortion.apply(waveform.I.envelope()))
+                                distorted_waveform_Q = Arbitrary(distortion.apply(waveform.Q.envelope()))
+                                distorted_waveform = IQPair(I= distorted_waveform_I, Q=distorted_waveform_Q)
+                            if isinstance(waveform, Waveform):
+                                distorted_waveform = Arbitrary(distortion.apply(waveform.envelope()))
+                            waveform = distorted_waveform
+                        block.elements[index].waveform = waveform
+
+        # Copy qprogram so the original remain unaffected
+        copied_qprogram = deepcopy(self)
+
+        # Recursively traverse qprogram applying the distortions to all waveforms
+        traverse(copied_qprogram.body)
+
         return copied_qprogram
 
     @overload
