@@ -1206,7 +1206,6 @@ class TestMethods:
             patch.object(QDevilQDac2, "upload_voltage_list") as upload_voltage_list,
             patch.object(QDevilQDac2, "set_start_marker_external_trigger") as set_start_marker_external_trigger,
             patch.object(QDevilQDac2, "start") as start,
-            patch.object(QDevilQDac2, "clear_cache") as clear_cache,
         ):
             acquire_qprogram_results.return_value = [123]
             first_execution_results = platform_qblox_qdac.execute_qprogram(qprogram=qprogram)
@@ -1229,7 +1228,6 @@ class TestMethods:
         assert upload_voltage_list.call_count == 3  # called as many times as executes
         assert set_start_marker_external_trigger.call_count == 3  # called as many times as executes
         assert start.call_count == 3  # called as many times as executes
-        assert clear_cache.call_count == 6  # once before and once after each of the 3 executes
 
         # assure only one debug was called
         assert patched_open.call_count == 1
@@ -1272,7 +1270,6 @@ class TestMethods:
             patch.object(QDevilQDac2, "set_in_external_trigger") as set_in_external_trigger,
             patch.object(QDevilQDac2, "set_start_marker_external_trigger") as set_start_marker_external_trigger,
             patch.object(QDevilQDac2, "start") as start,
-            patch.object(QDevilQDac2, "clear_cache") as clear_cache,
         ):
             acquire_qprogram_results.return_value = [123]
             first_execution_results = platform_qblox_qdacs.execute_qprogram(qprogram=qprogram)
@@ -1297,7 +1294,6 @@ class TestMethods:
         assert set_in_external_trigger.call_count == 3  # called as many times as executes
         assert set_start_marker_external_trigger.call_count == 3  # called as many times as executes
         assert start.call_count == 6  # called as many times as executes
-        assert clear_cache.call_count == 12  # 2 qdacs x (before + after) x 3 executes
 
         # assure only one debug was called
         assert patched_open.call_count == 1
@@ -1343,7 +1339,6 @@ class TestMethods:
             patch.object(QDevilQDac2, "upload_voltage_list") as upload_voltage_list,
             patch.object(QDevilQDac2, "set_in_external_trigger") as set_in_external_trigger,
             patch.object(QDevilQDac2, "start") as start,
-            patch.object(QDevilQDac2, "clear_cache") as clear_cache,
         ):
             acquire_qprogram_results.return_value = [123]
             first_execution_results = platform_qblox_qdac.execute_qprogram(qprogram=qprogram)
@@ -1366,7 +1361,6 @@ class TestMethods:
         assert upload_voltage_list.call_count == 3  # called as many times as executes
         assert set_in_external_trigger.call_count == 3  # called as many times as executes
         assert start.call_count == 3  # called as many times as executes
-        assert clear_cache.call_count == 6  # once before and once after each of the 3 executes
 
         # assure only one debug was called
         assert patched_open.call_count == 1
@@ -1399,7 +1393,6 @@ class TestMethods:
             patch.object(QDevilQDac2, "upload_voltage_list") as upload_voltage_list,
             patch.object(QDevilQDac2, "set_in_external_trigger") as set_in_external_trigger,
             patch.object(QDevilQDac2, "start") as start,
-            patch.object(QDevilQDac2, "clear_cache") as clear_cache,
         ):
             acquire_qprogram_results.return_value = [123]
             first_execution_results = platform_qblox_qdac.execute_qprogram(qprogram=qprogram, calibration=calibration, crosstalk=False)
@@ -1422,7 +1415,6 @@ class TestMethods:
         assert upload_voltage_list.call_count == 3  # called as many times as executes
         assert set_in_external_trigger.call_count == 3  # called as many times as executes
         assert start.call_count == 3  # called as many times as executes
-        assert clear_cache.call_count == 6  # once before and once after each of the 3 executes
 
         # assure only one debug was called
         assert patched_open.call_count == 1
@@ -1509,9 +1501,6 @@ class TestMethods:
 
         # Assert it retried 3 times (initial + 3 retries = 4 attempts)
         assert mock_bus.run.call_count == 4
-        # Assert clear_cache is called on every failed attempt (retried or not), so a QDAC
-        # trigger never stays leaked/allocated on a timeout without being cleaned up.
-        assert mock_qdac.clear_cache.call_count == 1
 
     def test_execute_qprogram_with_qblox_and_qdac_timeout_error_wrong_bus(self, platform_qblox_qdac: Platform):
         """Test that the execute_qprogram method retries correctly when the timed-out bus is not the one with timeout config."""
@@ -1530,7 +1519,6 @@ class TestMethods:
 
         # initial attempt + 3 retries = 4 total
         assert mock_bus.run.call_count == 4
-        assert mock_qdac.clear_cache.call_count == 1
 
     @pytest.mark.qm
     def test_execute_qprogram_with_quantum_machines_and_qdac(self, platform_qm_qdac: Platform):

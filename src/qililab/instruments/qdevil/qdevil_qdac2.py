@@ -513,13 +513,14 @@ class QDevilQDac2(VoltageSource):
             self._triggers.pop(name)
 
         # Clear all internal triggers for the channels given in the dacs
-        registers = list(product(self._GENERATOR_LIST, self._MARKER_LOCATION))
-        registers += list(product(("DC",), self._DC_MARKER_LOCATION))
-        for channel_id in self.dacs:
-            query = ";:".join(
-                f"SOUR{'{0}'}:{generator}:MARK:{marker_location} 0" for generator, marker_location in registers
-            )
-            self.device.channel(channel_id).write_channel(query)
+        if trigger is None:
+            registers = list(product(self._GENERATOR_LIST, self._MARKER_LOCATION))
+            registers += list(product(("DC",), self._DC_MARKER_LOCATION))
+            for channel_id in self.dacs:
+                query = ";:".join(
+                    f"SOUR{'{0}'}:{generator}:MARK:{marker_location} 0" for generator, marker_location in registers
+                )
+                self.device.channel(channel_id).write_channel(query)
 
     def get_parameter(
         self, parameter: Parameter, channel_id: ChannelID | None = None, output_id: OutputID | None = None
