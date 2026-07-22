@@ -1487,7 +1487,7 @@ class TestMethods:
 
     def test_execute_qprogram_with_qblox_and_qdac_timeout_error(self, platform_qblox_qdac: Platform):
         """Test that the execute_qprogram method raises the exception if the qprogram failes"""
-        mock_output, mock_qdac_output, mock_qdac, mock_bus = self._build_qdac_timeout_mocks()
+        mock_output, mock_qdac_output, _, mock_bus = self._build_qdac_timeout_mocks()
         mock_bus.check_recurrent_timeout.return_value = 3
 
         platform_qblox_qdac.buses.get = MagicMock(return_value=mock_bus)
@@ -1504,7 +1504,7 @@ class TestMethods:
 
     def test_execute_qprogram_with_qblox_and_qdac_timeout_error_wrong_bus(self, platform_qblox_qdac: Platform):
         """Test that the execute_qprogram method retries correctly when the timed-out bus is not the one with timeout config."""
-        mock_output, mock_qdac_output, mock_qdac, mock_bus = self._build_qdac_timeout_mocks()
+        mock_output, mock_qdac_output, _, mock_bus = self._build_qdac_timeout_mocks()
         # First call (direct check on leaked bus) returns 0, fallback scan returns 3 each retry
         mock_bus.check_recurrent_timeout.side_effect = [0, 3, 0, 3, 0, 3, 0, 3]
 
