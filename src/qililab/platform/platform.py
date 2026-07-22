@@ -1256,9 +1256,6 @@ class Platform:
                     if isinstance(instrument, QDevilQDac2)
                 }
             )
-            # Start from a clean instrument state before the compiler re-populates it
-            for qdac_instrument in self.qdac_instruments:
-                qdac_instrument.clear_cache()
             out_trigger_qdac = None
             if len(self.qdac_instruments) > 1:
                 out_trigger_qdac = next(
@@ -1445,11 +1442,6 @@ class Platform:
                                 for unintertwined_result in unintertwined_results:
                                     results.append_result(bus=bus_alias, result=unintertwined_result)
 
-            # Clear QDAC-II trigger network and dc / awg generators from the QDAC-II instrument.
-            if output.qdac:
-                for qdac in output.qdac.qdacs:
-                    qdac.clear_cache()
-
             # Reset instrument settings
             for bus_alias in sequences:
                 for instrument, channel in zip(buses[bus_alias].instruments, buses[bus_alias].channels):
@@ -1478,11 +1470,6 @@ class Platform:
                         f"Timeout reached for triggered measurement, trying again. {self.trigger_runs}/{timeout_repetitions}"
                     )
                     return self._execute_qblox_compilation_output(output, debug)
-
-                # Clear QDAC-II trigger network and dc / awg generators from the QDAC-II instrument.
-                # After all timeout repetitions have tried and failed.
-                for qdac in output.qdac.qdacs:
-                    qdac.clear_cache()
 
             raise timeout
 
