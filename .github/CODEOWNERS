@@ -3,9 +3,14 @@
 # Rules: LAST matching pattern wins; several owners on a path = ANY ONE approves (OR);
 #        a single owner = SOLE required approver. Enforced only with branch protection
 #        on `main`: "Require review from Code Owners" (otherwise advisory).
+#
+# Scope: only source under src/qililab/ is owned. tests/, docs/ (incl. the changelog),
+#        pyproject.toml / uv.lock and .github/ are intentionally left UNOWNED, so a PR
+#        touching them (even alongside a source file) does not auto-request the whole
+#        QHC squad. A PR that touches only unowned paths gets no auto-requested owner.
 
-# Default (QHC): any one may approve.
-*                                       @flavie-lebars @jordivallsq @elygoner
+# Source defaults to QHC: any one may approve.
+/src/qililab/                           @flavie-lebars @jordivallsq @elygoner
 
 # Jordi Valls: owner of results + DB.
 /src/qililab/result/                    @jordivallsq
