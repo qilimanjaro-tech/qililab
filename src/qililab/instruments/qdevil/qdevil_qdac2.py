@@ -453,11 +453,10 @@ class QDevilQDac2(VoltageSource):
         so the trigger can later be freed without querying the instrument.
 
         If this instance already has a trigger with the same name, it is freed first."""
-        if trigger in self._triggers:
+        if trigger in self._triggers and self._marker_registers[trigger] != (channel_id, "DC", marker_location):
             self.clear_trigger(trigger)
-
-        self._triggers[trigger] = self.allocate_internal_trigger()
-
+        if trigger not in self._triggers:
+            self._triggers[trigger] = self.allocate_internal_trigger()
         channel = self.device.channel(channel_id)
         channel.write_channel(f"SOUR{'{0}'}:DC:MARK:{marker_location} {self._triggers[trigger].value}")
         self._marker_registers[trigger] = (channel_id, "DC", marker_location)
@@ -512,6 +511,16 @@ class QDevilQDac2(VoltageSource):
                 channel_id, generator, marker_location = register
                 self.device.channel(channel_id).write_channel(f"SOUR{'{0}'}:{generator}:MARK:{marker_location} 0")
             self._triggers.pop(name)
+
+        # Clear all internal triggers for the channels given in the dacs
+        if trigger is None:
+            registers = list(product(self._GENERATOR_LIST, self._MARKER_LOCATION))
+            registers += list(product(("DC",), self._DC_MARKER_LOCATION))
+            for channel_id in self.dacs:
+                query = ";:".join(
+                    f"SOUR{'{0}'}:{generator}:MARK:{marker_location} 0" for generator, marker_location in registers
+                )
+                self.device.channel(channel_id).write_channel(query)
 
     def get_parameter(
         self, parameter: Parameter, channel_id: ChannelID | None = None, output_id: OutputID | None = None
