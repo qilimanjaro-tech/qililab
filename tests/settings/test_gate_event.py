@@ -1,8 +1,13 @@
+import base64
+import os
+
+import dill
 import numpy as np
 import pytest
 
 from qililab import Parameter
 from qililab.settings.digital import gate_event as gate_event_module
+from qililab.settings.digital.digital_compilation_settings import DigitalCompilationSettings
 from qililab.settings.digital.gate_event import (
     GateEvent,
     _from_external,
@@ -11,6 +16,7 @@ from qililab.settings.digital.gate_event import (
     _to_external,
     _wf_to_mapping,
 )
+from qililab.utils.serialization import DeserializationError
 from qililab.waveforms import IQDrag, IQPair, Square
 from qililab.waveforms.waveform import Waveform
 
@@ -281,3 +287,57 @@ def test_mapping_to_wf_roundtrip():
 def test_mapping_to_wf_rejects_invalid_mapping():
     with pytest.raises(TypeError):
         _mapping_to_wf({"amplitude": 1.0})
+
+
+def test_gate_event_waveform_string_rejects_code_exec(tmp_path):
+    # QILILAB-02: a gate-event waveform string survives the outer safe parse as a plain str
+    # and reaches the deserializer. It must be rejected without executing.
+    marker = tmp_path / "ge_marker"
+    payload = f'!!python/object/apply:os.system ["touch {marker}"]'
+
+    with pytest.raises(DeserializationError):
+        GateEvent.model_validate({"bus": "drive_q0_bus", "waveform": payload})
+    assert not marker.exists()
+
+
+def test_gate_event_weights_string_rejects_dill_gadget(tmp_path):
+    # QILILAB-02: the weights string branch (and the Waveform->IQWaveform retry) must not
+    # run the dill gadget.
+    marker = tmp_path / "weights_marker"
+
+    class _Boom:
+        def __reduce__(self):
+            return (os.system, (f"touch {marker}",))
+
+    dill_payload = base64.b64encode(dill.dumps(_Boom(), recurse=True)).decode("utf-8")
+
+    with pytest.raises(DeserializationError):
+        GateEvent.model_validate({
+            "bus": "drive_q0_bus",
+            "waveform": {"type": "Square", "amplitude": 0.3, "duration": 20},
+            "weights": f"!lambda {dill_payload}",
+        })
+    assert not marker.exists()
+
+
+def test_from_external_rejects_malicious_discriminator(tmp_path):
+    # QILILAB-02: _from_external builds "!{kind}\n..." and deserializes it. An attacker-supplied
+    # discriminator must not reach a code-executing loader.
+    marker = tmp_path / "kind_marker"
+    with pytest.raises(DeserializationError):
+        _from_external({"type": "!python/object/apply:os.system", "x": 1})
+    assert not marker.exists()
+
+
+def test_build_platform_runcard_waveform_no_rce(tmp_path):
+    # QILILAB-02 end-to-end: the digital gates section (what build_platform feeds into
+    # Runcard -> Platform) must reject a gate-event waveform RCE payload without executing.
+    marker = tmp_path / "runcard_marker"
+    payload = f'!!python/object/apply:os.system ["touch {marker}"]'
+
+    with pytest.raises(DeserializationError):
+        DigitalCompilationSettings.model_validate({
+            "gates": {"X(0)": [{"bus": "drive_q0_bus", "waveform": payload}]},
+            "buses": {},
+        })
+    assert not marker.exists()
