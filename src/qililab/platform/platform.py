@@ -69,6 +69,7 @@ from qililab.result.qprogram.qblox_measurement_result import QbloxMeasurementRes
 from qililab.result.qprogram.qprogram_results import QProgramResults
 from qililab.result.stream_results import StreamArray
 from qililab.typings import ChannelID, DistortionState, InstrumentName, OutputID, Parameter, ParameterValue
+from qililab.utils.serialization import deserialize_from
 
 if TYPE_CHECKING:
     import numpy as np
@@ -334,6 +335,9 @@ class Platform:
 
         self._qpy_sequence_cache: dict[str, str] = {}
         """Dictionary for caching qpysequences."""
+
+        self.calibration: Calibration | None = None
+        """Calibration class, defaults to None (only used on FLUX parameters)"""
 
         self.crosstalk: CrosstalkMatrix | None = None
         """Crosstalk matrix information, defaults to None (only used on FLUX parameters)"""
@@ -848,6 +852,17 @@ class Platform:
             self.flux_vector.set_crosstalk(self.crosstalk)
 
         self.flux_vector[alias] = value
+
+    def set_calibration(self, calibration: Calibration | str) -> None:
+        """Sets the Calibration class from a given Calibration or the file's path.
+
+        Args:
+            calibration (Calibration | str): Calibration class or file path.
+        """
+        if isinstance(calibration, str):
+            self.calibration = deserialize_from(file=calibration, cls=Calibration)
+            return
+        self.calibration = calibration
 
     def set_crosstalk(self, crosstalk: CrosstalkMatrix):
         """Sets the crosstalk matrix using the crosstalk matrix class.
@@ -1605,6 +1620,9 @@ class Platform:
             QProgramResults: The results of the execution. ``QProgramResults.results()`` returns a dictionary (``dict[str, list[Result]]``) of measurement results.
             The keys correspond to the buses a measurement were performed upon, and the values are the list of measurement results in chronological order.
         """
+        if calibration is None:
+            calibration = self.calibration
+
         output = self.compile_qprogram(
             qprogram=qprogram, bus_mapping=bus_mapping, calibration=calibration, crosstalk=crosstalk
         )
@@ -1703,6 +1721,9 @@ class Platform:
         """
         if not qprograms:
             return []
+        # Fall back to the platform-level calibration when none is provided.
+        if calibrations is None:
+            calibrations = self.calibration
 
         # Normalize mappings and calibrations to one-per-qprogram
         bus_mapping_list = self._normalize_bus_mappings(bus_mappings=bus_mappings, n=len(qprograms))

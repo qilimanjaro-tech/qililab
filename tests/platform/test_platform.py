@@ -1875,6 +1875,150 @@ class TestMethods:
         with pytest.raises(ValueError, match=re.escape(f"len(calibrations)={len(calibrations)} != len(qprograms)={n}")):
             platform._normalize_calibrations(calibrations=calibrations, n=n)
 
+    def test_set_calibration_with_instance(self, platform: Platform, calibration: Calibration):
+        """Test that set_calibration stores a Calibration instance on the platform."""
+        assert platform.calibration is None
+
+        platform.set_calibration(calibration)
+
+        assert platform.calibration is calibration
+
+    def test_set_calibration_from_file_path(self, platform: Platform, calibration: Calibration):
+        """Test that set_calibration deserializes a Calibration from a file path string."""
+        with patch("qililab.platform.platform.deserialize_from", return_value=calibration) as mock_deserialize:
+            platform.set_calibration("path/to/calibration.yml")
+
+        mock_deserialize.assert_called_once_with(file="path/to/calibration.yml", cls=Calibration)
+        assert platform.calibration is calibration
+
+    def test_execute_qprogram_falls_back_to_platform_calibration(
+        self, platform: Platform, calibration: Calibration
+    ):
+        """Test that execute_qprogram uses the platform-level calibration when none is passed."""
+        qprogram = QProgram()
+        platform.set_calibration(calibration)
+
+        with (
+            patch.object(Platform, "compile_qprogram") as mock_compile,
+            patch.object(Platform, "execute_compilation_output"),
+        ):
+            platform.execute_qprogram(qprogram=qprogram)
+
+        assert mock_compile.call_args.kwargs["calibration"] is calibration
+
+    def test_execute_qprogram_explicit_calibration_overrides_platform(
+        self,
+        platform: Platform,
+        calibration: Calibration,
+        calibration_with_preparation_block: Calibration,
+    ):
+        """Test that an explicitly passed calibration takes precedence over the platform-level one."""
+        qprogram = QProgram()
+        platform.set_calibration(calibration)
+
+        with (
+            patch.object(Platform, "compile_qprogram") as mock_compile,
+            patch.object(Platform, "execute_compilation_output"),
+        ):
+            platform.execute_qprogram(qprogram=qprogram, calibration=calibration_with_preparation_block)
+
+        assert mock_compile.call_args.kwargs["calibration"] is calibration_with_preparation_block
+
+    def test_execute_qprogram_without_calibration_stays_none(self, platform: Platform):
+        """Test that execute_qprogram passes None when no calibration is set on the platform."""
+        qprogram = QProgram()
+        assert platform.calibration is None
+
+        with (
+            patch.object(Platform, "compile_qprogram") as mock_compile,
+            patch.object(Platform, "execute_compilation_output"),
+        ):
+            platform.execute_qprogram(qprogram=qprogram)
+
+        assert mock_compile.call_args.kwargs["calibration"] is None
+
+    @staticmethod
+    def _two_disjoint_qprograms() -> list[QProgram]:
+        """Build two QPrograms that act on non-overlapping buses (valid for parallel execution)."""
+        wf = IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
+        qp1 = QProgram()
+        qp1.play(bus="drive_line_q0_bus", waveform=wf)
+        qp2 = QProgram()
+        qp2.play(bus="flux_line_q0_bus", waveform=wf)
+        return [qp1, qp2]
+
+    def test_execute_qprograms_parallel_falls_back_to_platform_calibration(
+        self, platform: Platform, calibration: Calibration
+    ):
+        """Test that execute_qprograms_parallel uses the platform-level calibration when none is passed."""
+        qprograms = self._two_disjoint_qprograms()
+        platform.set_calibration(calibration)
+
+        with (
+            patch.object(Platform, "compile_qprogram") as mock_compile,
+            patch.object(Platform, "execute_compilation_outputs_parallel"),
+        ):
+            platform.execute_qprograms_parallel(qprograms=qprograms)
+
+        assert len(mock_compile.call_args_list) == len(qprograms)
+        for call in mock_compile.call_args_list:
+            assert call.kwargs["calibration"] is calibration
+
+    def test_execute_qprograms_parallel_explicit_calibration_overrides_platform(
+        self,
+        platform: Platform,
+        calibration: Calibration,
+        calibration_with_preparation_block: Calibration,
+    ):
+        """Test that a single explicit calibration overrides the platform-level one for all qprograms."""
+        qprograms = self._two_disjoint_qprograms()
+        platform.set_calibration(calibration)
+
+        with (
+            patch.object(Platform, "compile_qprogram") as mock_compile,
+            patch.object(Platform, "execute_compilation_outputs_parallel"),
+        ):
+            platform.execute_qprograms_parallel(
+                qprograms=qprograms, calibrations=calibration_with_preparation_block
+            )
+
+        for call in mock_compile.call_args_list:
+            assert call.kwargs["calibration"] is calibration_with_preparation_block
+
+    def test_execute_qprograms_parallel_list_calibrations_override_platform(
+        self,
+        platform: Platform,
+        calibration: Calibration,
+        calibration_with_preparation_block: Calibration,
+    ):
+        """Test that a per-qprogram calibration list overrides the platform-level one, element by element."""
+        qprograms = self._two_disjoint_qprograms()
+        platform.set_calibration(calibration)
+        calibrations = [calibration_with_preparation_block, None]
+
+        with (
+            patch.object(Platform, "compile_qprogram") as mock_compile,
+            patch.object(Platform, "execute_compilation_outputs_parallel"),
+        ):
+            platform.execute_qprograms_parallel(qprograms=qprograms, calibrations=calibrations)
+
+        passed = [call.kwargs["calibration"] for call in mock_compile.call_args_list]
+        assert passed == [calibration_with_preparation_block, None]
+
+    def test_execute_qprograms_parallel_without_calibration_stays_none(self, platform: Platform):
+        """Test that execute_qprograms_parallel passes None when no calibration is set on the platform."""
+        qprograms = self._two_disjoint_qprograms()
+        assert platform.calibration is None
+
+        with (
+            patch.object(Platform, "compile_qprogram") as mock_compile,
+            patch.object(Platform, "execute_compilation_outputs_parallel"),
+        ):
+            platform.execute_qprograms_parallel(qprograms=qprograms)
+
+        for call in mock_compile.call_args_list:
+            assert call.kwargs["calibration"] is None
+
     def test_mapped_buses(self, platform: Platform):
         """Test the mappings of buses"""
         qp_buses = set({"readout", "drive"})
