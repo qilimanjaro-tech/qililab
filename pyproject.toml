@@ -33,7 +33,6 @@ dependencies = [
     "qblox-instruments==1.0.3",
     "qcodes==0.54.3",
     "qcodes-contrib-drivers>=0.23.0",
-    "qpysequence==0.10.8",
     "rich>=14.0.0",
     "ruamel-yaml>=0.18.10",
     "sqlalchemy<2.1",
@@ -93,6 +92,7 @@ constraint-dependencies = [
 
 [tool.uv.sources]
 qilisdk = { git = "https://github.com/qilimanjaro-tech/qilisdk.git", branch = "main" }
+qpysequence = { git = "https://github.com/qilimanjaro-tech/qpysequence.git", branch = "main" }
 
 [tool.ruff]
 line-length = 120

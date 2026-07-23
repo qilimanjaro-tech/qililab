@@ -3601,7 +3601,6 @@ dependencies = [
     { name = "qcodes" },
     { name = "qcodes-contrib-drivers" },
     { name = "qilisdk" },
-    { name = "qpysequence" },
     { name = "rich" },
     { name = "ruamel-yaml" },
     { name = "rustworkx" },
@@ -3651,7 +3650,6 @@ requires-dist = [
     { name = "qcodes-contrib-drivers", specifier = ">=0.23.0" },
     { name = "qilisdk", git = "https://github.com/qilimanjaro-tech/qilisdk.git?branch=main" },
     { name = "qm-qua", marker = "extra == 'quantum-machines'", specifier = "==1.2.4" },
-    { name = "qpysequence", specifier = "==0.10.8" },
     { name = "rich", specifier = ">=14.0.0" },
     { name = "ruamel-yaml", specifier = ">=0.18.10" },
     { name = "rustworkx", specifier = ">=0.17.1" },
@@ -3747,21 +3745,6 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/51/fe/7f3750e37f9b91ece9ef65f81b8ae423b33a7dc3fbbf1fb902d5a7117d13/qm_qua-1.2.4.tar.gz", hash = "sha256:1866a86511d8bec8fa3d579dcd00d94c650a8672fe7d964fa7ae05af956d4e0d", size = 306620, upload-time = "2025-12-21T10:04:06.877Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/63/b7/bec53806f20367b0574986597bb3f6e257f9b577636e486023fa00d5f77f/qm_qua-1.2.4-py3-none-any.whl", hash = "sha256:2d29fee7895d0c4885f85d6d3b3366fbdf28fa8bbc1b6b2371c66eb5705b9ceb", size = 381596, upload-time = "2025-12-21T10:04:05.435Z" },
-]
-
-[[package]]
-name = "qpysequence"
-version = "0.10.8"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "loguru" },
-    { name = "numpy", version = "2.3.5", source = { registry = "https://pypi.org/simple" }, marker = "sys_platform == 'darwin'" },
-    { name = "numpy", version = "2.4.1", source = { registry = "https://pypi.org/simple" }, marker = "platform_machine == 'aarch64' and sys_platform != 'darwin'" },
-    { name = "numpy", version = "2.4.1", source = { registry = "https://urob.github.io/numpy-mkl" }, marker = "platform_machine != 'aarch64' and sys_platform != 'darwin'" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/dd/38/910cdfaf3ce7cffb37235cbfef84ed2c7adf9bc8260a1cb5479e78c591aa/qpysequence-0.10.8.tar.gz", hash = "sha256:d47aff11f14905b443013e7b1385a021da86da37f3ae56df086dccb730d838c9", size = 77883, upload-time = "2025-12-05T11:18:55.528Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/30/ac/657bd7e88e8d5bb84c73f683662bcae90791e4bc141bb7de1cb6a07d9fd2/qpysequence-0.10.8-py3-none-any.whl", hash = "sha256:ccf0cf66d41cc1bbc79b341375728e09f655b049cfc9ee88cbb8be15cde5d834", size = 79524, upload-time = "2025-12-05T11:18:56.53Z" },
 ]
 
 [[package]]

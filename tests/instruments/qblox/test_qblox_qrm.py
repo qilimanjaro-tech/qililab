@@ -332,7 +332,7 @@ class TestQbloxQRM:
         sequence = Sequence(program=Program(), waveforms=Waveforms(), acquisitions=Acquisitions(), weights=Weights())
         qrm.upload_qpysequence(qpysequence=sequence, channel_id=0)
 
-        qrm.device.sequencers[0].sequence.assert_called_once_with(sequence.todict())
+        qrm.device.sequencers[0].sequence.assert_called_once_with(sequence.to_dict())
 
     def test_acquire_qprogram_results(self, qrm: QbloxQRM):
         acquisitions = Acquisitions()

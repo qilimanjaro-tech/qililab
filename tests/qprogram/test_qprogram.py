@@ -1094,10 +1094,66 @@ class TestQProgram(TestStructuredProgram):
         ):
             qp = QProgram()
             with qp.average(1000):
-                qp.qblox.measure_reset(
-                    bus="readout_q0_bus",
-                    waveform="readout",
-                    weights="weights",
-                    control_bus="drive_q0_bus",
-                    reset_pulse=drag_reset,
-                )
+                qp.qblox.measure_reset(bus="readout_q0_bus", waveform="readout", weights="weights", control_bus="drive_q0_bus", reset_pulse=drag_reset)
+
+    def test_wait_with_numpy_int_stores_python_int(self):
+        qp = QProgram()
+        qp.wait(bus="drive", duration=np.int64(100))
+        assert qp._body.elements[0].duration == 100
+        assert type(qp._body.elements[0].duration) is int
+
+    def test_wait_trigger_with_numpy_int_stores_python_int(self):
+        qp = QProgram()
+        qp.wait_trigger(bus="drive", duration=np.int64(100))
+        assert qp._body.elements[0].duration == 100
+        assert type(qp._body.elements[0].duration) is int
+
+    def test_set_offset_with_numpy_float_stores_python_float(self):
+        qp = QProgram()
+        qp.set_offset(bus="drive", offset_path0=np.float64(0.5), offset_path1=np.float64(0.1))
+        assert qp._body.elements[0].offset_path0 == pytest.approx(0.5)
+        assert qp._body.elements[0].offset_path1 == pytest.approx(0.1)
+        assert type(qp._body.elements[0].offset_path0) is float
+        assert type(qp._body.elements[0].offset_path1) is float
+
+    def test_set_trigger_with_numpy_int_stores_python_int(self):
+        qp = QProgram()
+        qp.set_trigger(bus="drive", duration=np.int64(100), outputs=1)
+        assert qp._body.elements[0].duration == 100
+        assert type(qp._body.elements[0].duration) is int
+
+    def test_set_frequency_with_numpy_float_stores_python_float(self):
+        qp = QProgram()
+        qp.set_frequency(bus="drive", frequency=np.float64(1e6))
+        assert qp._body.elements[0].frequency == pytest.approx(1e6)
+        assert type(qp._body.elements[0].frequency) is float
+
+    def test_set_phase_with_numpy_float_stores_python_float(self):
+        qp = QProgram()
+        qp.set_phase(bus="drive", phase=np.float64(1.5))
+        assert qp._body.elements[0].phase == pytest.approx(1.5)
+        assert type(qp._body.elements[0].phase) is float
+
+    def test_set_gain_with_numpy_float_stores_python_float(self):
+        qp = QProgram()
+        qp.set_gain(bus="drive", gain=np.float64(0.5))
+        assert qp._body.elements[0].gain == pytest.approx(0.5)
+        assert type(qp._body.elements[0].gain) is float
+
+    def test_for_loop_with_numpy_bounds_stores_python_scalars(self):
+        qp = QProgram()
+        freq = qp.variable(label="freq", domain=Domain.Frequency)
+        with qp.for_loop(variable=freq, start=np.float64(1e6), stop=np.float64(10e6), step=np.float64(1e6)):
+            pass  # body is irrelevant; only the loop bounds' types are under test
+        loop = qp._body.elements[0]
+        assert type(loop.start) is float
+        assert type(loop.stop) is float
+        assert type(loop.step) is float
+
+    def test_average_with_numpy_int_stores_python_int(self):
+        qp = QProgram()
+        with qp.average(shots=np.int64(1000)):
+            pass  # body is irrelevant; only the shots type is under test
+        loop = qp._body.elements[0]
+        assert loop.shots == 1000
+        assert type(loop.shots) is int
