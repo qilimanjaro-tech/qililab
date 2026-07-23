@@ -95,6 +95,9 @@ In the runcard this parameter is located inside the instruments sequencer for QR
 
 ### Bug fixes
 
+- Fixed an `UnboundLocalError` raised by `QbloxQRM.acquire_qprogram_results` when a bus is played on but no acquisition is performed on it.
+  [#1168](https://github.com/qilimanjaro-tech/qililab/pull/1168)
+
 - Fixed `CrosstalkMatrix` row/column ordering being inconsistent between `to_array` (ordered with `sort_buses`) and `inverse`/`from_array` (raw insertion order). For any matrix whose buses were not stored in natural order e.g. a system with ≥10 buses saved alphabetically (`flux q0, flux q1, flux q10, flux q2`); the inverse was mislabeled and `flux_to_bias` returned wrong bias values, and `Calibration.add_intra_crosstalk`/`add_inter_crosstalk` corrupted the stored matrix and offsets. `inverse`, the calibration updates and their `from_array` calls now share the canonical `sort_buses` ordering. Also added `qililab.utils.argsort_buses`, which returns the sort permutation so an array and its bus labels can be reordered together.
   [#1161](https://github.com/qilimanjaro-tech/qililab/pull/1161)
 
