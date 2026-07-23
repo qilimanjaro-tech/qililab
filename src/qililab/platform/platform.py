@@ -1220,25 +1220,6 @@ class Platform:
         )
         return executor.execute()
 
-    def _resolve_weight_duration(self, qprogram: QProgram, calibration: Calibration | None) -> None:
-        """Resolve calibrated weight names in ``qprogram.qblox.weight_duration`` to integer durations in-place."""
-        resolved: dict[str, list[int | str]] = {}
-        for bus, entries in qprogram.qblox.weight_duration.items():
-            resolved_entries: list[int | str] = []
-            for entry in entries:
-                if isinstance(entry, int):
-                    resolved_entries.append(entry)
-                else:
-                    if calibration is None:
-                        raise ValueError(
-                            f"Calibrated weight {entry!r} requires a calibration object, but none was provided."
-                        )
-                    if not calibration.has_weights(bus, entry):
-                        raise ValueError(f"Calibrated weight {entry!r} not found in calibration.")
-                    resolved_entries.append(calibration.get_weights(bus, entry).get_duration())
-            resolved[bus] = resolved_entries
-        qprogram.qblox._weight_duration = resolved
-
     def compile_qprogram(
         self,
         qprogram: QProgram,
@@ -1333,7 +1314,7 @@ class Platform:
                             if len(sequencer.outputs) == 1:
                                 single_channel.append(bus.alias)
 
-            self._resolve_weight_duration(qprogram, calibration)
+            qprogram = qprogram.with_resolved_weight_duration(calibration, bus_mapping)
             qblox_compiler = QbloxCompiler()
             qblox_buses = [
                 bus.alias for bus in buses if any(isinstance(instrument, QbloxModule) for instrument in bus.instruments)

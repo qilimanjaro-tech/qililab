@@ -266,10 +266,12 @@ class QProgram(StructuredProgram):
                 copied_qprogram.buses.remove(bus)
                 copied_qprogram.buses.add(bus_mapping[bus])
 
-        # Apply the mapping to weight_duration keys
-        copied_qprogram.qblox._weight_duration = {
-            bus_mapping.get(bus, bus): durations for bus, durations in copied_qprogram.qblox._weight_duration.items()
-        }
+        # Apply the mapping to weight_duration keys, merging entries when multiple source buses map onto
+        # the same target bus (e.g. multiplexed readout) instead of one overwriting the other
+        remapped_weight_duration: dict[str, list[int | str]] = {}
+        for bus, durations in copied_qprogram.qblox._weight_duration.items():
+            remapped_weight_duration.setdefault(bus_mapping.get(bus, bus), []).extend(durations)
+        copied_qprogram.qblox._weight_duration = remapped_weight_duration
 
         return copied_qprogram
 
@@ -384,6 +386,45 @@ class QProgram(StructuredProgram):
         if trigger_network_to_add:
             copied_qprogram.qblox.trigger_network_required.update(trigger_network_to_add)
 
+        return copied_qprogram
+
+    def with_resolved_weight_duration(
+        self, calibration: Calibration | None, bus_mapping: dict[str, str] | None = None
+    ) -> "QProgram":
+        """Return a copy of the QProgram with calibrated weight names in ``qblox.weight_duration``
+        resolved to integer durations.
+
+        Calibration lookups use each bus's mapped (physical) alias when ``bus_mapping`` is given,
+        matching how ``with_bus_mapping``/``with_calibration`` resolve calibration after applying the
+        mapping.
+
+        Args:
+            calibration (Calibration | None): Calibration instance used to resolve calibrated weight
+                names. Required if any acquisition uses a calibrated weight name.
+            bus_mapping (dict[str, str] | None): Optional bus mapping; calibration lookups use the
+                mapped bus alias when provided.
+
+        Returns:
+            QProgram: A new instance of QProgram with ``qblox.weight_duration`` resolved.
+        """
+        copied_qprogram = deepcopy(self)
+        resolved: dict[str, list[int | str]] = {}
+        for bus, entries in copied_qprogram.qblox.weight_duration.items():
+            mapped_bus = bus_mapping.get(bus, bus) if bus_mapping else bus
+            resolved_entries: list[int | str] = []
+            for entry in entries:
+                if isinstance(entry, int):
+                    resolved_entries.append(entry)
+                else:
+                    if calibration is None:
+                        raise ValueError(
+                            f"Calibrated weight {entry!r} requires a calibration object, but none was provided."
+                        )
+                    if not calibration.has_weights(mapped_bus, entry):
+                        raise ValueError(f"Calibrated weight {entry!r} not found in calibration.")
+                    resolved_entries.append(calibration.get_weights(mapped_bus, entry).get_duration())
+            resolved[bus] = resolved_entries
+        copied_qprogram.qblox._weight_duration = resolved
         return copied_qprogram
 
     def with_crosstalk_qblox(self, crosstalk: CrosstalkMatrix):

@@ -201,6 +201,10 @@ class TestQbloxQRM:
             assert sequencer.timeout_repetitions == value  # type: ignore[attr-defined]
         elif parameter == Parameter.TIME_OF_FLIGHT:
             assert sequencer.time_of_flight == value  # type: ignore[attr-defined]
+        elif parameter == Parameter.THRESHOLD:
+            assert sequencer.threshold == value  # type: ignore[attr-defined]
+        elif parameter == Parameter.THRESHOLD_ROTATION:
+            assert sequencer.threshold_rotation == value  # type: ignore[attr-defined]
         elif parameter in {Parameter.OFFSET_OUT0, Parameter.OFFSET_OUT1, Parameter.OFFSET_OUT2, Parameter.OFFSET_OUT3}:
             output = int(parameter.value[-1])
             assert qrm.out_offsets[output] == value
@@ -457,6 +461,12 @@ class TestQbloxQRM:
 
         assert sequencer.threshold == pytest.approx(0.7)
         qrm.device.sequencers[0].thresholded_acq_threshold.assert_not_called()
+
+    def test_set_then_get_parameter_threshold_round_trips(self, qrm: QbloxQRM):
+        """get_parameter(THRESHOLD) must return whatever was last passed to set_parameter, through the
+        public API -- not just the value stored on the sequencer model inspected directly."""
+        qrm.set_parameter(Parameter.THRESHOLD, 0.7, channel_id=0)
+        assert qrm.get_parameter(Parameter.THRESHOLD, channel_id=0) == pytest.approx(0.7)
 
     def test_set_device_threshold_scales_by_integration_length(self, qrm: QbloxQRM):
         """_set_device_threshold must program the device with value * integration_length,

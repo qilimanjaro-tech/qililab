@@ -27,7 +27,12 @@
 
 ### Improvements
 
-- `integration_length` is now derived dynamically from the QProgram weight waveform duration instead of being a static runcard field. `QProgram.qblox.weight_duration` is a `dict[str, list[int | str]]` keyed by bus alias, ensuring each ADC bus uses its own weight duration when programming the hardware threshold. Setting `Parameter.THRESHOLD` always stores the value in the software only and defers hardware programming to QProgram execution time, regardless of whether the (deprecated) runcard `integration_length` is set. This improvement applies to single and parallel qprogram execution.
+- Qblox: the threshold value (`Parameter.THRESHOLD`, still set via the runcard/`set_parameter` exactly as before) is now scaled by the QProgram's actual weight duration instead of the runcard's `integration_length` field; the weight's duration is the integration length. `integration_length` in the runcard was designed for Qblox's non-weighted `acquire`, which Qililab hasn't used since the old pulse/qibo compiler was removed; now, Qililab only ever does weighted acquisitions, so scaling by the runcard field was the wrong source of truth.
+  - `QProgram.qblox.weight_duration` tracks each acquisition's real weight duration, per bus.
+  - Value sent to hardware = `threshold * weight_duration`, computed fresh on every execution.
+  - Resolves on a copy of the QProgram, so reusing the same QProgram across different `Calibration`s is safe.
+  - `bus_mapping` merges durations onto the same physical bus and resolves calibration against it.
+  - Multiple durations on one bus -> a warning is logged and the first one (in order) is used.
   [#1151](https://github.com/qilimanjaro-tech/qililab/pull/1151)
   
 - `CrosstalkMatrix.to_array` and its `__str__` representation now order buses with `sort_buses`, so multi-digit bus names are shown in natural order (`flux q2` before `flux q10`) instead of lexicographically.
@@ -77,7 +82,10 @@
 
 - `Parameter.INTEGRATION_LENGTH` has been removed from the `Parameter` enum. Calling `set_parameter`/`get_parameter` with it now raises `AttributeError`.
   [#1151](https://github.com/qilimanjaro-tech/qililab/pull/1151)
-  
+
+- `set_parameter(..., Parameter.THRESHOLD, value)` on a Qblox readout module no longer writes the value to the instrument immediately, it only updates software state. The value now reaches the instrument the next time a QProgram is executed (`execute_qprogram`/`execute_qprograms_parallel`), scaled by that QProgram's weight duration.
+  [#1151](https://github.com/qilimanjaro-tech/qililab/pull/1151)
+
 - Added `timeout_repetitions` parameter for QRM and QRM-RF instruments sequencers inside the runcard. This parameter controls how many (if any) executions of the same qblox qprogram execution must be done after an acquisition `TimeoutError`. Defaults to no repetitions.
 In the runcard this parameter is located inside the instruments sequencer for QRM and QRM-RF modules.
 

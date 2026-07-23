@@ -2348,66 +2348,6 @@ class TestMethods:
             integration_length=120,
         )
 
-    def test_resolve_weight_duration_integers(self, platform: Platform):
-        """Integer durations are passed through unchanged; no calibration needed."""
-        weights_wf = IQPair(I=Square(amplitude=1.0, duration=120), Q=Square(amplitude=0.0, duration=120))
-        qp = QProgram()
-        qp.qblox.acquire(bus="readout", weights=weights_wf)
-        platform._resolve_weight_duration(qp, calibration=None)
-        assert qp.qblox.weight_duration == {"readout": [120]}
-
-    def test_resolve_weight_duration_with_calibrated_weights(self, platform: Platform):
-        """String weight names are resolved to their integer duration from calibration."""
-        calibration = Calibration()
-        calibration.add_weights(
-            bus="feedline_input_output_bus",
-            name="optimal_weights",
-            weights=IQPair(I=Square(amplitude=1.0, duration=300), Q=Square(amplitude=0.0, duration=300)),
-        )
-        qp = QProgram()
-        qp.qblox.acquire(bus="feedline_input_output_bus", weights="optimal_weights")
-        platform._resolve_weight_duration(qp, calibration=calibration)
-        assert qp.qblox.weight_duration == {"feedline_input_output_bus": [300]}
-
-    def test_resolve_weight_duration_scopes_lookup_to_the_entrys_own_bus(self, platform: Platform):
-        """When two buses register a weight under the same name with different durations, resolving
-        must use the duration registered for the entry's own bus, not whichever bus is found first."""
-        calibration = Calibration()
-        calibration.add_weights(
-            bus="feedline_input_output_bus",
-            name="optimal_weights",
-            weights=IQPair(I=Square(amplitude=1.0, duration=300), Q=Square(amplitude=0.0, duration=300)),
-        )
-        calibration.add_weights(
-            bus="feedline_input_output_bus_2",
-            name="optimal_weights",
-            weights=IQPair(I=Square(amplitude=1.0, duration=999), Q=Square(amplitude=0.0, duration=999)),
-        )
-        qp = QProgram()
-        qp.qblox.acquire(bus="feedline_input_output_bus_2", weights="optimal_weights")
-        platform._resolve_weight_duration(qp, calibration=calibration)
-        assert qp.qblox.weight_duration == {"feedline_input_output_bus_2": [999]}
-
-    def test_resolve_weight_duration_calibration_none_raises(self, platform: Platform):
-        """A calibrated weight name with calibration=None must raise ValueError, not AttributeError."""
-        qp = QProgram()
-        qp.qblox.acquire(bus="readout", weights="optimal_weights")
-        with pytest.raises(ValueError, match=re.escape("Calibrated weight 'optimal_weights' requires a calibration object, but none was provided.")):
-            platform._resolve_weight_duration(qp, calibration=None)
-
-    def test_resolve_weight_duration_weight_not_found_raises(self, platform: Platform):
-        """A calibrated weight name absent from calibration must raise ValueError."""
-        calibration = Calibration()
-        calibration.add_weights(
-            bus="feedline_input_output_bus",
-            name="other_weights",
-            weights=IQPair(I=Square(amplitude=1.0, duration=300), Q=Square(amplitude=0.0, duration=300)),
-        )
-        qp = QProgram()
-        qp.qblox.acquire(bus="feedline_input_output_bus", weights="optimal_weights")
-        with pytest.raises(ValueError, match=re.escape("Calibrated weight 'optimal_weights' not found in calibration.")):
-            platform._resolve_weight_duration(qp, calibration=calibration)
-
     def test_execute_qprogram_warns_when_bus_has_multiple_different_weight_durations(
         self, platform: Platform, caplog
     ):
