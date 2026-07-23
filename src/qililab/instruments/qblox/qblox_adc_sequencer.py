@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import warnings
 from dataclasses import dataclass
 
 from qililab.instruments.qblox.qblox_sequencer import QbloxSequencer
@@ -25,7 +26,6 @@ class QbloxADCSequencer(QbloxSequencer):
     scope_hardware_averaging: bool
     sampling_rate: float  # default sampling rate for Qblox is 1.e+09
     hardware_demodulation: bool  # demodulation flag
-    integration_length: int
     integration_mode: IntegrationMode
     sequence_timeout: int  # minutes
     acquisition_timeout: int  # minutes
@@ -33,7 +33,15 @@ class QbloxADCSequencer(QbloxSequencer):
     threshold: float
     threshold_rotation: float
     time_of_flight: int  # nanoseconds
+    integration_length: int | None = None
     timeout_repetitions: int = 0
 
     def __post_init__(self):
         cast_enum_fields(obj=self)
+        if self.integration_length is not None:
+            warnings.warn(
+                "Integration_length in the runcard is deprecated and will be removed in a future release. "
+                "The integration length is now derived from the QProgram's first weight duration.",
+                FutureWarning,
+                stacklevel=1,
+            )

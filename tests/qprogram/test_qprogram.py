@@ -1,5 +1,6 @@
 import math
 import os
+import re
 from itertools import product
 
 import numpy as np
@@ -75,6 +76,124 @@ class TestQProgram(TestStructuredProgram):
     @pytest.fixture
     def instance(self):
         return QProgram()
+
+    def test_with_bus_mapping_remaps_weight_duration_keys(self):
+        """with_bus_mapping must remap qblox.weight_duration keys, otherwise threshold programming
+        can never find the duration for a mapped bus."""
+        weights_wf = IQPair(I=Square(amplitude=1.0, duration=120), Q=Square(amplitude=0.0, duration=120))
+        qp = QProgram()
+        qp.qblox.acquire(bus="readout", weights=weights_wf)
+
+        mapped_qp = qp.with_bus_mapping(bus_mapping={"readout": "readout_q0_bus"})
+
+        assert mapped_qp.qblox.weight_duration == {"readout_q0_bus": [120]}
+
+    def test_with_bus_mapping_merges_weight_duration_on_target_collision(self):
+        """When two source buses map onto the same target bus (e.g. multiplexed readout), their
+        weight_duration entries must both survive, not have one silently overwrite the other."""
+        weights_q0 = IQPair(I=Square(amplitude=1.0, duration=120), Q=Square(amplitude=0.0, duration=120))
+        weights_q1 = IQPair(I=Square(amplitude=1.0, duration=300), Q=Square(amplitude=0.0, duration=300))
+        qp = QProgram()
+        qp.qblox.acquire(bus="readout_q0", weights=weights_q0)
+        qp.qblox.acquire(bus="readout_q1", weights=weights_q1)
+
+        mapped_qp = qp.with_bus_mapping(
+            bus_mapping={"readout_q0": "feedline_bus", "readout_q1": "feedline_bus"}
+        )
+
+        assert mapped_qp.qblox.weight_duration == {"feedline_bus": [120, 300]}
+
+    def test_resolve_weight_duration_integers(self):
+        """Integer durations are passed through unchanged; no calibration needed."""
+        weights_wf = IQPair(I=Square(amplitude=1.0, duration=120), Q=Square(amplitude=0.0, duration=120))
+        qp = QProgram()
+        qp.qblox.acquire(bus="readout", weights=weights_wf)
+        resolved = qp.with_resolved_weight_duration(calibration=None)
+        assert resolved.qblox.weight_duration == {"readout": [120]}
+
+    def test_resolve_weight_duration_does_not_mutate_the_original_qprogram(self):
+        """The original QProgram must be left untouched -- callers may reuse it across multiple
+        execute_qprogram calls (e.g. with different Calibration instances), and resolving weight_duration
+        in place would silently poison later calls."""
+        weights_wf = IQPair(I=Square(amplitude=1.0, duration=120), Q=Square(amplitude=0.0, duration=120))
+        qp = QProgram()
+        qp.qblox.acquire(bus="readout", weights="optimal_weights")
+        calibration = Calibration()
+        calibration.add_weights(bus="readout", name="optimal_weights", weights=weights_wf)
+        resolved = qp.with_resolved_weight_duration(calibration=calibration)
+        assert qp.qblox.weight_duration == {"readout": ["optimal_weights"]}
+        assert resolved.qblox.weight_duration == {"readout": [120]}
+        assert resolved is not qp
+
+    def test_resolve_weight_duration_with_calibrated_weights(self):
+        """String weight names are resolved to their integer duration from calibration."""
+        calibration = Calibration()
+        calibration.add_weights(
+            bus="feedline_input_output_bus",
+            name="optimal_weights",
+            weights=IQPair(I=Square(amplitude=1.0, duration=300), Q=Square(amplitude=0.0, duration=300)),
+        )
+        qp = QProgram()
+        qp.qblox.acquire(bus="feedline_input_output_bus", weights="optimal_weights")
+        resolved = qp.with_resolved_weight_duration(calibration=calibration)
+        assert resolved.qblox.weight_duration == {"feedline_input_output_bus": [300]}
+
+    def test_resolve_weight_duration_scopes_lookup_to_the_entrys_own_bus(self):
+        """When two buses register a weight under the same name with different durations, resolving
+        must use the duration registered for the entry's own bus, not whichever bus is found first."""
+        calibration = Calibration()
+        calibration.add_weights(
+            bus="feedline_input_output_bus",
+            name="optimal_weights",
+            weights=IQPair(I=Square(amplitude=1.0, duration=300), Q=Square(amplitude=0.0, duration=300)),
+        )
+        calibration.add_weights(
+            bus="feedline_input_output_bus_2",
+            name="optimal_weights",
+            weights=IQPair(I=Square(amplitude=1.0, duration=999), Q=Square(amplitude=0.0, duration=999)),
+        )
+        qp = QProgram()
+        qp.qblox.acquire(bus="feedline_input_output_bus_2", weights="optimal_weights")
+        resolved = qp.with_resolved_weight_duration(calibration=calibration)
+        assert resolved.qblox.weight_duration == {"feedline_input_output_bus_2": [999]}
+
+    def test_resolve_weight_duration_uses_the_mapped_bus_for_calibration_lookup(self):
+        """When bus_mapping is given, calibration must be looked up under the mapped (physical) bus,
+        matching how the rest of the compile pipeline resolves calibration after applying bus_mapping --
+        not the logical bus name the QProgram was written against."""
+        calibration = Calibration()
+        calibration.add_weights(
+            bus="feedline_input_output_bus",
+            name="optimal_weights",
+            weights=IQPair(I=Square(amplitude=1.0, duration=300), Q=Square(amplitude=0.0, duration=300)),
+        )
+        qp = QProgram()
+        qp.qblox.acquire(bus="readout", weights="optimal_weights")
+        resolved = qp.with_resolved_weight_duration(
+            calibration=calibration, bus_mapping={"readout": "feedline_input_output_bus"}
+        )
+        # the dict stays keyed by the logical bus name -- with_bus_mapping remaps the keys later
+        assert resolved.qblox.weight_duration == {"readout": [300]}
+
+    def test_resolve_weight_duration_calibration_none_raises(self):
+        """A calibrated weight name with calibration=None must raise ValueError, not AttributeError."""
+        qp = QProgram()
+        qp.qblox.acquire(bus="readout", weights="optimal_weights")
+        with pytest.raises(ValueError, match=re.escape("Calibrated weight 'optimal_weights' requires a calibration object, but none was provided.")):
+            qp.with_resolved_weight_duration(calibration=None)
+
+    def test_resolve_weight_duration_weight_not_found_raises(self):
+        """A calibrated weight name absent from calibration must raise ValueError."""
+        calibration = Calibration()
+        calibration.add_weights(
+            bus="feedline_input_output_bus",
+            name="other_weights",
+            weights=IQPair(I=Square(amplitude=1.0, duration=300), Q=Square(amplitude=0.0, duration=300)),
+        )
+        qp = QProgram()
+        qp.qblox.acquire(bus="feedline_input_output_bus", weights="optimal_weights")
+        with pytest.raises(ValueError, match=re.escape("Calibrated weight 'optimal_weights' not found in calibration.")):
+            qp.with_resolved_weight_duration(calibration=calibration)
 
     def test_with_bus_mapping_method(self):
         """Test with_bus_mapping method"""
@@ -314,6 +433,7 @@ class TestQProgram(TestStructuredProgram):
         assert np.equal(qp._body.elements[0].waveform.Q, zero_wf)
         assert np.equal(qp._body.elements[0].weights.I, one_wf)
         assert np.equal(qp._body.elements[0].weights.Q, zero_wf)
+        assert qp.qblox.weight_duration == {"readout": [40]}
 
     def test_acquire_method(self):
         """Test acquire method"""
@@ -328,6 +448,31 @@ class TestQProgram(TestStructuredProgram):
         assert qp._body.elements[0].bus == "readout"
         assert np.equal(qp._body.elements[0].weights.I, one_wf)
         assert np.equal(qp._body.elements[0].weights.Q, zero_wf)
+
+    def test_weight_duration_single_acquisition(self):
+        """A single acquire populates the bus list with one entry."""
+        weights_wf = IQPair(I=Square(amplitude=1.0, duration=120), Q=Square(amplitude=0.0, duration=120))
+        qp = QProgram()
+        qp.qblox.acquire(bus="readout", weights=weights_wf)
+        assert qp.qblox.weight_duration == {"readout": [120]}
+
+    def test_weight_duration_multiple_acquisitions_same_bus(self):
+        """Multiple acquires on the same bus append to the list in order."""
+        w1 = IQPair(I=Square(amplitude=1.0, duration=120), Q=Square(amplitude=0.0, duration=120))
+        w2 = IQPair(I=Square(amplitude=1.0, duration=200), Q=Square(amplitude=0.0, duration=200))
+        qp = QProgram()
+        qp.qblox.acquire(bus="readout", weights=w1)
+        qp.qblox.acquire(bus="readout", weights=w2)
+        assert qp.qblox.weight_duration == {"readout": [120, 200]}
+
+    def test_weight_duration_multiple_buses(self):
+        """Different buses have independent lists."""
+        w1 = IQPair(I=Square(amplitude=1.0, duration=120), Q=Square(amplitude=0.0, duration=120))
+        w2 = IQPair(I=Square(amplitude=1.0, duration=200), Q=Square(amplitude=0.0, duration=200))
+        qp = QProgram()
+        qp.qblox.acquire(bus="readout_a", weights=w1)
+        qp.qblox.acquire(bus="readout_b", weights=w2)
+        assert qp.qblox.weight_duration == {"readout_a": [120], "readout_b": [200]}
 
     def test_qdac_methods(self):
         """Test acquire method"""
@@ -1033,6 +1178,7 @@ class TestQProgram(TestStructuredProgram):
         # Interface flags updated
         assert "control" in qp.qblox.latch_enabled
         assert qp.qblox.trigger_network_required["readout"] == 1
+        assert qp.qblox.weight_duration == {"readout": [40]}
 
     def test_with_bus_mapping_measure_reset(self):
         """Test with_bus_mapping method"""

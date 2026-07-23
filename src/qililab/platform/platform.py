@@ -48,6 +48,7 @@ from qililab.instruments.instrument import Instrument
 from qililab.instruments.instruments import Instruments
 from qililab.instruments.qblox import QbloxModule
 from qililab.instruments.qblox.qblox_draw import QbloxDraw
+from qililab.instruments.qblox.qblox_qrm import QbloxQRM
 from qililab.instruments.qdevil.qdevil_qdac2 import QDevilQDac2
 from qililab.instruments.utils import InstrumentFactory
 from qililab.platform.components.bus import Bus
@@ -76,6 +77,7 @@ if TYPE_CHECKING:
 
     from qililab.instrument_controllers.instrument_controller import InstrumentController
     from qililab.instruments.instrument import Instrument
+    from qililab.instruments.qblox.qblox_adc_sequencer import QbloxADCSequencer
     from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
     from qililab.result.database import DatabaseManager
     from qililab.settings import Runcard
@@ -1312,6 +1314,7 @@ class Platform:
                             if len(sequencer.outputs) == 1:
                                 single_channel.append(bus.alias)
 
+            qprogram = qprogram.with_resolved_weight_duration(calibration, bus_mapping)
             qblox_compiler = QbloxCompiler()
             qblox_buses = [
                 bus.alias for bus in buses if any(isinstance(instrument, QbloxModule) for instrument in bus.instruments)
@@ -1389,6 +1392,7 @@ class Platform:
             sequences, acquisitions = output.qblox.sequences, output.qblox.acquisitions  # type: ignore[union-attr]
             buses = {bus_alias: self.buses.get(alias=bus_alias) for bus_alias in sequences}
 
+            weight_durations = output.qblox.qprogram.qblox.weight_duration  # type: ignore[union-attr]
             for bus_alias, bus in buses.items():
                 # set up the trigger network if required
                 if bus_alias in output.qblox.qprogram.qblox.trigger_network_required:  # type: ignore[union-attr]
@@ -1397,6 +1401,21 @@ class Platform:
                     for controller in self.instrument_controllers.elements:
                         if isinstance(controller, QbloxClusterController):
                             controller.device.reset_trigger_monitor_count(address=trigger_address)
+                durations = weight_durations.get(bus_alias)
+                if bus.has_adc() and durations:
+                    if len(set(durations)) > 1:
+                        logger.warning(
+                            f"Bus {bus_alias!r} has multiple different weight durations: {durations}. "
+                            f"Using the first value ({durations[0]} ns) as integration length for threshold."
+                        )
+                    for instrument, channel in zip(bus.instruments, bus.channels):
+                        if isinstance(instrument, QbloxQRM) and instrument.is_device_active():
+                            sequencer = cast("QbloxADCSequencer", instrument.get_sequencer(channel))
+                            instrument._set_device_threshold(
+                                value=sequencer.threshold,
+                                sequencer_id=int(channel),
+                                integration_length=int(durations[0]),
+                            )
                 if bus.distortions:
                     for distortion in bus.distortions:
                         for waveform in sequences[bus_alias]._waveforms._waveforms:
@@ -1765,6 +1784,7 @@ class Platform:
         self._apply_qblox_distortions_parallel(
             sequences_per_qprogram=sequences_per_qprogram, buses_per_qprogram=buses_per_qprogram
         )
+        self._apply_qblox_threshold_parallel(outputs=outputs, buses_per_qprogram=buses_per_qprogram)
 
         if debug:
             self._write_qblox_parallel_debug(sequences_per_qprogram=sequences_per_qprogram)
@@ -1811,6 +1831,30 @@ class Platform:
                         for waveform in sequences_per_qprogram[qprogram_idx][bus_alias]._waveforms._waveforms:
                             sequences_per_qprogram[qprogram_idx][bus_alias]._waveforms.modify(
                                 waveform.name, distortion.apply(waveform.data)
+                            )
+
+    def _apply_qblox_threshold_parallel(
+        self,
+        outputs: list[QbloxCompilationOutput],
+        buses_per_qprogram: list[dict[str, Bus]],
+    ) -> None:
+        for qprogram_idx, buses in enumerate(buses_per_qprogram):
+            weight_durations = outputs[qprogram_idx].qprogram.qblox.weight_duration
+            for bus_alias, bus in buses.items():
+                durations = weight_durations.get(bus_alias)
+                if bus.has_adc() and durations:
+                    if len(set(durations)) > 1:
+                        logger.warning(
+                            f"Bus {bus_alias!r} has multiple different weight durations: {durations}. "
+                            f"Using the first value ({durations[0]} ns) as integration length for threshold."
+                        )
+                    for instrument, channel in zip(bus.instruments, bus.channels):
+                        if isinstance(instrument, QbloxQRM) and instrument.is_device_active():
+                            sequencer = cast("QbloxADCSequencer", instrument.get_sequencer(int(channel)))  # type: ignore[arg-type]
+                            instrument._set_device_threshold(
+                                value=sequencer.threshold,
+                                sequencer_id=int(channel),  # type: ignore[arg-type]
+                                integration_length=int(durations[0]),
                             )
 
     def _write_qblox_parallel_debug(self, sequences_per_qprogram: list[dict[str, Any]]) -> None:

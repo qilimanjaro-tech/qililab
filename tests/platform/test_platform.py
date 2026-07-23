@@ -39,6 +39,7 @@ from qililab.instrument_controllers.qblox import QbloxClusterController
 from qililab.instruments import SGS100A
 from qililab.instruments.instruments import Instruments
 from qililab.instruments.qblox import QbloxModule
+from qililab.instruments.qblox.qblox_qrm import QbloxQRM
 from qililab.instruments.qdevil import QDevilQDac2
 from qililab.platform import Bus, Buses, Platform
 from qililab.core.variables import Domain
@@ -1931,7 +1932,68 @@ class TestMethods:
             # check that each element of the result list of the parallel execution is the same as the regular execution for each respective qprograms
             assert result_parallel[0].results == non_parallel_results1.results
             assert result_parallel[1].results == non_parallel_results2.results
-            assert [] == no_qprograms
+            assert no_qprograms == []
+
+    def test_parallelisation_execute_qblox_programs_threshold_with_weight_duration(self, platform: Platform):
+        """In parallel execution, each qprogram's bus must get its hardware threshold programmed using
+        its own weight duration."""
+        weights_wf1 = IQPair(I=Square(amplitude=1.0, duration=120), Q=Square(amplitude=0.0, duration=120))
+        weights_wf2 = IQPair(I=Square(amplitude=1.0, duration=200), Q=Square(amplitude=0.0, duration=200))
+
+        qprogram1 = QProgram()
+        qprogram1.qblox.acquire(bus="feedline_input_output_bus", weights=weights_wf1)
+
+        qprogram2 = QProgram()
+        qprogram2.qblox.acquire(bus="feedline_input_output_bus_2", weights=weights_wf2)
+
+        with (
+            patch("builtins.open"),
+            patch.object(Bus, "upload_qpysequence"),
+            patch.object(Bus, "run"),
+            patch.object(Bus, "acquire_qprogram_results", return_value=[123]),
+            patch.object(QbloxModule, "sync_sequencer"),
+            patch.object(QbloxModule, "desync_sequencer"),
+            patch.object(QbloxQRM, "is_device_active", return_value=True),
+            patch.object(QbloxQRM, "_set_device_threshold") as mock_set_threshold,
+        ):
+            platform.execute_qprograms_parallel([qprogram1, qprogram2])
+
+        assert mock_set_threshold.call_count == 2
+        mock_set_threshold.assert_any_call(value=ANY, sequencer_id=ANY, integration_length=120)
+        mock_set_threshold.assert_any_call(value=ANY, sequencer_id=ANY, integration_length=200)
+
+    def test_parallelisation_execute_qblox_warns_when_bus_has_multiple_different_weight_durations(
+        self, platform: Platform, caplog
+    ):
+        """A warning must be logged when, in parallel execution, an ADC bus has acquisitions with
+        different weight durations."""
+        w1 = IQPair(I=Square(amplitude=1.0, duration=120), Q=Square(amplitude=0.0, duration=120))
+        w2 = IQPair(I=Square(amplitude=1.0, duration=200), Q=Square(amplitude=0.0, duration=200))
+
+        qprogram1 = QProgram()
+        qprogram1.qblox.acquire(bus="feedline_input_output_bus", weights=w1)
+        qprogram1.qblox.acquire(bus="feedline_input_output_bus", weights=w2)
+
+        qprogram2 = QProgram()
+        qprogram2.qblox.acquire(bus="feedline_input_output_bus_2", weights=w1)
+
+        with (
+            patch("builtins.open"),
+            patch.object(Bus, "upload_qpysequence"),
+            patch.object(Bus, "run"),
+            patch.object(Bus, "acquire_qprogram_results", return_value=[]),
+            patch.object(QbloxModule, "sync_sequencer"),
+            patch.object(QbloxModule, "desync_sequencer"),
+            patch.object(QbloxQRM, "is_device_active", return_value=True),
+            patch.object(QbloxQRM, "_set_device_threshold"),
+        ):
+            with caplog.at_level(logging.WARNING):
+                platform.execute_qprograms_parallel([qprogram1, qprogram2])
+
+        assert any(
+            msg == "Bus 'feedline_input_output_bus' has multiple different weight durations: [120, 200]. Using the first value (120 ns) as integration length for threshold."
+            for msg in caplog.messages
+        )
 
     def test_calibrate_mixers(self, platform: Platform):
         """Test calibrating the Qblox mixers."""
@@ -2260,6 +2322,59 @@ class TestMethods:
             results = platform.execute_qprogram(qprogram=qprogram)
 
         assert len(results.results["feedline_input_output_bus"]) == n_measures
+
+    def test_execute_qprogram_programs_threshold_with_weight_duration(self, platform: Platform):
+        """The hardware threshold must be programmed using the weight duration derived from the QProgram,
+        not a static integration_length from the runcard."""
+        weights_wf = IQPair(I=Square(amplitude=1.0, duration=120), Q=Square(amplitude=0.0, duration=120))
+        qprogram = QProgram()
+        qprogram.qblox.acquire(bus="feedline_input_output_bus", weights=weights_wf)
+
+        with (
+            patch("builtins.open"),
+            patch.object(Bus, "upload_qpysequence"),
+            patch.object(Bus, "run"),
+            patch.object(Bus, "acquire_qprogram_results", return_value=[]),
+            patch.object(QbloxModule, "sync_sequencer"),
+            patch.object(QbloxModule, "desync_sequencer"),
+            patch.object(QbloxQRM, "is_device_active", return_value=True),
+            patch.object(QbloxQRM, "_set_device_threshold") as mock_set_threshold,
+        ):
+            platform.execute_qprogram(qprogram=qprogram)
+
+        mock_set_threshold.assert_called_once_with(
+            value=ANY,
+            sequencer_id=ANY,
+            integration_length=120,
+        )
+
+    def test_execute_qprogram_warns_when_bus_has_multiple_different_weight_durations(
+        self, platform: Platform, caplog
+    ):
+        """A warning must be logged when the same ADC bus has acquisitions with different weight durations."""
+        w1 = IQPair(I=Square(amplitude=1.0, duration=120), Q=Square(amplitude=0.0, duration=120))
+        w2 = IQPair(I=Square(amplitude=1.0, duration=200), Q=Square(amplitude=0.0, duration=200))
+        qprogram = QProgram()
+        qprogram.qblox.acquire(bus="feedline_input_output_bus", weights=w1)
+        qprogram.qblox.acquire(bus="feedline_input_output_bus", weights=w2)
+
+        with (
+            patch("builtins.open"),
+            patch.object(Bus, "upload_qpysequence"),
+            patch.object(Bus, "run"),
+            patch.object(Bus, "acquire_qprogram_results", return_value=[]),
+            patch.object(QbloxModule, "sync_sequencer"),
+            patch.object(QbloxModule, "desync_sequencer"),
+            patch.object(QbloxQRM, "is_device_active", return_value=True),
+            patch.object(QbloxQRM, "_set_device_threshold"),
+        ):
+            with caplog.at_level(logging.WARNING):
+                platform.execute_qprogram(qprogram=qprogram)
+
+        assert any(
+            msg == "Bus 'feedline_input_output_bus' has multiple different weight durations: [120, 200]. Using the first value (120 ns) as integration length for threshold."
+            for msg in caplog.messages
+        )
 
     def test_setting_getting_filter_bus_error_raised(self, platform: Platform):
         #  Check that setting/getting a filter through a bus incorrectly raises the adequate error
