@@ -1932,7 +1932,7 @@ class TestMethods:
             # check that each element of the result list of the parallel execution is the same as the regular execution for each respective qprograms
             assert result_parallel[0].results == non_parallel_results1.results
             assert result_parallel[1].results == non_parallel_results2.results
-            assert [] == no_qprograms
+            assert no_qprograms == []
 
     def test_parallelisation_execute_qblox_programs_threshold_with_weight_duration(self, platform: Platform):
         """In parallel execution, each qprogram's bus must get its hardware threshold programmed using
