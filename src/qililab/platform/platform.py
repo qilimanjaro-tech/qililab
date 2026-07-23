@@ -108,202 +108,10 @@ class Platform:
     And then, for each experiment you want to run, you would typically repeat:
 
     >>> platform.set_parameter(...)  # Sets any parameter of the Platform.
-    >>> result = platform.execute(...)  # Executes the platform.
+    >>> result = platform.execute_circuit(...)  # Executes a circuit on the platform.
 
     Args:
         runcard (Runcard): Dataclass containing the serialized platform (chip, instruments, buses...), created during :meth:`ql.build_platform()` with the given runcard dictionary.
-
-    Examples:
-
-        .. note::
-
-            The following examples contain made up results. These will soon be updated with real results.
-
-        .. note::
-
-            All the following examples are explained in detail in the :ref:`Platform <platform>` section of the documentation. However, here are a few thing to keep in mind:
-
-            - To connect, your computer must be in the same network of the instruments specified in the runcard, with their IP's addresses. Connection is necessary for the subsequent steps.
-
-            - You might want to skip the ``platform.initial_setup()`` and the ``platform.turn_on_instruments()`` steps if you think nothing has been modified, but we recommend doing them every time.
-
-            - ``platform.turn_on_instruments()`` is used to turn on the signal output of all the sources defined in the runcard (RF, Voltage and Current sources).
-
-            - You can print ``platform.chip`` and ``platform.buses`` at any time to check the platform's structure.
-
-        **1. Executing a circuit with Platform:**
-
-
-        To execute a circuit you first need to define your circuit, for example, one with a pi pulse and a measurement gate in qubit ``q`` (``int``).
-        Then you also need to build, connect, set up, and execute the platform, which together look like:
-
-        .. code-block:: python
-
-            import qililab as ql
-
-            from qibo.models import Circuit
-            from qibo import gates
-
-            # Defining the Rabi circuit:
-            circuit = Circuit(q + 1)
-            circuit.add(gates.X(q))
-            circuit.add(gates.M(q))
-
-            # Building the platform:
-            platform = ql.build_platform(runcard="runcards/galadriel.yml")
-
-            # Connecting and setting up the platform:
-            platform.connect()
-            platform.initial_setup()
-            platform.turn_on_instruments()
-
-            # Executing the platform:
-            result = platform.execute(program=circuit, num_avg=1000, repetition_duration=6000)
-
-        The results would look something like this:
-
-        >>> result.array
-        array([[6.],
-                [6.]])
-
-        .. note::
-
-            The obtained values correspond to the integral of the I/Q signals received by the digitizer.
-            And they have shape `(#sequencers, 2, #bins)`, in this case you only have 1 sequencer and 1 bin.
-
-        You could also get the results in a more standard format, as already classified ``counts`` or ``probabilities`` dictionaries.
-        To do so the call to execute circuit must be slightly different, as the number of averages must be 1:
-
-        .. code-block:: python
-
-            # Executing the platform with the same amount of loops but using bins:
-            result = platform.execute(program=circuit, num_avg=1, num_bins=1000, repetition_duration=6000)
-
-        Then:
-
-        >>> result.counts
-        {'0': 501, '1': 499}
-
-        >>> result.probabilities
-        {'0': .501, '1': .499}
-
-        .. note::
-
-            You can find more information about the results, in the :class:`.Results` class documentation.
-
-        |
-
-        **2. Running a Rabi sweep with Platform:**
-
-        To perform a Rabi sweep, you need the previous circuit, and again, you also need to build, connect and setup the platform.
-        But this time, instead than executing the circuit once, you will loop changing the amplitude parameter of the AWG (generator of the pi pulse):
-
-        .. code-block:: python
-
-            # Looping over the AWG amplitude to execute the Rabi sweep:
-            results = []
-            amp_values = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.9, 1.0]
-
-            for amp in amp_values:
-                platform.set_parameter(alias="drive_q", parameter=ql.Parameter.AMPLITUDE, value=amp)
-                result = platform.execute(program=circuit, num_avg=1000, repetition_duration=6000)
-                results.append(result.array)
-
-        Now you can use ``np.hstack`` to stack the results horizontally. By doing this, you would obtain an
-        array with shape `(2, N)`, where N is the number of elements inside the loop:
-
-        >>> import numpy as np
-        >>> np.hstack(results)
-        array([[5, 4, 3, 2, 1, 2, 3, 4, 5, 4, 3],
-                [5, 4, 3, 2, 1, 2, 3, 4, 5, 4, 3]])
-
-        You can see how the integrated I/Q values oscillate, indicating that qubit ``q`` oscillates between the ground and
-        excited states!
-
-        |
-
-        **3. A faster Rabi sweep, translating the circuit to pulses:**
-
-        Since you are looping over variables that are independent of the circuit (in this case, the amplitude of the AWG),
-        you can speed up the experiment by translating the circuit into pulses beforehand, only once, and then, executing the obtained
-        pulses inside the loop.
-
-        Which is the same as before, but passing the ``pulse_schedule`` instead than the ``circuit``, to the ``execute()`` method:
-
-        .. code-block:: python
-
-            from qililab.pulse.circuit_to_pulses import CircuitToPulses
-
-            # Translating the circuit to pulses:
-            pulse_schedule = CircuitToPulses(platform=platform).translate(circuits=[circuit])
-
-            # Looping over the AWG amplitude to execute the Rabi sweep:
-            results = []
-            amp_values = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.9, 1.0]
-
-            for amp in amp_values:
-                platform.set_parameter(alias="drive_q", parameter=ql.Parameter.AMPLITUDE, value=amp)
-                result = platform.execute(program=pulse_schedule, num_avg=1000, repetition_duration=6000)
-                results.append(result.array)
-
-        If you now stack and print the results, you will obtain similar results, but much faster!
-
-        >>> np.hstack(results)
-        array([[5, 4, 3, 2, 1, 2, 3, 4, 5, 4, 3],
-                [5, 4, 3, 2, 1, 2, 3, 4, 5, 4, 3]])
-        TODO: !!! Change this results for the actual ones !!!
-
-        |
-
-        **4. Ramsey sequence, looping over a parameter inside the circuit:**
-
-        To run a Ramsey sequence you also need to build, connect and set up the platform as before. However, the circuit will be different from the previous one,
-        and also, this time, you need to loop over a parameter of the circuit itself, specifically over the time of the ``Wait`` gate.
-
-        To do this, since the parameter is inside the Qibo circuit, you will need to use Qibo own ``circuit.set_parameters()`` method, specifying the
-        parameters you want to set, in the same order they appear in the circuit construction:
-
-        .. code-block:: python
-
-            import qililab as ql
-
-            from qibo.models import Circuit
-            from qibo import gates
-
-            # Building the platform:
-            platform = ql.build_platform(runcard="runcards/galadriel.yml")
-
-            # Connecting and setting up the platform:
-            platform.connect()
-            platform.initial_setup()
-            platform.turn_on_instruments()
-
-            # Defining the Ramsey circuit:
-            circuit = Circuit(q + 1)
-            circuit.add(gates.RX(q, theta=np.pi / 2))
-            circuit.add(ql.Wait(q, t=0))
-            circuit.add(gates.RX(q, theta=np.pi / 2))
-            circuit.add(gates.M(q))
-
-            # Looping over the wait time t to execute the Ramsey:
-            results = []
-            wait_times = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
-
-            for wait in wait_times:
-                circuit.set_parameters([np.pi / 2, wait, np.pi / 2])
-                result = platform.execute(program=circuit, num_avg=1000, repetition_duration=6000)
-                results.append(result.array)
-
-        which for each execution, would set ``np.pi/2`` to the ``theta`` parameters of the ``RX`` gates, and the looped ``wait`` time  to the ``t`` parameter of the
-        ``Wait`` gate.
-
-        If you print the results, you'll see how you obtain the sinusoidal expected behavior!
-
-        >>> results = np.hstack(results)
-        >>> results
-        array([[5, 4, 3, 2, 1, 2, 3, 4, 5, 4, 3],
-                [5, 4, 3, 2, 1, 2, 3, 4, 5, 4, 3]])
-        TODO: !!! Change this results for the actual sinusoidal ones (change wait_times of execution if needed) !!!
     """
 
     def __init__(self, runcard: Runcard):
@@ -1901,18 +1709,18 @@ class Platform:
     def compile_circuit(
         self, circuit: Circuit, nshots: int, *, qubit_mapping: dict[int, int] | None = None
     ) -> tuple[QProgram, dict[int, int]]:
-        """Compiles the circuit / pulse schedule into a set of assembly programs, to be uploaded into the awg buses.
+        """Transpiles a circuit and compiles it into a :class:`.QProgram` ready to be executed on the platform.
 
-        If the ``program`` argument is a :class:`.Circuit`, it will first be translated into a :class:`.PulseSchedule` using the transpilation
-        settings of the platform and passed  transpile configuration. Then the pulse schedules will be compiled into the assembly programs.
+        The circuit is first transpiled to the platform's native gate set and then compiled into a :class:`.QProgram`,
+        using the platform's :attr:`.digital_compilation_settings`.
 
         .. note::
 
-            Compile is called during ``platform.execute()``, check its documentation for more information.
+            This is called internally by :meth:`.execute_circuit`; check its documentation for more information.
 
-        The transpilation is performed using the :meth:`.CircuitTranspiler.transpile_circuit()` method. Refer to the method's documentation or :ref:`Transpilation <transpilation>` for more detailed information.
+        The transpilation is performed using :class:`.CircuitTranspiler`. Refer to its documentation or :ref:`Transpilation <transpilation>` for more detailed information.
 
-        The main stages of this process are: **1.** Routing, **2.** Canceling Hermitian pairs, **3.** Translate to native gates, **4.** Correcting Drag phases, **5** Optimize Drag gates, **6.** Convert to pulse schedule.
+        The main stages of this process are: **1.** Routing, **2.** Canceling Hermitian pairs, **3.** Translate to native gates, **4.** Correcting Drag phases, **5** Optimize Drag gates, **6.** Convert to a :class:`.QProgram`.
 
         .. note ::
 
@@ -1923,18 +1731,17 @@ class Platform:
             To do Steps **2.** and **5.** set optimize=True in transpilation_config (default behavior skips it)
 
         Args:
-            program (PulseSchedule | Circuit): Circuit or pulse schedule to compile.
-            num_avg (int): Number of hardware averages used.
-            repetition_duration (int): Minimum duration of a single execution.
-            num_bins (int): Number of bins used.
+            circuit (Circuit): The ``qilisdk.digital`` circuit to transpile and compile.
+            nshots (int): Number of shots (hardware averages) used.
+            qubit_mapping (dict[int, int] | None): Optional logical-to-physical qubit mapping. If ``None``, a trivial mapping is used.
 
         Returns:
-            tuple[dict, list[int] | None]: Tuple containing the dictionary of compiled assembly programs (The key is the bus alias (``str``),
-                and the value is the assembly compilation (``list``)), and its corresponding final layout (Initial Re-mapping + SWAPs routing) of
-                the Original Logical Qubits (l_q) in the physical circuit (wires): [l_q in wire 0, l_q in wire 1, ...] (None = trivial mapping).
+            tuple[QProgram, dict[int, int]]: Tuple containing the compiled :class:`.QProgram` and its corresponding final layout
+                (Initial Re-mapping + SWAPs routing) of the Original Logical Qubits (l_q) in the physical circuit (wires):
+                [l_q in wire 0, l_q in wire 1, ...].
 
         Raises:
-            ValueError: raises value error if the circuit execution time is longer than ``repetition_duration`` for some qubit.
+            ValueError: if the platform has no ``digital_compilation_settings`` defined.
         """
         if self.digital_compilation_settings is None:
             raise ValueError("Cannot compile Circuit without defining DigitalCompilationSettings.")

@@ -3,112 +3,79 @@
 Transpilation
 =============
 
-The transpilation is done automatically, for :meth:`ql.execute()` and :meth:`platform.execute()` methods.
-But it can also be done manually, with more control, directly using the :class:`.CircuitTranspiler` class.
+Transpilation is done automatically when a circuit is compiled or executed through
+:meth:`.Platform.compile_circuit` and :meth:`.Platform.execute_circuit`. It can also be run manually, with more
+control, directly through the :class:`.CircuitTranspiler` class.
 
-The process involves the following steps (by default only: **3.**, **4**., and **6.** run):
+The transpiler runs a linear pipeline of ``CircuitTranspilerPass`` objects. Each pass has a single, narrowly defined
+responsibility, and the circuit is passed from one pass to the next. The default pipeline performs, in order:
 
+1. **Cancel identity pairs:** removes adjacent pairs of Hermitian gates that cancel out (``CancelIdentityPairsPass``).
 
-1. **Routing and Placement:** Routes and places the circuit's logical qubits onto the chip's physical qubits. The final qubit layout is returned and logged. This step uses the ``placer``, ``router``, and ``routing_iterations`` parameters from ``transpilation_config`` if provided; otherwise, default values are applied. Refer to the :meth:`.CircuitTranspiler.route_circuit()` method for more information.
+2. **Canonical basis + single-qubit fusion:** rewrites the circuit into a canonical basis and fuses consecutive
+   single-qubit gates (``CircuitToCanonicalBasisPass``, ``FuseSingleQubitGatesPass``).
 
-2. **1st Optimization:** Canceling adjacent pairs of Hermitian gates (H, X, Y, Z, CNOT, CZ, and SWAPs). Refer to the :meth:`.CircuitTranspiler.optimize_gates()` method for more information.
+3. **Layout and routing:** maps the circuit's logical qubits onto the chip's physical qubits and inserts the SWAPs
+   required by the chip topology. When no explicit ``qubit_mapping`` is given this uses ``SabreLayoutPass`` +
+   ``SabreSwapPass``; when a mapping is given it uses ``CustomLayoutPass``.
 
-3. **Native Gate Translation:** Translates the circuit into the chip's native gate set (CZ, RZ, Drag, Wait, and M (Measurement)). Refer to the :meth:`.CircuitTranspiler.gates_to_native()` method for more information.
+4. **Native gate translation:** translates the routed circuit into the chip's native gate set
+   (``CanonicalBasisToNativeSetPass``).
 
-4. **Adding phases to our Drag gates:** commuting RZ gates until the end of the circuit to discard them as virtual Z gates, and due to the phase corrections from CZ. Refer to the :meth:`.CircuitTranspiler.add_phases_from_RZs_and_CZs_to_drags()` method for more information.
+5. **Drag phase corrections:** commutes RZ gates and applies the phase corrections coming from the CZ gates onto the
+   Drag gates (``AddPhasesToRmwFromRZAndCZPass``).
 
-5. **2nd Optimization:** Optimizing the resulting Drag gates, by combining multiple pulses into a single one. Refer to the :meth:`.CircuitTranspiler.optimize_transpiled_gates()` method for more information.
+The conversion of the transpiled, native-gate circuit into an executable :class:`.QProgram` is performed separately by
+``CircuitToQProgramCompiler`` (invoked by :meth:`.Platform.compile_circuit`).
 
-6. **Pulse Schedule Conversion:** Converts the native gates into a pulse schedule using calibrated settings from the runcard. Refer to the :meth:`.CircuitTranspiler.gates_to_pulses()` method for more information.
+**Example:**
 
-.. note::
-
-    Default steps are only: **3.**, **4**., and **6.**, since they are always needed.
-
-    To do Step **1.** set ``routing=True`` in ``transpilation_config`` (default behavior skips it).
-
-    To do Steps **2.** and **5.** set ``optimize=True`` in ``transpilation_config`` (default behavior skips it).
-
-**Examples:**
-
-For example, the most basic use, would be to automatically transpile during an execute, like:
-
-.. code-block:: python
-
-    from qibo import gates, Circuit
-    from qibo.transpiler import ReverseTraversal, Sabre
-    import qililab as ql
-
-    # Create circuit:
-    c = Circuit(5)
-    c.add(gates.CNOT(1, 0))
-
-    # Create transpilation config:
-    transpilation = {routing: True, optimize: False, router: Sabre, placer: ReverseTraversal}
-
-    # Create transpiler:
-    result = ql.execute(c, runcard="<path_to_runcard>", transpilation_config=transpilation)
-
-Or from a ``platform.execute()`` and using `DigitalTranspilationConfig` for argument hintings instead, like:
+For most use cases, transpilation happens implicitly when you compile or execute a circuit:
 
 .. code-block:: python
 
-    from qibo import gates, Circuit
-    from qibo.transpiler import ReverseTraversal, Sabre
+    from qilisdk.digital import Circuit, RY, CZ, M
     from qililab import build_platform
-    from qililab.digital import DigitalTranspilationConfig
 
-    # Create circuit:
-    c = Circuit(5)
-    c.add(gates.CNOT(1, 0))
+    # Create a circuit:
+    circuit = Circuit(2)
+    circuit.add(RY(0, theta=0.2))
+    circuit.add(CZ(0, 1))
+    circuit.add(M(1))
 
-    # Create platform:
+    # Build the platform and execute (transpilation runs automatically):
     platform = build_platform(runcard="<path_to_runcard>")
-    transpilation = DigitalTranspilationConfig(routing= True, optimize= False, router= Sabre, placer= ReverseTraversal)
+    result = platform.execute_circuit(circuit, nshots=1000)
 
-    # Create transpiler:
-    result = platform.execute(c, num_avg=1000, repetition_duration=200_000, transpilation_config=transpilation)
-
-Now, if we want more manual control instead, we can instantiate the ``CircuitTranspiler`` object like:
+If you want manual control over the transpilation, instantiate a :class:`.CircuitTranspiler` with the platform's
+digital compilation settings and call :meth:`.CircuitTranspiler.run`:
 
 .. code-block:: python
 
-    from qibo import gates
-    from qibo.models import Circuit
-    from qibo.transpiler.placer import ReverseTraversal, Random
-    from qibo.transpiler.router import Sabre
+    from qilisdk.digital import Circuit, RY, CZ, M
     from qililab import build_platform
     from qililab.digital import CircuitTranspiler
 
-    # Create circuit:
-    c = Circuit(5)
-    c.add(gates.CNOT(1, 0))
+    # Create a circuit:
+    circuit = Circuit(2)
+    circuit.add(RY(0, theta=0.2))
+    circuit.add(CZ(0, 1))
+    circuit.add(M(1))
 
-    # Create platform:
+    # Build the platform and transpile:
     platform = build_platform(runcard="<path_to_runcard>")
-
-    # Create transpiler:
     transpiler = CircuitTranspiler(platform.digital_compilation_settings)
 
-And now, transpile manually, like in the following examples:
+    transpiled_circuit = transpiler.run(circuit)
+    final_layout = transpiler.context.final_layout
+
+To use an explicit logical-to-physical qubit mapping instead of the automatic layout/routing passes, pass
+``qubit_mapping`` to the constructor:
 
 .. code-block:: python
 
-    # Default Transpilation (with ReverseTraversal, Sabre, platform's connectivity and optimize = True):
-    transpiled_circuit, final_layouts = transpiler.transpile_circuit(c)
+    transpiler = CircuitTranspiler(platform.digital_compilation_settings, qubit_mapping={0: 2, 1: 3})
+    transpiled_circuit = transpiler.run(circuit)
 
-    # Or another case, not doing optimization for some reason, and with Non-Default placer:
-    transpiled_circuit, final_layout = transpiler.transpile_circuit(c, placer=Random, optimize=False)
-
-    # Or also specifying the `router` with kwargs:
-    transpiled_circuit, final_layouts = transpiler.transpile_circuit(c, router=(Sabre, {"lookahead": 2}))
-
-And even we could only do a single step of the transpilation manually, like in the following, where we will only route:
-
-.. code-block:: python
-
-    # Default Transpilation (with ReverseTraversal, Sabre, platform's connectivity and optimize = True):
-    transpiled_circuit, qubits, final_layouts = transpiler.route_circuit(c)
-
-    # Or another case with Non-Default placer:
-    transpiled_circuit, qubits, final_layout = transpiler.route_circuit(c, placer=Random)
+You can also supply a custom ``pipeline`` (a list of ``CircuitTranspilerPass`` objects) to the constructor to fully
+control which passes run and in which order.

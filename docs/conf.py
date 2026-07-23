@@ -65,7 +65,6 @@ html_theme_options = {
     "awesome_external_links": True,
     "main_nav_links": {
         "QaaS": "https://qaas.readthedocs.io/en/latest/",
-        "Qiboconnection": "https://qaas.readthedocs.io/projects/qiboconnection/en/latest/",
         "Qililab": "index",
     },
     "extra_header_link_icons": {
