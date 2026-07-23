@@ -12,9 +12,6 @@
 
 ### Bug fixes
 
-- Fixed an `UnboundLocalError` raised by `QbloxQRM.acquire_qprogram_results` when a bus is played on but no acquisition is performed on it.
-  [#XXXX](https://github.com/qilimanjaro-tech/qililab/pull/XXXX)
-
 - Fixed a bug for Rohde Schwarz `initial_setup` where the `iq_modulation` set as `True` inside the runcard for RS models `SGS-B106V` was not correctly set in the device.
   [#1137](https://github.com/qilimanjaro-tech/qililab/pull/1137)
 
