@@ -25,6 +25,9 @@
   `argsort_buses` also returns the sort permutation, so a matrix and its bus labels can be reordered together.
   [#1161](https://github.com/qilimanjaro-tech/qililab/pull/1161)
 
+- Added drivers to operate the Keithley 2400 through the runcard and run a measurement. Through the runcard the user can set the mode and a respective voltage or current. alternatively the user can sweep either current or voltage and retrieve the data of the other component.
+[#1065](https://github.com/qilimanjaro-tech/qililab/pull/1065)
+
 ### Improvements
 
 - `CrosstalkMatrix.to_array` and its `__str__` representation now order buses with `sort_buses`, so multi-digit bus names are shown in natural order (`flux q2` before `flux q10`) instead of lexicographically.
