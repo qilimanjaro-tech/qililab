@@ -27,7 +27,7 @@
 
 ### New features since last release
 
-- Added `load_sequence_by_id` inside the database manager. This function allows to retrieve simultaneous measurements given a list of IDs from a sequence of measurements. `Measurement.sequence_id`has been added as a measurement expression inside head and tail.
+- Added `load_sequence_by_id` inside the database manager. This function allows to retrieve simultaneous measurements given a list of IDs from a sequence of measurements. `Measurement.sequence_id` has been added as a measurement expression inside head and tail.
   [#1121](https://github.com/qilimanjaro-tech/qililab/pull/1121)
 
 ### Bug fixes
@@ -2470,7 +2470,7 @@ platform.set_flux_to_zero()
 
 - Buses serialization have been implemented: [#515](https://github.com/qilimanjaro-tech/qililab/pull/515)
 
-  When printing the runcard, in the buses part we will now have the normal Buses serialization, plus the parameters of the instruments associated to that bus, with the `to_dict/from_dict` methods.\`
+  When printing the runcard, in the buses part we will now have the normal Buses serialization, plus the parameters of the instruments associated to that bus, with the `to_dict/from_dict` methods.
 
   Also the serialization includes using the `set/get_params` for setting/getting the instruments params.
 
