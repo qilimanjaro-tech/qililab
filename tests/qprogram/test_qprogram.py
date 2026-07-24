@@ -9,6 +9,7 @@ from qililab import Arbitrary, Domain, GaussianDragCorrection, Gaussian, IQPair,
 from qililab.qprogram.blocks import Average
 from qililab.qprogram.calibration import Calibration
 from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix, NonLinearCrosstalkMatrix
+from qililab.pulse_distortion import ExponentialCorrection
 from qililab.qprogram.operations import (
     Acquire,
     AcquireWithCalibratedWeights,
@@ -120,6 +121,71 @@ class TestQProgram(TestStructuredProgram):
         assert non_existant_mapping_qp.body.elements[0].elements[1].buses[0] == "drive_bus"
         assert non_existant_mapping_qp.body.elements[0].elements[1].buses[1] == "readout_bus"
         assert non_existant_mapping_qp.body.elements[0].elements[2].bus == "drive_bus"
+
+    def test_with_distortions_method(self):
+        """Test with_distortions applies distortions to the right buses and waveforms."""
+        distortion = ExponentialCorrection(tau_exponential=1.0, amp=0.5)
+
+        flux_wf_0 = Square(amplitude=1.0, duration=100)
+        flux_wf_1 = Square(amplitude=0.5, duration=100)
+        drive_wf = IQDrag(amplitude=1.0, duration=100, num_sigmas=4, drag_coefficient=0.1)
+        readout_wf = IQPair(I=Square(amplitude=1.0, duration=100), Q=Square(amplitude=0.0, duration=100))
+        weights = IQPair(I=Square(amplitude=1.0, duration=100), Q=Square(amplitude=1.0, duration=100))
+
+        qp = QProgram()
+        with qp.average(1000):
+            qp.play(bus="flux_q0", waveform=flux_wf_0)
+            qp.play(bus="flux_q1", waveform=flux_wf_1)
+            qp.play(bus="drive_q0", waveform=drive_wf)
+            qp.measure(bus="readout", waveform=readout_wf, weights=weights)
+
+        new_qp = qp.with_distortions(
+            bus_distortions={"flux_q0": [distortion], "flux_q1": [distortion], "drive_q0": [distortion]}
+        )
+
+        play_flux_0, play_flux_1, play_drive, measure = new_qp.body.elements[0].elements
+
+        # A real (single) waveform becomes an Arbitrary holding the distorted envelope.
+        assert isinstance(play_flux_0.waveform, Arbitrary)
+        np.testing.assert_allclose(play_flux_0.waveform.envelope(), distortion.apply(flux_wf_0.envelope()))
+
+        # Every distorted bus is handled, not just the last one (regression: dict built inside the bus loop).
+        assert isinstance(play_flux_1.waveform, Arbitrary)
+        np.testing.assert_allclose(play_flux_1.waveform.envelope(), distortion.apply(flux_wf_1.envelope()))
+
+        # An IQ waveform that is not an IQPair (IQDrag) is handled without raising (regression: UnboundLocalError).
+        assert isinstance(play_drive.waveform, IQPair)
+        assert isinstance(play_drive.waveform.I, Arbitrary)
+        assert isinstance(play_drive.waveform.Q, Arbitrary)
+        np.testing.assert_allclose(play_drive.waveform.I.envelope(), distortion.apply(drive_wf.get_I().envelope()))
+        np.testing.assert_allclose(play_drive.waveform.Q.envelope(), distortion.apply(drive_wf.get_Q().envelope()))
+
+        # A bus that is not in the mapping is left untouched.
+        assert isinstance(measure.waveform, IQPair)
+        assert isinstance(measure.waveform.I, Square)
+
+        # The original QProgram is left unchanged.
+        orig_flux_0, orig_flux_1, orig_drive, orig_measure = qp.body.elements[0].elements
+        assert isinstance(orig_flux_0.waveform, Square)
+        assert isinstance(orig_flux_1.waveform, Square)
+        assert isinstance(orig_drive.waveform, IQDrag)
+        assert isinstance(orig_measure.waveform, IQPair)
+
+    def test_with_distortions_applies_multiple_distortions_in_order(self):
+        """Test with_distortions chains multiple distortions on the same bus in order."""
+        first = ExponentialCorrection(tau_exponential=1.0, amp=0.5)
+        second = ExponentialCorrection(tau_exponential=2.0, amp=0.3)
+
+        flux_wf = Square(amplitude=1.0, duration=100)
+
+        qp = QProgram()
+        qp.play(bus="flux_q0", waveform=flux_wf)
+
+        new_qp = qp.with_distortions(bus_distortions={"flux_q0": [first, second]})
+
+        expected = second.apply(first.apply(flux_wf.envelope()))
+        assert isinstance(new_qp.body.elements[0].waveform, Arbitrary)
+        np.testing.assert_allclose(new_qp.body.elements[0].waveform.envelope(), expected)
 
     def test_with_calibration_method(self):
         """Test with_bus_mapping method"""

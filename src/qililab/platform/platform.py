@@ -1294,6 +1294,8 @@ class Platform:
             # Determine what should be the initial value of the markers for each bus.
             # This depends on the model of the associated Qblox module and the `output` setting of the associated sequencer.
             markers = {}
+            # In this bus loop the distortions are also stored.
+            bus_distortions = {}
             single_channel = []
             for bus in buses:
                 for instrument, channel in zip(bus.instruments, bus.channels):
@@ -1311,9 +1313,8 @@ class Platform:
                             markers[bus.alias] = "0000"
                             if len(sequencer.outputs) == 1:
                                 single_channel.append(bus.alias)
-            bus_distortions = {}
-            if bus.distortions:
-                bus_distortions[bus.alias] = bus.distortions
+                if bus.distortions:
+                    bus_distortions[bus.alias] = bus.distortions
 
             qblox_compiler = QbloxCompiler()
             qblox_buses = [

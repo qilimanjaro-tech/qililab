@@ -1044,13 +1044,22 @@ class QProgram(StructuredProgram):
         return copied_qprogram
 
     def with_distortions(self, bus_distortions: dict[str, list["PulseDistortion"]]) -> "QProgram":
-        """...
+        """Returns a copy of the QProgram with pulse distortions applied to the played waveforms.
+
+        For every ``Play``, ``Measure`` and ``MeasureReset`` operation whose bus is present in
+        ``bus_distortions``, the corresponding distortions are applied in order to the operation's
+        waveform. Each distortion is evaluated on the waveform's envelope and the result is stored as
+        an ``Arbitrary`` waveform (an ``IQPair`` of ``Arbitrary`` waveforms for I/Q waveforms), so the
+        applied distortions are baked into the samples that will later be compiled and uploaded.
 
         Args:
-            bus_distortions (dict[str, list[PulseDistortion]])]): ...
+            bus_distortions (dict[str, list[PulseDistortion]]): A dictionary mapping each bus alias to
+                the list of distortions to apply, in the order they should be applied, to the
+                waveforms played on that bus.
 
         Returns:
-            QProgram: A new instance of QProgram with updated...
+            QProgram: A new instance of QProgram with the distortions applied to the affected
+            waveforms. The original QProgram is left unchanged.
         """
 
         def traverse(block: Block):
@@ -1061,10 +1070,10 @@ class QProgram(StructuredProgram):
                     if element.bus in bus_distortions.keys():
                         waveform = element.waveform
                         for distortion in bus_distortions[element.bus]:
-                            if isinstance(waveform, IQPair):
-                                distorted_waveform_I = Arbitrary(distortion.apply(waveform.I.envelope()))
-                                distorted_waveform_Q = Arbitrary(distortion.apply(waveform.Q.envelope()))
-                                distorted_waveform = IQPair(I= distorted_waveform_I, Q=distorted_waveform_Q)
+                            if isinstance(waveform, IQWaveform):
+                                distorted_waveform_I = Arbitrary(distortion.apply(waveform.get_I().envelope()))
+                                distorted_waveform_Q = Arbitrary(distortion.apply(waveform.get_Q().envelope()))
+                                distorted_waveform = IQPair(I=distorted_waveform_I, Q=distorted_waveform_Q)
                             if isinstance(waveform, Waveform):
                                 distorted_waveform = Arbitrary(distortion.apply(waveform.envelope()))
                             waveform = distorted_waveform
