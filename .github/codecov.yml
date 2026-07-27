@@ -5,11 +5,11 @@ codecov:
 coverage:
   status:
     project:
-      default:
+      src:
         target: auto
         threshold: 1%
     patch:
-      default:
+      src:
         target: 100%
         threshold: 0%
 
