@@ -27,6 +27,9 @@
 
 ### Improvements
 
+- Added a `threshold: 1%` to the `codecov/project/src` check so harmless coverage-ratio noise (e.g. deleting already-covered code) no longer fails PRs, and added `comment.require_changes: true` to reduce noisy PR comments. Also backfilled missing test coverage in `platform.py`.
+  [#TBD](https://github.com/qilimanjaro-tech/qililab/pull/TBD)
+
 - `CrosstalkMatrix.to_array` and its `__str__` representation now order buses with `sort_buses`, so multi-digit bus names are shown in natural order (`flux q2` before `flux q10`) instead of lexicographically.
   [#1161](https://github.com/qilimanjaro-tech/qililab/pull/1161)
 

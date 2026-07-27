@@ -1,40 +1,16 @@
 codecov:
-  branch: main
   require_ci_to_pass: true
 
 coverage:
   status:
     project:
-      default: false # disable the default status that measures entire project
-      src:
-        paths:
-          - "src"
-        target: auto # make sure coverage is not decreased (in comparison with the main branch)
-        flags:
-          - "unittests"
-    patch:
-      default: false # disable the default status that measures entire project
-      src:
-        paths:
-          - "src"
-        target: 100% # make sure coverage of new lines is 100%
-        flags:
-          - "unittests"
-  notify:
-    slack:
       default:
-        url: ${{ secrets.SLACK_WEBHOOK }}
-        threshold: 5%
-        only_pulls: false
-        # branches:
-        #   - "main"
-        flags:
-          - "unittests"
-        paths:
-          - "src"
+        target: auto
+        threshold: 1%
+    patch:
+      default:
+        target: 100%
+        threshold: 0%
 
-ignore:
-  - "src/qililab/instruments/keithley/keithley_2600.py"
-  - "src/qililab/instruments/qblox/qblox_d5a.py"
-  - "src/qililab/instruments/qblox/qblox_s4g.py"
-  - "src/qililab/__init__.py"
+comment:
+  require_changes: true

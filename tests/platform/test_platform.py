@@ -749,6 +749,41 @@ class TestPlatform:
             platform.disconnect()
         mock_logger.info.assert_called_once_with("Already disconnected from the instruments")
 
+    def test_connect_success(self, platform: Platform):
+        """Test the happy path of connect(), which actually connects to the instruments."""
+        platform._connected_to_instruments = False
+        platform.instrument_controllers = MagicMock()
+        with patch("qililab.platform.platform.logger", autospec=True) as mock_logger:
+            platform.connect()
+        platform.instrument_controllers.connect.assert_called_once()
+        assert platform._connected_to_instruments is True
+        mock_logger.info.assert_called_once_with("Connected to the instruments")
+
+    def test_initial_setup_success(self, platform: Platform):
+        """Test the happy path of initial_setup(), which applies the runcard settings to connected instruments."""
+        platform._connected_to_instruments = True
+        platform.instrument_controllers = MagicMock()
+        with patch("qililab.platform.platform.logger", autospec=True) as mock_logger:
+            platform.initial_setup()
+        platform.instrument_controllers.initial_setup.assert_called_once()
+        mock_logger.info.assert_called_once_with("Initial setup applied to the instruments")
+
+    def test_turn_on_instruments(self, platform: Platform):
+        """Test turn_on_instruments turns on the signal-generating instruments."""
+        platform.instrument_controllers = MagicMock()
+        with patch("qililab.platform.platform.logger", autospec=True) as mock_logger:
+            platform.turn_on_instruments()
+        platform.instrument_controllers.turn_on_instruments.assert_called_once()
+        mock_logger.info.assert_called_once_with("Instruments turned on")
+
+    def test_turn_off_instruments(self, platform: Platform):
+        """Test turn_off_instruments turns off the signal-generating instruments."""
+        platform.instrument_controllers = MagicMock()
+        with patch("qililab.platform.platform.logger", autospec=True) as mock_logger:
+            platform.turn_off_instruments()
+        platform.instrument_controllers.turn_off_instruments.assert_called_once()
+        mock_logger.info.assert_called_once_with("Instruments turned off")
+
     def test_get_element_method_unknown_returns_none(self, platform: Platform):
         """Test get_element method with unknown element."""
         element = platform.get_element(alias="ABC")
@@ -996,6 +1031,35 @@ class TestMethods:
         assert len(exc_info.value.exceptions) == 2
         assert str(exc_info.value.exceptions[0]) == "Turn off instruments error"
         assert str(exc_info.value.exceptions[1]) == "Disconnect error"
+
+        # Ensure methods were called in the correct order
+        platform.connect.assert_called_once()
+        platform.initial_setup.assert_called_once()
+        platform.turn_on_instruments.assert_called_once()
+        platform.turn_off_instruments.assert_called_once()
+        platform.disconnect.assert_called_once()
+
+    def test_session_with_exception_and_cleanup_errors(self):
+        """Test the session method when both an execution error and cleanup errors occur together."""
+        # Create an autospec of the Platform class
+        platform = create_autospec(Platform, instance=True)
+
+        # Manually set the session method to the real one
+        platform.session = Platform.session.__get__(platform, Platform)
+
+        # Simulate turn_off_instruments and disconnect failing during cleanup
+        platform.turn_off_instruments.side_effect = Exception("Turn off instruments error")
+        platform.disconnect.side_effect = Exception("Disconnect error")
+
+        with pytest.raises(ExceptionGroup) as exc_info:
+            with platform.session():
+                raise AttributeError("Execution error")
+
+        # Ensure the ExceptionGroup contains the execution error followed by the cleanup errors
+        assert len(exc_info.value.exceptions) == 3
+        assert str(exc_info.value.exceptions[0]) == "Execution error"
+        assert str(exc_info.value.exceptions[1]) == "Turn off instruments error"
+        assert str(exc_info.value.exceptions[2]) == "Disconnect error"
 
         # Ensure methods were called in the correct order
         platform.connect.assert_called_once()
@@ -2043,6 +2107,16 @@ class TestMethods:
         assert db_real_time_saving.qprogram == qprogram
         assert db_real_time_saving.db_manager == mock_database
         assert db_real_time_saving.experiment_name == experiment_name
+
+    def test_db_real_time_saving_without_db_manager_raises_error(self, platform: Platform):
+        """Test db_real_time_saving raises a ReferenceError when no db_manager has been loaded."""
+        shape = (2, 2)
+        loops = {"test_amp_loop": np.arange(0, 2)}
+        experiment_name = "test_db_real_time_saving"
+        platform.db_manager = None
+
+        with pytest.raises(ReferenceError, match="Missing db_manager, try using platform.load_db_manager()."):
+            platform.db_real_time_saving(shape, loops, experiment_name)
 
     @patch("h5py.File")
     def test_db_save_results(self, mock_h5file, platform: Platform):
