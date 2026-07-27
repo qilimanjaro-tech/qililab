@@ -1051,9 +1051,12 @@ class TestMethods:
         platform.turn_off_instruments.side_effect = Exception("Turn off instruments error")
         platform.disconnect.side_effect = Exception("Disconnect error")
 
-        with pytest.raises(ExceptionGroup) as exc_info:
+        def run_session_raising_execution_error():
             with platform.session():
                 raise AttributeError("Execution error")
+
+        with pytest.raises(ExceptionGroup) as exc_info:
+            run_session_raising_execution_error()
 
         # Ensure the ExceptionGroup contains the execution error followed by the cleanup errors
         assert len(exc_info.value.exceptions) == 3
