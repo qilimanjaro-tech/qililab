@@ -419,6 +419,12 @@ class TestQbloxQRM:
             "With the buggy code the wipe happened inside the loop, once per acquisition."
         )
 
+    def test_acquire_qprogram_results_with_no_acquisitions_does_not_raise(self, qrm: QbloxQRM):
+        # QHC-1455 regression: empty acquisitions dict on a played-but-not-acquired bus must not raise UnboundLocalError.
+        results = qrm.acquire_qprogram_results(acquisitions={}, channel_id=0)
+
+        assert results == []
+
     def test_clear_cache(self, qrm: QbloxQRM):
         """Test clearing the cache of the QCM module."""
         qrm.cache = {0: MagicMock()}  # type: ignore[misc]
