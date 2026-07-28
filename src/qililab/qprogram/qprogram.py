@@ -245,6 +245,14 @@ class QProgram(StructuredProgram):
                     bus = getattr(element, "bus")
                     if isinstance(bus, str) and bus in bus_mapping:
                         setattr(block.elements[index], "bus", bus_mapping[bus])
+                    if isinstance(element, WaitTrigger):
+                        new_external_trigger = []
+                        for bus in copied_qprogram.qblox.external_trigger:
+                            if bus in bus_mapping:
+                                new_external_trigger.append(bus_mapping[bus])
+                            else:
+                                new_external_trigger.append(bus)
+                        copied_qprogram.qblox.external_trigger = new_external_trigger
                 elif hasattr(element, "buses"):
                     buses = getattr(element, "buses")
                     if isinstance(buses, list):
@@ -1103,6 +1111,7 @@ class QProgram(StructuredProgram):
             duration (int): Duration of the delay after the trigger is received. Minimum of 4 ns.
             port (optional, int | None): Port channel of the trigger input. Defaults to None.
         """
+        self.qblox.external_trigger.append(bus)  # qblox-only external_trigger bus
         operation = WaitTrigger(bus=bus, duration=duration, port=port)
         self._active_block.append(operation)
         self._buses.add(bus)
@@ -1272,6 +1281,7 @@ class QProgram(StructuredProgram):
             self.disable_autosync: bool = False
             self.latch_enabled: list[str] = []
             self.trigger_network_required: dict[str, int] = {}
+            self.external_trigger: list[str] = []
 
         @overload
         def acquire(self, bus: str, weights: IQWaveform, save_adc: bool = False):
