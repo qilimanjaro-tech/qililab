@@ -3,7 +3,10 @@
 ### New features since last release
 
 - Added `QProgram.with_distortions`, which returns a copy of the `QProgram` with the bus pulse distortions applied to the played waveforms. Distortions are now applied at compile time inside `QbloxCompiler`, on the optimized waveforms produced by the compiler (e.g. square pulses), instead of being applied to the already-compiled sequences at execution time. This also fixes a bug where distortions were only applied to a single bus instead of every bus that defines them in the runcard.
-  [#1164](https://github.com/qilimanjaro-tech/qililab/pull/1164)
+  [#](https://github.com/qilimanjaro-tech/qililab/pull/)
+
+- Added `PulseDistortion.amplitude_gain`, which returns the peak amplification that a distortion's correction filter applies to a given envelope (before normalization). This is useful when a distorted pulse is normalized back into the sequencer range (e.g. with `auto_norm=True`): the sequencer gain must be multiplied by this factor to reach the same physical amplitude, and the maximum reachable amplitude for a unit-height pulse is `1 / amplitude_gain(unit_pulse)`. The raw correction filter of each distortion is now exposed through a `_filter` method, with `apply` becoming a shared `_filter` + `normalize_envelope` step in the base class.
+  [#](https://github.com/qilimanjaro-tech/qililab/pull/)
 
 - Added `fitting_path` and `fitting_parameters` columns to `Measurements` database. These optional fields add the location folder of the resulting fit plots and the outcome parameters of those fittings respectively. The path is introduced as a string and the parameters as a dictionary with the parameter name as a string. Those can be added at three different levels:
   - Using the `Measurement` database table with `meas.add_fitting(db_manager, path, parameters)`. The only inconvenience is that the user needs to add the database manager.
