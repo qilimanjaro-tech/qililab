@@ -2111,15 +2111,25 @@ class TestMethods:
         assert db_real_time_saving.db_manager == mock_database
         assert db_real_time_saving.experiment_name == experiment_name
 
-    def test_db_real_time_saving_without_db_manager_raises_error(self, platform: Platform):
-        """Test db_real_time_saving raises a ReferenceError when no db_manager has been loaded."""
-        shape = (2, 2)
-        loops = {"test_amp_loop": np.arange(0, 2)}
-        experiment_name = "test_db_real_time_saving"
+    @pytest.mark.parametrize(
+        "method_name, call_args",
+        [
+            ("db_real_time_saving", ((2, 2), {"test_amp_loop": np.arange(0, 2)}, "test_db_real_time_saving")),
+            (
+                "db_save_results",
+                ("experiment_name", np.array([[1.0, 1.0], [1.0, 1.0]]), {"test_amp_loop": np.arange(0, 1)}),
+            ),
+        ],
+    )
+    def test_db_methods_without_db_manager_raise_error(
+        self, platform: Platform, method_name: str, call_args: tuple
+    ):
+        """Test that db_real_time_saving and db_save_results both raise ReferenceError when no db_manager is loaded."""
         platform.db_manager = None
+        method = getattr(platform, method_name)
 
         with pytest.raises(ReferenceError, match="Missing db_manager, try using platform.load_db_manager()."):
-            platform.db_real_time_saving(shape, loops, experiment_name)
+            method(*call_args)
 
     @patch("h5py.File")
     def test_db_save_results(self, mock_h5file, platform: Platform):
@@ -2140,24 +2150,6 @@ class TestMethods:
         platform.db_save_results(experiment_name, results, loops, qprogram, description)
 
         assert mock_h5file.called
-
-    @patch("h5py.File")
-    def test_db_save_results_raises_error(self, mock_h5file, platform: Platform):
-        """Test db_save_results function raises an error when no database is created"""
-
-        experiment_name = "experiment_name"
-        loops = {"test_amp_loop": np.arange(0, 1)}
-        results = np.array([[1.0, 1.0], [1.0, 1.0]])
-
-        description = "description"
-
-        drive_wf = IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
-        qprogram = QProgram()
-        qprogram.play(bus="drive_line_q0_bus", waveform=drive_wf)
-
-        error_string = "Missing db_manager, try using platform.load_db_manager()."
-        with pytest.raises(ReferenceError, match=error_string):
-            platform.db_save_results(experiment_name, results, loops, qprogram, description)
 
     @patch("h5py.File")
     def test_db_save_results_loop_dict(self, mock_h5file, platform: Platform):
