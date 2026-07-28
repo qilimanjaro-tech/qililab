@@ -84,18 +84,13 @@ class LFilterCorrection(PulseDistortion):
     a: list[float]  #: The denominator coefficient vector in a 1-D sequence.
     b: list[float]  #: The numerator coefficient vector in a 1-D sequence.
 
-    def apply(self, envelope: np.ndarray) -> np.ndarray:
+    def _filter(self, envelope: np.ndarray) -> np.ndarray:
         """Distorts envelopes (which normally get calibrated with square envelopes).
 
         Corrects an envelope applying the scipy.signal.lfilter.
 
-        If `self.auto_norm` is True (Defaults to False) normalizes the resulting envelope to have the same real max height than the starting one.
-        (the max height is the furthest number from 0, only checking the real axis/part).
-        If the corrected envelope is zero everywhere or doesn't have a real part this process is skipped.
-
-        Finally it applies the manual `self.norm_factor` to the result, reducing the full envelope by its magnitude.
-
-        For further details on the normalization implementation see the docstring on :class:`PulseDistortion` base class.
+        This returns the raw filtered envelope; normalization (`auto_norm` and `norm_factor`) is
+        applied afterwards by `apply` via the base class `normalize_envelope`.
 
         Args:
             envelope (numpy.ndarray): Array representing the envelope of a pulse for each time step.
@@ -104,5 +99,4 @@ class LFilterCorrection(PulseDistortion):
             numpy.ndarray: Amplitude of the envelope for each time step.
         """
         # Filtered signal
-        corr_envelope = signal.lfilter(b=self.b, a=self.a, x=envelope)
-        return self.normalize_envelope(envelope=envelope, corr_envelope=corr_envelope)
+        return signal.lfilter(b=self.b, a=self.a, x=envelope)
