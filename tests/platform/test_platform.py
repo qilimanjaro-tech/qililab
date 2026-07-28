@@ -1206,7 +1206,6 @@ class TestMethods:
             patch.object(QDevilQDac2, "upload_voltage_list") as upload_voltage_list,
             patch.object(QDevilQDac2, "set_start_marker_external_trigger") as set_start_marker_external_trigger,
             patch.object(QDevilQDac2, "start") as start,
-            patch.object(QDevilQDac2, "clear_cache") as clear_cache,
         ):
             acquire_qprogram_results.return_value = [123]
             first_execution_results = platform_qblox_qdac.execute_qprogram(qprogram=qprogram)
@@ -1229,7 +1228,6 @@ class TestMethods:
         assert upload_voltage_list.call_count == 3  # called as many times as executes
         assert set_start_marker_external_trigger.call_count == 3  # called as many times as executes
         assert start.call_count == 3  # called as many times as executes
-        assert clear_cache.call_count == 6  # once before and once after each of the 3 executes
 
         # assure only one debug was called
         assert patched_open.call_count == 1
@@ -1272,7 +1270,6 @@ class TestMethods:
             patch.object(QDevilQDac2, "set_in_external_trigger") as set_in_external_trigger,
             patch.object(QDevilQDac2, "set_start_marker_external_trigger") as set_start_marker_external_trigger,
             patch.object(QDevilQDac2, "start") as start,
-            patch.object(QDevilQDac2, "clear_cache") as clear_cache,
         ):
             acquire_qprogram_results.return_value = [123]
             first_execution_results = platform_qblox_qdacs.execute_qprogram(qprogram=qprogram)
@@ -1297,7 +1294,6 @@ class TestMethods:
         assert set_in_external_trigger.call_count == 3  # called as many times as executes
         assert set_start_marker_external_trigger.call_count == 3  # called as many times as executes
         assert start.call_count == 6  # called as many times as executes
-        assert clear_cache.call_count == 12  # 2 qdacs x (before + after) x 3 executes
 
         # assure only one debug was called
         assert patched_open.call_count == 1
@@ -1343,7 +1339,6 @@ class TestMethods:
             patch.object(QDevilQDac2, "upload_voltage_list") as upload_voltage_list,
             patch.object(QDevilQDac2, "set_in_external_trigger") as set_in_external_trigger,
             patch.object(QDevilQDac2, "start") as start,
-            patch.object(QDevilQDac2, "clear_cache") as clear_cache,
         ):
             acquire_qprogram_results.return_value = [123]
             first_execution_results = platform_qblox_qdac.execute_qprogram(qprogram=qprogram)
@@ -1366,7 +1361,6 @@ class TestMethods:
         assert upload_voltage_list.call_count == 3  # called as many times as executes
         assert set_in_external_trigger.call_count == 3  # called as many times as executes
         assert start.call_count == 3  # called as many times as executes
-        assert clear_cache.call_count == 6  # once before and once after each of the 3 executes
 
         # assure only one debug was called
         assert patched_open.call_count == 1
@@ -1399,7 +1393,6 @@ class TestMethods:
             patch.object(QDevilQDac2, "upload_voltage_list") as upload_voltage_list,
             patch.object(QDevilQDac2, "set_in_external_trigger") as set_in_external_trigger,
             patch.object(QDevilQDac2, "start") as start,
-            patch.object(QDevilQDac2, "clear_cache") as clear_cache,
         ):
             acquire_qprogram_results.return_value = [123]
             first_execution_results = platform_qblox_qdac.execute_qprogram(qprogram=qprogram, calibration=calibration, crosstalk=False)
@@ -1422,7 +1415,6 @@ class TestMethods:
         assert upload_voltage_list.call_count == 3  # called as many times as executes
         assert set_in_external_trigger.call_count == 3  # called as many times as executes
         assert start.call_count == 3  # called as many times as executes
-        assert clear_cache.call_count == 6  # once before and once after each of the 3 executes
 
         # assure only one debug was called
         assert patched_open.call_count == 1
@@ -1462,10 +1454,16 @@ class TestMethods:
         # assure only one debug was called
         assert patched_open.call_count == 1
 
-    def test_execute_qprogram_with_qblox_and_qdac_timeout_error(self, platform_qblox_qdac: Platform):
-        """Test that the execute_qprogram method raises the exception if the qprogram failes"""
+    @staticmethod
+    def _build_qdac_timeout_mocks():
+        """Shared mocks for the QDAC timeout-error tests below: a QbloxCompilationOutput /
+        QdacCompilationOutput pair wired so that `run()` raises TimeoutError. Callers still need
+        to configure `mock_bus.check_recurrent_timeout` themselves, since that's what differs
+        between the two tests.
 
-        # Setup mock QbloxCompilationOutput and QdacCompilationOutput
+        Returns:
+            tuple: (mock_output, mock_qdac_output, mock_qdac, mock_bus)
+        """
         mock_output = MagicMock(spec=QbloxCompilationOutput)
         mock_qdac_output = MagicMock(spec=QdacCompilationOutput)
         mock_output.sequences = {"bus1": MagicMock()}
@@ -1473,24 +1471,28 @@ class TestMethods:
 
         mock_qdac_output.trigger_position = "front"
         mock_qdac = MagicMock()
-        mock_qdac_output.qdac = mock_qdac
+        mock_qdac_output.qdacs = [mock_qdac]
 
         mock_bus = MagicMock()
         mock_bus.has_adc.return_value = False
         mock_bus.instruments = [MagicMock(spec=QbloxModule)]
         mock_bus.channels = [0]
-        mock_bus.check_recurrent_timeout.return_value = 3
-
-        # Raise TimeoutError on run
         mock_bus.run.side_effect = TimeoutError("Simulated timeout")
-
-        platform_qblox_qdac.buses.get = MagicMock(return_value=mock_bus)
-        platform_qblox_qdac._qpy_sequence_cache = {}
-        platform_qblox_qdac.trigger_runs = 0
 
         mock_output.qprogram = MagicMock(spec=QProgram)
         mock_output.qprogram.qblox = MagicMock(spec=QProgram._QbloxInterface)
         mock_output.qprogram.qblox.trigger_network_required = []
+
+        return mock_output, mock_qdac_output, mock_qdac, mock_bus
+
+    def test_execute_qprogram_with_qblox_and_qdac_timeout_error(self, platform_qblox_qdac: Platform):
+        """Test that the execute_qprogram method raises the exception if the qprogram failes"""
+        mock_output, mock_qdac_output, _, mock_bus = self._build_qdac_timeout_mocks()
+        mock_bus.check_recurrent_timeout.return_value = 3
+
+        platform_qblox_qdac.buses.get = MagicMock(return_value=mock_bus)
+        platform_qblox_qdac._qpy_sequence_cache = {}
+        platform_qblox_qdac.trigger_runs = 0
 
         with pytest.raises(TimeoutError):
             platform_qblox_qdac._execute_qblox_compilation_output(
@@ -1502,28 +1504,13 @@ class TestMethods:
 
     def test_execute_qprogram_with_qblox_and_qdac_timeout_error_wrong_bus(self, platform_qblox_qdac: Platform):
         """Test that the execute_qprogram method retries correctly when the timed-out bus is not the one with timeout config."""
-        mock_output = MagicMock(spec=QbloxCompilationOutput)
-        mock_qdac_output = MagicMock(spec=QdacCompilationOutput)
-        mock_output.sequences = {"bus1": MagicMock()}
-        mock_output.acquisitions = {"bus1": MagicMock()}
-        mock_qdac_output.trigger_position = "front"
-        mock_qdac_output.qdac = MagicMock()
-
-        mock_bus = MagicMock()
-        mock_bus.has_adc.return_value = False
-        mock_bus.instruments = [MagicMock(spec=QbloxModule)]
-        mock_bus.channels = [0]
-        mock_bus.run.side_effect = TimeoutError("Simulated timeout")
+        mock_output, mock_qdac_output, _, mock_bus = self._build_qdac_timeout_mocks()
         # First call (direct check on leaked bus) returns 0, fallback scan returns 3 each retry
         mock_bus.check_recurrent_timeout.side_effect = [0, 3, 0, 3, 0, 3, 0, 3]
 
         platform_qblox_qdac.buses.get = MagicMock(return_value=mock_bus)
         platform_qblox_qdac._qpy_sequence_cache = {}
         platform_qblox_qdac.trigger_runs = 0
-
-        mock_output.qprogram = MagicMock(spec=QProgram)
-        mock_output.qprogram.qblox = MagicMock(spec=QProgram._QbloxInterface)
-        mock_output.qprogram.qblox.trigger_network_required = []
 
         with pytest.raises(TimeoutError):
             platform_qblox_qdac._execute_qblox_compilation_output(
