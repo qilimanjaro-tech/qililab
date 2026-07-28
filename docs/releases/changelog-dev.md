@@ -98,6 +98,13 @@ In the runcard this parameter is located inside the instruments sequencer for QR
 
 ### Bug fixes
 
+- Fixed a race condition, introduced in [#1154](https://github.com/qilimanjaro-tech/qililab/pull/1154), where triggered `Qblox` executions using a `QDAC-II` could hang forever waiting for a trigger that was already cancelled. `qdac.start()` only issues a non-blocking SCPI command; the QDAC's trigger pulse to `Qblox` fires later, on the instrument's own internal timing. The post-execution `qdac.clear_cache()` ran immediately after `start()` and zeroed the same marker register that routes that pulse, so if the register was cleared before the instrument's internal clock reached the marker event, the pulse never went out and `Qblox` stayed armed indefinitely.
+
+  The fix removes the `qdac.clear_cache()` calls from `Platform._execute_qblox_compilation_output` (both the pre-compilation reset and the post-execution / timeout cleanup) so a marker register that routes a live trigger is never zeroed while an execution is in flight. Clearing the QDAC-II cache during execution is no longer needed because the driver now manages its trigger allocation:
+  - `QDevilQDac2._set_dc_marker` reuses the existing internal trigger when the same trigger name is re-applied to the same channel and marker location, instead of always freeing and re-allocating it. It only clears and re-allocates when the trigger moves to a different register.
+  - `QDevilQDac2.clear_trigger` now also zeroes every marker register on the instance's own channels, scrubbing any stale markers left on the instrument so allocations start from a clean hardware state.
+  [#1164](https://github.com/qilimanjaro-tech/qililab/pull/1164)
+
 - Fixed an `UnboundLocalError` raised by `QbloxQRM.acquire_qprogram_results` when a bus is played on but no acquisition is performed on it.
   [#1168](https://github.com/qilimanjaro-tech/qililab/pull/1168)
 
@@ -112,8 +119,9 @@ In the runcard this parameter is located inside the instruments sequencer for QR
   Internal triggers in use are now read directly from the instrument's marker registers before every allocation, so a new trigger always takes the lowest number that is actually free on the hardware. Related behavior changes:
   - `QDevilQDac2.start()` now starts only the DC lists and AWG waveforms uploaded by this instance, instead of `start_all()`, which also fired generators armed by other users.
   - `QDevilQDac2.clear_trigger()` now frees the triggers created by this instance from the instrument (previously `free_all_triggers()` released the triggers set by `QCodes`, not affecting the instrument).
-  - `Platform.execute_qprogram` now clears each QDAC-II's trigger network and generator caches after every execution, so consecutive executions always start from a clean trigger state.
   - Allocating a trigger when all 14 internal triggers are busy raises a `ValueError` including other users triggers.
+
+  Note: the per-execution `clear_cache()` cleanup this PR added to `Platform.execute_qprogram` was subsequently removed in [#1164](https://github.com/qilimanjaro-tech/qililab/pull/1164) to fix a trigger race; the driver now manages a clean trigger state without it.
   [#1154](https://github.com/qilimanjaro-tech/qililab/pull/1154)
 
 - Fixed the folder shape at `add_measurement` and `add_results` to take into account us intervals of time. This will solve any issue with parallelization while creating more than one folder in less than a second.
