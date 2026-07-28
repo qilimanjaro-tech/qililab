@@ -38,10 +38,12 @@ def _stateful_qdac_device() -> MagicMock:
         return None
 
     def _write_channel(command: str) -> None:
-        header, _, value = command.partition(" ")
-        segments = _segments(header)
-        key = _find(segments) or segments
-        markers[key] = int(value)
+        # qililab writes markers one at a time.
+        for sub_command in command.split(";"):
+            header, _, value = sub_command.lstrip(":").partition(" ")
+            segments = _segments(header)
+            key = _find(segments) or segments
+            markers[key] = int(value)
 
     def _ask(command: str) -> str:
         values = []
@@ -85,9 +87,11 @@ def _shared_physical_qdac(n_connections: int = 2):
             ch = MagicMock()
 
             def _write(command: str, _cid=cid) -> None:
-                header, _, value = command.partition(" ")
-                key = _find(_cid, _segments(header)) or (_cid, _segments(header))
-                markers[key] = int(value)
+                # Handle both single writes and compound `;:`-joined writes.
+                for sub_command in command.split(";"):
+                    header, _, value = sub_command.lstrip(":").partition(" ")
+                    key = _find(_cid, _segments(header)) or (_cid, _segments(header))
+                    markers[key] = int(value)
 
             ch.write_channel.side_effect = _write
             channels[cid] = ch
@@ -361,10 +365,12 @@ class TestQDevilQDac2:
         qdac.upload_voltage_list(waveform, channel_id)
         qdac.set_out_external_trigger(channel_id, out_port, trigger)
         qdac.device.connect_external_trigger.assert_called_once()
+        assert qdac._triggers[trigger].value == 1
 
-        # Second call clears the old trigger before re-allocating
+        # Second call with the same channel and marker location clears the old trigger before re-allocating
         qdac.set_out_external_trigger(channel_id, out_port, trigger)
-        qdac.device.channel.return_value.write_channel.assert_any_call("SOUR{0}:DC:MARK:STARt 0")
+        assert qdac._triggers[trigger].value == 1
+        assert call("SOUR{0}:DC:MARK:STARt 0") not in qdac.device.channel.return_value.write_channel.call_args_list
         assert qdac.device.connect_external_trigger.call_count == 2
 
     def test_set_out_external_trigger_no_cache_raises_error(self, qdac: QDevilQDac2, waveform: Square):
@@ -388,9 +394,10 @@ class TestQDevilQDac2:
         qdac.set_out_internal_trigger(channel_id, trigger)
         assert qdac._triggers[trigger].value == 1
 
-        # Second call clears the old trigger before re-allocating
+        # Second call with the same channel and marker location clears the old trigger before re-allocating
         qdac.set_out_internal_trigger(channel_id, trigger)
-        qdac.device.channel.return_value.write_channel.assert_any_call("SOUR{0}:DC:MARK:STARt 0")
+        assert qdac._triggers[trigger].value == 1
+        assert call("SOUR{0}:DC:MARK:STARt 0") not in qdac.device.channel.return_value.write_channel.call_args_list
 
     def test_set_out_internal_trigger_no_cache_raises_error(self, qdac: QDevilQDac2, waveform: Square):
         """Test set_out_internal_trigger method raises error when no DC list is created"""
@@ -626,6 +633,10 @@ class TestQDevilQDac2:
         assert qdac._triggers == {}
         qdac.device.channel.return_value.write_channel.assert_any_call("SOUR{0}:DC:MARK:PSTart 0")
         qdac.device.channel.return_value.write_channel.assert_any_call("SOUR{0}:DC:MARK:PEND 0")
+        # the clear-all path scrubs every dac's marker registers, including channels 10 and 11
+        # that never held a trigger
+        addressed_channels = {c.args[0] for c in qdac.device.channel.call_args_list}
+        assert set(qdac.dacs) <= addressed_channels
 
     def test_internal_trigger_reusable_after_clear(self, qdac: QDevilQDac2, waveform: Square):
         """A freed internal trigger number is seen as free again on the next allocation."""
@@ -638,6 +649,32 @@ class TestQDevilQDac2:
 
         # without rebuilding _internal_triggers from the instrument this would be 2
         assert qdac._triggers["t1"].value == 1
+
+    def test_set_dc_marker_same_location_reuses_trigger(self, qdac: QDevilQDac2, waveform: Square):
+        """Re-setting the same trigger on the same channel and marker location keeps the same
+        internal trigger context and does not free/re-allocate it."""
+        qdac.upload_voltage_list(waveform, channel_id=4)
+        qdac.set_start_marker_internal_trigger(channel_id=4, trigger="t1")
+        first_context = qdac._triggers["t1"]
+
+        qdac.set_start_marker_internal_trigger(channel_id=4, trigger="t1")
+
+        assert qdac._triggers["t1"] is first_context
+        assert qdac._marker_registers["t1"] == (4, "DC", "PSTart")
+
+    def test_set_dc_marker_new_location_clears_and_reallocates(self, qdac: QDevilQDac2, waveform: Square):
+        """Re-setting the same trigger name to a different marker location frees the old
+        register on the instrument before writing the trigger to the new location."""
+        qdac.upload_voltage_list(waveform, channel_id=4)
+        qdac.set_start_marker_internal_trigger(channel_id=4, trigger="t1")
+        assert qdac._marker_registers["t1"] == (4, "DC", "PSTart")
+
+        # Same trigger name, different marker location (end instead of start)
+        qdac.set_end_marker_internal_trigger(channel_id=4, trigger="t1")
+
+        assert qdac._marker_registers["t1"] == (4, "DC", "PEND")
+        # the old start register was zeroed on the instrument as part of the re-allocation
+        qdac.device.channel.return_value.write_channel.assert_any_call("SOUR{0}:DC:MARK:PSTart 0")
 
     def test_allocate_internal_trigger_limit_of_triggers_raises_error(self, qdac: QDevilQDac2):
         """When the instrument reports every internal trigger as busy, allocation fails."""
@@ -789,11 +826,16 @@ class TestQDevilQDac2:
         qdac_2.start()
         dc_list_2.start.assert_called_once()
 
-        # User 1 frees their trigger: only channel 4's register is zeroed
+        # User 1 frees their trigger by name: clear_trigger only zeroes the single register it
+        # freed (channel 4). It must not scrub user 1's other dacs (that mass-wipe only happens
+        # on the clear-all path), and it must leave user 2's channel 3 untouched.
         qdac.clear_trigger("t1")
         assert "t1" not in qdac._triggers
         assert "t1" in qdac_2._triggers
         ch3_writes = [c.args[0] for c in channels[3].write_channel.call_args_list]
         ch4_writes = [c.args[0] for c in channels[4].write_channel.call_args_list]
         assert any(w.upper().startswith("SOUR{0}:DC:MARK:PSTART 0") for w in ch4_writes)
+        # channel 3 belongs to user 2 (not in user 1's dacs), so it is never written to 0
         assert not any(w.endswith(" 0") for w in ch3_writes)
+        # user 1's other dacs (2, 10, 11) are never even addressed by a single-trigger clear
+        assert not ({2, 10, 11} & channels.keys())
