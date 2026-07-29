@@ -1052,6 +1052,12 @@ class QProgram(StructuredProgram):
         an ``Arbitrary`` waveform (an ``IQPair`` of ``Arbitrary`` waveforms for I/Q waveforms), so the
         applied distortions are baked into the samples that will later be compiled and uploaded.
 
+        Note:
+            The ``reset_pulse`` of a ``MeasureReset`` operation is played on ``control_bus`` at
+            compile time (not part of the QProgram tree this method traverses), so it cannot be
+            distorted here. Configuring distortions on a bus used as ``control_bus`` in a
+            ``MeasureReset`` is not supported and raises ``NotImplementedError``.
+
         Args:
             bus_distortions (dict[str, list[PulseDistortion]]): A dictionary mapping each bus alias to
                 the list of distortions to apply, in the order they should be applied, to the
@@ -1060,6 +1066,10 @@ class QProgram(StructuredProgram):
         Returns:
             QProgram: A new instance of QProgram with the distortions applied to the affected
             waveforms. The original QProgram is left unchanged.
+
+        Raises:
+            NotImplementedError: If a ``MeasureReset`` operation uses, as its ``control_bus``, a bus
+                that has distortions configured.
         """
 
         def traverse(block: Block):
@@ -1067,15 +1077,27 @@ class QProgram(StructuredProgram):
                 if isinstance(element, Block):
                     traverse(element)
                 elif isinstance(element, (Play, Measure, MeasureReset)):
-                    if element.bus in bus_distortions.keys():
+                    if isinstance(element, MeasureReset) and element.control_bus in bus_distortions:
+                        raise NotImplementedError(
+                            "Applying pulse distortions to the control bus of a `MeasureReset` (active "
+                            f"reset) operation is not supported, but bus '{element.control_bus}' has "
+                            "distortions configured."
+                        )
+                    if element.bus in bus_distortions:
                         waveform = element.waveform
                         for distortion in bus_distortions[element.bus]:
                             if isinstance(waveform, IQWaveform):
                                 distorted_waveform_I = Arbitrary(distortion.apply(waveform.get_I().envelope()))
                                 distorted_waveform_Q = Arbitrary(distortion.apply(waveform.get_Q().envelope()))
-                                distorted_waveform = IQPair(I=distorted_waveform_I, Q=distorted_waveform_Q)
-                            if isinstance(waveform, Waveform):
-                                distorted_waveform = Arbitrary(distortion.apply(waveform.envelope()))  # type: ignore [assignment]
+                                distorted_waveform: IQPair | Arbitrary = IQPair(
+                                    I=distorted_waveform_I, Q=distorted_waveform_Q
+                                )
+                            elif isinstance(waveform, Waveform):
+                                distorted_waveform = Arbitrary(distortion.apply(waveform.envelope()))
+                            else:
+                                raise NotImplementedError(
+                                    f"Cannot apply distortions to waveform of type {type(waveform)}."
+                                )
                             waveform = distorted_waveform
                         block.elements[index].waveform = waveform  # type: ignore [union-attr]
 

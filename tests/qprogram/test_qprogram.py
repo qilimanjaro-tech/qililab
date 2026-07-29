@@ -1,5 +1,6 @@
 import math
 import os
+import re
 from itertools import product
 
 import numpy as np
@@ -186,6 +187,40 @@ class TestQProgram(TestStructuredProgram):
         expected = second.apply(first.apply(flux_wf.envelope()))
         assert isinstance(new_qp.body.elements[0].waveform, Arbitrary)
         np.testing.assert_allclose(new_qp.body.elements[0].waveform.envelope(), expected)
+
+    def test_with_distortions_raises_for_measure_reset_control_bus(self):
+        """Test with_distortions raises when a MeasureReset's control_bus has distortions configured.
+
+        The reset_pulse of a MeasureReset is played on control_bus at compile time, outside of the
+        QProgram tree with_distortions traverses, so it cannot be distorted here.
+        """
+        distortion = ExponentialCorrection(tau_exponential=1.0, amp=0.5)
+        square_wf = Square(amplitude=1.0, duration=100)
+
+        qp = QProgram()
+        with qp.average(1000):
+            qp.qblox.measure_reset(
+                bus="readout_bus",
+                waveform=IQPair(square_wf, square_wf),
+                weights=IQPair(I=square_wf, Q=square_wf),
+                control_bus="drive_bus",
+                reset_pulse=IQPair(square_wf, square_wf),
+            )
+
+        with pytest.raises(
+            NotImplementedError,
+            match=re.escape(
+                "Applying pulse distortions to the control bus of a `MeasureReset` (active reset) "
+                "operation is not supported, but bus 'drive_bus' has distortions configured."
+            ),
+        ):
+            qp.with_distortions(bus_distortions={"drive_bus": [distortion]})
+
+        # Distortions on the readout bus (the MeasureReset's main `waveform`) are unaffected.
+        new_qp = qp.with_distortions(bus_distortions={"readout_bus": [distortion]})
+        measure_reset = new_qp.body.elements[0].elements[0]
+        assert isinstance(measure_reset.waveform, IQPair)
+        assert isinstance(measure_reset.waveform.I, Arbitrary)
 
     def test_with_calibration_method(self):
         """Test with_bus_mapping method"""
