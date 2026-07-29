@@ -1075,9 +1075,9 @@ class QProgram(StructuredProgram):
                                 distorted_waveform_Q = Arbitrary(distortion.apply(waveform.get_Q().envelope()))
                                 distorted_waveform = IQPair(I=distorted_waveform_I, Q=distorted_waveform_Q)
                             if isinstance(waveform, Waveform):
-                                distorted_waveform = Arbitrary(distortion.apply(waveform.envelope()))
+                                distorted_waveform = Arbitrary(distortion.apply(waveform.envelope()))  # type: ignore [assignment]
                             waveform = distorted_waveform
-                        block.elements[index].waveform = waveform
+                        block.elements[index].waveform = waveform  # type: ignore [union-attr]
 
         # Copy qprogram so the original remain unaffected
         copied_qprogram = deepcopy(self)
