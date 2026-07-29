@@ -2,6 +2,9 @@
 
 ### New features since last release
 
+- Added `PulseDistortion.amplitude_gain`, which returns the peak amplification that a distortion's correction filter applies to a given envelope (before normalization). This is useful when a distorted pulse is normalized back into the sequencer range (e.g. with `auto_norm=True`): the sequencer gain must be multiplied by this factor to reach the same physical amplitude, and the maximum reachable amplitude for a unit-height pulse is `1 / amplitude_gain(unit_pulse)`. Internally, each distortion's correction filter is now factored out into a `_filter` method (implemented per subclass), with `apply` becoming a shared `_filter` + `normalize_envelope` step in the base class.
+  [#1170](https://github.com/qilimanjaro-tech/qililab/pull/1170)
+
 - Added `fitting_path` and `fitting_parameters` columns to `Measurements` database. These optional fields add the location folder of the resulting fit plots and the outcome parameters of those fittings respectively. The path is introduced as a string and the parameters as a dictionary with the parameter name as a string. Those can be added at three different levels:
   - Using the `Measurement` database table with `meas.add_fitting(db_manager, path, parameters)`. The only inconvenience is that the user needs to add the database manager.
   - Using `DatabaseManager` with `db_manager.add_fitting(id, path, parameters)`. Using an ID like `load_by_id`. This method is ideal to add the fitting results in a later session (for completed experiments or if the post processing of the data has been done in a separate Python instance).
@@ -97,6 +100,13 @@ In the runcard this parameter is located inside the instruments sequencer for QR
 ### Documentation
 
 ### Bug fixes
+
+- Fixed two bugs in how bus pulse distortions (`distortions` defined per bus in the runcard) were applied for Qblox:
+  - Distortions were only being applied to a single bus, instead of every bus that defines them.
+  - Distortions were applied after compilation, directly to the already-compiled sequences. For long `Square`/`FlatTop` pulses, the compiler optimizes the flat part into a short chunk that gets replayed in a hardware loop instead of a full-length array; filtering only that short chunk does not reproduce the same result as filtering the pulse's full duration, so any distortion whose response time is comparable to (or longer than) the chunk length produced an incorrect distorted waveform.
+
+  Distortions are now applied inside `QbloxCompiler.compile()`, via the new `QProgram.with_distortions`, as a pre-processing step that runs on the QProgram's original waveforms before the compiler's traversal and optimization pass. Because the compiler now always sees the already-distorted waveform, and that waveform is generally no longer flat, a bus with distortions configured no longer goes through the square/flat-top chunking optimization — its waveform is compiled at full length instead.
+  [#1170](https://github.com/qilimanjaro-tech/qililab/pull/1170)
 
 - Fixed a race condition, introduced in [#1154](https://github.com/qilimanjaro-tech/qililab/pull/1154), where triggered `Qblox` executions using a `QDAC-II` could hang forever waiting for a trigger that was already cancelled. `qdac.start()` only issues a non-blocking SCPI command; the QDAC's trigger pulse to `Qblox` fires later, on the instrument's own internal timing. The post-execution `qdac.clear_cache()` ran immediately after `start()` and zeroed the same marker register that routes that pulse, so if the register was cleared before the instrument's internal clock reached the marker event, the pulse never went out and `Qblox` stayed armed indefinitely.
 
