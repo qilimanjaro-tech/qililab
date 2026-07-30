@@ -14,3 +14,6 @@
 ### Documentation
 
 ### Bug fixes
+
+- Make it so if you input None in `NonLinearCrosstalkMatrix.set_non_linear_params` it sets the parameters to None, instead of ignoring them.
+  [#1173](https://github.com/qilimanjaro-tech/qililab/pull/1173)
