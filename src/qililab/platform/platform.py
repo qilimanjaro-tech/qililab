@@ -1306,6 +1306,8 @@ class Platform:
             # Determine what should be the initial value of the markers for each bus.
             # This depends on the model of the associated Qblox module and the `output` setting of the associated sequencer.
             markers = {}
+            # In this bus loop the distortions are also stored.
+            bus_distortions = {}
             single_channel = []
             for bus in buses:
                 for instrument, channel in zip(bus.instruments, bus.channels):
@@ -1323,6 +1325,8 @@ class Platform:
                             markers[bus.alias] = "0000"
                             if len(sequencer.outputs) == 1:
                                 single_channel.append(bus.alias)
+                if bus.distortions:
+                    bus_distortions[bus.alias] = bus.distortions
 
             qblox_compiler = QbloxCompiler()
             qblox_buses = [
@@ -1339,6 +1343,7 @@ class Platform:
                     ext_trigger=ext_trigger,
                     qblox_buses=qblox_buses,
                     single_channel=single_channel,
+                    bus_distortions=bus_distortions,
                     crosstalk=self.crosstalk if crosstalk else None,
                 ),
                 qdac=compiled_qdac,
@@ -1409,10 +1414,6 @@ class Platform:
                     for controller in self.instrument_controllers.elements:
                         if isinstance(controller, QbloxClusterController):
                             controller.device.reset_trigger_monitor_count(address=trigger_address)
-                if bus.distortions:
-                    for distortion in bus.distortions:
-                        for waveform in sequences[bus_alias]._waveforms._waveforms:
-                            sequences[bus_alias]._waveforms.modify(waveform.name, distortion.apply(waveform.data))
             if debug:
                 with open("debug_qblox_execution.txt", "w", encoding="utf-8") as sourceFile:
                     for bus_alias, sequence in sequences.items():
