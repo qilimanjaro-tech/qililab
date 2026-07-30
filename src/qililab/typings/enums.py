@@ -332,7 +332,7 @@ class Parameter(str, Enum):
     PHASE_IMBALANCE = "phase_imbalance"
     SAMPLING_RATE = "sampling_rate"
     INTEGRATION = "integration"
-    INTEGRATION_LENGTH = "integration_length"
+
     ATTENUATION = "attenuation"
     REPETITION_DURATION = "repetition_duration"
     SOFTWARE_AVERAGE = "software_average"
