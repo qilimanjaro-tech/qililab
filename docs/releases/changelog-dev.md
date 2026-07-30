@@ -2,6 +2,9 @@
 
 ### New features since last release
 
+- Added `platform.set_calibration`, which stores a `Calibration` (given an instance or file path) on the platform. `execute_qprogram`, `execute_qprograms_parallel`, and database/stream saving now fall back to it when no `calibration` argument is passed; an explicit argument always overrides it.
+  [#1165](https://github.com/qilimanjaro-tech/qililab/pull/1165)
+
 ### Improvements
 
 ### Breaking changes
