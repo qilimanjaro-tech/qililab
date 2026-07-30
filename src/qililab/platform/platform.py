@@ -337,7 +337,7 @@ class Platform:
         """Dictionary for caching qpysequences."""
 
         self.calibration: Calibration | None = None
-        """Calibration class, defaults to None (only used on FLUX parameters)"""
+        """Calibration class introduced to platform, defaults to None"""
 
         self.crosstalk: CrosstalkMatrix | None = None
         """Crosstalk matrix information, defaults to None (only used on FLUX parameters)"""
