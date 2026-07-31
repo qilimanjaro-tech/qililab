@@ -18,6 +18,7 @@ import numpy as np
 
 from qililab.qprogram.blocks import Block
 from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
+from qililab.utils import sort_buses
 from qililab.waveforms import IQWaveform, Waveform
 from qililab.yaml import yaml
 
@@ -215,15 +216,16 @@ class Calibration:
         self.crosstalk_history[-1]["flux_offsets"] = flux_offsets
         self.crosstalk_history[-1]["block_diag_matrix"] = block_diag_xt_matrix
 
+        sorted_buses = sort_buses(bus_list)
         diag_crosstalk = CrosstalkMatrix().from_buses(block_diag_xt_matrix)
-        old_offsets = np.array([self.crosstalk_matrix.flux_offsets[bus] for bus in bus_list])
-        result_offsets = np.array([flux_offsets[bus] for bus in bus_list])
+        old_offsets = np.array([self.crosstalk_matrix.flux_offsets[bus] for bus in sorted_buses])
+        result_offsets = np.array([flux_offsets[bus] for bus in sorted_buses])
 
         new_matrix = diag_crosstalk.to_array() @ self.crosstalk_matrix.to_array()
         new_offsets = diag_crosstalk.to_array() @ old_offsets + result_offsets
 
-        self.crosstalk_matrix.matrix = CrosstalkMatrix().from_array(bus_list, new_matrix).matrix
-        self.crosstalk_matrix.flux_offsets = dict(zip(bus_list, new_offsets))
+        self.crosstalk_matrix.matrix = CrosstalkMatrix().from_array(sorted_buses, new_matrix).matrix
+        self.crosstalk_matrix.flux_offsets = dict(zip(sorted_buses, new_offsets))
 
         self.crosstalk_history[-1]["result_intra"] = self.crosstalk_matrix.matrix
 
@@ -258,7 +260,7 @@ class Calibration:
             full_crosstalk = CrosstalkMatrix().from_buses(self.crosstalk_history[i]["full_matrix"])
             new_matrix = full_crosstalk.to_array() @ new_matrix
 
-        self.crosstalk_matrix.matrix = CrosstalkMatrix().from_array(bus_list, new_matrix).matrix
+        self.crosstalk_matrix.matrix = CrosstalkMatrix().from_array(sort_buses(bus_list), new_matrix).matrix
         self.crosstalk_history[-1]["result_inter"] = self.crosstalk_matrix.matrix
 
     def remove_history_step(self, idx: int = -1):

@@ -618,6 +618,41 @@ class TestPlatform:
             platform.disconnect()
         mock_logger.info.assert_called_once_with("Already disconnected from the instruments")
 
+    def test_connect_success(self, platform: Platform):
+        """Test the happy path of connect(), which actually connects to the instruments."""
+        platform._connected_to_instruments = False
+        platform.instrument_controllers = MagicMock()
+        with patch("qililab.platform.platform.logger", autospec=True) as mock_logger:
+            platform.connect()
+        platform.instrument_controllers.connect.assert_called_once()
+        assert platform._connected_to_instruments is True
+        mock_logger.info.assert_called_once_with("Connected to the instruments")
+
+    def test_initial_setup_success(self, platform: Platform):
+        """Test the happy path of initial_setup(), which applies the runcard settings to connected instruments."""
+        platform._connected_to_instruments = True
+        platform.instrument_controllers = MagicMock()
+        with patch("qililab.platform.platform.logger", autospec=True) as mock_logger:
+            platform.initial_setup()
+        platform.instrument_controllers.initial_setup.assert_called_once()
+        mock_logger.info.assert_called_once_with("Initial setup applied to the instruments")
+
+    def test_turn_on_instruments(self, platform: Platform):
+        """Test turn_on_instruments turns on the signal-generating instruments."""
+        platform.instrument_controllers = MagicMock()
+        with patch("qililab.platform.platform.logger", autospec=True) as mock_logger:
+            platform.turn_on_instruments()
+        platform.instrument_controllers.turn_on_instruments.assert_called_once()
+        mock_logger.info.assert_called_once_with("Instruments turned on")
+
+    def test_turn_off_instruments(self, platform: Platform):
+        """Test turn_off_instruments turns off the signal-generating instruments."""
+        platform.instrument_controllers = MagicMock()
+        with patch("qililab.platform.platform.logger", autospec=True) as mock_logger:
+            platform.turn_off_instruments()
+        platform.instrument_controllers.turn_off_instruments.assert_called_once()
+        mock_logger.info.assert_called_once_with("Instruments turned off")
+
     def test_get_element_method_unknown_returns_none(self, platform: Platform):
         """Test get_element method with unknown element."""
         element = platform.get_element(alias="ABC")
@@ -667,7 +702,7 @@ class TestPlatform:
         assert platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.EXPONENTIAL_TIME_CONSTANT_0, output_id=0) == 200
         assert platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.EXPONENTIAL_STATE_0, output_id=0) == "enabled"
         assert platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.FIR_COEFF, output_id=0)== [0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4]
-        
+
         #  Check that filters marked as delay_comp in the runcard have not been changed
         assert platform.get_parameter(alias="flux_line_q3_bus", parameter=Parameter.EXPONENTIAL_STATE_0, output_id=3) == "delay_comp"
         assert platform.get_parameter(alias="flux_line_q3_bus", parameter=Parameter.EXPONENTIAL_STATE_0) == "delay_comp"
@@ -698,7 +733,7 @@ class TestPlatform:
         """Test that the filter is created if needed"""
         platform_galadriel_no_filter.set_parameter(alias="drive_line_q0_bus", parameter=Parameter.FIR_STATE, value = True, output_id=0)
         assert platform_galadriel_no_filter.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.FIR_STATE, output_id=0) == "enabled"
-        
+
 
     def test_setting_filter_bypassed_give_warning(self, caplog, platform: Platform):
         #  Check that setting a filter as bypassed will actually put/leave it as delay_comp if needed
@@ -865,6 +900,38 @@ class TestMethods:
         assert len(exc_info.value.exceptions) == 2
         assert str(exc_info.value.exceptions[0]) == "Turn off instruments error"
         assert str(exc_info.value.exceptions[1]) == "Disconnect error"
+
+        # Ensure methods were called in the correct order
+        platform.connect.assert_called_once()
+        platform.initial_setup.assert_called_once()
+        platform.turn_on_instruments.assert_called_once()
+        platform.turn_off_instruments.assert_called_once()
+        platform.disconnect.assert_called_once()
+
+    def test_session_with_exception_and_cleanup_errors(self):
+        """Test the session method when both an execution error and cleanup errors occur together."""
+        # Create an autospec of the Platform class
+        platform = create_autospec(Platform, instance=True)
+
+        # Manually set the session method to the real one
+        platform.session = Platform.session.__get__(platform, Platform)
+
+        # Simulate turn_off_instruments and disconnect failing during cleanup
+        platform.turn_off_instruments.side_effect = Exception("Turn off instruments error")
+        platform.disconnect.side_effect = Exception("Disconnect error")
+
+        def run_session_raising_execution_error():
+            with platform.session():
+                raise AttributeError("Execution error")
+
+        with pytest.raises(ExceptionGroup) as exc_info:
+            run_session_raising_execution_error()
+
+        # Ensure the ExceptionGroup contains the execution error followed by the cleanup errors
+        assert len(exc_info.value.exceptions) == 3
+        assert str(exc_info.value.exceptions[0]) == "Execution error"
+        assert str(exc_info.value.exceptions[1]) == "Turn off instruments error"
+        assert str(exc_info.value.exceptions[2]) == "Disconnect error"
 
         # Ensure methods were called in the correct order
         platform.connect.assert_called_once()
@@ -1074,7 +1141,6 @@ class TestMethods:
             # Mock Qdac functions without connecting
             patch.object(QDevilQDac2, "upload_voltage_list") as upload_voltage_list,
             patch.object(QDevilQDac2, "set_start_marker_external_trigger") as set_start_marker_external_trigger,
-            patch.object(QDevilQDac2, "remove_digital_trace") as remove_digital_trace,
             patch.object(QDevilQDac2, "start") as start,
         ):
             acquire_qprogram_results.return_value = [123]
@@ -1097,12 +1163,11 @@ class TestMethods:
         assert second_execution_results.results["resonator"] == [456]
         assert upload_voltage_list.call_count == 3  # called as many times as executes
         assert set_start_marker_external_trigger.call_count == 3  # called as many times as executes
-        assert remove_digital_trace.call_count == 3  # called as many times as executes
         assert start.call_count == 3  # called as many times as executes
 
         # assure only one debug was called
         assert patched_open.call_count == 1
-        
+
     def test_execute_qprogram_with_qblox_and_multiple_qdacs(self, platform_qblox_qdacs: Platform):
         """Test that the execute method compiles the qprogram, calls the buses to run and return the results."""
         drive_wf = IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
@@ -1140,7 +1205,6 @@ class TestMethods:
             patch.object(QDevilQDac2, "set_out_external_trigger") as set_out_external_trigger,
             patch.object(QDevilQDac2, "set_in_external_trigger") as set_in_external_trigger,
             patch.object(QDevilQDac2, "set_start_marker_external_trigger") as set_start_marker_external_trigger,
-            patch.object(QDevilQDac2, "remove_digital_trace") as remove_digital_trace,
             patch.object(QDevilQDac2, "start") as start,
         ):
             acquire_qprogram_results.return_value = [123]
@@ -1165,7 +1229,6 @@ class TestMethods:
         assert set_out_external_trigger.call_count == 3  # called as many times as executes
         assert set_in_external_trigger.call_count == 3  # called as many times as executes
         assert set_start_marker_external_trigger.call_count == 3  # called as many times as executes
-        assert remove_digital_trace.call_count == 6  # called as many times as executes
         assert start.call_count == 6  # called as many times as executes
 
         # assure only one debug was called
@@ -1211,7 +1274,6 @@ class TestMethods:
             # Mock Qdac functions without connecting
             patch.object(QDevilQDac2, "upload_voltage_list") as upload_voltage_list,
             patch.object(QDevilQDac2, "set_in_external_trigger") as set_in_external_trigger,
-            patch.object(QDevilQDac2, "remove_digital_trace") as remove_digital_trace,
             patch.object(QDevilQDac2, "start") as start,
         ):
             acquire_qprogram_results.return_value = [123]
@@ -1234,7 +1296,6 @@ class TestMethods:
         assert second_execution_results.results["resonator"] == [456]
         assert upload_voltage_list.call_count == 3  # called as many times as executes
         assert set_in_external_trigger.call_count == 3  # called as many times as executes
-        assert remove_digital_trace.call_count == 3  # called as many times as executes
         assert start.call_count == 3  # called as many times as executes
 
         # assure only one debug was called
@@ -1267,7 +1328,6 @@ class TestMethods:
             # Mock Qdac functions without connecting
             patch.object(QDevilQDac2, "upload_voltage_list") as upload_voltage_list,
             patch.object(QDevilQDac2, "set_in_external_trigger") as set_in_external_trigger,
-            patch.object(QDevilQDac2, "remove_digital_trace") as remove_digital_trace,
             patch.object(QDevilQDac2, "start") as start,
         ):
             acquire_qprogram_results.return_value = [123]
@@ -1290,12 +1350,11 @@ class TestMethods:
         assert second_execution_results.results["resonator"] == [456]
         assert upload_voltage_list.call_count == 3  # called as many times as executes
         assert set_in_external_trigger.call_count == 3  # called as many times as executes
-        assert remove_digital_trace.call_count == 3  # called as many times as executes
         assert start.call_count == 3  # called as many times as executes
 
         # assure only one debug was called
         assert patched_open.call_count == 1
-        
+
         assert calibration.crosstalk_matrix == expected_crosstalk
 
     def test_execute_qprogram_single_baseband_channel(self, platform: Platform):
@@ -1331,10 +1390,16 @@ class TestMethods:
         # assure only one debug was called
         assert patched_open.call_count == 1
 
-    def test_execute_qprogram_with_qblox_and_qdac_timeout_error(self, platform_qblox_qdac: Platform):
-        """Test that the execute_qprogram method raises the exception if the qprogram failes"""
+    @staticmethod
+    def _build_qdac_timeout_mocks():
+        """Shared mocks for the QDAC timeout-error tests below: a QbloxCompilationOutput /
+        QdacCompilationOutput pair wired so that `run()` raises TimeoutError. Callers still need
+        to configure `mock_bus.check_recurrent_timeout` themselves, since that's what differs
+        between the two tests.
 
-        # Setup mock QbloxCompilationOutput and QdacCompilationOutput
+        Returns:
+            tuple: (mock_output, mock_qdac_output, mock_qdac, mock_bus)
+        """
         mock_output = MagicMock(spec=QbloxCompilationOutput)
         mock_qdac_output = MagicMock(spec=QdacCompilationOutput)
         mock_output.sequences = {"bus1": MagicMock()}
@@ -1342,23 +1407,28 @@ class TestMethods:
 
         mock_qdac_output.trigger_position = "front"
         mock_qdac = MagicMock()
-        mock_qdac_output.qdac = mock_qdac
+        mock_qdac_output.qdacs = [mock_qdac]
 
         mock_bus = MagicMock()
         mock_bus.has_adc.return_value = False
         mock_bus.instruments = [MagicMock(spec=QbloxModule)]
         mock_bus.channels = [0]
-
-        # Raise TimeoutError on run
         mock_bus.run.side_effect = TimeoutError("Simulated timeout")
-
-        platform_qblox_qdac.buses.get = MagicMock(return_value=mock_bus)
-        platform_qblox_qdac._qpy_sequence_cache = {}
-        platform_qblox_qdac.trigger_runs = 0
 
         mock_output.qprogram = MagicMock(spec=QProgram)
         mock_output.qprogram.qblox = MagicMock(spec=QProgram._QbloxInterface)
         mock_output.qprogram.qblox.trigger_network_required = []
+
+        return mock_output, mock_qdac_output, mock_qdac, mock_bus
+
+    def test_execute_qprogram_with_qblox_and_qdac_timeout_error(self, platform_qblox_qdac: Platform):
+        """Test that the execute_qprogram method raises the exception if the qprogram failes"""
+        mock_output, mock_qdac_output, _, mock_bus = self._build_qdac_timeout_mocks()
+        mock_bus.check_recurrent_timeout.return_value = 3
+
+        platform_qblox_qdac.buses.get = MagicMock(return_value=mock_bus)
+        platform_qblox_qdac._qpy_sequence_cache = {}
+        platform_qblox_qdac.trigger_runs = 0
 
         with pytest.raises(TimeoutError):
             platform_qblox_qdac._execute_qblox_compilation_output(
@@ -1366,6 +1436,24 @@ class TestMethods:
             )
 
         # Assert it retried 3 times (initial + 3 retries = 4 attempts)
+        assert mock_bus.run.call_count == 4
+
+    def test_execute_qprogram_with_qblox_and_qdac_timeout_error_wrong_bus(self, platform_qblox_qdac: Platform):
+        """Test that the execute_qprogram method retries correctly when the timed-out bus is not the one with timeout config."""
+        mock_output, mock_qdac_output, _, mock_bus = self._build_qdac_timeout_mocks()
+        # First call (direct check on leaked bus) returns 0, fallback scan returns 3 each retry
+        mock_bus.check_recurrent_timeout.side_effect = [0, 3, 0, 3, 0, 3, 0, 3]
+
+        platform_qblox_qdac.buses.get = MagicMock(return_value=mock_bus)
+        platform_qblox_qdac._qpy_sequence_cache = {}
+        platform_qblox_qdac.trigger_runs = 0
+
+        with pytest.raises(TimeoutError):
+            platform_qblox_qdac._execute_qblox_compilation_output(
+                output=QProgramCompilationOutput(qblox=mock_output, qdac=mock_qdac_output), debug=False
+            )
+
+        # initial attempt + 3 retries = 4 total
         assert mock_bus.run.call_count == 4
 
     @pytest.mark.qm
@@ -1710,6 +1798,150 @@ class TestMethods:
         with pytest.raises(ValueError, match=re.escape(f"len(calibrations)={len(calibrations)} != len(qprograms)={n}")):
             platform._normalize_calibrations(calibrations=calibrations, n=n)
 
+    def test_set_calibration_with_instance(self, platform: Platform, calibration: Calibration):
+        """Test that set_calibration stores a Calibration instance on the platform."""
+        assert platform.calibration is None
+
+        platform.set_calibration(calibration)
+
+        assert platform.calibration is calibration
+
+    def test_set_calibration_from_file_path(self, platform: Platform, calibration: Calibration):
+        """Test that set_calibration deserializes a Calibration from a file path string."""
+        with patch("qililab.platform.platform.deserialize_from", return_value=calibration) as mock_deserialize:
+            platform.set_calibration("path/to/calibration.yml")
+
+        mock_deserialize.assert_called_once_with(file="path/to/calibration.yml", cls=Calibration)
+        assert platform.calibration is calibration
+
+    def test_execute_qprogram_falls_back_to_platform_calibration(
+        self, platform: Platform, calibration: Calibration
+    ):
+        """Test that execute_qprogram uses the platform-level calibration when none is passed."""
+        qprogram = QProgram()
+        platform.set_calibration(calibration)
+
+        with (
+            patch.object(Platform, "compile_qprogram") as mock_compile,
+            patch.object(Platform, "execute_compilation_output"),
+        ):
+            platform.execute_qprogram(qprogram=qprogram)
+
+        assert mock_compile.call_args.kwargs["calibration"] is calibration
+
+    def test_execute_qprogram_explicit_calibration_overrides_platform(
+        self,
+        platform: Platform,
+        calibration: Calibration,
+        calibration_with_preparation_block: Calibration,
+    ):
+        """Test that an explicitly passed calibration takes precedence over the platform-level one."""
+        qprogram = QProgram()
+        platform.set_calibration(calibration)
+
+        with (
+            patch.object(Platform, "compile_qprogram") as mock_compile,
+            patch.object(Platform, "execute_compilation_output"),
+        ):
+            platform.execute_qprogram(qprogram=qprogram, calibration=calibration_with_preparation_block)
+
+        assert mock_compile.call_args.kwargs["calibration"] is calibration_with_preparation_block
+
+    def test_execute_qprogram_without_calibration_stays_none(self, platform: Platform):
+        """Test that execute_qprogram passes None when no calibration is set on the platform."""
+        qprogram = QProgram()
+        assert platform.calibration is None
+
+        with (
+            patch.object(Platform, "compile_qprogram") as mock_compile,
+            patch.object(Platform, "execute_compilation_output"),
+        ):
+            platform.execute_qprogram(qprogram=qprogram)
+
+        assert mock_compile.call_args.kwargs["calibration"] is None
+
+    @staticmethod
+    def _two_disjoint_qprograms() -> list[QProgram]:
+        """Build two QPrograms that act on non-overlapping buses (valid for parallel execution)."""
+        wf = IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
+        qp1 = QProgram()
+        qp1.play(bus="drive_line_q0_bus", waveform=wf)
+        qp2 = QProgram()
+        qp2.play(bus="flux_line_q0_bus", waveform=wf)
+        return [qp1, qp2]
+
+    def test_execute_qprograms_parallel_falls_back_to_platform_calibration(
+        self, platform: Platform, calibration: Calibration
+    ):
+        """Test that execute_qprograms_parallel uses the platform-level calibration when none is passed."""
+        qprograms = self._two_disjoint_qprograms()
+        platform.set_calibration(calibration)
+
+        with (
+            patch.object(Platform, "compile_qprogram") as mock_compile,
+            patch.object(Platform, "execute_compilation_outputs_parallel"),
+        ):
+            platform.execute_qprograms_parallel(qprograms=qprograms)
+
+        assert len(mock_compile.call_args_list) == len(qprograms)
+        for call in mock_compile.call_args_list:
+            assert call.kwargs["calibration"] is calibration
+
+    def test_execute_qprograms_parallel_explicit_calibration_overrides_platform(
+        self,
+        platform: Platform,
+        calibration: Calibration,
+        calibration_with_preparation_block: Calibration,
+    ):
+        """Test that a single explicit calibration overrides the platform-level one for all qprograms."""
+        qprograms = self._two_disjoint_qprograms()
+        platform.set_calibration(calibration)
+
+        with (
+            patch.object(Platform, "compile_qprogram") as mock_compile,
+            patch.object(Platform, "execute_compilation_outputs_parallel"),
+        ):
+            platform.execute_qprograms_parallel(
+                qprograms=qprograms, calibrations=calibration_with_preparation_block
+            )
+
+        for call in mock_compile.call_args_list:
+            assert call.kwargs["calibration"] is calibration_with_preparation_block
+
+    def test_execute_qprograms_parallel_list_calibrations_override_platform(
+        self,
+        platform: Platform,
+        calibration: Calibration,
+        calibration_with_preparation_block: Calibration,
+    ):
+        """Test that a per-qprogram calibration list overrides the platform-level one, element by element."""
+        qprograms = self._two_disjoint_qprograms()
+        platform.set_calibration(calibration)
+        calibrations = [calibration_with_preparation_block, None]
+
+        with (
+            patch.object(Platform, "compile_qprogram") as mock_compile,
+            patch.object(Platform, "execute_compilation_outputs_parallel"),
+        ):
+            platform.execute_qprograms_parallel(qprograms=qprograms, calibrations=calibrations)
+
+        passed = [call.kwargs["calibration"] for call in mock_compile.call_args_list]
+        assert passed == [calibration_with_preparation_block, None]
+
+    def test_execute_qprograms_parallel_without_calibration_stays_none(self, platform: Platform):
+        """Test that execute_qprograms_parallel passes None when no calibration is set on the platform."""
+        qprograms = self._two_disjoint_qprograms()
+        assert platform.calibration is None
+
+        with (
+            patch.object(Platform, "compile_qprogram") as mock_compile,
+            patch.object(Platform, "execute_compilation_outputs_parallel"),
+        ):
+            platform.execute_qprograms_parallel(qprograms=qprograms)
+
+        for call in mock_compile.call_args_list:
+            assert call.kwargs["calibration"] is None
+
     def test_mapped_buses(self, platform: Platform):
         """Test the mappings of buses"""
         qp_buses = set({"readout", "drive"})
@@ -1879,6 +2111,26 @@ class TestMethods:
         assert db_real_time_saving.db_manager == mock_database
         assert db_real_time_saving.experiment_name == experiment_name
 
+    @pytest.mark.parametrize(
+        "method_name, call_args",
+        [
+            ("db_real_time_saving", ((2, 2), {"test_amp_loop": np.arange(0, 2)}, "test_db_real_time_saving")),
+            (
+                "db_save_results",
+                ("experiment_name", np.array([[1.0, 1.0], [1.0, 1.0]]), {"test_amp_loop": np.arange(0, 1)}),
+            ),
+        ],
+    )
+    def test_db_methods_without_db_manager_raise_error(
+        self, platform: Platform, method_name: str, call_args: tuple
+    ):
+        """Test that db_real_time_saving and db_save_results both raise ReferenceError when no db_manager is loaded."""
+        platform.db_manager = None
+        method = getattr(platform, method_name)
+
+        with pytest.raises(ReferenceError, match="Missing db_manager, try using platform.load_db_manager()."):
+            method(*call_args)
+
     @patch("h5py.File")
     def test_db_save_results(self, mock_h5file, platform: Platform):
         """Test db_save_results functionto save from database from Platform"""
@@ -1898,24 +2150,6 @@ class TestMethods:
         platform.db_save_results(experiment_name, results, loops, qprogram, description)
 
         assert mock_h5file.called
-
-    @patch("h5py.File")
-    def test_db_save_results_raises_error(self, mock_h5file, platform: Platform):
-        """Test db_save_results function raises an error when no database is created"""
-
-        experiment_name = "experiment_name"
-        loops = {"test_amp_loop": np.arange(0, 1)}
-        results = np.array([[1.0, 1.0], [1.0, 1.0]])
-
-        description = "description"
-
-        drive_wf = IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
-        qprogram = QProgram()
-        qprogram.play(bus="drive_line_q0_bus", waveform=drive_wf)
-
-        error_string = "Missing db_manager, try using platform.load_db_manager()."
-        with pytest.raises(ReferenceError, match=error_string):
-            platform.db_save_results(experiment_name, results, loops, qprogram, description)
 
     @patch("h5py.File")
     def test_db_save_results_loop_dict(self, mock_h5file, platform: Platform):
@@ -1979,14 +2213,14 @@ class TestMethods:
         with pytest.raises(ValueError, match=error_string):
             platform.db_save_results(experiment_name, results, loops, qprogram, description)
 
-    @pytest.mark.qm    
+    @pytest.mark.qm
     def test_platform_draw_quantum_machine_raises_error(
         self, qp_quantum_machine: QProgram, platform_quantum_machines: Platform
     ):
 
         with pytest.raises(NotImplementedError) as exc_info:
             platform_quantum_machines.draw(qp_quantum_machine)
-    
+
         assert str(exc_info.value) == "The drawing feature is currently only supported for QBlox."
 
     def test_trigger_network_setup_and_reset(self, platform):
@@ -2105,7 +2339,7 @@ class TestMethods:
 
         with pytest.raises(Exception, match="Filter parameters are controlled using output_id and not channel_id"):
             platform.set_parameter(alias="drive_line_q0_bus", parameter=Parameter.EXPONENTIAL_STATE_0, value="bypassed", channel_id=output_id)
-            
+
         with pytest.raises(Exception, match=f"OutputID {output_id} is not linked to bus with alias {bus_alias}"):
             platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.EXPONENTIAL_STATE_0, output_id=output_id)
 

@@ -19,6 +19,7 @@ from dataclasses import dataclass
 from typing import cast
 
 import numpy as np
+from loguru import logger
 
 from qililab.constants import DEFAULT_TIMEOUT
 from qililab.instruments.decorators import check_device_initialized, log_set_parameter
@@ -446,6 +447,8 @@ class E5080B(Instrument):
 
         if parameter == Parameter.ELECTRICAL_DELAY:
             self.settings.electrical_delay = float(value)
+            if self.is_device_active():
+                self.device.electrical_delay(self.electrical_delay)
             return
 
         raise ParameterNotFound(self, parameter)
@@ -462,6 +465,12 @@ class E5080B(Instrument):
         Returns:
             ParameterValue.
         """
+        if not self.is_device_active() and hasattr(self.settings, parameter.value):
+            logger.warning(
+                "Instrument Keysight E5080B is not connected. Retrieving {parameter} from the driver's settings",
+                parameter=parameter.value,
+            )
+            return getattr(self.settings, parameter.value)
 
         if parameter == Parameter.FREQUENCY_START:
             self.settings.frequency_start = self.device.start_freq.get()
@@ -556,6 +565,7 @@ class E5080B(Instrument):
             return cast("ParameterValue", self.settings.operation_status)
 
         if parameter == Parameter.ELECTRICAL_DELAY:
+            self.settings.electrical_delay = self.device.electrical_delay.get()
             return cast("ParameterValue", self.settings.electrical_delay)
 
         raise ParameterNotFound(self, parameter)
@@ -652,6 +662,8 @@ class E5080B(Instrument):
             self.device.source_power(self.settings.source_power)
         if self.settings.rf_on is not None:
             self.device.rf_on(self.settings.rf_on)
+        if self.settings.electrical_delay is not None:
+            self.device.electrical_delay(self.settings.electrical_delay)
 
     def update_settings(self):
         """Queries the VNA for all parameters and stores the updated value in settings."""
@@ -677,6 +689,7 @@ class E5080B(Instrument):
         self.settings.format_border = self.device.format_border.get()
         self.settings.rf_on = self.device.rf_on.get()
         self.settings.operation_status = self.device.operation_status.get()
+        self.settings.electrical_delay = self.device.electrical_delay.get()
 
     def to_dict(self):
         """Return a dict representation of the VectorNetworkAnalyzer class."""

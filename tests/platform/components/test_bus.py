@@ -36,6 +36,15 @@ def bus(mock_instruments):
     }
     return Bus(settings=settings, platform_instruments=Instruments(elements=mock_instruments))
 
+@pytest.fixture
+def bus_no_qrm(mock_instruments):
+    settings = {
+        "alias": "bus2",
+        "instruments": ["qcm"],
+        "channels": [0],
+    }
+    return Bus(settings=settings, platform_instruments=Instruments(elements=mock_instruments))
+
 class TestBus:
 
     def test_bus_iter(self, bus):
@@ -162,18 +171,41 @@ class TestBus:
             }
             _ = Bus(settings=settings, platform_instruments=Instruments(elements=mock_instruments))
 
+    def test_check_recurrent_timeout(self, bus, mock_instruments):
+        """Test that get recurrent timeout is retrieved correctly"""
+        mock_instruments[1].get_parameter.return_value = 3
+
+        # Call the helper under test
+        timeout_repetitions = bus.check_recurrent_timeout()
+
+        # QbloxQRM is mock_instruments[1], channel 0
+        mock_instruments[1].get_parameter.assert_called_once_with(Parameter.TIMEOUT_REPETITIONS, channel_id=0)
+        assert timeout_repetitions == 3
+        # The QCM should not receive the call
+        mock_instruments[0].get_parameter.assert_not_called()
+
+    def test_check_recurrent_timeout_no_qrm(self, bus_no_qrm, mock_instruments):
+        """Test that get recurrent timeout is retrieved as None if there is no QRM"""
+
+        # Call the helper under test
+        timeout_repetitions = bus_no_qrm.check_recurrent_timeout()
+
+        # The QCM should not receive the call
+        mock_instruments[0].get_parameter.assert_not_called()
+        assert timeout_repetitions == 0
+
     def test_setup_trigger_network(self, bus, mock_instruments):
-            # stub the private method on both mocks so they both have it
-            mock_instruments[0]._setup_trigger_network = MagicMock()
-            mock_instruments[1]._setup_trigger_network = MagicMock()
+        # stub the private method on both mocks so they both have it
+        mock_instruments[0]._setup_trigger_network = MagicMock()
+        mock_instruments[1]._setup_trigger_network = MagicMock()
 
-            # Call the helper under test
-            bus._setup_trigger_network(trigger_address=7)
+        # Call the helper under test
+        bus._setup_trigger_network(trigger_address=7)
 
-            # QbloxQRM is mock_instruments[1], channel 0
-            mock_instruments[1]._setup_trigger_network.assert_called_once_with(
-                trigger_address=7,
-                sequencer_id=0
-            )
-            # The QCM should not receive the call
-            mock_instruments[0]._setup_trigger_network.assert_not_called()
+        # QbloxQRM is mock_instruments[1], channel 0
+        mock_instruments[1]._setup_trigger_network.assert_called_once_with(
+            trigger_address=7,
+            sequencer_id=0
+        )
+        # The QCM should not receive the call
+        mock_instruments[0]._setup_trigger_network.assert_not_called()

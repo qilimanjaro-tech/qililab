@@ -150,10 +150,8 @@ class QbloxQRM(QbloxModule):
             list[QbloxQProgramMeasurementResult]: Acquired Qblox results in chronological order.
         """
         results = []
+        sequencer = next((sequencer for sequencer in self.awg_sequencers if sequencer.identifier == channel_id), None)
         for acquisition, acquisition_data in acquisitions.items():
-            sequencer = next(
-                (sequencer for sequencer in self.awg_sequencers if sequencer.identifier == channel_id), None
-            )
             if sequencer is not None and sequencer.identifier in self.sequences:
                 self.device.get_acquisition_status(
                     sequencer=sequencer.identifier,
@@ -303,6 +301,9 @@ class QbloxQRM(QbloxModule):
         if parameter == Parameter.ACQUISITION_TIMEOUT:
             self._set_acquisition_timeout(value=int(value), sequencer_id=channel_id)
             return
+        if parameter == Parameter.TIMEOUT_REPETITIONS:
+            self._set_timeout_repetitions(value=int(value), sequencer_id=channel_id)
+            return
         if parameter == Parameter.SCOPE_STORE_ENABLED:
             self._set_scope_store_enabled(value=value, sequencer_id=channel_id)
             return
@@ -446,6 +447,15 @@ class QbloxQRM(QbloxModule):
             ValueError: when value type is not float or int
         """
         cast("QbloxADCSequencer", self.get_sequencer(sequencer_id)).acquisition_timeout = int(value)
+
+    def _set_timeout_repetitions(self, value: int, sequencer_id: int):
+        """set timeout_repetitions for the specific channel
+
+        Args:
+            value (int): value to update
+            sequencer_id (int): sequencer to update the value
+        """
+        cast("QbloxADCSequencer", self.get_sequencer(sequencer_id)).timeout_repetitions = int(value)
 
     def _set_scope_store_enabled(self, value: float | str | bool, sequencer_id: int):
         """set scope_store_enable

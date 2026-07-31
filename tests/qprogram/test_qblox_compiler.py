@@ -4,6 +4,8 @@ from unittest.mock import MagicMock, patch
 import numpy as np
 from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix, NonLinearCrosstalkMatrix
 from qililab.waveforms import Arbitrary
+from qililab.pulse_distortion import ExponentialCorrection
+
 import pytest
 import qpysequence as QPy
 
@@ -5920,7 +5922,54 @@ main:
         with pytest.raises(TypeError, match=re.escape("qprogram.measure_reset() cannot be used in conjunction with crosstalk compensation.")):
             compiler.compile(qprogram=qp, crosstalk=crosstalk)
 
+    def test_bus_distortions_applied_at_compile_time(self):
+        """Test that `bus_distortions` passed to `QbloxCompiler.compile` are baked into the compiled waveforms."""
+        distortion = ExponentialCorrection(tau_exponential=1.0, amp=0.5)
 
+        drive_wf = Square(amplitude=1.0, duration=100)
+        readout_wf = IQPair(I=Square(amplitude=1.0, duration=100), Q=Square(amplitude=0.0, duration=100))
+
+        qp = QProgram()
+        qp.play(bus="drive", waveform=drive_wf)
+        qp.play(bus="readout", waveform=readout_wf)
+
+        compiler = QbloxCompiler()
+        sequences, _ = compiler.compile(qprogram=qp, bus_distortions={"drive": [distortion]})
+
+        # The distorted bus stores the filtered envelope, not the original square pulse.
+        drive_waveform = sequences["drive"]._waveforms._waveforms[0]
+        expected = distortion.apply(drive_wf.envelope())
+        np.testing.assert_allclose(drive_waveform.data, expected)
+        assert not np.allclose(drive_waveform.data, drive_wf.envelope())
+
+        # A bus not present in `bus_distortions` is compiled untouched.
+        readout_waveform_i = sequences["readout"]._waveforms._waveforms[0]
+        np.testing.assert_allclose(readout_waveform_i.data, readout_wf.get_I().envelope())
+
+    def test_bus_distortions_measure_reset_control_bus_raises_at_compile_time(self):
+        """Test that distortions on a MeasureReset's control_bus raise NotImplementedError through the compiler."""
+        distortion = ExponentialCorrection(tau_exponential=1.0, amp=0.5)
+        square_wf = IQPair(Square(amplitude=0.1, duration=50), Square(amplitude=0.1, duration=50))
+        weights_wf = IQPair(Square(amplitude=1, duration=50), Square(amplitude=1, duration=50))
+
+        qp = QProgram()
+        qp.qblox.measure_reset(
+            bus="readout",
+            waveform=square_wf,
+            weights=weights_wf,
+            control_bus="drive",
+            reset_pulse=square_wf,
+        )
+
+        compiler = QbloxCompiler()
+        with pytest.raises(
+            NotImplementedError,
+            match=re.escape(
+                "Applying pulse distortions to the control bus of a `MeasureReset` (active reset) "
+                "operation is not supported, but bus 'drive' has distortions configured."
+            ),
+        ):
+            compiler.compile(qprogram=qp, bus_distortions={"drive": [distortion]})
 
     def test_qblox_play_zero_wait_time(self, qblox_play_zero_wait_time: QProgram):
         compiler = QbloxCompiler()

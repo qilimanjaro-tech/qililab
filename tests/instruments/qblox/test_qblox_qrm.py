@@ -153,6 +153,7 @@ class TestQbloxQRM:
             (Parameter.INTEGRATION_MODE, "ssb"),
             (Parameter.SEQUENCE_TIMEOUT, 2),
             (Parameter.ACQUISITION_TIMEOUT, 2),
+            (Parameter.TIMEOUT_REPETITIONS, 2),
             (Parameter.TIME_OF_FLIGHT, 80),
             (Parameter.SCOPE_STORE_ENABLED, True),
             (Parameter.THRESHOLD, 0.5),
@@ -196,6 +197,8 @@ class TestQbloxQRM:
             assert sequencer.sequence_timeout == value  # type: ignore[attr-defined]
         elif parameter == Parameter.ACQUISITION_TIMEOUT:
             assert sequencer.acquisition_timeout == value  # type: ignore[attr-defined]
+        elif parameter == Parameter.TIMEOUT_REPETITIONS:
+            assert sequencer.timeout_repetitions == value  # type: ignore[attr-defined]
         elif parameter == Parameter.TIME_OF_FLIGHT:
             assert sequencer.time_of_flight == value  # type: ignore[attr-defined]
         elif parameter in {Parameter.OFFSET_OUT0, Parameter.OFFSET_OUT1, Parameter.OFFSET_OUT2, Parameter.OFFSET_OUT3}:
@@ -263,6 +266,7 @@ class TestQbloxQRM:
             (Parameter.INTEGRATION_MODE, "ssb"),
             (Parameter.SEQUENCE_TIMEOUT, 5.0),
             (Parameter.ACQUISITION_TIMEOUT, 1.0),
+            (Parameter.TIMEOUT_REPETITIONS, 3),
             (Parameter.TIME_OF_FLIGHT, 120),
             (Parameter.SCOPE_STORE_ENABLED, False),
             (Parameter.THRESHOLD, 1.0),
@@ -414,6 +418,12 @@ class TestQbloxQRM:
             f"Expected exactly one empty-acquisitions call (final wipe), got {len(wipe_calls)}. "
             "With the buggy code the wipe happened inside the loop, once per acquisition."
         )
+
+    def test_acquire_qprogram_results_with_no_acquisitions_does_not_raise(self, qrm: QbloxQRM):
+        # QHC-1455 regression: empty acquisitions dict on a played-but-not-acquired bus must not raise UnboundLocalError.
+        results = qrm.acquire_qprogram_results(acquisitions={}, channel_id=0)
+
+        assert results == []
 
     def test_clear_cache(self, qrm: QbloxQRM):
         """Test clearing the cache of the QCM module."""

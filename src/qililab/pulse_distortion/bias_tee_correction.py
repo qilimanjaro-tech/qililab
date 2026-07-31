@@ -63,24 +63,19 @@ class BiasTeeCorrection(PulseDistortion):
     tau_bias_tee: float  #: Time constant.
     sampling_rate: float = 1.0  #: Sampling rate. Defaults to 1.
 
-    def apply(self, envelope: np.ndarray) -> np.ndarray:
+    def _filter(self, envelope: np.ndarray) -> np.ndarray:
         """Distorts envelopes (originally created to distort square envelopes).
 
         Corrects for a bias tee using a linear IIR filter with time constant tau.
 
-        If `self.auto_norm` is True (defaults to False). normalizes the resulting envelope to have the same real max height than the starting one.
-        (the max height is the furthest number from 0, only checking the real axis/part).
-        If the corrected envelope is zero everywhere or doesn't have a real part this process is skipped.
-
-        Finally it applies the manual `self.norm_factor` to the result, reducing the full envelope by its magnitude.
-
-        For further details on the normalization implementation see the docstring on :class:`PulseDistortion` base class.
+        This returns the raw filtered envelope; normalization (`auto_norm` and `norm_factor`) is
+        applied afterwards by `apply` via the base class `normalize_envelope`.
 
         Args:
             envelope (numpy.ndarray): Array representing the envelope of a pulse for each time step.
 
         Returns:
-            numpy.ndarray: Amplitude of the envelope for each time step.
+            numpy.ndarray: Amplitude of the filtered (not yet normalized) envelope for each time step.
         """
         # Parameters
         k = 2 * self.tau_bias_tee * self.sampling_rate
@@ -90,5 +85,4 @@ class BiasTeeCorrection(PulseDistortion):
         b = [(k + 1) / k, -(k - 1) / k]
 
         # Filtered signal
-        corr_envelope = signal.lfilter(b=b, a=a, x=envelope)
-        return self.normalize_envelope(envelope=envelope, corr_envelope=corr_envelope)
+        return signal.lfilter(b=b, a=a, x=envelope)
