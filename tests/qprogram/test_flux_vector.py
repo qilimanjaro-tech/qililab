@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 
 from qililab import Square, Arbitrary
-from qililab.core.variables import Domain, Variable, VariableExpression
+from qililab.core import Domain, Variable, VariableExpression
 from qililab.qprogram.blocks import ForLoop, Loop, Parallel
 from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix, NonLinearCrosstalkMatrix
 from qililab.qprogram.flux_vector import FluxVector, NonLinearFluxVector
