@@ -109,8 +109,21 @@ class PulseDistortion(FactoryElement):
     auto_norm: bool = False  #: Auto-normalization flag. Defaults to False.
 
     @abstractmethod
+    def _filter(self, envelope: np.ndarray) -> np.ndarray:
+        """Applies the raw correction filter to the given envelope, without any normalization.
+
+        Args:
+            envelope (np.ndarray): Original pulse envelope to be distorted.
+
+        Returns:
+            np.ndarray: Filtered (not yet normalized) pulse envelope.
+        """
+
     def apply(self, envelope: np.ndarray) -> np.ndarray:
-        """Applies the distortion to the given envelope.
+        """Applies the distortion to the given envelope and normalizes the result.
+
+        Runs the child's correction filter and then applies `normalize_envelope` (controlled by the
+        `auto_norm` and `norm_factor` attributes).
 
         Args:
             envelope (np.ndarray): Original pulse envelope to be distorted.
@@ -118,6 +131,34 @@ class PulseDistortion(FactoryElement):
         Returns:
             np.ndarray: Distorted pulse envelope.
         """
+        return self.normalize_envelope(envelope=envelope, corr_envelope=self._filter(envelope))
+
+    def amplitude_gain(self, envelope: np.ndarray) -> float:
+        """Peak amplification that the raw correction filter applies to the given envelope.
+
+        This is the ratio between the real max height of the filtered envelope (before any
+        normalization) and that of the original envelope, i.e. the factor by which the predistortion
+        inflates the pulse amplitude. It is a pure property of the filter and the envelope shape, and
+        does not depend on `auto_norm` or `norm_factor`.
+
+        It is useful when the distorted pulse is normalized back into the sequencer range (e.g. with
+        `auto_norm=True`): the played waveform is then divided by this factor, so the sequencer gain
+        must be multiplied by it to reach the same physical amplitude, and the maximum reachable
+        amplitude for a unit-height pulse is ``1 / amplitude_gain(unit_pulse)``.
+
+        Args:
+            envelope (np.ndarray): Envelope to evaluate the filter gain on (typically a unit-height
+                pulse of the same shape and duration as the one that will be played).
+
+        Returns:
+            float: The peak amplification factor. Defaults to 1.0 if the envelope has no real part or
+            is zero everywhere.
+        """
+        real_norm = np.max(np.abs(np.real(envelope)))
+        if real_norm == 0:
+            return 1.0
+        corr_norm = np.max(np.abs(np.real(self._filter(envelope))))
+        return float(corr_norm / real_norm)
 
     @classmethod
     def from_dict(cls: Type[T], dictionary: dict) -> T:

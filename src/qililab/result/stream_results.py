@@ -89,15 +89,19 @@ class StreamArray:
             StreamArray: StreamArray class created
         """
         try:
+            calibration = self.calibration
+            if calibration is None and self.platform is not None:
+                calibration = self.platform.calibration
+
             if self.autocalibration:
-                if not self.calibration:
+                if not calibration:
                     raise ValueError("For autocalibration a Calibration file is mandatory.")
                 self.measurement = self.db_manager.add_autocal_measurement(
                     experiment_name=self.experiment_name,
                     qubit_idx=self.qubit_idx,
                     platform=self.platform.to_dict() if self.platform else None,
                     qprogram=serialize(self.qprogram) if self.qprogram else None,
-                    calibration=self.calibration,
+                    calibration=calibration,
                     parameters=self.loops,
                     data_shape=self.shape,
                 )
@@ -108,7 +112,7 @@ class StreamArray:
                     optional_identifier=self.optional_identifier,
                     platform=self.platform.to_dict() if self.platform else None,
                     qprogram=serialize(self.qprogram) if self.qprogram else None,
-                    calibration=serialize(self.calibration) if self.calibration else None,
+                    calibration=serialize(calibration) if calibration else None,
                     debug_file=self._get_debug() if self.platform and self.qprogram else None,
                     dc_offsets=self._get_offsets() if self.platform else None,
                     target=self._get_index_list(self.qubit_idx),

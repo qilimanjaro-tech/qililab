@@ -67,26 +67,21 @@ class ExponentialCorrection(PulseDistortion):
     amp: float  #: Amplitude constant. Value between 0 and 1.
     sampling_rate: float = 1.0  #: Sampling rate. Defaults to 1.
 
-    def apply(self, envelope: np.ndarray) -> np.ndarray:
+    def _filter(self, envelope: np.ndarray) -> np.ndarray:
         """Distorts envelopes (originally created to distort square envelopes).
 
         Corrects an exponential decay using a linear IIR filter.
 
         Fitting should be done to y = g*(1+amp*exp(-t/tau)), where g is ignored in the corrections.
 
-        If `self.auto_norm` is True (defaults to False) normalizes the resulting envelope to have the same real max height than the starting one.
-        (the max height is the furthest number from 0, only checking the real axis/part).
-        If the corrected envelope is zero everywhere or doesn't have a real part this process is skipped.
-
-        Finally it applies the manual `self.norm_factor` to the result, reducing the full envelope by its magnitude.
-
-        For further details on the normalization implementation see the docstring on :class:`PulseDistortion` base class.
+        This returns the raw filtered envelope; normalization (`auto_norm` and `norm_factor`) is
+        applied afterwards by `apply` via the base class `normalize_envelope`.
 
         Args:
             envelope (numpy.ndarray): Array representing the envelope of a pulse for each time step.
 
         Returns:
-            numpy.ndarray: Amplitude of the envelope for each time step.
+            numpy.ndarray: Amplitude of the filtered (not yet normalized) envelope for each time step.
         """
         if self.amp >= 0.0:
             # Parameters
@@ -108,5 +103,4 @@ class ExponentialCorrection(PulseDistortion):
             b_1 = (-2 * self.tau_exponential + 1) / denominator
 
         # Filtered signal
-        corr_envelope = signal.lfilter(b=[b_0, b_1], a=[1, a_1], x=envelope)
-        return self.normalize_envelope(envelope=envelope, corr_envelope=corr_envelope)
+        return signal.lfilter(b=[b_0, b_1], a=[1, a_1], x=envelope)

@@ -51,6 +51,7 @@ from qililab.yaml import yaml
 
 if TYPE_CHECKING:
     from qililab.extra.quantum_machines.qprogram.quantum_machines_compiler import QuantumMachinesCompilationOutput
+    from qililab.pulse_distortion.pulse_distortion import PulseDistortion
     from qililab.qprogram.qblox_compiler import QbloxCompilationOutput
     from qililab.qprogram.qdac_compiler import QdacCompilationOutput
 
@@ -1040,6 +1041,72 @@ class QProgram(StructuredProgram):
 
         copied_qprogram = deepcopy(self)
         traverse(copied_qprogram.body)
+        return copied_qprogram
+
+    def with_distortions(self, bus_distortions: dict[str, list["PulseDistortion"]]) -> "QProgram":
+        """Returns a copy of the QProgram with pulse distortions applied to the played waveforms.
+
+        For every ``Play``, ``Measure`` and ``MeasureReset`` operation whose bus is present in
+        ``bus_distortions``, the corresponding distortions are applied in order to the operation's
+        waveform. Each distortion is evaluated on the waveform's envelope and the result is stored as
+        an ``Arbitrary`` waveform (an ``IQPair`` of ``Arbitrary`` waveforms for I/Q waveforms), so the
+        applied distortions are baked into the samples that will later be compiled and uploaded.
+
+        Note:
+            The ``reset_pulse`` of a ``MeasureReset`` operation is played on ``control_bus`` at
+            compile time (not part of the QProgram tree this method traverses), so it cannot be
+            distorted here. Configuring distortions on a bus used as ``control_bus`` in a
+            ``MeasureReset`` is not supported and raises ``NotImplementedError``.
+
+        Args:
+            bus_distortions (dict[str, list[PulseDistortion]]): A dictionary mapping each bus alias to
+                the list of distortions to apply, in the order they should be applied, to the
+                waveforms played on that bus.
+
+        Returns:
+            QProgram: A new instance of QProgram with the distortions applied to the affected
+            waveforms. The original QProgram is left unchanged.
+
+        Raises:
+            NotImplementedError: If a ``MeasureReset`` operation uses, as its ``control_bus``, a bus
+                that has distortions configured.
+        """
+
+        def traverse(block: Block):
+            for index, element in enumerate(block.elements):
+                if isinstance(element, Block):
+                    traverse(element)
+                elif isinstance(element, (Play, Measure, MeasureReset)):
+                    if isinstance(element, MeasureReset) and element.control_bus in bus_distortions:
+                        raise NotImplementedError(
+                            "Applying pulse distortions to the control bus of a `MeasureReset` (active "
+                            f"reset) operation is not supported, but bus '{element.control_bus}' has "
+                            "distortions configured."
+                        )
+                    if element.bus in bus_distortions:
+                        waveform = element.waveform
+                        for distortion in bus_distortions[element.bus]:
+                            if isinstance(waveform, IQWaveform):
+                                distorted_waveform_I = Arbitrary(distortion.apply(waveform.get_I().envelope()))
+                                distorted_waveform_Q = Arbitrary(distortion.apply(waveform.get_Q().envelope()))
+                                distorted_waveform: IQPair | Arbitrary = IQPair(
+                                    I=distorted_waveform_I, Q=distorted_waveform_Q
+                                )
+                            elif isinstance(waveform, Waveform):
+                                distorted_waveform = Arbitrary(distortion.apply(waveform.envelope()))
+                            else:
+                                raise NotImplementedError(
+                                    f"Cannot apply distortions to waveform of type {type(waveform)}."
+                                )
+                            waveform = distorted_waveform
+                        block.elements[index].waveform = waveform  # type: ignore [union-attr]
+
+        # Copy qprogram so the original remain unaffected
+        copied_qprogram = deepcopy(self)
+
+        # Recursively traverse qprogram applying the distortions to all waveforms
+        traverse(copied_qprogram.body)
+
         return copied_qprogram
 
     @overload

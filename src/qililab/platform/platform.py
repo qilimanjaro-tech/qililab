@@ -68,6 +68,7 @@ from qililab.result.qprogram.qblox_measurement_result import QbloxMeasurementRes
 from qililab.result.qprogram.qprogram_results import QProgramResults
 from qililab.result.stream_results import StreamArray
 from qililab.typings import ChannelID, DistortionState, InstrumentName, OutputID, Parameter, ParameterValue
+from qililab.utils.serialization import deserialize_from
 
 if TYPE_CHECKING:
     import numpy as np
@@ -332,6 +333,9 @@ class Platform:
 
         self._qpy_sequence_cache: dict[str, str] = {}
         """Dictionary for caching qpysequences."""
+
+        self.calibration: Calibration | None = None
+        """Calibration class introduced to platform, defaults to None"""
 
         self.crosstalk: CrosstalkMatrix | None = None
         """Crosstalk matrix information, defaults to None (only used on FLUX parameters)"""
@@ -847,6 +851,17 @@ class Platform:
 
         self.flux_vector[alias] = value
 
+    def set_calibration(self, calibration: Calibration | str) -> None:
+        """Sets the Calibration class from a given Calibration or the file's path.
+
+        Args:
+            calibration (Calibration | str): Calibration class or file path.
+        """
+        if isinstance(calibration, str):
+            self.calibration = deserialize_from(file=calibration, cls=Calibration)
+            return
+        self.calibration = calibration
+
     def set_crosstalk(self, crosstalk: CrosstalkMatrix):
         """Sets the crosstalk matrix using the crosstalk matrix class.
 
@@ -1289,6 +1304,8 @@ class Platform:
             # Determine what should be the initial value of the markers for each bus.
             # This depends on the model of the associated Qblox module and the `output` setting of the associated sequencer.
             markers = {}
+            # In this bus loop the distortions are also stored.
+            bus_distortions = {}
             single_channel = []
             for bus in buses:
                 for instrument, channel in zip(bus.instruments, bus.channels):
@@ -1306,6 +1323,8 @@ class Platform:
                             markers[bus.alias] = "0000"
                             if len(sequencer.outputs) == 1:
                                 single_channel.append(bus.alias)
+                if bus.distortions:
+                    bus_distortions[bus.alias] = bus.distortions
 
             qblox_compiler = QbloxCompiler()
             qblox_buses = [
@@ -1322,6 +1341,7 @@ class Platform:
                     ext_trigger=ext_trigger,
                     qblox_buses=qblox_buses,
                     single_channel=single_channel,
+                    bus_distortions=bus_distortions,
                     crosstalk=self.crosstalk if crosstalk else None,
                 ),
                 qdac=compiled_qdac,
@@ -1392,10 +1412,6 @@ class Platform:
                     for controller in self.instrument_controllers.elements:
                         if isinstance(controller, QbloxClusterController):
                             controller.device.reset_trigger_monitor_count(address=trigger_address)
-                if bus.distortions:
-                    for distortion in bus.distortions:
-                        for waveform in sequences[bus_alias]._waveforms._waveforms:
-                            sequences[bus_alias]._waveforms.modify(waveform.name, distortion.apply(waveform.data))
             if debug:
                 with open("debug_qblox_execution.txt", "w", encoding="utf-8") as sourceFile:
                     for bus_alias, sequence in sequences.items():
@@ -1597,6 +1613,9 @@ class Platform:
             QProgramResults: The results of the execution. ``QProgramResults.results()`` returns a dictionary (``dict[str, list[Result]]``) of measurement results.
             The keys correspond to the buses a measurement were performed upon, and the values are the list of measurement results in chronological order.
         """
+        if calibration is None:
+            calibration = self.calibration
+
         output = self.compile_qprogram(
             qprogram=qprogram, bus_mapping=bus_mapping, calibration=calibration, crosstalk=crosstalk
         )
@@ -1695,6 +1714,9 @@ class Platform:
         """
         if not qprograms:
             return []
+        # Fall back to the platform-level calibration when none is provided.
+        if calibrations is None:
+            calibrations = self.calibration
 
         # Normalize mappings and calibrations to one-per-qprogram
         bus_mapping_list = self._normalize_bus_mappings(bus_mappings=bus_mappings, n=len(qprograms))
