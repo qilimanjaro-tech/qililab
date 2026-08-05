@@ -20,6 +20,13 @@ jobs:
 
     env:
       HOME_REPO: /home/repo
+      CA_DOMAIN: qilimanjaro
+      CA_DOMAIN_OWNER: "723412851021"
+      CA_REGION: eu-west-1
+    
+    permissions:
+      contents: read
+      id-token: write  # OIDC: needed to read the private CodeArtifact indexes during the build
 
     strategy:
       matrix:
@@ -42,8 +49,48 @@ jobs:
             **/uv.lock
           python-version: ${{ matrix.python-version }}
 
-      - name: Install the project
-        run: uv sync --group dev --all-extras
+      - name: Configure AWS Credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@e6de054238d6b7531b4efff3b6587d9aade6a06c  # v6.2.3
+        with:
+          role-to-assume: arn:aws:iam::723412851021:role/GitHub_actions_role
+          aws-region: eu-west-1
+          role-session-name: GitHubActions-DevOps
+      
+      - name: Assume deploy role in target account
+        id: chained
+        uses: aws-actions/configure-aws-credentials@e6de054238d6b7531b4efff3b6587d9aade6a06c  # v6.2.3
+        with:
+          role-to-assume: arn:aws:iam::723412851021:role/Code-Artifact-Publish
+          aws-region: eu-west-1
+          role-session-name: GitHubActions-Deploy
+          role-chaining: true
+          role-skip-session-tagging: true
+      
+      - name: Authenticate uv to CodeArtifact
+        shell: bash
+        run: |
+          token="$(
+            aws codeartifact get-authorization-token \
+              --domain "$CA_DOMAIN" \
+              --domain-owner "$CA_DOMAIN_OWNER" \
+              --region "$CA_REGION" \
+              --duration-seconds 0 \
+              --query authorizationToken \
+              --output text
+          )"
+
+          test -n "$token"
+          test "$token" != "None"
+
+          # Prevent accidental exposure in GitHub Actions logs.
+          echo "::add-mask::$token"
+
+          # These names must match [[tool.uv.index]].name = "qilimanjaro".
+          printf 'UV_INDEX_QILIMANJARO_USERNAME=%s\n' "aws" >> "$GITHUB_ENV"
+          printf 'UV_INDEX_QILIMANJARO_PASSWORD=%s\n' "$token" >> "$GITHUB_ENV"
+
+      - name: Install dependencies
+        run: uv sync --locked --group dev --all-extras
 
       - name: Ruff Lint
         run: uv run ruff check --output-format=github .
