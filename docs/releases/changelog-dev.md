@@ -7,6 +7,9 @@
 
 ### Improvements
 
+- Added Dependabot configuration to keep GitHub Actions and Python dependencies up to date automatically.
+  [#1172](https://github.com/qilimanjaro-tech/qililab/pull/1172)
+
 ### Breaking changes
 
 ### Deprecations / Removals
