@@ -8,8 +8,8 @@ name: Publish
 # template); if you change one, mirror it in the other.
 
 on:
-  # Manual only: publishing qililab is always a deliberate act, never a side effect of tagging.
-  # (Releases publish to PyPI via pythonpublish.yml; CodeArtifact is opt-in from here.)
+  release:
+    types: [published]
   workflow_dispatch:
     inputs:
       repository:
@@ -27,8 +27,7 @@ on:
         default: false
 
 concurrency:
-  # Keyed on what is actually being published, so two runs for the same tag queue instead of racing.
-  group: publish-${{ inputs.ref || github.ref }}
+  group: publish-${{ inputs.ref || github.event.release.tag_name || github.ref }}
   cancel-in-progress: false
 
 jobs:
@@ -113,7 +112,7 @@ jobs:
       AWS_REGION: eu-west-1
       CA_DOMAIN: qilimanjaro
       CA_DOMAIN_OWNER: "723412851021"
-      CA_REPOSITORY: ${{ inputs.repository }}
+      CA_REPOSITORY: ${{ inputs.repository || 'qilimanjaro' }}
     permissions:
       contents: read
       id-token: write  # required to request the OIDC token for AWS
