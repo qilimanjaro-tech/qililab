@@ -2,28 +2,8 @@
 
 ### New features since last release
 
-- Added `fitting_path` and `fitting_parameters` columns to `Measurements` database. These optional fields add the location folder of the resulting fit plots and the outcome parameters of those fittings respectively. The path is introduced as a string and the parameters as a dictionary with the parameter name as a string. Those can be added at three different levels:
-  - Using the `Measurement` database table with `meas.add_fitting(db_manager, path, parameters)`. The only inconvenience is that the user needs to add the database manager.
-  - Using `DatabaseManager` with `db_manager.add_fitting(id, path, parameters)`. Using an ID like `load_by_id`. This method is ideal to add the fitting results in a later session (for completed experiments or if the post processing of the data has been done in a separate Python instance).
-  - Using `StreamArray` with `stream_array.add_fitting(path, parameters)` after a measurement that used `StreamArray`. This is the simplest way of adding the fit results as it requires no ID nor session but it requires the instance of `StreamArray` to still be loaded. The ideal scenario is for fits done in sequence after measurements (such as a `qilitools` implementation).
-  [#1162](https://github.com/qilimanjaro-tech/qililab/pull/1162)
-
-- Updated `electrical_delay` to be a changeable parameter for the keysight E5080b and not just a software setting used in the auto-ploting.
-  [#1047](https://github.com/qilimanjaro-tech/qililab/pull/1047)
-
-- Added bus_mapping to measurement database table `Measurement`. Bus mapping is necessary for live plot drawing of the qprogram and it has been information missing in the database. StreamArray already has the bus_mapping as an input, this input is the dictionary that will be saved in the database.
-  [#1136](https://github.com/qilimanjaro-tech/qililab/pull/1136)
-
-- Added `sort_buses` and `argsort_buses` to `qililab.utils`, utilities that order bus identifiers into a stable, easy to read order:
-    1. Count of integers in the name; single-index qubit buses (one number) sort
-       before two-index couplers, e.g. "flux q9" before "coupler 0 1".
-    2. The integers themselves, compared numerically; so "drive q2" sorts before
-       "drive q10" (plain alphabetical order would put q10 first).
-    3. Bus type: readout < drive < flux < unspecified.
-    4. Loop type: z < x < unspecified (x and z are only identified if there are no surrounding letters).
-    5. The raw string, as a final alphabetical tiebreak for full determinism.
-  `argsort_buses` also returns the sort permutation, so a matrix and its bus labels can be reordered together.
-  [#1161](https://github.com/qilimanjaro-tech/qililab/pull/1161)
+- Added `platform.set_calibration`, which stores a `Calibration` (given an instance or file path) on the platform. `execute_qprogram`, `execute_qprograms_parallel`, and database/stream saving now fall back to it when no `calibration` argument is passed; an explicit argument always overrides it.
+  [#1165](https://github.com/qilimanjaro-tech/qililab/pull/1165)
 
 ### Improvements
 
@@ -86,23 +66,6 @@
   [#1117](https://github.com/qilimanjaro-tech/qililab/pull/1117)
 
 ### Breaking changes
-
-- Added `timeout_repetitions` parameter for QRM and QRM-RF instruments sequencers inside the runcard. This parameter controls how many (if any) executions of the same qblox qprogram execution must be done after an acquisition `TimeoutError`. Defaults to no repetitions.
-In the runcard this parameter is located inside the instruments sequencer for QRM and QRM-RF modules.
-
-  ```
-    - name: QRM-RF
-    alias: QRM-RF1
-    ...
-    awg_sequencers:
-    - identifier: 0
-      ...
-      acquisition_timeout: 1  # In minutes
-      timeout_repetitions: 3  # Optional parameter, defaults to None
-      ...
-  ```
-
-  [#1106](https://github.com/qilimanjaro-tech/qililab/pull/1106)
 
 ### Deprecations / Removals
 
