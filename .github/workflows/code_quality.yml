@@ -74,18 +74,18 @@ jobs:
           AWS_SESSION_TOKEN: ${{ steps.chained.outputs.aws-session-token }}
           AWS_REGION: eu-west-1
         run: |
-          TOKEN=$(aws codeartifact get-authorization-token \
-            --domain "$CA_DOMAIN" \
-            --domain-owner "$CA_DOMAIN_OWNER" \
-            --query authorizationToken \
-            --output text)
-          echo "::add-mask::$TOKEN"
-          # netrc matches on the host, so one entry authenticates every [[tool.uv.index]] on
-          # this domain regardless of how the indexes are named or how many there are.
-          CA_HOST="${CA_DOMAIN}-${CA_DOMAIN_OWNER}.d.codeartifact.${CA_REGION}.amazonaws.com"
-          umask 077
-          printf 'machine %s login aws password %s\n' "$CA_HOST" "$TOKEN" > "${RUNNER_TEMP}/codeartifact.netrc"
-          export NETRC="${RUNNER_TEMP}/codeartifact.netrc"
+          # TOKEN=$(aws codeartifact get-authorization-token \
+          #   --domain "$CA_DOMAIN" \
+          #   --domain-owner "$CA_DOMAIN_OWNER" \
+          #   --query authorizationToken \
+          #   --output text)
+          # echo "::add-mask::$TOKEN"
+          # # netrc matches on the host, so one entry authenticates every [[tool.uv.index]] on
+          # # this domain regardless of how the indexes are named or how many there are.
+          # CA_HOST="${CA_DOMAIN}-${CA_DOMAIN_OWNER}.d.codeartifact.${CA_REGION}.amazonaws.com"
+          # umask 077
+          # printf 'machine %s login aws password %s\n' "$CA_HOST" "$TOKEN" > "${RUNNER_TEMP}/codeartifact.netrc"
+          # export NETRC="${RUNNER_TEMP}/codeartifact.netrc"
           uv sync --group dev --all-extras
 
       - name: Ruff Lint
