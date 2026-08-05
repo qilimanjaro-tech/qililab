@@ -86,5 +86,4 @@ jobs:
       run: uv sync --locked --group dev --all-extras
 
     - name: Build docs
-      run: |
-        uv run sphinx-build -W -b html docs docs/_build --keep-going
+      run: uv run sphinx-build -W -b html docs docs/_build --keep-going
