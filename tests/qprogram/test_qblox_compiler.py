@@ -7,9 +7,9 @@ from qililab.pulse_distortion import ExponentialCorrection
 from qililab.waveforms.arbitrary import Arbitrary
 import pytest
 import qpysequence as QPy
-
-from qililab import Calibration, Domain, FlatTop, Gaussian, IQDrag, IQPair, QProgram, Square
-from qililab.qprogram.qblox_compiler import QbloxCompiler
+import qpysequence.program.instructions as QPyInstructions
+from qililab.qprogram.operations import SetFrequency, SetPhase, SetGain, SetOffset, Wait, ResetPhase
+from qililab import Calibration, Domain, FlatTop, Gaussian, IQPair, IQDrag, QProgram, Square
 from qililab.qprogram.blocks import ForLoop
 from qililab.qprogram import QbloxCompiler
 from tests.test_utils import is_q1asm_equal
@@ -139,6 +139,17 @@ def fixture_offset_loop_negative() -> QProgram:
         qp.set_offset(bus="drive", offset_path0=variable_offset, offset_path1=-0.5)
     with qp.for_loop(variable=variable_offset, start=0.0, stop=0.2, step=0.1):
         qp.set_offset(bus="drive", offset_path0=-0.5, offset_path1=variable_offset)
+    return qp
+
+
+@pytest.fixture(name="offset_loop_two_variables")
+def fixture_offset_loop_two_variables() -> QProgram:
+    qp = QProgram()
+    offset_a = qp.variable(label="offset_a", domain=Domain.Voltage)
+    offset_b = qp.variable(label="offset_b", domain=Domain.Voltage)
+    with qp.for_loop(variable=offset_a, start=0.0, stop=0.2, step=0.1):
+        with qp.for_loop(variable=offset_b, start=0.0, stop=0.3, step=0.1):
+            qp.set_offset(bus="drive", offset_path0=offset_a, offset_path1=offset_b)
     return qp
 
 
@@ -636,7 +647,6 @@ def fixture_play_operation_with_variable_in_waveform() -> QProgram:
 def update_latched_param() -> QProgram:
     qp = QProgram()
     qp.set_offset("drive", 1, 0)
-    qp.wait(bus="drive", duration=0)
     qp.play(bus="drive", waveform=Square(amplitude=1, duration=100))
     qp.set_phase("drive", 1)
     qp.wait(bus="drive", duration=4)
@@ -742,14 +752,14 @@ def fixture_measure_reset_program() -> QProgram:
     return qp
 
 
-@pytest.fixture(name="wait_comprised_between_65532_65535")
-def fixture_wait_comprised_between_65532_65535() -> QProgram:
+@pytest.fixture(name="wait_comprised_between_65535_65538")
+def fixture_wait_comprised_between_65535_65538() -> QProgram:
     qp = QProgram()
-    qp.wait("drive",duration=65532*2)
+    qp.wait("drive",duration=65535*2)
     qp.play("drive", Square(1,20))
-    qp.wait(bus="drive", duration=65532)
+    qp.wait(bus="drive", duration=65535)
     qp.play("drive", Square(1,20))
-    qp.wait(bus="drive", duration=65534)
+    qp.wait(bus="drive", duration=65537)
     return qp
 
 
@@ -1108,6 +1118,7 @@ def inner_average_outer_sweep() -> QProgram:
     frequency = qp.variable(label="frequency", domain=Domain.Frequency)
     with qp.for_loop(variable=frequency, start=100, stop=200, step=10):
         with qp.average(shots=100):
+            qp.set_frequency(bus="readout", frequency=frequency)
             qp.measure(bus="readout", waveform=readout_pair, weights=weights_pair)
     return qp
 
@@ -1234,6 +1245,7 @@ def inner_average_outer_sweep_two_measures() -> QProgram:
     frequency = qp.variable(label="frequency", domain=Domain.Frequency)
     with qp.for_loop(variable=frequency, start=100, stop=200, step=10):
         with qp.average(shots=100):
+            qp.set_frequency(bus="readout", frequency=frequency)
             qp.measure(bus="readout", waveform=readout_pair, weights=weights_pair)
             qp.measure(bus="readout", waveform=readout_pair, weights=weights_pair)
     return qp
@@ -1246,6 +1258,7 @@ def inner_average_outer_sweep_three_measures() -> QProgram:
     frequency = qp.variable(label="frequency", domain=Domain.Frequency)
     with qp.for_loop(variable=frequency, start=100, stop=200, step=10):
         with qp.average(shots=100):
+            qp.set_frequency("readout", frequency)
             qp.measure(bus="readout", waveform=readout_pair, weights=weights_pair)
             qp.measure(bus="readout", waveform=readout_pair, weights=weights_pair)
             qp.measure(bus="readout", waveform=readout_pair, weights=weights_pair)
@@ -1329,7 +1342,7 @@ class TestQBloxCompiler:
                                 upd_param        4
                                 stop
             """
-        assert is_q1asm_equal(sequences["drive"]._program, drive_str)
+        assert is_q1asm_equal(sequences["drive"], drive_str)
 
         # RF example with the right markers
         sequences, _ = compiler.compile(qprogram=set_trigger, markers={"drive": "1100"})
@@ -1353,7 +1366,7 @@ class TestQBloxCompiler:
                                 upd_param        4
                                 stop
             """
-        assert is_q1asm_equal(sequences["drive"]._program, drive_str)
+        assert is_q1asm_equal(sequences["drive"], drive_str)
 
     def test_set_trigger_raises_no_output_error(self):
         qp = QProgram()
@@ -1383,7 +1396,7 @@ class TestQBloxCompiler:
         compiler = QbloxCompiler()
         sequences, _ = compiler.compile(qprogram=wait_trigger, ext_trigger=True)
 
-        assert sequences["drive"]._program._compiled
+        assert len(sequences["drive"]._program.compiler_flags) == 0
 
         drive_str = """
             setup:
@@ -1393,27 +1406,24 @@ class TestQBloxCompiler:
 
             main:
                             set_freq         4000000
-                            set_freq         4000000
                             upd_param        4
                             wait_trigger     15, 4
                             wait_sync        4
-                            set_freq         4000000
                             set_freq         4000000
                             upd_param        4
                             wait_trigger     1, 996
                             wait_sync        4
                             set_freq         4000000
-                            set_freq         4000000
                             upd_param        4
                             wait_trigger     1, 4
-                            wait             65532
-                            wait             65532
+                            wait             65535
+                            wait             4457
                             wait_sync        4
                             wait_trigger     1, 1000
                             wait_sync        4
                             wait_trigger     1, 4
-                            wait             65532
-                            wait             65532
+                            wait             65535
+                            wait             4461
                             wait_sync        4
                             set_mrk          0
                             upd_param        4
@@ -1427,7 +1437,6 @@ class TestQBloxCompiler:
                             upd_param        4
 
             main:
-                            set_freq         4000000
                             set_freq         4000000
                             wait_sync        4
                             wait_sync        4
@@ -1449,7 +1458,26 @@ class TestQBloxCompiler:
         ):
             compiler.compile(qprogram=wait_trigger, ext_trigger=False)
 
-    def test_wait_trigger_var_durationraises_error(self):
+    def test_wait_trigger_duration_above_max_wait_is_not_overshot(self):
+        """A wait_trigger longer than INST_MAX_WAIT must be split by LongWait without dropping the remainder."""
+        qp = QProgram()
+        qp.wait_trigger(bus="drive", duration=70000, port=1)
+
+        compiler = QbloxCompiler()
+        sequences, _ = compiler.compile(qprogram=qp, ext_trigger=True)
+
+        total_duration = 0
+        for line in repr(sequences["drive"]._program).splitlines():
+            tokens = line.split()
+            if not tokens:
+                continue
+            if tokens[0] == "wait_trigger":
+                total_duration += int(tokens[2])
+            elif tokens[0] == "wait":
+                total_duration += int(tokens[1])
+        assert total_duration == 70000
+
+    def test_wait_trigger_var_duration_raises_error_mapping(self):
 
         qp = QProgram()
         duration = qp.variable(label="duration", domain=Domain.Time)
@@ -1457,9 +1485,21 @@ class TestQBloxCompiler:
             qp.wait_trigger(bus="drive", duration=duration, port=1)
 
         compiler = QbloxCompiler()
-        with pytest.raises(ValueError, match="Wait trigger duration cannot be a Variable, it must be an int."):
+        with pytest.raises(ValueError, match="WaitTrigger does not support variable sweep in a loop."):
             compiler.compile(qprogram=qp, ext_trigger=True)
 
+    def test_wait_trigger_var_duration_raises_error_handler(self):
+
+        qp = QProgram()
+        duration = qp.variable(label="duration", domain=Domain.Time)
+        with qp.for_loop(variable=duration, start=4, stop=100, step=4):
+            qp.wait(bus="drive", duration=duration)
+            qp.wait_trigger(bus="drive", duration=duration, port=1)
+
+        compiler = QbloxCompiler()
+        with pytest.raises(ValueError, match="Wait trigger duration cannot be a Variable, it must be an int."):
+            compiler.compile(qprogram=qp, ext_trigger=True)
+    
     def test_block_handlers(self, measurement_blocked_operation: QProgram, calibration: Calibration):
         drag_wf = IQDrag(amplitude=1.0, duration=100, num_sigmas=5, drag_coefficient=1.5)
         readout_pair = IQPair(I=Square(amplitude=1.0, duration=1000), Q=Square(amplitude=0.0, duration=1000))
@@ -1511,7 +1551,7 @@ class TestQBloxCompiler:
         assert len(sequences["drive"]._waveforms._waveforms) == 2
         assert len(sequences["drive"]._acquisitions._acquisitions) == 0
         assert len(sequences["drive"]._weights._weights) == 0
-        assert sequences["drive"]._program._compiled
+        assert len(sequences["drive"]._program.compiler_flags) == 0
 
         drive_str = """
             setup:
@@ -1521,25 +1561,22 @@ class TestQBloxCompiler:
 
             main:
                             set_freq         1200
-                            set_freq         1200
                             set_ph           250000000
                             reset_ph
                             set_awg_gain     16383, 16383
-                            set_awg_gain     16383, 16383
-                            nop
                             set_awg_offs     16383, 16383
                             play             0, 1, 40
                             set_mrk          0
                             upd_param        4
                             stop
         """
-        assert is_q1asm_equal(sequences["drive"], drive_str)
+        assert is_q1asm_equal(sequences["drive"]._program, drive_str)
 
         assert len(sequences["readout"]._waveforms._waveforms) == 4
         assert len(sequences["readout"]._acquisitions._acquisitions) == 1
         assert sequences["readout"]._acquisitions._acquisitions[0].num_bins == 1
         assert len(sequences["readout"]._weights._weights) == 2
-        assert sequences["readout"]._program._compiled
+        assert len(sequences["readout"]._program.compiler_flags) == 0
 
         readout_str = """
             setup:
@@ -1585,24 +1622,21 @@ class TestQBloxCompiler:
                             wait_sync        4              
                             set_mrk          0              
                             upd_param        4              
-
-            main:
                             move             6553, R0       
-                            move             6553, R1       
-                            move             3, R2          
-                            move             0, R3          
+                            move             6553, R1  
+            main:
+                            move             0, R2          
+                            move             3, R3          
             loop_0:
-                            nop
-                            set_awg_offs     R3, R1         
-                            add              R3, 3276, R3   
-                            loop             R2, @loop_0                              
-                            move             3, R4          
-                            move             0, R5                                    
+                            set_awg_offs     R2, R1         
+                            add              R2, 3276, R2  
+                            loop             R3, @loop_0                      
+                            move             0, R4          
+                            move             3, R5                           
             loop_1:
-                            nop
-                            set_awg_offs     R0, R5         
-                            add              R5, 3276, R5   
-                            loop             R4, @loop_1    
+                            set_awg_offs     R0, R4         
+                            add              R4, 3276, R4   
+                            loop             R5, @loop_1    
                             set_mrk          0              
                             upd_param        4              
                             stop
@@ -1613,7 +1647,7 @@ class TestQBloxCompiler:
         compiler = QbloxCompiler()
         sequences, _ = compiler.compile(qprogram=offset_loop_negative)
 
-        assert sequences["drive"]._program._compiled
+        assert len(sequences["drive"]._program.compiler_flags) == 0
 
         drive_str = """
             setup:
@@ -1621,34 +1655,62 @@ class TestQBloxCompiler:
                             set_mrk          0
                             upd_param        4
 
+                            move             16383, R0      
+                            nop                             
+                            not              R0, R0         
+                            nop                             
+                            add              R0, 1, R0      
+                            move             16383, R1      
+                            nop                             
+                            not              R1, R1         
+                            nop                             
+                            add              R1, 1, R1  
             main:
-                            move             16383, R0
-                            nop
-                            not              R0, R0
-                            nop
-                            add              R0, 1, R0
-                            move             16383, R1
-                            nop
-                            not              R1, R1
-                            nop
-                            add              R1, 1, R1
-                            move             3, R2
-                            move             0, R3
+                            move             0, R2
+                            move             3, R3
             loop_0:
-                            nop
-                            set_awg_offs     R3, R1
-                            add              R3, 3276, R3
-                            loop             R2, @loop_0
-                            move             3, R4
-                            move             0, R5
+                            set_awg_offs     R2, R1
+                            add              R2, 3276, R2
+                            loop             R3, @loop_0
+                            move             0, R4
+                            move             3, R5
             loop_1:
-                            nop
-                            set_awg_offs     R0, R5
-                            add              R5, 3276, R5
-                            loop             R4, @loop_1
+                            set_awg_offs     R0, R4
+                            add              R4, 3276, R4
+                            loop             R5, @loop_1
                             set_mrk          0
                             upd_param        4
                             stop
+        """
+        assert is_q1asm_equal(sequences["drive"], drive_str)
+
+    def test_set_offset_with_two_independent_variables(self, offset_loop_two_variables: QProgram):
+        """offset_path0 and offset_path1 both being (different) Variables must use each variable's
+        own register directly, rather than the offset_path1=None shortcut where both paths collapse
+        onto the same register."""
+        compiler = QbloxCompiler()
+        sequences, _ = compiler.compile(qprogram=offset_loop_two_variables)
+
+        drive_str = """
+            setup:
+                    wait_sync        4
+                    set_mrk          0
+                    upd_param        4
+            main:
+                    move             0, R0
+                    move             3, R1
+            loop_0:
+                    move             0, R2
+                    move             4, R3
+            loop_1:
+                    set_awg_offs     R0, R2
+                    add              R2, 3276, R2
+                    loop             R3, @loop_1
+                    add              R0, 3276, R0
+                    loop             R1, @loop_0
+                    set_mrk          0
+                    upd_param        4
+                    stop
         """
         assert is_q1asm_equal(sequences["drive"], drive_str)
 
@@ -1666,13 +1728,13 @@ class TestQBloxCompiler:
                             upd_param        4
 
             main:
-                            move             11, R0
-                            move             100, R1
+                            move             100, R0
+                            move             11, R1
             loop_0:
                             play             0, 1, 40
-                            wait             R1
-                            add              R1, 10, R1
-                            loop             R0, @loop_0
+                            wait             R0
+                            add              R0, 10, R0
+                            loop             R1, @loop_0
                             set_mrk          0
                             upd_param        4
                             stop
@@ -1697,12 +1759,12 @@ class TestQBloxCompiler:
                             upd_param        4
 
             main:
-                            move             11, R0
-                            move             100, R1
+                            move             100, R0
+                            move             11, R1
             loop_0:
                             play             0, 1, 40
-                            add              R1, 10, R1
-                            loop             R0, @loop_0
+                            add              R0, 10, R0
+                            loop             R1, @loop_0
                             set_mrk          0
                             upd_param        4
                             stop
@@ -1715,14 +1777,13 @@ class TestQBloxCompiler:
                             upd_param        4
 
             main:
-                            move             11, R0
-                            move             100, R1
+                            move             100, R0
+                            move             11, R1
             loop_0:
-                            wait             R1
+                            wait             R0
                             play             0, 1, 40
-                            add              R1, 10, R1
-                            loop             R0, @loop_0
-                            nop
+                            add              R0, 10, R0
+                            loop             R1, @loop_0
                             set_mrk          0
                             upd_param        4
                             stop
@@ -1745,13 +1806,13 @@ class TestQBloxCompiler:
         assert len(sequences["drive"]._waveforms._waveforms) == 2
         assert len(sequences["drive"]._acquisitions._acquisitions) == 0
         assert len(sequences["drive"]._weights._weights) == 0
-        assert sequences["drive"]._program._compiled
+        assert len(sequences["drive"]._program.compiler_flags) == 0
 
         assert len(sequences["readout"]._waveforms._waveforms) == 2
         assert len(sequences["readout"]._acquisitions._acquisitions) == 1
         assert sequences["readout"]._acquisitions._acquisitions[0].num_bins == 1
         assert len(sequences["readout"]._weights._weights) == 1
-        assert sequences["readout"]._program._compiled
+        assert len(sequences["readout"]._program.compiler_flags) == 0
 
         drive_str = """
             setup:
@@ -1762,8 +1823,8 @@ class TestQBloxCompiler:
                             move             1000, R0
             avg_0:
                             play             0, 1, 40
-                            wait             65532
-                            wait             36468
+                            wait             65535
+                            wait             36465
                             loop             R0, @avg_0
                             set_mrk          0
                             upd_param        4
@@ -1779,8 +1840,8 @@ class TestQBloxCompiler:
             main:
                             move             1000, R0
             avg_0:
-                            wait             65532
-                            wait             34508
+                            wait             65535
+                            wait             34505
                             move             10, R1
             square_0:
                             play             0, 1, 100
@@ -1832,7 +1893,7 @@ class TestQBloxCompiler:
         assert len(sequences["drive"]._waveforms._waveforms) == 2
         assert len(sequences["drive"]._acquisitions._acquisitions) == 0
         assert len(sequences["drive"]._weights._weights) == 0
-        assert sequences["drive"]._program._compiled
+        assert len(sequences["drive"]._program.compiler_flags) == 0
 
         drive_str = """
             setup:
@@ -1856,7 +1917,7 @@ class TestQBloxCompiler:
         assert len(sequences["readout"]._acquisitions._acquisitions) == 1
         assert sequences["readout"]._acquisitions._acquisitions[0].num_bins == 1
         assert len(sequences["readout"]._weights._weights) == 1
-        assert sequences["readout"]._program._compiled
+        assert len(sequences["readout"]._program.compiler_flags) == 0
 
         readout_str = """
             setup:
@@ -1894,13 +1955,13 @@ class TestQBloxCompiler:
         assert len(sequences["drive"]._waveforms._waveforms) == 2
         assert len(sequences["drive"]._acquisitions._acquisitions) == 0
         assert len(sequences["drive"]._weights._weights) == 0
-        assert sequences["drive"]._program._compiled
+        assert len(sequences["drive"]._program.compiler_flags) == 0
 
         assert len(sequences["readout"]._waveforms._waveforms) == 2
         assert len(sequences["readout"]._acquisitions._acquisitions) == 1
         assert sequences["readout"]._acquisitions._acquisitions[0].num_bins == 3
         assert len(sequences["readout"]._weights._weights) == 2
-        assert sequences["readout"]._program._compiled
+        assert len(sequences["readout"]._program.compiler_flags) == 0
 
         drive_str = """
             setup:
@@ -1911,13 +1972,13 @@ class TestQBloxCompiler:
             main:
                             move             1000, R0
             avg_0:
-                            move             3, R1
-                            move             0, R2
+                            move             0, R1
+                            move             3, R2
             loop_0:
                             play             0, 1, 40
                             wait             2960
-                            add              R2, 1, R2
-                            loop             R1, @loop_0
+                            add              R1, 1, R1
+                            loop             R2, @loop_0
                             loop             R0, @avg_0
                             set_mrk          0
                             upd_param        4
@@ -1930,23 +1991,23 @@ class TestQBloxCompiler:
                 upd_param        4
 
             main:
-                            move             1000, R0
+                            move             1, R0
+                            move             0, R1
+                            move             1000, R2
             avg_0:
-                            move             1, R1
-                            move             0, R2
                             move             0, R3
-                            move             3, R4
-                            move             0, R5
+                            move             0, R4
+                            move             3, R5
             loop_0:
                             move             10, R6
             square_0:
                             play             0, 1, 100
                             loop             R6, @square_0
-                            acquire_weighed  0, R3, R2, R1, 2000
+                            acquire_weighed  0, R3, R1, R0, 2000
                             add              R3, 1, R3
-                            add              R5, 1, R5
-                            loop             R4, @loop_0
-                            loop             R0, @avg_0
+                            add              R4, 1, R4
+                            loop             R5, @loop_0
+                            loop             R2, @avg_0
                             set_mrk          0
                             upd_param        4
                             stop
@@ -1968,13 +2029,13 @@ class TestQBloxCompiler:
         assert len(sequences["drive"]._waveforms._waveforms) == 2
         assert len(sequences["drive"]._acquisitions._acquisitions) == 0
         assert len(sequences["drive"]._weights._weights) == 0
-        assert sequences["drive"]._program._compiled
+        assert len(sequences["drive"]._program.compiler_flags) == 0
 
         assert len(sequences["readout"]._waveforms._waveforms) == 2
         assert len(sequences["readout"]._acquisitions._acquisitions) == 1
         assert sequences["readout"]._acquisitions._acquisitions[0].num_bins == 11
         assert len(sequences["readout"]._weights._weights) == 2
-        assert sequences["readout"]._program._compiled
+        assert len(sequences["readout"]._program.compiler_flags) == 0
 
         drive_str = """
             setup:
@@ -1985,13 +2046,13 @@ class TestQBloxCompiler:
             main:
                             move             1000, R0
             avg_0:
-                            move             11, R1
-                            move             0, R2
+                            move             0, R1
+                            move             11, R2
             loop_0:
                             play             0, 1, 40
                             wait             2960
-                            add              R2, 3276, R2
-                            loop             R1, @loop_0
+                            add              R1, 3276, R1
+                            loop             R2, @loop_0
                             loop             R0, @avg_0
                             set_mrk          0
                             upd_param        4
@@ -2004,26 +2065,24 @@ class TestQBloxCompiler:
                             upd_param        4
 
             main:
-                            move             1000, R0
+                            move             1, R0
+                            move             0, R1
+                            move             1000, R2
             avg_0:
-                            move             1, R1
-                            move             0, R2
                             move             0, R3
-                            move             11, R4
-                            move             0, R5
+                            move             0, R4
+                            move             11, R5
             loop_0:
-                            set_awg_gain     R5, R5
-                            set_awg_gain     R5, R5
+                            set_awg_gain     R4, R4
                             move             10, R6
             square_0:
                             play             0, 1, 100
                             loop             R6, @square_0
-                            acquire_weighed  0, R3, R2, R1, 2000
+                            acquire_weighed  0, R3, R1, R0, 2000
                             add              R3, 1, R3
-                            add              R5, 3276, R5
-                            loop             R4, @loop_0
-                            nop
-                            loop             R0, @avg_0
+                            add              R4, 3276, R4
+                            loop             R5, @loop_0
+                            loop             R2, @avg_0
                             set_mrk          0
                             upd_param        4
                             stop
@@ -2082,13 +2141,13 @@ class TestQBloxCompiler:
         assert len(sequences["drive"]._waveforms._waveforms) == 2
         assert len(sequences["drive"]._acquisitions._acquisitions) == 0
         assert len(sequences["drive"]._weights._weights) == 0
-        assert sequences["drive"]._program._compiled
+        assert len(sequences["drive"]._program.compiler_flags) == 0
 
         assert len(sequences["readout"]._waveforms._waveforms) == 2
         assert len(sequences["readout"]._acquisitions._acquisitions) == 1
         assert sequences["readout"]._acquisitions._acquisitions[0].num_bins == 11
         assert len(sequences["readout"]._weights._weights) == 1
-        assert sequences["readout"]._program._compiled
+        assert len(sequences["readout"]._program.compiler_flags) == 0
 
         drive_str = """
             setup:
@@ -2099,13 +2158,13 @@ class TestQBloxCompiler:
             main:
                             move             1000, R0
             avg_0:
-                            move             11, R1
-                            move             0, R2
+                            move             0, R1
+                            move             11, R2
             loop_0:
                             play             0, 1, 40
                             wait             1960
-                            add              R2, 3276, R2
-                            loop             R1, @loop_0
+                            add              R1, 3276, R1
+                            loop             R2, @loop_0
                             loop             R0, @avg_0
                             set_mrk          0
                             upd_param        4
@@ -2118,25 +2177,23 @@ class TestQBloxCompiler:
                             upd_param        4
 
             main:
-                            move             1000, R0
+                            move             0, R0
+                            move             1000, R1
             avg_0:
-                            move             0, R1
                             move             0, R2
-                            move             11, R3
-                            move             0, R4
+                            move             0, R3
+                            move             11, R4
             loop_0:
-                            set_awg_gain     R4, R4
-                            set_awg_gain     R4, R4
+                            set_awg_gain     R3, R3
                             move             10, R5
             square_0:
                             play             0, 1, 100
                             loop             R5, @square_0
-                            acquire_weighed  0, R2, R1, R1, 1000
+                            acquire_weighed  0, R2, R0, R0, 1000
                             add              R2, 1, R2
-                            add              R4, 3276, R4
-                            loop             R3, @loop_0
-                            nop
-                            loop             R0, @avg_0
+                            add              R3, 3276, R3
+                            loop             R4, @loop_0
+                            loop             R1, @avg_0
                             set_mrk          0
                             upd_param        4
                             stop
@@ -2160,7 +2217,7 @@ class TestQBloxCompiler:
         assert sequences["readout"]._acquisitions._acquisitions[1].num_bins == 1
         assert sequences["readout"]._acquisitions._acquisitions[2].num_bins == 11
         assert len(sequences["readout"]._weights._weights) == 6
-        assert sequences["readout"]._program._compiled
+        assert len(sequences["readout"]._program.compiler_flags) == 0
 
         readout_str = """
             setup:
@@ -2169,44 +2226,40 @@ class TestQBloxCompiler:
                             upd_param        4
 
             main:
-                            move             1000, R0
+                            move             5, R0          
+                            move             4, R1          
+                            move             1, R2          
+                            move             0, R3          
+                            move             0, R4                   
+                            move             1000, R5  
             avg_0:
-                            move             5, R1
-                            move             4, R2
-                            move             0, R3
-                            move             1, R4
-                            move             0, R5
                             move             0, R6
-                            move             51, R7
-                            move             0, R8
+                            move             0, R7
+                            move             51, R8
             loop_0:
-                            set_freq         R8
-                            set_freq         R8
+                            set_freq         R7
                             move             10, R9
             square_0:
                             play             0, 1, 100
                             loop             R9, @square_0
-                            acquire_weighed  0, R6, R5, R4, 2000
+                            acquire_weighed  0, R6, R3, R2, 2000
                             add              R6, 1, R6
-                            add              R8, 40, R8
-                            loop             R7, @loop_0
-                            nop
+                            add              R7, 40, R7
+                            loop             R8, @loop_0
                             acquire_weighed  1, 0, 2, 3, 1000
-                            move             11, R10
-                            move             0, R11
-                            nop
+                            move             0, R10
+                            move             11, R11
             loop_1:
-                            set_awg_gain     R11, R11
-                            set_awg_gain     R11, R11
+                            set_awg_gain     R10, R10
                             move             10, R12
             square_1:
                             play             0, 1, 100
                             loop             R12, @square_1
-                            acquire_weighed  2, R3, R2, R1, 500
-                            add              R3, 1, R3
-                            add              R11, 3276, R11
-                            loop             R10, @loop_1
-                            loop             R0, @avg_0
+                            acquire_weighed  2, R4, R1, R0, 500
+                            add              R4, 1, R4
+                            add              R10, 3276, R10
+                            loop             R11, @loop_1
+                            loop             R5, @avg_0
                             set_mrk          0
                             upd_param        4
                             stop
@@ -2227,13 +2280,13 @@ class TestQBloxCompiler:
         assert len(sequences["drive"]._waveforms._waveforms) == 2
         assert len(sequences["drive"]._acquisitions._acquisitions) == 0
         assert len(sequences["drive"]._weights._weights) == 0
-        assert sequences["drive"]._program._compiled
+        assert len(sequences["drive"]._program.compiler_flags) == 0
 
         assert len(sequences["readout"]._waveforms._waveforms) == 2
         assert len(sequences["readout"]._acquisitions._acquisitions) == 1
         assert sequences["readout"]._acquisitions._acquisitions[0].num_bins == 561
         assert len(sequences["readout"]._weights._weights) == 2
-        assert sequences["readout"]._program._compiled
+        assert len(sequences["readout"]._program.compiler_flags) == 0
 
         drive_str = """
             setup:
@@ -2244,21 +2297,19 @@ class TestQBloxCompiler:
             main:
                             move             1000, R0
             avg_0:
-                            move             11, R1
-                            move             0, R2
+                            move             0, R1
+                            move             11, R2
             loop_0:
-                            set_awg_gain     R2, R2
-                            set_awg_gain     R2, R2
-                            move             51, R3
-                            move             0, R4
+                            set_awg_gain     R1, R1
+                            move             0, R3
+                            move             51, R4
             loop_1:
                             play             0, 1, 40
                             wait             3000
-                            add              R4, 40, R4
-                            loop             R3, @loop_1
-                            add              R2, 3276, R2
-                            loop             R1, @loop_0
-                            nop
+                            add              R3, 40, R3
+                            loop             R4, @loop_1
+                            add              R1, 3276, R1
+                            loop             R2, @loop_0
                             loop             R0, @avg_0
                             set_mrk          0
                             upd_param        4
@@ -2271,31 +2322,31 @@ class TestQBloxCompiler:
                             upd_param        4
 
             main:
-                            move             1000, R0
+                            move             1, R0
+                            move             0, R1
+                            move             1000, R2
             avg_0:
-                            move             1, R1
-                            move             0, R2
+
                             move             0, R3
-                            move             11, R4
-                            move             0, R5
+                            move             0, R4
+                            move             11, R5
             loop_0:
-                            move             51, R6
-                            move             0, R7
+                            move             0, R6
+                            move             51, R7
             loop_1:
                             wait             40
-                            set_freq         R7
-                            set_freq         R7
+                            set_freq         R6
                             move             10, R8
             square_0:
                             play             0, 1, 100
                             loop             R8, @square_0
-                            acquire_weighed  0, R3, R2, R1, 2000
+                            acquire_weighed  0, R3, R1, R0, 2000
                             add              R3, 1, R3
-                            add              R7, 40, R7
-                            loop             R6, @loop_1
-                            add              R5, 3276, R5
-                            loop             R4, @loop_0
-                            loop             R0, @avg_0
+                            add              R6, 40, R6
+                            loop             R7, @loop_1
+                            add              R4, 3276, R4
+                            loop             R5, @loop_0
+                            loop             R2, @avg_0
                             set_mrk          0
                             upd_param        4
                             stop
@@ -2317,13 +2368,13 @@ class TestQBloxCompiler:
         assert len(sequences["drive"]._waveforms._waveforms) == 2
         assert len(sequences["drive"]._acquisitions._acquisitions) == 0
         assert len(sequences["drive"]._weights._weights) == 0
-        assert sequences["drive"]._program._compiled
+        assert len(sequences["drive"]._program.compiler_flags) == 0
 
         assert len(sequences["readout"]._waveforms._waveforms) == 2
         assert len(sequences["readout"]._acquisitions._acquisitions) == 1
         assert sequences["readout"]._acquisitions._acquisitions[0].num_bins == 11
         assert len(sequences["readout"]._weights._weights) == 2
-        assert sequences["readout"]._program._compiled
+        assert len(sequences["readout"]._program.compiler_flags) == 0
 
         drive_str = """
             setup:
@@ -2334,18 +2385,16 @@ class TestQBloxCompiler:
             main:
                             move             1000, R0
             avg_0:
-                            move             11, R1
-                            move             400, R2
-                            move             0, R3
+                            move             400, R1
+                            move             0, R2
+                            move             11, R3
             loop_0:
-                            set_awg_gain     R3, R3
-                            set_awg_gain     R3, R3
+                            set_awg_gain     R2, R2
                             play             0, 1, 40
                             wait             3000
-                            add              R2, 40, R2
-                            add              R3, 3276, R3
-                            loop             R1, @loop_0
-                            nop
+                            add              R1, 40, R1
+                            add              R2, 3276, R2
+                            loop             R3, @loop_0
                             loop             R0, @avg_0
                             set_mrk          0
                             upd_param        4
@@ -2358,29 +2407,28 @@ class TestQBloxCompiler:
                             upd_param        4
 
             main:
-                            move             1000, R0
+                            move             1, R0
+                            move             0, R1
+                            move             1000, R2
             avg_0:
-                            move             1, R1
-                            move             0, R2
                             move             0, R3
-                            move             11, R4
-                            move             400, R5
-                            move             0, R6
+                            move             400, R4
+                            move             0, R5
+                            move             11, R6
             loop_0:
-                            set_freq         R5
-set_freq         R5
+                            set_freq         R4
                             upd_param        4
                             wait             36
                             move             10, R7
             square_0:
                             play             0, 1, 100
                             loop             R7, @square_0
-                            acquire_weighed  0, R3, R2, R1, 2000
+                            acquire_weighed  0, R3, R1, R0, 2000
                             add              R3, 1, R3
-                            add              R5, 40, R5
-                            add              R6, 3276, R6
-                            loop             R4, @loop_0
-                            loop             R0, @avg_0
+                            add              R4, 40, R4
+                            add              R5, 3276, R5
+                            loop             R6, @loop_0
+                            loop             R2, @avg_0
                             set_mrk          0
                             upd_param        4
                             stop
@@ -2401,7 +2449,7 @@ set_freq         R5
         assert len(sequences["drive"]._waveforms._waveforms) == 2
         assert len(sequences["drive"]._acquisitions._acquisitions) == 0
         assert len(sequences["drive"]._weights._weights) == 0
-        assert sequences["drive"]._program._compiled
+        assert len(sequences["drive"]._program.compiler_flags) == 0
 
         drive_str = """
             setup:
@@ -2432,7 +2480,7 @@ set_freq         R5
         assert len(sequences["drive"]._waveforms._waveforms) == 2
         assert len(sequences["drive"]._acquisitions._acquisitions) == 0
         assert len(sequences["drive"]._weights._weights) == 0
-        assert sequences["drive"]._program._compiled
+        assert len(sequences["drive"]._program.compiler_flags) == 0
 
         drive_str = """
             setup:
@@ -2465,7 +2513,7 @@ set_freq         R5
         assert len(sequences["drive"]._waveforms._waveforms) == 1
         assert len(sequences["drive"]._acquisitions._acquisitions) == 0
         assert len(sequences["drive"]._weights._weights) == 0
-        assert sequences["drive"]._program._compiled
+        assert len(sequences["drive"]._program.compiler_flags) == 0
 
         drive_str = """
             setup:
@@ -2488,7 +2536,7 @@ set_freq         R5
         sequences, _ = compiler.compile(qprogram=play_square_waveforms_with_optimization)
 
         assert len(sequences["drive"]._waveforms._waveforms) == 11
-        assert sequences["drive"]._program._compiled
+        assert len(sequences["drive"]._program.compiler_flags) == 0
 
         drive_str = """
             setup:
@@ -2538,7 +2586,7 @@ set_freq         R5
         sequences, _ = compiler.compile(qprogram=play_square_smooth_waveforms_with_optimization)
 
         assert len(sequences["drive"]._waveforms._waveforms) == 32
-        assert sequences["drive"]._program._compiled
+        assert len(sequences["drive"]._program.compiler_flags) == 0
 
         drive_str = """
             setup:
@@ -2651,14 +2699,14 @@ set_freq         R5
             main:
                             move             1000, R0
             avg_0:
-                            move             3, R1
-                            move             0, R2
+                            move             0, R1
+                            move             3, R2
             loop_0:
                             wait             20
                             play             0, 1, 40
                             wait             2960
-                            add              R2, 1, R2
-                            loop             R1, @loop_0
+                            add              R1, 1, R1
+                            loop             R2, @loop_0
                             loop             R0, @avg_0
                             set_mrk          0
                             upd_param        4
@@ -2671,24 +2719,24 @@ set_freq         R5
                             upd_param        4
 
             main:
-                            move             1000, R0
+                            move             1, R0
+                            move             0, R1
+                            move             1000, R2
             avg_0:
-                            move             1, R1
-                            move             0, R2
                             move             0, R3
-                            move             3, R4
-                            move             0, R5
+                            move             0, R4
+                            move             3, R5
             loop_0:
                             move             10, R6
             square_0:
                             play             0, 1, 100
                             loop             R6, @square_0
-                            acquire_weighed  0, R3, R2, R1, 2000
+                            acquire_weighed  0, R3, R1, R0, 2000
                             add              R3, 1, R3
                             wait             20
-                            add              R5, 1, R5
-                            loop             R4, @loop_0
-                            loop             R0, @avg_0
+                            add              R4, 1, R4
+                            loop             R5, @loop_0
+                            loop             R2, @avg_0
                             set_mrk          0
                             upd_param        4
                             stop
@@ -2713,13 +2761,13 @@ set_freq         R5
             main:
                             move             1000, R0
             avg_0:
-                            move             3, R1
-                            move             0, R2
+                            move             0, R1
+                            move             3, R2
             loop_0:
                             play             0, 1, 40
                             wait             2980
-                            add              R2, 1, R2
-                            loop             R1, @loop_0
+                            add              R1, 1, R1
+                            loop             R2, @loop_0
                             loop             R0, @avg_0
                             set_mrk          0
                             upd_param        4
@@ -2732,24 +2780,25 @@ set_freq         R5
                             upd_param        4
 
             main:
-                            move             1000, R0
+                            move             1, R0
+                            move             0, R1
+                            move             1000, R2
             avg_0:
-                            move             1, R1
-                            move             0, R2
+
                             move             0, R3
-                            move             3, R4
-                            move             0, R5
+                            move             0, R4
+                            move             3, R5
             loop_0:
                             wait             20
                             move             10, R6
             square_0:
                             play             0, 1, 100
                             loop             R6, @square_0
-                            acquire_weighed  0, R3, R2, R1, 2000
+                            acquire_weighed  0, R3, R1, R0, 2000
                             add              R3, 1, R3
-                            add              R5, 1, R5
-                            loop             R4, @loop_0
-                            loop             R0, @avg_0
+                            add              R4, 1, R4
+                            loop             R5, @loop_0
+                            loop             R2, @avg_0
                             set_mrk          0
                             upd_param        4
                             stop
@@ -2782,7 +2831,7 @@ set_freq         R5
         assert len(sequences["drive"]._waveforms._waveforms) == 4
         assert len(sequences["drive"]._acquisitions._acquisitions) == 0
         assert len(sequences["drive"]._weights._weights) == 0
-        assert sequences["drive"]._program._compiled
+        assert len(sequences["drive"]._program.compiler_flags) == 0
 
         drive_str = """
             setup:
@@ -2791,9 +2840,7 @@ set_freq         R5
                             upd_param        4
 
             main:
-                            nop
                             set_awg_offs     32767, 0
-                            upd_param        4
                             move             1, R0
             square_0:
                             play             0, 1, 100
@@ -2805,21 +2852,17 @@ set_freq         R5
                             play             0, 1, 100
                             loop             R1, @square_1
                             set_awg_gain     32767, 32767
-                            set_awg_gain     32767, 32767
                             upd_param        4
                             wait             96
                             play             2, 3, 5
                             set_freq         4000000
-                            set_freq         4000000
                             upd_param        4
-                            wait             65532
-                            wait             34464
+                            wait             65535
+                            wait             34461
                             play             2, 3, 5
-                            set_awg_gain     32767, 32767
                             set_awg_gain     32767, 32767
                             upd_param        4
                             play             2, 3, 5
-                            nop
                             set_awg_offs     32767, 0
                             upd_param        6
                             set_mrk          0
@@ -2829,9 +2872,9 @@ set_freq         R5
 
         assert is_q1asm_equal(sequences["drive"], drive_str)
 
-    def test_wait_comprised_between_65532_65535(self, wait_comprised_between_65532_65535: QProgram):
+    def test_wait_comprised_between_65535_65538(self, wait_comprised_between_65535_65538: QProgram):
         compiler = QbloxCompiler()
-        sequences, _ = compiler.compile(qprogram=wait_comprised_between_65532_65535)
+        sequences, _ = compiler.compile(qprogram=wait_comprised_between_65535_65538)
 
         assert "drive" in sequences
 
@@ -2842,12 +2885,12 @@ set_freq         R5
                             upd_param        4              
 
             main:
-                            wait             65532          
-                            wait             65532          
+                            wait             65535          
+                            wait             65535          
                             play             0, 1, 20       
-                            wait             65532          
+                            wait             65535          
                             play             0, 1, 20       
-                            wait             65530          
+                            wait             65533          
                             wait             4              
                             set_mrk          0              
                             upd_param        4              
@@ -2971,12 +3014,12 @@ set_freq         R5
         assert len(sequences["drive"]._waveforms._waveforms) == 2
         assert len(sequences["drive"]._acquisitions._acquisitions) == 0
         assert len(sequences["drive"]._weights._weights) == 0
-        assert sequences["drive"]._program._compiled
+        assert len(sequences["drive"]._program.compiler_flags) == 0
 
         assert len(sequences["readout"]._waveforms._waveforms) == 2
         assert len(sequences["readout"]._acquisitions._acquisitions) == 1
         assert len(sequences["readout"]._weights._weights) == 2
-        assert sequences["readout"]._program._compiled
+        assert len(sequences["readout"]._program.compiler_flags) == 0
 
         drive_str = """
             setup:
@@ -2985,54 +3028,44 @@ set_freq         R5
                             upd_param        4              
 
             main:
-                            move             11, R0         
-                            move             100, R1        
+                            move             100, R0         
+                            move             11, R1        
             loop_0:
                             play             0, 1, 40       
-                            wait             R1             
+                            wait             R0            
                             move             0, R2          
-                            add              R1, 40, R3     
+                            add              R0, 40, R3     
                             nop                             
-                            sub              R2, R3, R4     
-                            nop                             
+                            sub              R2, R3, R4
+                            nop                     
                             jlt              R4, 2147483648, @dynamic_sync_0
                             jge              R4, 4294967293, @negative_one_two_three_0
             after_dynamic_sync_0:
-
-
                             wait             2004           
-                            add              R1, 10, R1     
-                            loop             R0, @loop_0    
+                            add              R0, 10, R0    
+                            loop             R1, @loop_0    
                             set_mrk          0              
                             upd_param        4              
                             stop                            
             dynamic_sync_0:
-
-
                             jlt              R4, 1, @after_dynamic_sync_0
                             jlt              R4, 4, @one_two_three_0
-                            jge              R4, 65532, @long_wait_sync_0
+                            jge              R4, 65535, @long_wait_sync_0
                             wait             R4             
                             jmp              @after_dynamic_sync_0
             one_two_three_0:
-
-
                             add              R4, 4, R4      
                             nop                             
                             wait             R4             
                             jmp              @after_dynamic_sync_0
             negative_one_two_three_0:
-
-
                             wait             4              
                             jmp              @after_dynamic_sync_0
             long_wait_sync_0:
-
-
-                            wait             65532          
-                            sub              R4, 65532, R4  
-                            nop                             
-                            jge              R4, 65532, @long_wait_sync_0
+                            wait             65535          
+                            sub              R4, 65535, R4
+                            nop                           
+                            jge              R4, 65535, @long_wait_sync_0
                             jmp              @dynamic_sync_0
         """
         
@@ -3041,72 +3074,59 @@ set_freq         R5
                             wait_sync        4              
                             set_mrk          0              
                             upd_param        4              
-
-            main:
+                            
                             move             1, R0          
                             move             0, R1          
-                            move             0, R2          
-                            move             11, R3         
-                            move             100, R4        
+   
+            main:
+                            move             0, R2 
+                            move             100, R3         
+                            move             11, R4        
             loop_0:
                             move             40, R5         
-                            add              R4, 40, R6     
+                            add              R3, 40, R6     
                             nop                             
-                            sub              R5, R6, R7     
-                            nop                             
+                            sub              R5, R6, R7
+                            nop                 
                             jlt              R7, 2147483648, @other_max_duration_0
                             move             R6, R7         
             after_other_max_duration_0:
-
-
                             move             0, R8          
                             nop                             
-                            sub              R7, R8, R9     
-                            nop                             
+                            sub              R7, R8, R9
+                            nop                              
                             jlt              R9, 2147483648, @dynamic_sync_0
                             jge              R9, 4294967293, @negative_one_two_three_0
             after_dynamic_sync_0:
-
-
                             play             0, 1, 4        
                             acquire_weighed  0, R2, R1, R0, 2000
                             add              R2, 1, R2      
-                            add              R4, 10, R4     
-                            loop             R3, @loop_0    
+                            add              R3, 10, R3     
+                            loop             R4, @loop_0    
                             set_mrk          0              
                             upd_param        4              
                             stop                            
             dynamic_sync_0:
-
-
                             jlt              R9, 1, @after_dynamic_sync_0
                             jlt              R9, 4, @one_two_three_0
-                            jge              R9, 65532, @long_wait_sync_0
+                            jge              R9, 65535, @long_wait_sync_0
                             wait             R9             
                             jmp              @after_dynamic_sync_0
             one_two_three_0:
-
-
                             add              R9, 4, R9      
                             nop                             
                             wait             R9             
                             jmp              @after_dynamic_sync_0
             negative_one_two_three_0:
-
-
                             wait             4              
                             jmp              @after_dynamic_sync_0
             long_wait_sync_0:
-
-
-                            wait             65532          
-                            sub              R9, 65532, R9  
+                            wait             65535          
+                            sub              R9, 65535, R9
                             nop                             
-                            jge              R9, 65532, @long_wait_sync_0
+                            jge              R9, 65535, @long_wait_sync_0
                             jmp              @dynamic_sync_0
             other_max_duration_0:
-
-
                             move             R5, R7         
                             jmp              @after_other_max_duration_0
         """
@@ -3127,12 +3147,12 @@ set_freq         R5
         assert len(sequences["drive"]._waveforms._waveforms) == 2
         assert len(sequences["drive"]._acquisitions._acquisitions) == 0
         assert len(sequences["drive"]._weights._weights) == 0
-        assert sequences["drive"]._program._compiled
+        assert len(sequences["drive"]._program.compiler_flags) == 0
 
         assert len(sequences["readout"]._waveforms._waveforms) == 2
         assert len(sequences["readout"]._acquisitions._acquisitions) == 1
         assert len(sequences["readout"]._weights._weights) == 2
-        assert sequences["readout"]._program._compiled
+        assert len(sequences["readout"]._program.compiler_flags) == 0
 
         drive_str = """
             setup:
@@ -3140,41 +3160,39 @@ set_freq         R5
                             set_mrk          0              
                             upd_param        4              
             main:
-                            move             20001, R0      
-                            move             4, R1          
+                            move             4, R0      
+                            move             20000, R1          
             loop_0:
-                            play             0, 1, 40       
-                            nop                             
-                            move             R1, R2         
-                            nop                             
-                            jge              R1, 65532, @long_wait_0
-                            wait             R1             
+                            play             0, 1, 40                                   
+                            move             R0, R2                    
+                            jge              R0, 65535, @long_wait_0
+                            wait             R0            
             continue_after_long_wait_0:
                             move             0, R3          
-                            add              R1, 40, R4     
+                            add              R0, 40, R4     
                             nop                             
-                            sub              R3, R4, R5     
-                            nop                             
+                            sub              R3, R4, R5
+                            nop                                  
                             jlt              R5, 2147483648, @dynamic_sync_0
                             jge              R5, 4294967293, @negative_one_two_three_0
             after_dynamic_sync_0:
                             wait             1004           
-                            add              R1, 9, R1      
-                            loop             R0, @loop_0    
+                            add              R0, 10, R0      
+                            loop             R1, @loop_0    
                             set_mrk          0              
                             upd_param        4              
                             stop                            
             long_wait_0:
-                            wait             65532          
-                            sub              R2, 65532, R2  
-                            nop                             
-                            jge              R2, 65532, @long_wait_0
+                            wait             65535          
+                            sub              R2, 65535, R2
+                            nop                              
+                            jge              R2, 65535, @long_wait_0
                             wait             R2             
                             jmp              @continue_after_long_wait_0
             dynamic_sync_0:
                             jlt              R5, 1, @after_dynamic_sync_0
                             jlt              R5, 4, @one_two_three_0
-                            jge              R5, 65532, @long_wait_sync_0
+                            jge              R5, 65535, @long_wait_sync_0
                             wait             R5             
                             jmp              @after_dynamic_sync_0
             one_two_three_0:
@@ -3186,10 +3204,10 @@ set_freq         R5
                             wait             4              
                             jmp              @after_dynamic_sync_0
             long_wait_sync_0:
-                            wait             65532          
-                            sub              R5, 65532, R5  
-                            nop                             
-                            jge              R5, 65532, @long_wait_sync_0
+                            wait             65535          
+                            sub              R5, 65535, R5
+                            nop                            
+                            jge              R5, 65535, @long_wait_sync_0
                             jmp              @dynamic_sync_0
                 """
 
@@ -3197,41 +3215,43 @@ set_freq         R5
             setup:
                             wait_sync        4              
                             set_mrk          0              
-                            upd_param        4              
-            main:
+                            upd_param        4
+
                             move             1, R0          
                             move             0, R1          
-                            move             0, R2          
-                            move             20001, R3      
-                            move             4, R4          
+                                        
+            main:
+                            move             0, R2 
+                            move             4, R3      
+                            move             20000, R4          
             loop_0:
                             move             40, R5         
-                            add              R4, 40, R6     
+                            add              R3, 40, R6     
                             nop                             
-                            sub              R5, R6, R7     
-                            nop                             
+                            sub              R5, R6, R7
+                            nop                                
                             jlt              R7, 2147483648, @other_max_duration_0
                             move             R6, R7         
             after_other_max_duration_0:
                             move             0, R8          
                             nop                             
-                            sub              R7, R8, R9     
-                            nop                             
+                            sub              R7, R8, R9
+                            nop                                
                             jlt              R9, 2147483648, @dynamic_sync_0
                             jge              R9, 4294967293, @negative_one_two_three_0
             after_dynamic_sync_0:
                             play             0, 1, 4        
                             acquire_weighed  0, R2, R1, R0, 1000
                             add              R2, 1, R2      
-                            add              R4, 9, R4      
-                            loop             R3, @loop_0    
+                            add              R3, 10, R3      
+                            loop             R4, @loop_0    
                             set_mrk          0              
                             upd_param        4              
                             stop                            
             dynamic_sync_0:
                             jlt              R9, 1, @after_dynamic_sync_0
                             jlt              R9, 4, @one_two_three_0
-                            jge              R9, 65532, @long_wait_sync_0
+                            jge              R9, 65535, @long_wait_sync_0
                             wait             R9             
                             jmp              @after_dynamic_sync_0
             one_two_three_0:
@@ -3243,10 +3263,10 @@ set_freq         R5
                             wait             4              
                             jmp              @after_dynamic_sync_0
             long_wait_sync_0:
-                            wait             65532          
-                            sub              R9, 65532, R9  
+                            wait             65535          
+                            sub              R9, 65535, R9
                             nop                             
-                            jge              R9, 65532, @long_wait_sync_0
+                            jge              R9, 65535, @long_wait_sync_0
                             jmp              @dynamic_sync_0
             other_max_duration_0:
                             move             R5, R7         
@@ -3270,12 +3290,12 @@ set_freq         R5
         assert len(sequences["drive"]._waveforms._waveforms) == 2
         assert len(sequences["drive"]._acquisitions._acquisitions) == 0
         assert len(sequences["drive"]._weights._weights) == 0
-        assert sequences["drive"]._program._compiled
+        assert len(sequences["drive"]._program.compiler_flags) == 0
 
         assert len(sequences["readout"]._waveforms._waveforms) == 2
         assert len(sequences["readout"]._acquisitions._acquisitions) == 1
         assert len(sequences["readout"]._weights._weights) == 2
-        assert sequences["readout"]._program._compiled
+        assert len(sequences["readout"]._program.compiler_flags) == 0
 
         drive_str = """
             setup:
@@ -3283,47 +3303,44 @@ set_freq         R5
                             set_mrk          0              
                             upd_param        4              
             main:
-                            move             11, R0         
-                            move             100, R1        
+                            move             100, R0         
+                            move             11, R1        
             loop_0:
-                            play             0, 1, 40       
-                            nop                             
-                            sub              R1, 50, R2     
+                            play             0, 1, 40                                   
+                            sub              R0, 50, R2     
                             nop                             
                             wait             R2             
-                            move             0, R3          
-                            nop                             
+                            move             0, R3                                     
                             add              R2, 40, R4     
                             nop                             
-                            sub              R3, R4, R5     
-                            nop                             
+                            sub              R3, R4, R5
+                            nop                                
                             jlt              R5, 2147483648, @dynamic_sync_0
                             jge              R5, 4294967293, @negative_one_two_three_0
             after_dynamic_sync_0:
                             move             50, R6         
                             nop                             
-                            sub              R6, R1, R7     
+                            sub              R6, R0, R7     
                             nop                             
                             wait             R7             
-                            move             0, R3          
-                            nop                             
+                            move             0, R3                                
                             add              R7, 0, R4      
                             nop                             
-                            sub              R3, R4, R5     
-                            nop                             
+                            sub              R3, R4, R5
+                            nop                              
                             jlt              R5, 2147483648, @dynamic_sync_1
                             jge              R5, 4294967293, @negative_one_two_three_1
             after_dynamic_sync_1:
                             wait             2004           
-                            add              R1, 10, R1     
-                            loop             R0, @loop_0    
+                            add              R0, 10, R0    
+                            loop             R1, @loop_0    
                             set_mrk          0              
                             upd_param        4              
                             stop                            
             dynamic_sync_0:
                             jlt              R5, 1, @after_dynamic_sync_0
                             jlt              R5, 4, @one_two_three_0
-                            jge              R5, 65532, @long_wait_sync_0
+                            jge              R5, 65535, @long_wait_sync_0
                             wait             R5             
                             jmp              @after_dynamic_sync_0
             one_two_three_0:
@@ -3335,15 +3352,15 @@ set_freq         R5
                             wait             4              
                             jmp              @after_dynamic_sync_0
             long_wait_sync_0:
-                            wait             65532          
-                            sub              R5, 65532, R5  
+                            wait             65535          
+                            sub              R5, 65535, R5
                             nop                             
-                            jge              R5, 65532, @long_wait_sync_0
+                            jge              R5, 65535, @long_wait_sync_0
                             jmp              @dynamic_sync_0
             dynamic_sync_1:
                             jlt              R5, 1, @after_dynamic_sync_1
                             jlt              R5, 4, @one_two_three_1
-                            jge              R5, 65532, @long_wait_sync_1
+                            jge              R5, 65535, @long_wait_sync_1
                             wait             R5             
                             jmp              @after_dynamic_sync_1
             one_two_three_1:
@@ -3355,10 +3372,10 @@ set_freq         R5
                             wait             4              
                             jmp              @after_dynamic_sync_1
             long_wait_sync_1:
-                            wait             65532          
-                            sub              R5, 65532, R5  
+                            wait             65535          
+                            sub              R5, 65535, R5
                             nop                             
-                            jge              R5, 65532, @long_wait_sync_1
+                            jge              R5, 65535, @long_wait_sync_1
                             jmp              @dynamic_sync_1
                 """
 
@@ -3366,63 +3383,61 @@ set_freq         R5
             setup:
                             wait_sync        4              
                             set_mrk          0              
-                            upd_param        4              
-            main:
+                            upd_param        4   
+
                             move             1, R0          
                             move             0, R1          
-                            move             0, R2          
-                            move             11, R3         
-                            move             100, R4        
-            loop_0:
-                            nop                             
-                            sub              R4, 50, R5     
-                            nop                             
+            main:          
+                            move             0, R2
+                            move             100, R3         
+                            move             11, R4        
+            loop_0:                           
+                            sub              R3, 50, R5                             
                             move             40, R6         
                             add              R5, 40, R7     
                             nop                             
-                            sub              R6, R7, R8     
-                            nop                             
+                            sub              R6, R7, R8
+                            nop                                
                             jlt              R8, 2147483648, @other_max_duration_0
                             move             R7, R8         
             after_other_max_duration_0:
                             move             0, R9          
                             nop                             
-                            sub              R8, R9, R10    
-                            nop                             
+                            sub              R8, R9, R10
+                            nop                                
                             jlt              R10, 2147483648, @dynamic_sync_0
                             jge              R10, 4294967293, @negative_one_two_three_0
             after_dynamic_sync_0:
                             move             50, R11        
                             nop                             
-                            sub              R11, R4, R5    
-                            nop                             
+                            sub              R11, R3, R5                                 
                             move             0, R6          
                             add              R5, 0, R7      
                             nop                             
-                            sub              R6, R7, R8     
-                            nop                             
+                            sub              R6, R7, R8
+                            nop                                
                             jlt              R8, 2147483648, @other_max_duration_1
                             move             R7, R8         
             after_other_max_duration_1:
                             move             0, R12         
                             nop                             
-                            sub              R8, R12, R10   
-                            nop                             
+                            sub              R8, R12, R10
+                            nop                               
                             jlt              R10, 2147483648, @dynamic_sync_1
                             jge              R10, 4294967293, @negative_one_two_three_1
             after_dynamic_sync_1:
                             play             0, 1, 4        
                             acquire_weighed  0, R2, R1, R0, 2000
                             add              R2, 1, R2      
-                            add              R4, 10, R4     
-                            loop             R3, @loop_0    
+                            add              R3, 10, R3     
+                            loop             R4, @loop_0    
                             set_mrk          0              
                             upd_param        4              
                             stop                            
             dynamic_sync_0:
                             jlt              R10, 1, @after_dynamic_sync_0
                             jlt              R10, 4, @one_two_three_0
-                            jge              R10, 65532, @long_wait_sync_0
+                            jge              R10, 65535, @long_wait_sync_0
                             wait             R10            
                             jmp              @after_dynamic_sync_0
             one_two_three_0:
@@ -3434,10 +3449,10 @@ set_freq         R5
                             wait             4              
                             jmp              @after_dynamic_sync_0
             long_wait_sync_0:
-                            wait             65532          
-                            sub              R10, 65532, R10
-                            nop                             
-                            jge              R10, 65532, @long_wait_sync_0
+                            wait             65535          
+                            sub              R10, 65535, R10
+                            nop                          
+                            jge              R10, 65535, @long_wait_sync_0
                             jmp              @dynamic_sync_0
             other_max_duration_0:
                             move             R6, R8         
@@ -3445,7 +3460,7 @@ set_freq         R5
             dynamic_sync_1:
                             jlt              R10, 1, @after_dynamic_sync_1
                             jlt              R10, 4, @one_two_three_1
-                            jge              R10, 65532, @long_wait_sync_1
+                            jge              R10, 65535, @long_wait_sync_1
                             wait             R10            
                             jmp              @after_dynamic_sync_1
             one_two_three_1:
@@ -3457,10 +3472,10 @@ set_freq         R5
                             wait             4              
                             jmp              @after_dynamic_sync_1
             long_wait_sync_1:
-                            wait             65532          
-                            sub              R10, 65532, R10
-                            nop                             
-                            jge              R10, 65532, @long_wait_sync_1
+                            wait             65535          
+                            sub              R10, 65535, R10 
+                            nop                            
+                            jge              R10, 65535, @long_wait_sync_1
                             jmp              @dynamic_sync_1
             other_max_duration_1:
                             move             R6, R8         
@@ -3484,12 +3499,12 @@ set_freq         R5
         assert len(sequences["drive"]._waveforms._waveforms) == 2
         assert len(sequences["drive"]._acquisitions._acquisitions) == 0
         assert len(sequences["drive"]._weights._weights) == 0
-        assert sequences["drive"]._program._compiled
+        assert len(sequences["drive"]._program.compiler_flags) == 0
 
         assert len(sequences["readout"]._waveforms._waveforms) == 2
         assert len(sequences["readout"]._acquisitions._acquisitions) == 1
         assert len(sequences["readout"]._weights._weights) == 2
-        assert sequences["readout"]._program._compiled
+        assert len(sequences["readout"]._program.compiler_flags) == 0
 
         drive_str = """
             setup:
@@ -3497,58 +3512,52 @@ set_freq         R5
                             set_mrk          0              
                             upd_param        4              
             main:
-                            move             4991, R0       
-                            move             100, R1        
+                            move             100, R0       
+                            move             4991, R1        
             loop_0:
-                            play             0, 1, 40       
-                            nop                             
-                            add              R1, 500, R2    
+                            play             0, 1, 40                                   
+                            add              R0, 500, R2    
                             nop                             
                             wait             R2             
-                            move             0, R3          
-                            nop                             
+                            move             0, R3                                     
                             add              R2, 40, R4     
                             nop                             
-                            sub              R3, R4, R5     
-                            nop                             
+                            sub              R3, R4, R5
+                            nop                                 
                             jlt              R5, 2147483648, @dynamic_sync_0
                             jge              R5, 4294967293, @negative_one_two_three_0
-            after_dynamic_sync_0:
+            after_dynamic_sync_0:                           
+                            add              R0, 20000, R6                          
                             nop                             
-                            add              R1, 20000, R6  
-                            nop                             
-                            nop                             
-                            move             R6, R7         
-                            nop                             
-                            jge              R6, 65532, @long_wait_0
+                            move             R6, R7                                   
+                            jge              R6, 65535, @long_wait_0
                             wait             R6             
             continue_after_long_wait_0:
-                            move             0, R3          
-                            nop                             
+                            move             0, R3                             
                             add              R6, 0, R4      
                             nop                             
-                            sub              R3, R4, R5     
-                            nop                             
+                            sub              R3, R4, R5
+                            nop                                
                             jlt              R5, 2147483648, @dynamic_sync_1
                             jge              R5, 4294967293, @negative_one_two_three_1
             after_dynamic_sync_1:
                             wait             2004           
-                            add              R1, 10, R1     
-                            loop             R0, @loop_0    
+                            add              R0, 10, R0   
+                            loop             R1, @loop_0    
                             set_mrk          0              
                             upd_param        4              
                             stop                            
             long_wait_0:
-                            wait             65532          
-                            sub              R7, 65532, R7  
-                            nop                             
-                            jge              R7, 65532, @long_wait_0
+                            wait             65535          
+                            sub              R7, 65535, R7
+                            nop                              
+                            jge              R7, 65535, @long_wait_0
                             wait             R7             
                             jmp              @continue_after_long_wait_0
             dynamic_sync_0:
                             jlt              R5, 1, @after_dynamic_sync_0
                             jlt              R5, 4, @one_two_three_0
-                            jge              R5, 65532, @long_wait_sync_0
+                            jge              R5, 65535, @long_wait_sync_0
                             wait             R5             
                             jmp              @after_dynamic_sync_0
             one_two_three_0:
@@ -3560,15 +3569,15 @@ set_freq         R5
                             wait             4              
                             jmp              @after_dynamic_sync_0
             long_wait_sync_0:
-                            wait             65532          
-                            sub              R5, 65532, R5  
-                            nop                             
-                            jge              R5, 65532, @long_wait_sync_0
+                            wait             65535          
+                            sub              R5, 65535, R5
+                            nop                            
+                            jge              R5, 65535, @long_wait_sync_0
                             jmp              @dynamic_sync_0
             dynamic_sync_1:
                             jlt              R5, 1, @after_dynamic_sync_1
                             jlt              R5, 4, @one_two_three_1
-                            jge              R5, 65532, @long_wait_sync_1
+                            jge              R5, 65535, @long_wait_sync_1
                             wait             R5             
                             jmp              @after_dynamic_sync_1
             one_two_three_1:
@@ -3580,10 +3589,10 @@ set_freq         R5
                             wait             4              
                             jmp              @after_dynamic_sync_1
             long_wait_sync_1:
-                            wait             65532          
-                            sub              R5, 65532, R5  
-                            nop                             
-                            jge              R5, 65532, @long_wait_sync_1
+                            wait             65535          
+                            sub              R5, 65535, R5
+                            nop                            
+                            jge              R5, 65535, @long_wait_sync_1
                             jmp              @dynamic_sync_1
                 """
 
@@ -3591,62 +3600,59 @@ set_freq         R5
             setup:
                             wait_sync        4              
                             set_mrk          0              
-                            upd_param        4              
-            main:
+                            upd_param        4    
+
                             move             1, R0          
-                            move             0, R1          
-                            move             0, R2          
-                            move             4991, R3       
-                            move             100, R4        
-            loop_0:
-                            nop                             
-                            add              R4, 500, R5    
-                            nop                             
+                            move             0, R1                      
+            main:
+                            move             0, R2
+                            move             100, R3       
+                            move             4991, R4        
+            loop_0:                         
+                            add              R3, 500, R5                         
                             move             40, R6         
                             add              R5, 40, R7     
                             nop                             
-                            sub              R6, R7, R8     
-                            nop                             
+                            sub              R6, R7, R8
+                            nop                                 
                             jlt              R8, 2147483648, @other_max_duration_0
                             move             R7, R8         
             after_other_max_duration_0:
                             move             0, R9          
                             nop                             
-                            sub              R8, R9, R10    
-                            nop                             
+                            sub              R8, R9, R10
+                            nop                              
                             jlt              R10, 2147483648, @dynamic_sync_0
                             jge              R10, 4294967293, @negative_one_two_three_0
-            after_dynamic_sync_0:
-                            nop                             
-                            add              R4, 20000, R5  
-                            nop                             
+            after_dynamic_sync_0:                      
+                            add              R3, 20000, R5                           
                             move             0, R6          
                             add              R5, 0, R7      
                             nop                             
-                            sub              R6, R7, R8     
-                            nop                             
+                            sub              R6, R7, R8
+                            nop                                
                             jlt              R8, 2147483648, @other_max_duration_1
                             move             R7, R8         
             after_other_max_duration_1:
                             move             0, R11         
                             nop                             
-                            sub              R8, R11, R10   
-                            nop                             
+                            sub              R8, R11, R10
+                            nop                               
                             jlt              R10, 2147483648, @dynamic_sync_1
                             jge              R10, 4294967293, @negative_one_two_three_1
             after_dynamic_sync_1:
                             play             0, 1, 4        
                             acquire_weighed  0, R2, R1, R0, 2000
                             add              R2, 1, R2      
-                            add              R4, 10, R4     
-                            loop             R3, @loop_0    
+                            add              R3, 10, R3     
+                            loop             R4, @loop_0    
                             set_mrk          0              
                             upd_param        4              
                             stop                            
             dynamic_sync_0:
                             jlt              R10, 1, @after_dynamic_sync_0
                             jlt              R10, 4, @one_two_three_0
-                            jge              R10, 65532, @long_wait_sync_0
+                            jge              R10, 65535, @long_wait_sync_0
                             wait             R10            
                             jmp              @after_dynamic_sync_0
             one_two_three_0:
@@ -3658,10 +3664,10 @@ set_freq         R5
                             wait             4              
                             jmp              @after_dynamic_sync_0
             long_wait_sync_0:
-                            wait             65532          
-                            sub              R10, 65532, R10
-                            nop                             
-                            jge              R10, 65532, @long_wait_sync_0
+                            wait             65535          
+                            sub              R10, 65535, R10
+                            nop                         
+                            jge              R10, 65535, @long_wait_sync_0
                             jmp              @dynamic_sync_0
             other_max_duration_0:
                             move             R6, R8         
@@ -3669,7 +3675,7 @@ set_freq         R5
             dynamic_sync_1:
                             jlt              R10, 1, @after_dynamic_sync_1
                             jlt              R10, 4, @one_two_three_1
-                            jge              R10, 65532, @long_wait_sync_1
+                            jge              R10, 65535, @long_wait_sync_1
                             wait             R10            
                             jmp              @after_dynamic_sync_1
             one_two_three_1:
@@ -3681,10 +3687,10 @@ set_freq         R5
                             wait             4              
                             jmp              @after_dynamic_sync_1
             long_wait_sync_1:
-                            wait             65532          
-                            sub              R10, 65532, R10
-                            nop                             
-                            jge              R10, 65532, @long_wait_sync_1
+                            wait             65535          
+                            sub              R10, 65535, R10
+                            nop                         
+                            jge              R10, 65535, @long_wait_sync_1
                             jmp              @dynamic_sync_1
             other_max_duration_1:
                             move             R6, R8         
@@ -3708,42 +3714,40 @@ set_freq         R5
                             set_mrk          0              
                             upd_param        4              
             main:
-                            move             11, R0         
-                            move             100, R1        
+                            move             100, R0         
+                            move             11, R1        
             loop_0:
                             wait             20             
                             play             0, 1, 40       
-                            wait             R1             
+                            wait             R0             
                             move             0, R2          
-                            add              R1, 40, R3     
+                            add              R0, 40, R3     
                             nop                             
-                            sub              R2, R3, R4     
-                            nop                             
+                            sub              R2, R3, R4
+                            nop                                
                             jlt              R4, 2147483648, @dynamic_sync_0
                             jge              R4, 4294967293, @negative_one_two_three_0
-            after_dynamic_sync_0:
-                            nop                             
-                            sub              R1, 30, R5     
+            after_dynamic_sync_0:                          
+                            sub              R0, 30, R5     
                             nop                             
                             wait             R5             
-                            move             2024, R2       
-                            nop                             
+                            move             2024, R2                                    
                             add              R5, 0, R3      
                             nop                             
-                            sub              R2, R3, R4     
-                            nop                             
+                            sub              R2, R3, R4
+                            nop                                
                             jlt              R4, 2147483648, @dynamic_sync_1
                             jge              R4, 4294967293, @negative_one_two_three_1
             after_dynamic_sync_1:
-                            add              R1, 10, R1     
-                            loop             R0, @loop_0    
+                            add              R0, 10, R0
+                            loop             R1, @loop_0    
                             set_mrk          0              
                             upd_param        4              
                             stop                            
             dynamic_sync_0:
                             jlt              R4, 1, @after_dynamic_sync_0
                             jlt              R4, 4, @one_two_three_0
-                            jge              R4, 65532, @long_wait_sync_0
+                            jge              R4, 65535, @long_wait_sync_0
                             wait             R4             
                             jmp              @after_dynamic_sync_0
             one_two_three_0:
@@ -3755,15 +3759,15 @@ set_freq         R5
                             wait             4              
                             jmp              @after_dynamic_sync_0
             long_wait_sync_0:
-                            wait             65532          
-                            sub              R4, 65532, R4  
-                            nop                             
-                            jge              R4, 65532, @long_wait_sync_0
+                            wait             65535          
+                            sub              R4, 65535, R4
+                            nop                              
+                            jge              R4, 65535, @long_wait_sync_0
                             jmp              @dynamic_sync_0
             dynamic_sync_1:
                             jlt              R4, 1, @after_dynamic_sync_1
                             jlt              R4, 4, @one_two_three_1
-                            jge              R4, 65532, @long_wait_sync_1
+                            jge              R4, 65535, @long_wait_sync_1
                             wait             R4             
                             jmp              @after_dynamic_sync_1
             one_two_three_1:
@@ -3775,10 +3779,10 @@ set_freq         R5
                             wait             4              
                             jmp              @after_dynamic_sync_1
             long_wait_sync_1:
-                            wait             65532          
-                            sub              R4, 65532, R4  
-                            nop                             
-                            jge              R4, 65532, @long_wait_sync_1
+                            wait             65535          
+                            sub              R4, 65535, R4
+                            nop                              
+                            jge              R4, 65535, @long_wait_sync_1
                             jmp              @dynamic_sync_1
         """
 
@@ -3786,32 +3790,31 @@ set_freq         R5
             setup:
                             wait_sync        4              
                             set_mrk          0              
-                            upd_param        4              
-            main:
+                            upd_param        4     
+
                             move             1, R0          
-                            move             0, R1          
-                            move             0, R2          
-                            move             11, R3         
-                            move             100, R4        
+                            move             0, R1                  
+            main:
+                            move             0, R2
+                            move             100, R3         
+                            move             11, R4        
             loop_0:
                             move             40, R5         
-                            add              R4, 40, R6     
+                            add              R3, 40, R6     
                             nop                             
-                            sub              R5, R6, R7     
-                            nop                             
+                            sub              R5, R6, R7
+                            nop                                  
                             jlt              R7, 2147483648, @other_max_duration_0
                             move             R6, R7         
             after_other_max_duration_0:
                             move             0, R8          
                             nop                             
-                            sub              R7, R8, R9     
-                            nop                             
+                            sub              R7, R8, R9
+                            nop                                 
                             jlt              R9, 2147483648, @dynamic_sync_0
                             jge              R9, 4294967293, @negative_one_two_three_0
-            after_dynamic_sync_0:
-                            nop                             
-                            sub              R4, 30, R10    
-                            nop                             
+            after_dynamic_sync_0:                          
+                            sub              R3, 30, R10                               
                             play             0, 1, 4        
                             acquire_weighed  0, R2, R1, R0, 2000
                             add              R2, 1, R2      
@@ -3819,27 +3822,27 @@ set_freq         R5
                             move             0, R5          
                             add              R10, 0, R6     
                             nop                             
-                            sub              R5, R6, R7     
-                            nop                             
+                            sub              R5, R6, R7
+                            nop                              
                             jlt              R7, 2147483648, @other_max_duration_1
                             move             R6, R7         
             after_other_max_duration_1:
                             move             2024, R11      
                             nop                             
-                            sub              R7, R11, R9    
-                            nop                             
+                            sub              R7, R11, R9 
+                            nop          
                             jlt              R9, 2147483648, @dynamic_sync_1
                             jge              R9, 4294967293, @negative_one_two_three_1
             after_dynamic_sync_1:
-                            add              R4, 10, R4     
-                            loop             R3, @loop_0    
+                            add              R3, 10, R3     
+                            loop             R4, @loop_0    
                             set_mrk          0              
                             upd_param        4              
                             stop                            
             dynamic_sync_0:
                             jlt              R9, 1, @after_dynamic_sync_0
                             jlt              R9, 4, @one_two_three_0
-                            jge              R9, 65532, @long_wait_sync_0
+                            jge              R9, 65535, @long_wait_sync_0
                             wait             R9             
                             jmp              @after_dynamic_sync_0
             one_two_three_0:
@@ -3851,10 +3854,10 @@ set_freq         R5
                             wait             4              
                             jmp              @after_dynamic_sync_0
             long_wait_sync_0:
-                            wait             65532          
-                            sub              R9, 65532, R9  
+                            wait             65535          
+                            sub              R9, 65535, R9
                             nop                             
-                            jge              R9, 65532, @long_wait_sync_0
+                            jge              R9, 65535, @long_wait_sync_0
                             jmp              @dynamic_sync_0
             other_max_duration_0:
                             move             R5, R7         
@@ -3862,7 +3865,7 @@ set_freq         R5
             dynamic_sync_1:
                             jlt              R9, 1, @after_dynamic_sync_1
                             jlt              R9, 4, @one_two_three_1
-                            jge              R9, 65532, @long_wait_sync_1
+                            jge              R9, 65535, @long_wait_sync_1
                             wait             R9             
                             jmp              @after_dynamic_sync_1
             one_two_three_1:
@@ -3874,10 +3877,10 @@ set_freq         R5
                             wait             4              
                             jmp              @after_dynamic_sync_1
             long_wait_sync_1:
-                            wait             65532          
-                            sub              R9, 65532, R9  
-                            nop                             
-                            jge              R9, 65532, @long_wait_sync_1
+                            wait             65535          
+                            sub              R9, 65535, R9
+                            nop       
+                            jge              R9, 65535, @long_wait_sync_1
                             jmp              @dynamic_sync_1
             other_max_duration_1:
                             move             R5, R7         
@@ -3890,126 +3893,124 @@ set_freq         R5
         compiler = QbloxCompiler()
         sequences = compiler.compile(cryoscope_qprogram)
         drive_str = """setup:
-                wait_sync        4              
-                set_mrk          0              
-                upd_param        4              
-                main:
-                                set_awg_gain     32767, 32767   
+                                wait_sync        4              
+                                set_mrk          0              
+                                upd_param        4              
+                        main: 
                                 set_awg_gain     32767, 32767   
                                 move             2000, R0       
-                avg_0:
-                                move             21, R1         
-                                move             9830, R2       
+                        avg_0:       
+                                move             9830, R1       
                                 nop                             
-                                not              R2, R2         
+                                not              R1, R1        
                                 nop                             
-                                add              R2, 1, R2      
-                loop_0:
+                                add              R1, 1, R1
+                                move             21, R2     
+                        loop_0:
                                 move             80, R3         
                                 move             80, R4         
-                loop_1:
+                        loop_1:
                                 play             0, 1, 40       
                                 wait             30             
-                                wait             R4             
+                                wait             R3             
                                 move             4, R5          
-                                add              R4, 0, R6      
+                                add              R3, 0, R6      
                                 nop                             
-                                sub              R5, R6, R7     
-                                nop                             
+                                sub              R5, R6, R7
+                                nop                               
                                 jlt              R7, 2147483648, @dynamic_sync_0
                                 jge              R7, 4294967293, @negative_one_two_three_0
-                after_dynamic_sync_0:
+                        after_dynamic_sync_0:
                                 wait             289            
                                 play             0, 1, 40       
                                 wait             1419           
-                                wait             65532          
-                                wait             65532          
-                                wait             65532          
-                                wait             3404           
+                                wait             65535          
+                                wait             65535          
+                                wait             65535          
+                                wait             3395           
                                 play             0, 1, 40       
                                 wait             30             
-                                wait             R4             
+                                wait             R3             
                                 move             4, R5          
-                                add              R4, 0, R6      
+                                add              R3, 0, R6      
                                 nop                             
-                                sub              R5, R6, R7     
-                                nop                             
+                                sub              R5, R6, R7
+                                nop                               
                                 jlt              R7, 2147483648, @dynamic_sync_1
                                 jge              R7, 4294967293, @negative_one_two_three_1
-                after_dynamic_sync_1:
+                        after_dynamic_sync_1:
                                 wait             289            
                                 play             0, 1, 40       
                                 wait             1419           
-                                wait             65532          
-                                wait             65532          
-                                wait             65532          
-                                wait             3404           
-                                add              R4, 1, R4      
-                                loop             R3, @loop_1    
-                                add              R2, 983, R2    
-                                loop             R1, @loop_0    
+                                wait             65535          
+                                wait             65535          
+                                wait             65535          
+                                wait             3395            
+                                add              R3, 1, R3      
+                                loop             R4, @loop_1    
+                                add              R1, 983, R1    
+                                loop             R2, @loop_0    
                                 loop             R0, @avg_0     
                                 set_mrk          0              
                                 upd_param        4              
                                 stop                            
-                dynamic_sync_0:
+                        dynamic_sync_0:
                                 jlt              R7, 1, @after_dynamic_sync_0
                                 jlt              R7, 4, @one_two_three_0
-                                jge              R7, 65532, @long_wait_sync_0
+                                jge              R7, 65535, @long_wait_sync_0
                                 wait             R7             
                                 jmp              @after_dynamic_sync_0
-                one_two_three_0:
+                        one_two_three_0:
                                 add              R7, 4, R7      
                                 nop                             
                                 wait             R7             
                                 jmp              @after_dynamic_sync_0
-                negative_one_two_three_0:
+                        negative_one_two_three_0:
                                 wait             4              
                                 jmp              @after_dynamic_sync_0
-                long_wait_sync_0:
-                                wait             65532          
-                                sub              R7, 65532, R7  
-                                nop                             
-                                jge              R7, 65532, @long_wait_sync_0
+                        long_wait_sync_0:
+                                wait             65535          
+                                sub              R7, 65535, R7
+                                nop                              
+                                jge              R7, 65535, @long_wait_sync_0
                                 jmp              @dynamic_sync_0
-                dynamic_sync_1:
+                        dynamic_sync_1:
                                 jlt              R7, 1, @after_dynamic_sync_1
                                 jlt              R7, 4, @one_two_three_1
-                                jge              R7, 65532, @long_wait_sync_1
+                                jge              R7, 65535, @long_wait_sync_1
                                 wait             R7             
                                 jmp              @after_dynamic_sync_1
-                one_two_three_1:
+                        one_two_three_1:
                                 add              R7, 4, R7      
                                 nop                             
                                 wait             R7             
                                 jmp              @after_dynamic_sync_1
-                negative_one_two_three_1:
+                        negative_one_two_three_1:
                                 wait             4              
                                 jmp              @after_dynamic_sync_1
-                long_wait_sync_1:
-                                wait             65532          
-                                sub              R7, 65532, R7  
-                                nop                             
-                                jge              R7, 65532, @long_wait_sync_1
+                        long_wait_sync_1:
+                                wait             65535          
+                                sub              R7, 65535, R7
+                                nop                              
+                                jge              R7, 65535, @long_wait_sync_1
                                 jmp              @dynamic_sync_1"""
 
         readout_str="""setup:
-                wait_sync        4              
-                set_mrk          0              
-                upd_param        4              
-                main:
-                                set_awg_gain     32767, 32767   
-                                set_awg_gain     32767, 32767   
-                                move             2000, R0       
+                                wait_sync        4              
+                                set_mrk          0              
+                                upd_param        4              
+                    main: 
+                                set_awg_gain     32767, 32767 
+                                move             0, R0            
+                                move             2000, R1       
                 avg_0:
-                                move             0, R1          
-                                move             0, R2          
-                                move             21, R3         
-                                move             9830, R4       
+                                move             0, R2
+                                move             9830, R3       
                                 nop                             
-                                not              R4, R4         
+                                not              R3, R3         
                                 nop                             
-                                add              R4, 1, R4      
+                                add              R3, 1, R3      
+                                move             21, R4     
                 loop_0:
                                 move             80, R5         
                                 move             80, R6         
@@ -4017,63 +4018,63 @@ set_freq         R5
                                 upd_param        4              
                                 wait             66             
                                 move             4, R7          
-                                add              R6, 0, R8      
+                                add              R5, 0, R8      
                                 nop                             
-                                sub              R7, R8, R9     
-                                nop                             
+                                sub              R7, R8, R9
+                                nop                                
                                 jlt              R9, 2147483648, @other_max_duration_0
                                 move             R8, R9         
                 after_other_max_duration_0:
                                 move             0, R10         
                                 nop                             
-                                sub              R9, R10, R11   
-                                nop                             
+                                sub              R9, R10, R11
+                                nop                        
                                 jlt              R11, 2147483648, @dynamic_sync_0
                                 jge              R11, 4294967293, @negative_one_two_three_0
                 after_dynamic_sync_0:
                                 wait             359            
                                 play             0, 0, 4        
-                                acquire_weighed  0, R2, R1, R1, 1385
-                                add              R2, 1, R2      
-                                wait             65532          
-                                wait             65532          
-                                wait             65532          
-                                wait             3474           
+                                acquire_weighed  0, R2, R0, R0, 1385
+                                add              R2, 1, R2     
+                                wait             65535          
+                                wait             65535          
+                                wait             65535          
+                                wait             3465           
                                 move             4, R7          
-                                add              R6, 0, R8      
+                                add              R5, 0, R8      
                                 nop                             
-                                sub              R7, R8, R9     
-                                nop                             
+                                sub              R7, R8, R9
+                                nop                               
                                 jlt              R9, 2147483648, @other_max_duration_1
                                 move             R8, R9         
                 after_other_max_duration_1:
                                 move             0, R12         
                                 nop                             
-                                sub              R9, R12, R11   
+                                sub              R9, R12, R11
                                 nop                             
                                 jlt              R11, 2147483648, @dynamic_sync_1
                                 jge              R11, 4294967293, @negative_one_two_three_1
                 after_dynamic_sync_1:
                                 wait             359            
                                 play             0, 0, 4        
-                                acquire_weighed  0, R2, R1, R1, 1385
+                                acquire_weighed  0, R2, R0, R0, 1385
                                 add              R2, 1, R2      
-                                wait             65532          
-                                wait             65532          
-                                wait             65532          
-                                wait             3404           
-                                add              R6, 1, R6      
-                                loop             R5, @loop_1    
-                                add              R4, 983, R4    
-                                loop             R3, @loop_0    
-                                loop             R0, @avg_0     
+                                wait             65535          
+                                wait             65535          
+                                wait             65535          
+                                wait             3395           
+                                add              R5, 1, R5      
+                                loop             R6, @loop_1    
+                                add              R3, 983, R3    
+                                loop             R4, @loop_0    
+                                loop             R1, @avg_0     
                                 set_mrk          0              
                                 upd_param        4              
                                 stop                            
                 dynamic_sync_0:
                                 jlt              R11, 1, @after_dynamic_sync_0
                                 jlt              R11, 4, @one_two_three_0
-                                jge              R11, 65532, @long_wait_sync_0
+                                jge              R11, 65535, @long_wait_sync_0
                                 wait             R11            
                                 jmp              @after_dynamic_sync_0
                 one_two_three_0:
@@ -4085,10 +4086,10 @@ set_freq         R5
                                 wait             4              
                                 jmp              @after_dynamic_sync_0
                 long_wait_sync_0:
-                                wait             65532          
-                                sub              R11, 65532, R11
-                                nop                             
-                                jge              R11, 65532, @long_wait_sync_0
+                                wait             65535          
+                                sub              R11, 65535, R11
+                                nop                           
+                                jge              R11, 65535, @long_wait_sync_0
                                 jmp              @dynamic_sync_0
                 other_max_duration_0:
                                 move             R7, R9         
@@ -4096,7 +4097,7 @@ set_freq         R5
                 dynamic_sync_1:
                                 jlt              R11, 1, @after_dynamic_sync_1
                                 jlt              R11, 4, @one_two_three_1
-                                jge              R11, 65532, @long_wait_sync_1
+                                jge              R11, 65535, @long_wait_sync_1
                                 wait             R11            
                                 jmp              @after_dynamic_sync_1
                 one_two_three_1:
@@ -4108,84 +4109,83 @@ set_freq         R5
                                 wait             4              
                                 jmp              @after_dynamic_sync_1
                 long_wait_sync_1:
-                                wait             65532          
-                                sub              R11, 65532, R11
-                                nop                             
-                                jge              R11, 65532, @long_wait_sync_1
+                                wait             65535          
+                                sub              R11, 65535, R11
+                                nop                            
+                                jge              R11, 65535, @long_wait_sync_1
                                 jmp              @dynamic_sync_1
                 other_max_duration_1:
                                 move             R7, R9         
                                 jmp              @after_other_max_duration_1"""
 
         flux_str="""setup:
-                wait_sync        4              
-                set_mrk          0              
-                upd_param        4              
+                                wait_sync        4              
+                                set_mrk          0              
+                                upd_param        4              
                 main:
                                 move             2000, R0       
                 avg_0:
-                                move             21, R1         
-                                move             9830, R2       
+                                move             9830, R1                
                                 nop                             
-                                not              R2, R2         
+                                not              R1, R1        
                                 nop                             
-                                add              R2, 1, R2      
+                                add              R1, 1, R1  
+                                move             21, R2    
                 loop_0:
                                 move             80, R3         
                                 move             80, R4         
-                loop_1:
-                                set_awg_gain     R2, R2         
-                                set_awg_gain     R2, R2         
+                loop_1:         
+                                set_awg_gain     R1, R1         
                                 upd_param        4              
                                 wait             66             
                                 play             0, 1, 4        
                                 move             0, R5          
-                                add              R4, 0, R6      
+                                add              R3, 0, R6      
                                 nop                             
-                                sub              R5, R6, R7     
-                                nop                             
+                                sub              R5, R6, R7
+                                nop                                
                                 jlt              R7, 2147483648, @other_max_duration_0
                                 move             R6, R7         
                 after_other_max_duration_0:
                                 move             4, R8          
                                 nop                             
-                                sub              R7, R8, R9     
-                                nop                             
+                                sub              R7, R8, R9
+                                nop                                 
                                 jlt              R9, 2147483648, @dynamic_sync_0
                                 jge              R9, 4294967293, @negative_one_two_three_0
                 after_dynamic_sync_0:
                                 play             2, 1, 4        
                                 wait             1744           
-                                wait             65532          
-                                wait             65532          
-                                wait             65532          
-                                wait             3474           
+                                wait             65535          
+                                wait             65535          
+                                wait             65535          
+                                wait             3465           
                                 play             0, 1, 4        
                                 move             0, R5          
-                                add              R4, 0, R6      
+                                add              R3, 0, R6      
                                 nop                             
-                                sub              R5, R6, R7     
-                                nop                             
+                                sub              R5, R6, R7 
+                                nop                               
                                 jlt              R7, 2147483648, @other_max_duration_1
                                 move             R6, R7         
                 after_other_max_duration_1:
                                 move             4, R10         
                                 nop                             
-                                sub              R7, R10, R9    
-                                nop                             
+                                sub              R7, R10, R9
+                                nop                              
                                 jlt              R9, 2147483648, @dynamic_sync_1
                                 jge              R9, 4294967293, @negative_one_two_three_1
                 after_dynamic_sync_1:
                                 play             2, 1, 4        
                                 wait             1744           
-                                wait             65532          
-                                wait             65532          
-                                wait             65532          
-                                wait             3404           
-                                add              R4, 1, R4      
-                                loop             R3, @loop_1    
-                                add              R2, 983, R2    
-                                loop             R1, @loop_0    
+                                wait             65535          
+                                wait             65535          
+                                wait             65535          
+                                wait             3395           
+                                add              R3, 1, R3      
+                                loop             R4, @loop_1    
+                                add              R1, 983, R1    
+                                loop             R2, @loop_0    
                                 loop             R0, @avg_0     
                                 set_mrk          0              
                                 upd_param        4              
@@ -4193,7 +4193,7 @@ set_freq         R5
                 dynamic_sync_0:
                                 jlt              R9, 1, @after_dynamic_sync_0
                                 jlt              R9, 4, @one_two_three_0
-                                jge              R9, 65532, @long_wait_sync_0
+                                jge              R9, 65535, @long_wait_sync_0
                                 wait             R9             
                                 jmp              @after_dynamic_sync_0
                 one_two_three_0:
@@ -4205,10 +4205,10 @@ set_freq         R5
                                 wait             4              
                                 jmp              @after_dynamic_sync_0
                 long_wait_sync_0:
-                                wait             65532          
-                                sub              R9, 65532, R9  
+                                wait             65535          
+                                sub              R9, 65535, R9
                                 nop                             
-                                jge              R9, 65532, @long_wait_sync_0
+                                jge              R9, 65535, @long_wait_sync_0
                                 jmp              @dynamic_sync_0
                 other_max_duration_0:
                                 move             R5, R7         
@@ -4216,7 +4216,7 @@ set_freq         R5
                 dynamic_sync_1:
                                 jlt              R9, 1, @after_dynamic_sync_1
                                 jlt              R9, 4, @one_two_three_1
-                                jge              R9, 65532, @long_wait_sync_1
+                                jge              R9, 65535, @long_wait_sync_1
                                 wait             R9             
                                 jmp              @after_dynamic_sync_1
                 one_two_three_1:
@@ -4228,10 +4228,10 @@ set_freq         R5
                                 wait             4              
                                 jmp              @after_dynamic_sync_1
                 long_wait_sync_1:
-                                wait             65532          
-                                sub              R9, 65532, R9  
-                                nop                             
-                                jge              R9, 65532, @long_wait_sync_1
+                                wait             65535          
+                                sub              R9, 65535, R9
+                                nop                              
+                                jge              R9, 65535, @long_wait_sync_1
                                 jmp              @dynamic_sync_1
                 other_max_duration_1:
                                 move             R5, R7         
@@ -4248,125 +4248,98 @@ set_freq         R5
         compiler = QbloxCompiler()
         sequences = compiler.compile(dynamic_wait_three_buses_dynamic_static)
         flux_str = """setup:
-                wait_sync        4              
-                set_mrk          0              
-                upd_param        4              
+                                wait_sync        4              
+                                set_mrk          0              
+                                upd_param        4              
 
-main:
-                move             11, R0         
-                move             100, R1        
-loop_0:
-                move             0, R2          
-                add              R1, 0, R3      
-                nop                             
-                sub              R2, R3, R4     
-                nop                             
-                jlt              R4, 2147483648, @other_max_duration_0
-                move             R3, R4         
-after_other_max_duration_0:
-
-
-                move             0, R5          
-                nop                             
-                sub              R4, R5, R6     
-                nop                             
-                jlt              R6, 2147483648, @dynamic_sync_0
-                jge              R6, 4294967293, @negative_one_two_three_0
-after_dynamic_sync_0:
-
-
-                wait             40             
-                move             0, R2          
-                add              R1, 0, R3      
-                nop                             
-                sub              R2, R3, R4     
-                nop                             
-                jlt              R4, 2147483648, @other_max_duration_1
-                move             R3, R4         
-after_other_max_duration_1:
-
-
-                move             0, R7          
-                nop                             
-                sub              R4, R7, R6     
-                nop                             
-                jlt              R6, 2147483648, @dynamic_sync_1
-                jge              R6, 4294967293, @negative_one_two_three_1
-after_dynamic_sync_1:
-
-
-                play             0, 1, 40       
-                add              R1, 10, R1     
-                loop             R0, @loop_0    
-                set_mrk          0              
-                upd_param        4              
-                stop                            
-dynamic_sync_0:
-
-
-                jlt              R6, 1, @after_dynamic_sync_0
-                jlt              R6, 4, @one_two_three_0
-                jge              R6, 65532, @long_wait_sync_0
-                wait             R6             
-                jmp              @after_dynamic_sync_0
-one_two_three_0:
-
-
-                add              R6, 4, R6      
-                nop                             
-                wait             R6             
-                jmp              @after_dynamic_sync_0
-negative_one_two_three_0:
-
-
-                wait             4              
-                jmp              @after_dynamic_sync_0
-long_wait_sync_0:
-
-
-                wait             65532          
-                sub              R6, 65532, R6  
-                nop                             
-                jge              R6, 65532, @long_wait_sync_0
-                jmp              @dynamic_sync_0
-other_max_duration_0:
-
-
-                move             R2, R4         
-                jmp              @after_other_max_duration_0
-dynamic_sync_1:
-
-
-                jlt              R6, 1, @after_dynamic_sync_1
-                jlt              R6, 4, @one_two_three_1
-                jge              R6, 65532, @long_wait_sync_1
-                wait             R6             
-                jmp              @after_dynamic_sync_1
-one_two_three_1:
-
-
-                add              R6, 4, R6      
-                nop                             
-                wait             R6             
-                jmp              @after_dynamic_sync_1
-negative_one_two_three_1:
-
-
-                wait             4              
-                jmp              @after_dynamic_sync_1
-long_wait_sync_1:
-
-
-                wait             65532          
-                sub              R6, 65532, R6  
-                nop                             
-                jge              R6, 65532, @long_wait_sync_1
-                jmp              @dynamic_sync_1
-other_max_duration_1:
-
-
-                move             R2, R4         
-                jmp              @after_other_max_duration_1"""
+                main:
+                                move             100, R0
+                                move             11, R1      
+                                        
+                loop_0:
+                                move             0, R2          
+                                add              R0, 0, R3      
+                                nop                             
+                                sub              R2, R3, R4
+                                nop                                
+                                jlt              R4, 2147483648, @other_max_duration_0
+                                move             R3, R4         
+                after_other_max_duration_0:
+                                move             0, R5          
+                                nop                             
+                                sub              R4, R5, R6
+                                nop                             
+                                jlt              R6, 2147483648, @dynamic_sync_0
+                                jge              R6, 4294967293, @negative_one_two_three_0
+                after_dynamic_sync_0:
+                                wait             40             
+                                move             0, R2          
+                                add              R0, 0, R3      
+                                nop                             
+                                sub              R2, R3, R4
+                                nop                               
+                                jlt              R4, 2147483648, @other_max_duration_1
+                                move             R3, R4         
+                after_other_max_duration_1:
+                                move             0, R7          
+                                nop                             
+                                sub              R4, R7, R6
+                                nop                                
+                                jlt              R6, 2147483648, @dynamic_sync_1
+                                jge              R6, 4294967293, @negative_one_two_three_1
+                after_dynamic_sync_1:
+                                play             0, 1, 40       
+                                add              R0, 10, R0     
+                                loop             R1, @loop_0    
+                                set_mrk          0              
+                                upd_param        4              
+                                stop                            
+                dynamic_sync_0:
+                                jlt              R6, 1, @after_dynamic_sync_0
+                                jlt              R6, 4, @one_two_three_0
+                                jge              R6, 65535, @long_wait_sync_0
+                                wait             R6             
+                                jmp              @after_dynamic_sync_0
+                one_two_three_0:
+                                add              R6, 4, R6      
+                                nop                             
+                                wait             R6             
+                                jmp              @after_dynamic_sync_0
+                negative_one_two_three_0:
+                                wait             4              
+                                jmp              @after_dynamic_sync_0
+                long_wait_sync_0:
+                                wait             65535          
+                                sub              R6, 65535, R6
+                                nop                              
+                                jge              R6, 65535, @long_wait_sync_0
+                                jmp              @dynamic_sync_0
+                other_max_duration_0:
+                                move             R2, R4         
+                                jmp              @after_other_max_duration_0
+                dynamic_sync_1:
+                                jlt              R6, 1, @after_dynamic_sync_1
+                                jlt              R6, 4, @one_two_three_1
+                                jge              R6, 65535, @long_wait_sync_1
+                                wait             R6             
+                                jmp              @after_dynamic_sync_1
+                one_two_three_1:
+                                add              R6, 4, R6      
+                                nop                             
+                                wait             R6             
+                                jmp              @after_dynamic_sync_1
+                negative_one_two_three_1:
+                                wait             4              
+                                jmp              @after_dynamic_sync_1
+                long_wait_sync_1:
+                                wait             65535          
+                                sub              R6, 65535, R6   
+                                nop                           
+                                jge              R6, 65535, @long_wait_sync_1
+                                jmp              @dynamic_sync_1
+                other_max_duration_1:
+                                move             R2, R4         
+                                jmp              @after_other_max_duration_1"""
         
         assert is_q1asm_equal(sequences.sequences["flux"], flux_str)
 
@@ -4374,74 +4347,60 @@ other_max_duration_1:
         compiler = QbloxCompiler()
         sequences = compiler.compile(dynamic_wait_three_buses_static_static)
         flux_str = """setup:
-                wait_sync        4              
-                set_mrk          0              
-                upd_param        4              
+                                    wait_sync        4
+                                    set_mrk          0
+                                    upd_param        4
 
-main:
-                move             11, R0         
-                move             100, R1        
-loop_0:
-                move             0, R2          
-                add              R1, 0, R3      
-                nop                             
-                sub              R2, R3, R4     
-                nop                             
-                jlt              R4, 2147483648, @other_max_duration_0
-                move             R3, R4         
-after_other_max_duration_0:
-
-
-                move             0, R5          
-                nop                             
-                sub              R4, R5, R6     
-                nop                             
-                jlt              R6, 2147483648, @dynamic_sync_0
-                jge              R6, 4294967293, @negative_one_two_three_0
-after_dynamic_sync_0:
-
-
-                wait             50             
-                play             0, 1, 40       
-                add              R1, 10, R1     
-                loop             R0, @loop_0    
-                set_mrk          0              
-                upd_param        4              
-                stop                            
-dynamic_sync_0:
-
-
-                jlt              R6, 1, @after_dynamic_sync_0
-                jlt              R6, 4, @one_two_three_0
-                jge              R6, 65532, @long_wait_sync_0
-                wait             R6             
-                jmp              @after_dynamic_sync_0
-one_two_three_0:
-
-
-                add              R6, 4, R6      
-                nop                             
-                wait             R6             
-                jmp              @after_dynamic_sync_0
-negative_one_two_three_0:
-
-
-                wait             4              
-                jmp              @after_dynamic_sync_0
-long_wait_sync_0:
-
-
-                wait             65532          
-                sub              R6, 65532, R6  
-                nop                             
-                jge              R6, 65532, @long_wait_sync_0
-                jmp              @dynamic_sync_0
-other_max_duration_0:
-
-
-                move             R2, R4         
-                jmp              @after_other_max_duration_0"""
-        
+                    main:
+                                    move             100, R0
+                                    move             11, R1       
+                                        
+                    loop_0:
+                                    move             0, R2         
+                                    add              R0, 0, R3      
+                                    nop                             
+                                    sub              R2, R3, R4
+                                    nop                                
+                                    jlt              R4, 2147483648, @other_max_duration_0
+                                    move             R3, R4         
+                    after_other_max_duration_0:
+                                    move             0, R5          
+                                    nop                             
+                                    sub              R4, R5, R6
+                                    nop                                
+                                    jlt              R6, 2147483648, @dynamic_sync_0
+                                    jge              R6, 4294967293, @negative_one_two_three_0
+                    after_dynamic_sync_0:
+                                    wait             50             
+                                    play             0, 1, 40       
+                                    add              R0, 10, R0     
+                                    loop             R1, @loop_0    
+                                    set_mrk          0              
+                                    upd_param        4              
+                                    stop                            
+                    dynamic_sync_0:
+                                    jlt              R6, 1, @after_dynamic_sync_0
+                                    jlt              R6, 4, @one_two_three_0
+                                    jge              R6, 65535, @long_wait_sync_0
+                                    wait             R6             
+                                    jmp              @after_dynamic_sync_0
+                    one_two_three_0:
+                                    add              R6, 4, R6      
+                                    nop                             
+                                    wait             R6             
+                                    jmp              @after_dynamic_sync_0
+                    negative_one_two_three_0:
+                                    wait             4              
+                                    jmp              @after_dynamic_sync_0
+                    long_wait_sync_0:
+                                    wait             65535          
+                                    sub              R6, 65535, R6    
+                                    nop                          
+                                    jge              R6, 65535, @long_wait_sync_0
+                                    jmp              @dynamic_sync_0
+                    other_max_duration_0:
+                                    move             R2, R4         
+                                    jmp              @after_other_max_duration_0"""
         assert is_q1asm_equal(sequences.sequences["flux"], flux_str)
 
     def test_measure_reset_calibration_and_mapping(self, measure_reset_calibrated_bus_mapping: QProgram, calibration_reset: Calibration):
@@ -4490,6 +4449,314 @@ other_max_duration_0:
         assert is_q1asm_equal(sequences["drive_q0_bus"], drive_str)
         assert is_q1asm_equal(sequences["readout_q0_bus"], readout_str)
 
+    def test_clamp_duration_zero_is_clamped_to_minimum_with_warning(self, caplog):
+        with caplog.at_level(logging.WARNING):
+            result = QbloxCompiler._clamp_duration(0, label="wait")
+        assert "wait duration 0 ns is below the Q1ASM minimum (4 ns), clamping to 4 ns." in caplog.text
+        assert result == 4
+
+    def test_clamp_duration_below_minimum_returns_4_with_warning(self, caplog):
+        with caplog.at_level(logging.WARNING):
+            result = QbloxCompiler._clamp_duration(2, label="wait")
+        assert "wait duration 2 ns is below the Q1ASM minimum (4 ns), clamping to 4 ns." in caplog.text
+        assert result == 4
+
+    def test_clamp_duration_at_minimum_returns_unchanged(self):
+        result = QbloxCompiler._clamp_duration(4, label="wait")
+        assert result == 4
+
+    def test_clamp_duration_above_minimum_returns_unchanged(self):
+        result = QbloxCompiler._clamp_duration(100, label="wait")
+        assert result == 100
+
+    def test_parallel_loop_wait_start_below_minimum_is_clamped(self, caplog):
+        drag_pair = IQDrag(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=1.2)
+        qp = QProgram()
+        duration = qp.variable(label="time", domain=Domain.Time)
+        gain = qp.variable(label="gain", domain=Domain.Voltage)
+        duration_loop = ForLoop(variable=duration, start=0, stop=100, step=10)
+        gain_loop = ForLoop(variable=gain, start=0, stop=1, step=0.1)
+        with qp.parallel(loops=[duration_loop, gain_loop]):
+            qp.set_gain(bus="drive", gain=gain)
+            qp.play(bus="drive", waveform=drag_pair)
+            qp.wait(bus="drive", duration=duration)
+
+        compiler = QbloxCompiler()
+        with caplog.at_level(logging.WARNING):
+            sequences, _ = compiler.compile(qprogram=qp)
+
+        assert "Wait duration 0 ns is below the Q1ASM minimum (4 ns), clamping to 4 ns." in caplog.text
+        assert duration_loop.start == 4
+        assert gain_loop.start == 0
+
+        expected = """
+            setup:
+                wait_sync        4
+                set_mrk          0
+                upd_param        4
+
+            main:
+                move             4, R0
+                move             0, R1
+                move             10, R2
+            loop_0:
+                set_awg_gain     R1, R1
+                play             0, 1, 40
+                wait             R0
+                add              R0, 10, R0
+                add              R1, 3276, R1
+                loop             R2, @loop_0
+                set_mrk          0
+                upd_param        4
+                stop
+        """
+        assert is_q1asm_equal(sequences["drive"], expected)
+
+    def test_parallel_loop_wait_stop_below_minimum_is_clamped(self, caplog):
+        drag_pair = IQDrag(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=1.2)
+        qp = QProgram()
+        duration = qp.variable(label="time", domain=Domain.Time)
+        gain = qp.variable(label="gain", domain=Domain.Voltage)
+        duration_loop = ForLoop(variable=duration, start=100, stop=0, step=-25)
+        gain_loop = ForLoop(variable=gain, start=0, stop=1, step=0.1)
+        with qp.parallel(loops=[duration_loop, gain_loop]):
+            qp.set_gain(bus="drive", gain=gain)
+            qp.play(bus="drive", waveform=drag_pair)
+            qp.wait(bus="drive", duration=duration)
+
+        compiler = QbloxCompiler()
+        with caplog.at_level(logging.WARNING):
+            sequences, _ = compiler.compile(qprogram=qp)
+
+        assert "Wait duration 0 ns is below the Q1ASM minimum (4 ns), clamping to 4 ns." in caplog.text
+        assert duration_loop.start == 100
+        assert duration_loop.stop == 4
+
+        expected = """
+            setup:
+                wait_sync        4
+                set_mrk          0
+                upd_param        4
+
+            main:
+                move             100, R0
+                move             0, R1
+                move             5, R2
+            loop_0:
+                set_awg_gain     R1, R1
+                play             0, 1, 40
+                wait             R0
+                sub              R0, 24, R0
+                add              R1, 3276, R1
+                loop             R2, @loop_0
+                set_mrk          0
+                upd_param        4
+                stop
+        """
+        assert is_q1asm_equal(sequences["drive"], expected)
+
+    def test_for_loop_wait_stop_below_minimum_is_clamped(self, caplog):
+        qp = QProgram()
+        duration = qp.variable(label="time", domain=Domain.Time)
+        with qp.for_loop(variable=duration, start=100, stop=0, step=-25) as loop:
+            qp.wait(bus="drive", duration=duration)
+
+        compiler = QbloxCompiler()
+        with caplog.at_level(logging.WARNING):
+            sequences, _ = compiler.compile(qprogram=qp)
+
+        assert "Wait duration 0 ns is below the Q1ASM minimum (4 ns), clamping to 4 ns." in caplog.text
+        assert loop.start == 100
+        assert loop.stop == 4
+
+        expected = """
+            setup:
+                wait_sync        4
+                set_mrk          0
+                upd_param        4
+
+            main:
+                move             100, R0
+                move             5, R1
+            loop_0:
+                wait             R0
+                sub              R0, 24, R0
+                loop             R1, @loop_0
+                set_mrk          0
+                upd_param        4
+                stop
+        """
+        assert is_q1asm_equal(sequences["drive"], expected)
+
+    def test_set_phase_with_variable_uses_register(self):
+        qp = QProgram()
+        phase = qp.variable(label="phase", domain=Domain.Phase)
+        with qp.for_loop(variable=phase, start=0, stop=0.5, step=0.1):
+            qp.set_phase(bus="drive", phase=phase)
+
+        compiler = QbloxCompiler()
+        sequences, _ = compiler.compile(qprogram=qp)
+
+        expected = """
+            setup:
+                wait_sync        4
+                set_mrk          0
+                upd_param        4
+
+            main:
+                move             0, R0
+                move             6, R1
+            loop_0:
+                set_ph           R0
+                add              R0, 15915494, R0
+                loop             R1, @loop_0
+                set_mrk          0
+                upd_param        4
+                stop
+        """
+        assert is_q1asm_equal(sequences["drive"], expected)
+
+    def test_wait_duration_zero_is_clamped_to_minimum(self, caplog):
+        qp = QProgram()
+        qp.wait(bus="drive", duration=0)
+        compiler = QbloxCompiler()
+        with caplog.at_level(logging.WARNING):
+            sequences, _ = compiler.compile(qprogram=qp)
+        assert "wait duration 0 ns is below the Q1ASM minimum (4 ns), clamping to 4 ns." in caplog.text
+        expected = """
+            setup:
+                wait_sync        4
+                set_mrk          0
+                upd_param        4
+            main:
+                wait             4
+                set_mrk          0              
+                upd_param        4              
+                stop
+        """
+        assert is_q1asm_equal(sequences["drive"], expected)
+
+    def test_wait_duration_below_minimum_is_clamped(self, caplog):
+        qp = QProgram()
+        qp.wait(bus="drive", duration=2)
+        compiler = QbloxCompiler()
+        with caplog.at_level(logging.WARNING):
+            sequences, _ = compiler.compile(qprogram=qp)
+        assert "wait duration 2 ns is below the Q1ASM minimum (4 ns), clamping to 4 ns." in caplog.text
+        expected = """
+            setup:
+                wait_sync        4
+                set_mrk          0
+                upd_param        4
+            main:
+                wait             4
+                set_mrk          0
+                upd_param        4
+                stop
+        """
+        assert is_q1asm_equal(sequences["drive"]._program, expected)
+
+    def test_wait_trigger_duration_zero_is_clamped_to_minimum(self, caplog):
+        qp = QProgram()
+        qp.wait_trigger(bus="drive", duration=0)
+        compiler = QbloxCompiler()
+        with caplog.at_level(logging.WARNING):
+            sequences, _ = compiler.compile(qprogram=qp, ext_trigger=True)
+        assert "wait_trigger duration 0 ns is below the Q1ASM minimum (4 ns), clamping to 4 ns." in caplog.text
+        expected = """
+            setup:
+                wait_sync        4
+                set_mrk          0
+                upd_param        4
+            main:
+                wait_trigger     15, 4
+                wait_sync        4
+                set_mrk          0
+                upd_param        4
+                stop
+        """
+        assert is_q1asm_equal(sequences["drive"]._program, expected)
+
+    def test_wait_trigger_duration_below_minimum_is_clamped(self, caplog):
+        qp = QProgram()
+        qp.wait_trigger(bus="drive", duration=2)
+        compiler = QbloxCompiler()
+        with caplog.at_level(logging.WARNING):
+            sequences, _ = compiler.compile(qprogram=qp, ext_trigger=True)
+        assert "wait_trigger duration 2 ns is below the Q1ASM minimum (4 ns), clamping to 4 ns." in caplog.text
+        expected = """
+            setup:
+                wait_sync        4
+                set_mrk          0
+                upd_param        4
+            main:
+                wait_trigger     15, 4
+                wait_sync        4
+                set_mrk          0
+                upd_param        4
+                stop
+        """
+        assert is_q1asm_equal(sequences["drive"]._program, expected)
+
+    def test_play_wait_time_zero_is_clamped_to_minimum(self, caplog):
+        wf = IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
+        qp = QProgram()
+        qp.qblox.play(bus="drive", waveform=wf, wait_time=0)
+        compiler = QbloxCompiler()
+        with caplog.at_level(logging.WARNING):
+            sequences, _ = compiler.compile(qprogram=qp)
+        assert "play duration 0 ns is below the Q1ASM minimum (4 ns), clamping to 4 ns." in caplog.text
+        expected = """
+            setup:
+                wait_sync        4
+                set_mrk          0
+                upd_param        4
+            main:
+                play             0, 1, 4
+                set_mrk          0
+                upd_param        4
+                stop
+        """
+        assert is_q1asm_equal(sequences["drive"], expected)
+
+    def test_play_wait_time_below_minimum_is_clamped(self, caplog):
+        wf = IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
+        qp = QProgram()
+        qp.qblox.play(bus="drive", waveform=wf, wait_time=2)
+        compiler = QbloxCompiler()
+        with caplog.at_level(logging.WARNING):
+            sequences, _ = compiler.compile(qprogram=qp)
+        assert "play duration 2 ns is below the Q1ASM minimum (4 ns), clamping to 4 ns." in caplog.text
+        expected = """
+            setup:
+                wait_sync        4
+                set_mrk          0
+                upd_param        4
+            main:
+                play             0, 1, 4
+                set_mrk          0
+                upd_param        4
+                stop
+        """
+        assert is_q1asm_equal(sequences["drive"], expected)
+
+    def test_get_conversion_instructions_none_returns_none(self):
+        result = QbloxCompiler._get_qpysequence_conversion_instructions(None)
+        assert result is None
+
+    def test_get_conversion_instructions_known_operations(self):
+        assert QbloxCompiler._get_qpysequence_conversion_instructions(SetFrequency("drive", 1e6)) is QPyInstructions.SetFrequencyHz
+        assert QbloxCompiler._get_qpysequence_conversion_instructions(SetPhase("drive", 0.5)) is QPyInstructions.SetPhaseRad
+        assert QbloxCompiler._get_qpysequence_conversion_instructions(SetGain("drive", 0.5)) is QPyInstructions.SetNormalisedGain
+        assert QbloxCompiler._get_qpysequence_conversion_instructions(SetOffset("drive", 0.5)) is QPyInstructions.SetNormalisedOffs
+        assert QbloxCompiler._get_qpysequence_conversion_instructions(Wait("drive", 100)) is None
+
+    def test_get_conversion_instructions_unknown_raises_value_error(self):
+        operation = ResetPhase("drive")
+        with pytest.raises(ValueError, match="ResetPhase does not support variable sweep in a loop."):
+            QbloxCompiler._get_qpysequence_conversion_instructions(operation)
+
+    
     def test_variable_expression_one_gain(self, variable_expression_one_gain: QProgram):
         compiler = QbloxCompiler()
         sequences, _ = compiler.compile(qprogram=variable_expression_one_gain)
@@ -4504,62 +4771,53 @@ other_max_duration_0:
 
             main:
                             move             0, R0
-                            move             9, R1         
-                            move             3276, R2          
+                            move             3276, R1         
+                            move             9, R2          
             loop_0:
-                            nop
-                            add              R2, 3276, R3
+                            add              R1, 3276, R3
                             nop
                             set_awg_gain     R3, R3
                             play             0, 1, 40  
-                            nop
-                            sub              R2, 3276, R4
+                            sub              R1, 3276, R4
                             nop
                             set_awg_gain     R4, R4
                             play             0, 1, 40  
-                            nop
-                            sub              R2, 3276, R5
+                            sub              R1, 3276, R5
                             nop
                             set_awg_gain     R5, R5
                             play             0, 1, 40     
-                            nop
                             sub              R0, 3276, R6
                             nop
-                            sub              R6, R2, R7
+                            sub              R6, R1, R7
                             nop
                             set_awg_gain     R7, R7
                             play             0, 1, 40
-                            nop
-                            add              R2, 3276, R8
+                            add              R1, 3276, R8
                             nop
                             set_awg_gain     R8, R8
                             play             0, 1, 40
-                            nop
                             move             3276, R9
                             nop
-                            sub              R9, R2, R10
+                            sub              R9, R1, R10
                             nop
                             set_awg_gain     R10, R10
-                            play             0, 1, 40       
-                            nop                             
+                            play             0, 1, 40                   
                             move             0, R11         
                             nop                             
-                            sub              R11, R2, R12   
+                            sub              R11, R1, R12   
                             nop                             
                             set_awg_gain     R12, R12
                             play             0, 1, 40 
-                            nop
-                            add              R2, 3276, R13
+                            add              R1, 3276, R13
                             nop
                             set_awg_gain     R13, R13
                             play             0, 1, 40 
-                            nop
-                            sub              R2, 3276, R14
+                            sub              R1, 3276, R14
                             nop
                             set_awg_gain     R14, R14
                             play             0, 1, 40 
-                            add              R2, 3276, R2   
-                            loop             R1, @loop_0    
+                            add              R1, 3276, R1   
+                            loop             R2, @loop_0    
                             set_mrk          0              
                             upd_param        4              
                             stop                
@@ -4581,62 +4839,53 @@ other_max_duration_0:
 
         main:
                         move             0, R0          
-                        move             9, R1          
-                        move             3276, R2       
-        loop_0:
-                        nop                             
-                        add              R2, 3276, R3   
+                        move             3276, R1          
+                        move             9, R2       
+        loop_0:                          
+                        add              R1, 3276, R3   
                         nop                             
                         set_awg_offs     R3, R3         
-                        play             0, 1, 40       
-                        nop                             
-                        sub              R2, 3276, R4   
+                        play             0, 1, 40                        
+                        sub              R1, 3276, R4   
                         nop                             
                         set_awg_offs     R4, R4         
-                        play             0, 1, 40       
-                        nop                             
-                        sub              R2, 3276, R5   
+                        play             0, 1, 40                           
+                        sub              R1, 3276, R5   
                         nop                             
                         set_awg_offs     R5, R5         
-                        play             0, 1, 40       
-                        nop                             
+                        play             0, 1, 40              
                         sub              R0, 3276, R6   
                         nop                             
-                        sub              R6, R2, R7     
+                        sub              R6, R1, R7     
                         nop                             
                         set_awg_offs     R7, R7         
-                        play             0, 1, 40       
-                        nop                             
-                        add              R2, 3276, R8   
+                        play             0, 1, 40                                 
+                        add              R1, 3276, R8   
                         nop                             
                         set_awg_offs     R8, R8         
-                        play             0, 1, 40       
-                        nop                             
+                        play             0, 1, 40               
                         move             3276, R9       
                         nop                             
-                        sub              R9, R2, R10    
+                        sub              R9, R1, R10    
                         nop                             
                         set_awg_offs     R10, R10       
-                        play             0, 1, 40       
-                        nop                             
+                        play             0, 1, 40                  
                         move             0, R11         
                         nop                             
-                        sub              R11, R2, R12   
+                        sub              R11, R1, R12   
                         nop                             
                         set_awg_offs     R12, R12       
-                        play             0, 1, 40       
-                        nop                             
-                        add              R2, 3276, R13  
+                        play             0, 1, 40               
+                        add              R1, 3276, R13  
                         nop                             
                         set_awg_offs     R13, R13       
-                        play             0, 1, 40       
-                        nop                             
-                        sub              R2, 3276, R14  
+                        play             0, 1, 40                          
+                        sub              R1, 3276, R14  
                         nop                             
                         set_awg_offs     R14, R14       
                         play             0, 1, 40       
-                        add              R2, 3276, R2   
-                        loop             R1, @loop_0    
+                        add              R1, 3276, R1   
+                        loop             R2, @loop_0    
                         set_mrk          0              
                         upd_param        4              
                         stop                             
@@ -4665,30 +4914,93 @@ other_max_duration_0:
                             set_mrk          0
                             upd_param        4
 
+
             main:
-                            move             11, R0
-                            move             0, R1
+                            move             0, R0
+                            move             11, R1
+
             loop_0:
-                            move             11, R2
-                            move             32767, R3
+                            move             32767, R2  
+                            move             11, R3
             loop_1:
-                            nop
-                            add              R1, R3, R4
+                            add              R0, R2, R4
                             nop
                             set_awg_gain     R4, R4
                             play             0, 1, 40
-                            nop
-                            sub              R1, R3, R5
+                            sub              R0, R2, R5
                             nop
                             set_awg_gain     R5, R5
                             play             0, 1, 40
-                            sub              R3, 3277, R3
-                            loop             R2, @loop_1
-                            add              R1, 3276, R1
-                            loop             R0, @loop_0
+                            sub              R2, 3277, R2
+                            loop             R3, @loop_1
+                            add              R0, 3276, R0
+                            loop             R1, @loop_0
                             set_mrk          0
                             upd_param        4
                             stop
+        """
+        assert is_q1asm_equal(sequences["drive"], drive_str)
+
+    def test_descending_gain_sweep_step_matches_pre_qpysequence_1_0_rounding(self):
+        """A descending sweep's step must be computed as if qililab still scaled+floor-divided the
+        endpoints itself (like before the qpysequence 0.11 migration), not by truncating a single
+        averaged physical-unit step -- the two disagree by up to 1 LSB and drift in opposite
+        directions depending on sweep direction."""
+        qp = QProgram()
+        gain = qp.variable(label="gain", domain=Domain.Voltage)
+        with qp.for_loop(variable=gain, start=1.0, stop=-1.0, step=-2 / 3):
+            qp.set_gain(bus="drive", gain=gain)
+
+        compiler = QbloxCompiler()
+        sequences, _ = compiler.compile(qprogram=qp)
+
+        drive_str = """
+            setup:
+                wait_sync        4
+                set_mrk          0
+                upd_param        4
+
+            main:
+                move             32767, R0
+                move             4, R1
+            loop_0:
+                set_awg_gain     R0, R0
+                sub              R0, 21845, R0
+                loop             R1, @loop_0
+                set_mrk          0
+                upd_param        4
+                stop
+        """
+        assert is_q1asm_equal(sequences["drive"], drive_str)
+
+    def test_descending_phase_sweep_step_matches_pre_qpysequence_1_0_rounding(self):
+        """Same as the gain case, but for the phase domain, whose scale factor (1e9 / 2*pi) is
+        irrational-derived -- exercises the float round-trip nudge needed to reproduce the exact
+        pre-migration integer step without going through qpysequence's own scaling code."""
+        qp = QProgram()
+        phase = qp.variable(label="phase", domain=Domain.Phase)
+        with qp.for_loop(variable=phase, start=2 * np.pi, stop=0.0, step=-2 * np.pi / 3):
+            qp.set_phase(bus="drive", phase=phase)
+
+        compiler = QbloxCompiler()
+        sequences, _ = compiler.compile(qprogram=qp)
+
+        drive_str = """
+            setup:
+                wait_sync        4
+                set_mrk          0
+                upd_param        4
+
+            main:
+                move             1000000000, R0
+                move             4, R1
+            loop_0:
+                set_ph           R0
+                sub              R0, 333333334, R0
+                loop             R1, @loop_0
+                set_mrk          0
+                upd_param        4
+                stop
         """
         assert is_q1asm_equal(sequences["drive"], drive_str)
 
@@ -4710,21 +5022,19 @@ other_max_duration_0:
                 upd_param        4              
 
         main:
-                move             10, R0         
+                move             0, R0         
                 move             0, R1          
-                move             0, R2          
+                move             10, R2          
         loop_0:
-                nop
-                set_awg_offs     R1, R1         
+                set_awg_offs     R0, R0         
                 upd_param        4              
                 wait             6              
-                set_awg_gain     819, 819       
-                set_awg_gain     819, 819       
+                set_awg_gain     819, 819             
                 play             0, 1, 50       
                 wait             54             
-                add              R1, 327, R1    
-                add              R2, 163, R2    
-                loop             R0, @loop_0    
+                add              R0, 327, R0    
+                add              R1, 163, R1    
+                loop             R2, @loop_0    
                 set_mrk          0              
                 upd_param        4              
                 stop
@@ -4736,21 +5046,19 @@ other_max_duration_0:
                 upd_param        4              
 
         main:
-                move             10, R0         
+                move             0, R0         
                 move             0, R1          
-                move             0, R2          
+                move             10, R2          
         loop_0:
-                nop
-                set_awg_offs     R2, R2         
+                set_awg_offs     R1, R1       
                 upd_param        4              
                 wait             6              
-                set_awg_gain     1638, 1638     
-                set_awg_gain     1638, 1638     
+                set_awg_gain     1638, 1638       
                 play             0, 1, 50       
                 wait             54             
-                add              R1, 327, R1    
-                add              R2, 163, R2    
-                loop             R0, @loop_0    
+                add              R0, 327, R0    
+                add              R1, 163, R1    
+                loop             R2, @loop_0    
                 set_mrk          0              
                 upd_param        4              
                 stop
@@ -4762,16 +5070,16 @@ other_max_duration_0:
                 upd_param        4              
 
         main:
-                move             10, R0         
+                move             0, R0         
                 move             0, R1          
-                move             0, R2          
+                move             10, R2          
         loop_0:
                 wait             10             
                 play             0, 0, 50       
                 wait             54             
-                add              R1, 327, R1    
-                add              R2, 163, R2    
-                loop             R0, @loop_0    
+                add              R0, 327, R0  
+                add              R1, 163, R1    
+                loop             R2, @loop_0    
                 set_mrk          0              
                 upd_param        4              
                 stop
@@ -4780,22 +5088,22 @@ other_max_duration_0:
         setup:
                 wait_sync        4              
                 set_mrk          0              
-                upd_param        4              
+                upd_param        4    
 
-        main:
                 move             0, R0          
+        main:
                 move             0, R1          
-                move             10, R2         
+                move             0, R2         
                 move             0, R3          
-                move             0, R4          
+                move             10, R4          
         loop_0:
                 wait             60             
                 play             0, 0, 4        
                 acquire_weighed  0, R1, R0, R0, 50
                 add              R1, 1, R1      
-                add              R3, 327, R3    
-                add              R4, 163, R4    
-                loop             R2, @loop_0    
+                add              R2, 327, R2    
+                add              R3, 163, R3    
+                loop             R4, @loop_0    
                 set_mrk          0              
                 upd_param        4              
                 stop
@@ -4825,26 +5133,22 @@ other_max_duration_0:
                         set_mrk          0              
                         upd_param        4              
 
-        main:
-                        nop                             
+        main:                          
                         set_awg_offs     0, 0           
                         upd_param        4              
                         wait             6              
                         set_awg_gain     11374, 11374   
-                        set_awg_gain     11374, 11374   
                         play             0, 1, 50       
                         wait             54             
-                        nop                             
                         set_awg_offs     11374, 11374   
                         upd_param        4              
                         wait             6              
-                        set_awg_gain     2668, 2668     
-                        set_awg_gain     2668, 2668     
+                        set_awg_gain     2668, 2668        
                         play             0, 1, 50       
                         wait             54             
                         set_mrk          0              
                         upd_param        4              
-                        stop                            
+                        stop                                       
         """
         flux2_str = """
         setup:
@@ -4852,26 +5156,22 @@ other_max_duration_0:
                         set_mrk          0              
                         upd_param        4              
 
-        main:
-                        nop                             
+        main:                         
                         set_awg_offs     0, 0           
                         upd_param        4              
                         wait             6              
                         set_awg_gain     17832, 17832   
-                        set_awg_gain     17832, 17832   
                         play             0, 1, 50       
-                        wait             54             
-                        nop                             
+                        wait             54                         
                         set_awg_offs     17832, 17832   
                         upd_param        4              
                         wait             6              
-                        set_awg_gain     421, 421     
-                        set_awg_gain     421, 421     
+                        set_awg_gain     421, 421       
                         play             0, 1, 50       
                         wait             54             
                         set_mrk          0              
                         upd_param        4              
-                        stop                            
+                        stop                         
         """
         drive_str = """
         setup:
@@ -4887,7 +5187,7 @@ other_max_duration_0:
                         wait             54             
                         set_mrk          0              
                         upd_param        4              
-                        stop                            
+                        stop                               
         """
         readout_str = """
         setup:
@@ -4936,31 +5236,27 @@ other_max_duration_0:
                         upd_param        4              
 
         main:
-                        move             11, R0         
-                        move             400, R1        
+                        move             400, R0        
+                        move             11, R1         
         loop_0:
-                        nop                             
                         set_awg_offs     0, 0           
                         set_awg_gain     11374, 11374   
-                        set_awg_gain     11374, 11374   
                         play             0, 1, 50       
                         wait             64             
-                        add              R1, 40, R1     
-                        loop             R0, @loop_0    
-                        move             11, R2         
-                        move             400, R3        
+                        add              R0, 40, R0     
+                        loop             R1, @loop_0    
+                        move             400, R2        
+                        move             11, R3         
         loop_1:
-                        nop                             
                         set_awg_offs     1638, 1638     
                         set_awg_gain     11374, 11374   
-                        set_awg_gain     11374, 11374   
                         play             0, 1, 50       
                         wait             64             
-                        add              R3, 40, R3     
-                        loop             R2, @loop_1    
+                        add              R2, 40, R2     
+                        loop             R3, @loop_1    
                         set_mrk          0              
                         upd_param        4              
-                        stop                            
+                        stop                    
         """
         flux2_str = """
         setup:
@@ -4969,31 +5265,27 @@ other_max_duration_0:
                         upd_param        4              
 
         main:
-                        move             11, R0         
-                        move             400, R1        
+                        move             400, R0        
+                        move             11, R1         
         loop_0:
-                        nop                             
                         set_awg_offs     0, 0           
                         set_awg_gain     17832, 17832   
-                        set_awg_gain     17832, 17832   
                         play             0, 1, 50       
                         wait             64             
-                        add              R1, 40, R1     
-                        loop             R0, @loop_0    
-                        move             11, R2         
-                        move             400, R3        
+                        add              R0, 40, R0     
+                        loop             R1, @loop_0    
+                        move             400, R2        
+                        move             11, R3         
         loop_1:
-                        nop                             
-                        set_awg_offs     3276, 3276     
-                        set_awg_gain     17832, 17832   
+                        set_awg_offs     3276, 3276 
                         set_awg_gain     17832, 17832   
                         play             0, 1, 50       
                         wait             64             
-                        add              R3, 40, R3     
-                        loop             R2, @loop_1    
+                        add              R2, 40, R2     
+                        loop             R3, @loop_1    
                         set_mrk          0              
                         upd_param        4              
-                        stop                            
+                        stop          
         """
         drive_str = """
         setup:
@@ -5002,33 +5294,29 @@ other_max_duration_0:
                         upd_param        4              
 
         main:
-                        move             11, R0         
-                        move             400, R1        
+                        move             400, R0        
+                        move             11, R1         
         loop_0:
-                        set_freq         R1             
-                        set_freq         R1             
+                        set_freq         R0             
                         upd_param        4              
                         wait             6              
                         play             0, 0, 50       
                         wait             54             
-                        add              R1, 40, R1     
-                        loop             R0, @loop_0    
-                        nop                             
-                        move             11, R2         
-                        move             400, R3        
-                        nop                             
+                        add              R0, 40, R0     
+                        loop             R1, @loop_0    
+                        move             400, R2        
+                        move             11, R3         
         loop_1:
-                        set_freq         R3             
-                        set_freq         R3             
+                        set_freq         R2             
                         upd_param        4              
                         wait             6              
                         play             0, 0, 50       
                         wait             54             
-                        add              R3, 40, R3     
-                        loop             R2, @loop_1    
+                        add              R2, 40, R2     
+                        loop             R3, @loop_1    
                         set_mrk          0              
                         upd_param        4              
-                        stop                            
+                        stop         
         """
         readout_str = """
         setup:
@@ -5036,31 +5324,31 @@ other_max_duration_0:
                         set_mrk          0              
                         upd_param        4              
 
-        main:
                         move             0, R0          
                         move             0, R1          
+        main:
                         move             0, R2          
-                        move             11, R3         
-                        move             400, R4        
+                        move             400, R3        
+                        move             11, R4         
         loop_0:
                         wait             60             
                         play             0, 0, 4        
-                        acquire_weighed  0, R2, R1, R1, 50
+                        acquire_weighed  0, R2, R0, R0, 50
                         add              R2, 1, R2      
-                        add              R4, 40, R4     
-                        loop             R3, @loop_0    
-                        move             11, R5         
-                        move             400, R6        
+                        add              R3, 40, R3     
+                        loop             R4, @loop_0    
+                        move             400, R5        
+                        move             11, R6         
         loop_1:
                         wait             60             
                         play             0, 0, 4        
-                        acquire_weighed  1, R0, R1, R1, 50
-                        add              R0, 1, R0      
-                        add              R6, 40, R6     
-                        loop             R5, @loop_1    
+                        acquire_weighed  1, R1, R0, R0, 50
+                        add              R1, 1, R1      
+                        add              R5, 40, R5     
+                        loop             R6, @loop_1    
                         set_mrk          0              
                         upd_param        4              
-                        stop                            
+                        stop                    
         """
 
         assert is_q1asm_equal(sequences["flux1"], flux1_str)
@@ -5087,26 +5375,22 @@ other_max_duration_0:
                         set_mrk          0              
                         upd_param        4              
 
-        main:
-                        nop                             
+        main:                          
                         set_awg_offs     8430, 8430     
                         upd_param        4              
                         wait             6              
-                        set_awg_gain     4570, 4570     
                         set_awg_gain     4570, 4570     
                         play             0, 1, 50       
-                        wait             54             
-                        nop                             
+                        wait             54                            
                         set_awg_offs     8430, 8430     
                         upd_param        4              
                         wait             6              
-                        set_awg_gain     4570, 4570     
                         set_awg_gain     4570, 4570     
                         play             0, 1, 50       
                         wait             54             
                         set_mrk          0              
                         upd_param        4              
-                        stop                            
+                        stop                     
         """
         flux2_str = """
         setup:
@@ -5114,26 +5398,22 @@ other_max_duration_0:
                 set_mrk          0              
                 upd_param        4              
 
-main:
-                nop                             
+        main:          
                 set_awg_offs     14403, 14403   
                 upd_param        4              
-                wait             6              
-                set_awg_gain     4225, 4225     
+                wait             6               
                 set_awg_gain     4225, 4225     
                 play             0, 1, 50       
-                wait             54             
-                nop                             
+                wait             54                            
                 set_awg_offs     14403, 14403   
                 upd_param        4              
-                wait             6              
-                set_awg_gain     4225, 4225     
+                wait             6                
                 set_awg_gain     4225, 4225     
                 play  0, 1, 50       
                 wait             54             
                 set_mrk          0              
                 upd_param        4              
-                stop                            
+                stop                   
         """
         drive_str = """
         setup:
@@ -5189,61 +5469,49 @@ main:
 
         flux1_str = """
         setup:
-                        wait_sync        4              
-                        set_mrk          0              
-                        upd_param        4              
+                    wait_sync        4              
+                    set_mrk          0              
+                    upd_param        4              
 
         main:
-                        set_awg_gain     0, 0           
-                        set_awg_gain     0, 0           
-                        nop                             
-                        set_awg_offs     0, 0           
-                        play             0, 1, 50       
-                        set_awg_gain     2724, 2724     
-                        set_awg_gain     2724, 2724     
-                        nop                             
-                        set_awg_offs     0, 0           
-                        play             0, 1, 50       
-                        nop                             
-                        set_awg_offs     1638, 1638     
-                        upd_param        4              
-                        wait             6              
-                        nop                             
-                        set_awg_offs     11374, 11374   
-                        upd_param        4              
-                        wait             6              
-                        set_mrk          0              
-                        upd_param        4              
-                        stop                            
+                    set_awg_gain     0, 0           
+                    set_awg_offs     0, 0           
+                    play             0, 1, 50       
+                    set_awg_gain     2724, 2724     
+                    set_awg_offs     0, 0           
+                    play             0, 1, 50       
+                    set_awg_offs     1638, 1638     
+                    upd_param        4              
+                    wait             6              
+                    set_awg_offs     11374, 11374   
+                    upd_param        4              
+                    wait             6              
+                    set_mrk          0              
+                    upd_param        4              
+                    stop     
         """
         flux2_str = """
         setup:
-                        wait_sync        4              
-                        set_mrk          0              
-                        upd_param        4              
+                    wait_sync        4              
+                    set_mrk          0              
+                    upd_param        4              
 
         main:
-                        set_awg_gain     0, 0           
-                        set_awg_gain     0, 0           
-                        nop                             
-                        set_awg_offs     0, 0           
-                        play             0, 1, 50       
-                        set_awg_gain     4957, 4957     
-                        set_awg_gain     4957, 4957     
-                        nop                             
-                        set_awg_offs     0, 0           
-                        play             0, 1, 50       
-                        nop                             
-                        set_awg_offs     3276, 3276     
-                        upd_param        4              
-                        wait             6              
-                        nop                             
-                        set_awg_offs     17832, 17832   
-                        upd_param        4              
-                        wait             6              
-                        set_mrk          0              
-                        upd_param        4              
-                        stop                            
+                    set_awg_gain     0, 0           
+                    set_awg_offs     0, 0           
+                    play             0, 1, 50       
+                    set_awg_gain     4957, 4957     
+                    set_awg_offs     0, 0           
+                    play             0, 1, 50       
+                    set_awg_offs     3276, 3276  
+                    upd_param        4              
+                    wait             6              
+                    set_awg_offs     17832, 17832   
+                    upd_param        4              
+                    wait             6              
+                    set_mrk          0              
+                    upd_param        4              
+                    stop  
         """
 
         assert is_q1asm_equal(sequences["flux1"], flux1_str)
@@ -5268,65 +5536,49 @@ main:
 
         flux1_str = """
         setup:
-                        wait_sync        4              
-                        set_mrk          0              
-                        upd_param        4              
+                    wait_sync        4              
+                    set_mrk          0              
+                    upd_param        4              
 
         main:
-                        nop                             
-                        set_awg_offs     1638, 1638     
-                        set_awg_gain     11374, 11374   
-                        set_awg_gain     11374, 11374   
-                        play             0, 1, 50       
-                        nop                             
-                        set_awg_offs     0, 0       
-                        set_awg_gain     11374, 11374   
-                        set_awg_gain     11374, 11374   
-                        play             0, 1, 50       
-                        nop                             
-                        set_awg_offs     13012, 13012   
-                        set_awg_gain     2668, 2668     
-                        set_awg_gain     2668, 2668     
-                        play             0, 1, 50       
-                        nop                             
-                        set_awg_offs     11374, 11374   
-                        set_awg_gain     2668, 2668     
-                        set_awg_gain     2668, 2668     
-                        play             0, 1, 50       
-                        set_mrk          0              
-                        upd_param        4              
-                        stop                            
+                    set_awg_offs     1638, 1638     
+                    set_awg_gain     11374, 11374   
+                    play             0, 1, 50       
+                    set_awg_offs     0, 0           
+                    set_awg_gain     11374, 11374   
+                    play             0, 1, 50       
+                    set_awg_offs     13012, 13012   
+                    set_awg_gain     2668, 2668     
+                    play             0, 1, 50       
+                    set_awg_offs     11374, 11374   
+                    set_awg_gain     2668, 2668     
+                    play             0, 1, 50       
+                    set_mrk          0              
+                    upd_param        4              
+                    stop        
         """
         flux2_str = """
         setup:
-                        wait_sync        4              
-                        set_mrk          0              
-                        upd_param        4              
+                    wait_sync        4              
+                    set_mrk          0              
+                    upd_param        4              
 
         main:
-                        nop                             
-                        set_awg_offs     3276, 3276     
-                        set_awg_gain     17832, 17832   
-                        set_awg_gain     17832, 17832   
-                        play             0, 1, 50       
-                        nop                             
-                        set_awg_offs     0, 0       
-                        set_awg_gain     17832, 17832   
-                        set_awg_gain     17832, 17832   
-                        play             0, 1, 50       
-                        nop                             
-                        set_awg_offs     21109, 21109   
-                        set_awg_gain     421, 421     
-                        set_awg_gain     421, 421     
-                        play             0, 1, 50       
-                        nop                             
-                        set_awg_offs     17832, 17832   
-                        set_awg_gain     421, 421     
-                        set_awg_gain     421, 421     
-                        play             0, 1, 50       
-                        set_mrk          0              
-                        upd_param        4              
-                        stop                            
+                    set_awg_offs     3276, 3276    
+                    set_awg_gain     17832, 17832   
+                    play             0, 1, 50       
+                    set_awg_offs     0, 0           
+                    set_awg_gain     17832, 17832   
+                    play             0, 1, 50       
+                    set_awg_offs     21109, 21109  
+                    set_awg_gain     421, 421       
+                    play             0, 1, 50       
+                    set_awg_offs     17832, 17832   
+                    set_awg_gain     421, 421       
+                    play             0, 1, 50       
+                    set_mrk          0              
+                    upd_param        4              
+                    stop        
         """
 
         assert is_q1asm_equal(sequences["flux1"], flux1_str)
@@ -5357,59 +5609,43 @@ main:
 
         main:
                         set_awg_gain     0, 0           
-                        set_awg_gain     0, 0           
-                        nop                             
                         set_awg_offs     0, 0           
                         play             0, 1, 50       
                         set_awg_gain     0, 0           
-                        set_awg_gain     0, 0           
-                        nop                             
                         set_awg_offs     0, 0           
                         play             0, 1, 50       
                         set_awg_gain     2724, 2724     
-                        set_awg_gain     2724, 2724     
-                        nop                             
                         set_awg_offs     0, 0           
                         play             0, 1, 50       
                         set_awg_gain     2724, 2724     
-                        set_awg_gain     2724, 2724     
-                        nop                             
                         set_awg_offs     0, 0           
                         play             0, 1, 50       
                         set_mrk          0              
                         upd_param        4              
-                        stop                            
+                        stop        
         """
         flux2_str = """
         setup:
-                        wait_sync        4              
-                        set_mrk          0              
-                        upd_param        4              
+                    wait_sync        4              
+                    set_mrk          0              
+                    upd_param        4              
 
         main:
-                        set_awg_gain     0, 0           
-                        set_awg_gain     0, 0           
-                        nop                             
-                        set_awg_offs     0, 0           
-                        play             0, 1, 50       
-                        set_awg_gain     0, 0           
-                        set_awg_gain     0, 0           
-                        nop                             
-                        set_awg_offs     0, 0           
-                        play             0, 1, 50       
-                        set_awg_gain     4957, 4957     
-                        set_awg_gain     4957, 4957     
-                        nop                             
-                        set_awg_offs     0, 0           
-                        play             0, 1, 50       
-                        set_awg_gain     4957, 4957     
-                        set_awg_gain     4957, 4957     
-                        nop                             
-                        set_awg_offs     0, 0           
-                        play             0, 1, 50       
-                        set_mrk          0              
-                        upd_param        4              
-                        stop                            
+                    set_awg_gain     0, 0           
+                    set_awg_offs     0, 0           
+                    play             0, 1, 50       
+                    set_awg_gain     0, 0           
+                    set_awg_offs     0, 0           
+                    play             0, 1, 50       
+                    set_awg_gain     4957, 4957     
+                    set_awg_offs     0, 0           
+                    play             0, 1, 50       
+                    set_awg_gain     4957, 4957     
+                    set_awg_offs     0, 0           
+                    play             0, 1, 50       
+                    set_mrk          0              
+                    upd_param        4              
+                    stop
         """
 
         assert is_q1asm_equal(sequences["flux1"], flux1_str)
@@ -5434,21 +5670,19 @@ main:
                 upd_param        4              
 
         main:
-                move             10, R0         
+                move             0, R0         
                 move             0, R1          
-                move             0, R2          
+                move             10, R2          
         loop_0:
-                nop
                 set_awg_offs     1638, 1638     
                 upd_param        4              
                 wait             6              
-                set_awg_gain     R1, R1         
-                set_awg_gain     R1, R1         
+                set_awg_gain     R0, R0               
                 play             0, 1, 50       
                 wait             54             
-                add              R1, 163, R1    
-                add              R2, 327, R2    
-                loop             R0, @loop_0    
+                add              R0, 163, R0    
+                add              R1, 327, R1    
+                loop             R2, @loop_0    
                 set_mrk          0              
                 upd_param        4              
                 stop
@@ -5460,21 +5694,19 @@ main:
                 upd_param        4              
 
         main:
-                move             10, R0         
+                move             0, R0         
                 move             0, R1          
-                move             0, R2          
+                move             10, R2          
         loop_0:
-                nop
                 set_awg_offs     819, 819       
                 upd_param        4              
-                wait             6              
-                set_awg_gain     R2, R2         
-                set_awg_gain     R2, R2         
+                wait             6                     
+                set_awg_gain     R1, R1         
                 play             0, 1, 50       
                 wait             54             
-                add              R1, 163, R1    
-                add              R2, 327, R2    
-                loop             R0, @loop_0    
+                add              R0, 163, R0   
+                add              R1, 327, R1   
+                loop             R2, @loop_0    
                 set_mrk          0              
                 upd_param        4              
                 stop
@@ -5486,16 +5718,16 @@ main:
                 upd_param        4              
 
         main:
-                move             10, R0         
+                move             0, R0         
                 move             0, R1          
-                move             0, R2          
+                move             10, R2          
         loop_0:
                 wait             10             
                 play             0, 0, 50       
                 wait             54             
-                add              R1, 163, R1    
-                add              R2, 327, R2    
-                loop             R0, @loop_0    
+                add              R0, 163, R0    
+                add              R1, 327, R1    
+                loop             R2, @loop_0    
                 set_mrk          0              
                 upd_param        4              
                 stop
@@ -5504,22 +5736,22 @@ main:
         setup:
                 wait_sync        4              
                 set_mrk          0              
-                upd_param        4              
+                upd_param        4      
 
+                move             0, R0
         main:
-                move             0, R0          
                 move             0, R1          
-                move             10, R2         
+                move             0, R2         
                 move             0, R3          
-                move             0, R4          
+                move             10, R4          
         loop_0:
                 wait             60             
                 play             0, 0, 4        
                 acquire_weighed  0, R1, R0, R0, 50
                 add              R1, 1, R1      
-                add              R3, 163, R3    
-                add              R4, 327, R4    
-                loop             R2, @loop_0    
+                add              R2, 163, R2    
+                add              R3, 327, R3    
+                loop             R4, @loop_0    
                 set_mrk          0              
                 upd_param        4              
                 stop
@@ -5614,76 +5846,70 @@ main:
             
         flux1_str = """
         setup:
-                wait_sync        4              
-                set_mrk          0              
-                upd_param        4              
+                wait_sync        4
+                set_mrk          0
+                upd_param        4
 
         main:
-                move             10, R0         
-                move             1638, R1       
-                move             3276, R2       
+                move             1638, R0
+                move             3276, R1
+                move             10, R2
         loop_0:
-                set_awg_gain     R1, R1         
-                set_awg_gain     R1, R1         
-                play             0, 1, 50       
-                add              R1, 163, R1    
-                sub              R2, 164, R2    
-                loop             R0, @loop_0    
-                move             10, R3         
-                move             1638, R4       
-                move             3276, R5       
+                set_awg_gain     R0, R0
+                play             0, 1, 50
+                add              R0, 163, R0
+                sub              R1, 164, R1
+                loop             R2, @loop_0
+                move             1638, R3
+                move             3276, R4
+                move             10, R5
         loop_1:
-                nop
-                set_awg_offs     R4, R4         
-                upd_param        4              
-                wait             6              
-                add              R4, 163, R4    
-                sub              R5, 164, R5    
-                loop             R3, @loop_1    
-                set_mrk          0              
-                upd_param        4              
+                set_awg_offs     R3, R3
+                upd_param        4
+                wait             6
+                add              R3, 163, R3
+                sub              R4, 164, R4
+                loop             R5, @loop_1
+                set_mrk          0
+                upd_param        4
                 stop
         """
         flux2_str = """
         setup:
-                wait_sync        4              
-                set_mrk          0              
-                upd_param        4              
+                wait_sync        4
+                set_mrk          0
+                upd_param        4
 
         main:
-                move             10, R0         
-                move             1638, R1       
-                move             3276, R2       
+                move             1638, R0
+                move             3276, R1
+                move             10, R2
         loop_0:
-                set_awg_gain     R2, R2         
-                set_awg_gain     R2, R2         
-                play             0, 1, 50       
-                add              R1, 163, R1    
-                sub              R2, 164, R2    
-                loop             R0, @loop_0    
-                nop                             
-                move             10, R3         
-                move             1638, R4       
-                move             3276, R5       
+                set_awg_gain     R1, R1
+                play             0, 1, 50
+                add              R0, 163, R0
+                sub              R1, 164, R1
+                loop             R2, @loop_0
+                move             1638, R3
+                move             3276, R4
+                move             10, R5
         loop_1:
-                nop
-                set_awg_offs     R5, R5         
-                upd_param        4              
-                wait             6              
-                add              R4, 163, R4    
-                sub              R5, 164, R5    
-                loop             R3, @loop_1    
-                set_mrk          0              
-                upd_param        4              
+                set_awg_offs     R4, R4
+                upd_param        4
+                wait             6
+                add              R3, 163, R3
+                sub              R4, 164, R4
+                loop             R5, @loop_1
+                set_mrk          0
+                upd_param        4
                 stop
         """
 
         assert is_q1asm_equal(sequences["flux1"], flux1_str)
         assert is_q1asm_equal(sequences["flux2"], flux2_str)
 
-    def test_crosstalk_compensation_double_loop(self, crosstalk_qprogram_double_gain_loop: QProgram, crosstalk_qprogram_double_offset_loop: QProgram):
+    def test_crosstalk_compensation_double_loop_gain(self, crosstalk_qprogram_double_gain_loop: QProgram):
         """Test to create double loop qprogram with crosstalk. 
-        Currently it raises a non implemented error due to variables summing each other.
         """
         inverse_xtalk_array = np.linalg.inv([[1, 0.5], [0.5, 1]])
         crosstalk = CrosstalkMatrix().from_array(["flux1", "flux2"], inverse_xtalk_array)
@@ -5696,33 +5922,32 @@ main:
 
         flux1_gain = """
         setup:
-                        wait_sync        4              
-                        set_mrk          0              
-                        upd_param        4              
+                wait_sync        4              
+                set_mrk          0              
+                upd_param        4              
 
         main:
-                        move             10, R0         
-                        move             0, R1          
-                        move             0, R2          
+                move             0, R0          
+                move             0, R1          
+                move             10, R2         
         loop_0:
-                        move             10, R3         
-                        move             1638, R4       
-                        move             3276, R5       
+                move             1638, R3       
+                move             3276, R4       
+                move             10, R5         
         loop_1:
-                        nop                             
-                        add              R1, R4, R6     
-                        nop                             
-                        set_awg_gain     R6, R6         
-                        play             0, 1, 50       
-                        sub              R4, 164, R4    
-                        sub              R5, 328, R5    
-                        loop             R3, @loop_1    
-                        add              R1, 327, R1    
-                        add              R2, 163, R2    
-                        loop             R0, @loop_0    
-                        set_mrk          0              
-                        upd_param        4              
-                        stop                            
+                add              R0, R3, R6
+                nop
+                set_awg_gain     R6, R6
+                play             0, 1, 50
+                sub              R3, 164, R3
+                sub              R4, 328, R4
+                loop             R5, @loop_1
+                add              R0, 327, R0
+                add              R1, 163, R1
+                loop             R2, @loop_0
+                set_mrk          0
+                upd_param        4
+                stop
         """
         flux2_gain = """
         setup:
@@ -5731,32 +5956,37 @@ main:
                         upd_param        4              
 
         main:
-                        move             10, R0         
+                        move             0, R0          
                         move             0, R1          
-                        move             0, R2          
+                        move             10, R2         
         loop_0:
-                        move             10, R3         
-                        move             1638, R4       
-                        move             3276, R5       
+                        move             1638, R3       
+                        move             3276, R4       
+                        move             10, R5         
         loop_1:
-                        nop                             
-                        add              R5, R2, R6     
-                        nop                             
-                        set_awg_gain     R6, R6         
-                        play             0, 1, 50       
-                        sub              R4, 164, R4    
-                        sub              R5, 328, R5    
-                        loop             R3, @loop_1    
-                        add              R1, 327, R1    
-                        add              R2, 163, R2    
-                        loop             R0, @loop_0    
-                        set_mrk          0              
-                        upd_param        4              
-                        stop                            
+                        add              R4, R1, R6
+                        nop
+                        set_awg_gain     R6, R6
+                        play             0, 1, 50
+                        sub              R3, 164, R3
+                        sub              R4, 328, R4
+                        loop             R5, @loop_1
+                        add              R0, 327, R0
+                        add              R1, 163, R1
+                        loop             R2, @loop_0
+                        set_mrk          0
+                        upd_param        4
+                        stop
         """
 
         assert is_q1asm_equal(sequences["flux1"], flux1_gain)
         assert is_q1asm_equal(sequences["flux2"], flux2_gain)
+
+    def test_crosstalk_compensation_double_loop_offset(self, crosstalk_qprogram_double_offset_loop: QProgram):
+        """Test to create double loop qprogram with crosstalk. 
+        """
+        inverse_xtalk_array = np.linalg.inv([[1, 0.5], [0.5, 1]])
+        crosstalk = CrosstalkMatrix().from_array(["flux1", "flux2"], inverse_xtalk_array)
 
         compiler_offset = QbloxCompiler()
         sequences, _ = compiler_offset.compile(qprogram=crosstalk_qprogram_double_offset_loop, crosstalk=crosstalk)
@@ -5768,28 +5998,27 @@ main:
                         upd_param        4              
 
         main:
-                        move             10, R0         
+                        move             0, R0          
                         move             0, R1          
-                        move             0, R2          
+                        move             10, R2         
         loop_0:
-                        move             10, R3         
-                        move             1638, R4       
-                        move             3276, R5       
+                        move             1638, R3       
+                        move             3276, R4       
+                        move             10, R5         
         loop_1:
-                        nop                             
-                        add              R1, R4, R6     
-                        nop                             
-                        set_awg_offs     R6, R6         
-                        play             0, 1, 50       
-                        sub              R4, 164, R4    
-                        sub              R5, 328, R5    
-                        loop             R3, @loop_1    
-                        add              R1, 327, R1    
-                        add              R2, 163, R2    
-                        loop             R0, @loop_0    
-                        set_mrk          0              
-                        upd_param        4              
-                        stop                            
+                        add              R0, R3, R6
+                        nop
+                        set_awg_offs     R6, R6
+                        play             0, 1, 50
+                        sub              R3, 164, R3
+                        sub              R4, 328, R4
+                        loop             R5, @loop_1
+                        add              R0, 327, R0
+                        add              R1, 163, R1
+                        loop             R2, @loop_0
+                        set_mrk          0
+                        upd_param        4
+                        stop
         """
         flux2_offset = """
         setup:
@@ -5798,28 +6027,27 @@ main:
                         upd_param        4              
 
         main:
-                        move             10, R0         
+                        move             0, R0          
                         move             0, R1          
-                        move             0, R2          
+                        move             10, R2         
         loop_0:
-                        move             10, R3         
-                        move             1638, R4       
-                        move             3276, R5       
+                        move             1638, R3       
+                        move             3276, R4       
+                        move             10, R5         
         loop_1:
-                        nop                             
-                        add              R5, R2, R6     
-                        nop                             
-                        set_awg_offs     R6, R6         
-                        play             0, 1, 50       
-                        sub              R4, 164, R4    
-                        sub              R5, 328, R5    
-                        loop             R3, @loop_1    
-                        add              R1, 327, R1    
-                        add              R2, 163, R2    
-                        loop             R0, @loop_0    
-                        set_mrk          0              
-                        upd_param        4              
-                        stop                            
+                        add              R4, R1, R6
+                        nop
+                        set_awg_offs     R6, R6
+                        play             0, 1, 50
+                        sub              R3, 164, R3
+                        sub              R4, 328, R4
+                        loop             R5, @loop_1
+                        add              R0, 327, R0
+                        add              R1, 163, R1
+                        loop             R2, @loop_0
+                        set_mrk          0
+                        upd_param        4
+                        stop
         """
 
         assert is_q1asm_equal(sequences["flux1"], flux1_offset)
@@ -5974,8 +6202,6 @@ main:
         compiler = QbloxCompiler()
         sequences, _ = compiler.compile(qprogram=qblox_play_zero_wait_time)
 
-        assert sequences["drive"]._program._compiled
-
         drive_str = """
             setup:
                             wait_sync        4
@@ -5993,8 +6219,6 @@ main:
     def test_qblox_play_none_wait_time(self, qblox_play_none_wait_time: QProgram):
         compiler = QbloxCompiler()
         sequences, _ = compiler.compile(qprogram=qblox_play_none_wait_time)
-
-        assert sequences["drive"]._program._compiled
 
         drive_str = """
             setup:
@@ -6210,23 +6434,25 @@ class TestAcquisition:
         expected_q1asm =    """setup:
                                             wait_sync        4              
                                             set_mrk          0              
-                                            upd_param        4              
+                                            upd_param        4         
+
+                                            move             1, R0          
+                                            move             0, R1         
 
                             main:
-                                            move             1, R0          
-                                            move             0, R1          
-                                            move             0, R2          
-                                            move             11, R3         
-                                            move             100, R4        
+                                            move             0, R2
+                                            move             400, R3          
+                                            move             11, R4        
                             loop_0:
                                             move             100, R5        
                             avg_0:
+                                            set_freq         R3
                                             play             0, 1, 4        
                                             acquire_weighed  0, R2, R1, R0, 2000
                                             loop             R5, @avg_0     
                                             add              R2, 1, R2      
-                                            add              R4, 10, R4     
-                                            loop             R3, @loop_0    
+                                            add              R3, 40, R3     
+                                            loop             R4, @loop_0    
                                             set_mrk          0              
                                             upd_param        4              
                                             stop                       """
@@ -6243,18 +6469,20 @@ class TestAcquisition:
         expected_q1asm =    """setup:
                                                 wait_sync        4              
                                                 set_mrk          0              
-                                                upd_param        4              
+                                                upd_param        4      
 
-                                main:
                                                 move             1, R0          
                                                 move             1, R1          
-                                                move             0, R2          
+                                                move             0, R2           
+
+                                main:
                                                 move             0, R3          
-                                                move             11, R4         
-                                                move             100, R5        
+                                                move             400, R4         
+                                                move             11, R5        
                                 loop_0:
                                                 move             100, R6        
                                 avg_0:
+                                                set_freq         R4
                                                 play             0, 1, 4        
                                                 acquire_weighed  0, R3, R2, R1, 2000
                                                 play             0, 1, 4        
@@ -6262,8 +6490,8 @@ class TestAcquisition:
                                                 loop             R6, @avg_0     
                                                 add              R3, 2, R3      
                                                 add              R0, 2, R0      
-                                                add              R5, 10, R5     
-                                                loop             R4, @loop_0    
+                                                add              R4, 40, R4    
+                                                loop             R5, @loop_0    
                                                 set_mrk          0              
                                                 upd_param        4              
                                                 stop  """
@@ -6273,25 +6501,25 @@ class TestAcquisition:
 
 
     def test_inner_average_outer_sweep_three_measures(self, inner_average_outer_sweep_three_measures: QProgram):
-
         compiler = QbloxCompiler()
         sequences, _ = compiler.compile(qprogram=inner_average_outer_sweep_three_measures)
         expected_q1asm =    """setup:
                                                 wait_sync        4              
                                                 set_mrk          0              
-                                                upd_param        4              
+                                                upd_param        4 
 
-                                main:
                                                 move             2, R0
                                                 move             1, R1          
                                                 move             1, R2          
-                                                move             0, R3          
+                                                move             0, R3            
+                                main:
                                                 move             0, R4          
-                                                move             11, R5         
-                                                move             100, R6        
+                                                move             400, R5         
+                                                move             11, R6        
                                 loop_0:
                                                 move             100, R7        
                                 avg_0:
+                                                set_freq         R5
                                                 play             0, 1, 4        
                                                 acquire_weighed  0, R4, R3, R2, 2000
                                                 play             0, 1, 4        
@@ -6302,12 +6530,11 @@ class TestAcquisition:
                                                 add              R4, 3, R4      
                                                 add              R1, 3, R1   
                                                 add              R0, 3, R0
-                                                add              R6, 10, R6
-                                                loop             R5, @loop_0
+                                                add              R5, 40, R5
+                                                loop             R6, @loop_0
                                                 set_mrk          0
                                                 upd_param        4
                                                 stop  """
-
 
         assert is_q1asm_equal(sequences["readout"], expected_q1asm)
 
