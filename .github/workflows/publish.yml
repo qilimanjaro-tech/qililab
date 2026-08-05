@@ -54,16 +54,15 @@ jobs:
             **/pyproject.toml
             **/uv.lock
           python-version: "3.13"
-      # `pyproject.toml` declares CodeArtifact indexes, so dependency resolution — including
-      # `build-system.requires` — needs a CodeArtifact token or the build fails with 401.
-      # Inlined equivalent of the devops code-artifact-auth action (unusable from a public repo).
       - name: Configure AWS Credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@e6de054238d6b7531b4efff3b6587d9aade6a06c  # v6.2.3
         with:
           role-to-assume: arn:aws:iam::723412851021:role/GitHub_actions_role
           aws-region: eu-west-1
           role-session-name: GitHubActions-DevOps
+      
       - name: Assume deploy role in target account
+        id: chained
         uses: aws-actions/configure-aws-credentials@e6de054238d6b7531b4efff3b6587d9aade6a06c  # v6.2.3
         with:
           role-to-assume: arn:aws:iam::723412851021:role/Code-Artifact-Publish
@@ -71,29 +70,39 @@ jobs:
           role-session-name: GitHubActions-Deploy
           role-chaining: true
           role-skip-session-tagging: true
-      - name: Build wheel and sdist
+      
+      - name: Authenticate uv to CodeArtifact
         shell: bash
         run: |
-          TOKEN=$(aws codeartifact get-authorization-token \
-            --domain "$CA_DOMAIN" \
-            --domain-owner "$CA_DOMAIN_OWNER" \
-            --query authorizationToken \
-            --output text)
-          echo "::add-mask::$TOKEN"
-          # netrc matches on the host, so one entry authenticates every [[tool.uv.index]] on
-          # this domain regardless of how the indexes are named or how many there are.
-          CA_HOST="${CA_DOMAIN}-${CA_DOMAIN_OWNER}.d.codeartifact.${CA_REGION}.amazonaws.com"
-          umask 077
-          printf 'machine %s login aws password %s\n' "$CA_HOST" "$TOKEN" > "${RUNNER_TEMP}/codeartifact.netrc"
-          export NETRC="${RUNNER_TEMP}/codeartifact.netrc"
-          uv build
-      # The deploy job below downloads two artifacts: the wheels (pattern `wheels-*`)
-      # and the sdist (name `sdist`). Upload them separately to match that contract.
+          token="$(
+            aws codeartifact get-authorization-token \
+              --domain "$CA_DOMAIN" \
+              --domain-owner "$CA_DOMAIN_OWNER" \
+              --region "$CA_REGION" \
+              --duration-seconds 0 \
+              --query authorizationToken \
+              --output text
+          )"
+
+          test -n "$token"
+          test "$token" != "None"
+
+          # Prevent accidental exposure in GitHub Actions logs.
+          echo "::add-mask::$token"
+
+          # These names must match [[tool.uv.index]].name = "qilimanjaro".
+          printf 'UV_INDEX_QILIMANJARO_USERNAME=%s\n' "aws" >> "$GITHUB_ENV"
+          printf 'UV_INDEX_QILIMANJARO_PASSWORD=%s\n' "$token" >> "$GITHUB_ENV"
+      
+      - name: Build project
+        run: uv build
+
       - name: Upload wheel
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
         with:
           name: wheels-py3
           path: dist/*.whl
+      
       - name: Upload sdist
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
         with:
