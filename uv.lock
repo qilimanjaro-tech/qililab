@@ -3767,7 +3767,7 @@ wheels = [
 
 [[package]]
 name = "qililab"
-version = "0.33.2"
+version = "0.33.3"
 source = { editable = "." }
 dependencies = [
     { name = "dash" },
@@ -3836,7 +3836,7 @@ requires-dist = [
     { name = "qcodes", specifier = "==0.54.3" },
     { name = "qcodes-contrib-drivers", specifier = ">=0.23.0" },
     { name = "qm-qua", marker = "extra == 'quantum-machines'", specifier = "==1.2.4" },
-    { name = "qpysequence", specifier = "==0.10.8" },
+    { name = "qpysequence", specifier = ">=0.11.0", index = "https://qilimanjaro-723412851021.d.codeartifact.eu-west-1.amazonaws.com/pypi/qilimanjaro/simple" },
     { name = "rich", specifier = ">=14.0.0" },
     { name = "ruamel-yaml", specifier = ">=0.18.16" },
     { name = "rustworkx", specifier = ">=0.17.1" },
@@ -3913,16 +3913,16 @@ wheels = [
 
 [[package]]
 name = "qpysequence"
-version = "0.10.8"
-source = { registry = "https://pypi.org/simple" }
+version = "0.11.0"
+source = { registry = "https://qilimanjaro-723412851021.d.codeartifact.eu-west-1.amazonaws.com/pypi/qilimanjaro/simple" }
 dependencies = [
     { name = "loguru" },
     { name = "numpy", version = "2.4.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
     { name = "numpy", version = "2.5.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/dd/38/910cdfaf3ce7cffb37235cbfef84ed2c7adf9bc8260a1cb5479e78c591aa/qpysequence-0.10.8.tar.gz", hash = "sha256:d47aff11f14905b443013e7b1385a021da86da37f3ae56df086dccb730d838c9", size = 77883, upload-time = "2025-12-05T11:18:55.528Z" }
+sdist = { url = "https://qilimanjaro-723412851021.d.codeartifact.eu-west-1.amazonaws.com/pypi/qilimanjaro/simple/qpysequence/0.11.0/qpysequence-0.11.0.tar.gz", hash = "sha512:2e38e9c2bce7b8af5b72ed95186da5c1e19939a09fd6edab5979cf654167aee6a6521d3c65da7e4f78a6afe973e903c1825cf3c70a430dcbaece0e4c856bf8e0", size = 105250, upload-time = "2026-08-05T10:00:11.161Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/30/ac/657bd7e88e8d5bb84c73f683662bcae90791e4bc141bb7de1cb6a07d9fd2/qpysequence-0.10.8-py3-none-any.whl", hash = "sha256:ccf0cf66d41cc1bbc79b341375728e09f655b049cfc9ee88cbb8be15cde5d834", size = 79524, upload-time = "2025-12-05T11:18:56.53Z" },
+    { url = "https://qilimanjaro-723412851021.d.codeartifact.eu-west-1.amazonaws.com/pypi/qilimanjaro/simple/qpysequence/0.11.0/qpysequence-0.11.0-py3-none-any.whl", hash = "sha512:98e95dd507152e69f57c9c755965ecbbb702432d74a5bef7a0ac25fd00599b013e59bcdcc12bf700e42495f4731f3dd4e0b584ba6d5299e271f7946ee203c585", size = 102626, upload-time = "2026-08-05T10:00:10.616Z" },
 ]
 
 [[package]]
