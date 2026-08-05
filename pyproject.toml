@@ -1,6 +1,6 @@
 [project]
 name = "qililab"
-version = "0.33.3"
+version = "0.33.3+internal1"
 description = "Fundamental package for fast characterization and calibration of quantum chips."
 authors = [{name = "Qilimanjaro Quantum Tech", email = "info@qilimanjaro.tech"}]
 urls = {Repository = "https://github.com/qilimanjaro-tech/qililab"}
@@ -41,7 +41,6 @@ dependencies = [
     "urllib3>=2.3.0",
     "xarray>=2025.11.0",
     "rustworkx>=0.17.1",
-    "qilisdk",
 ]
 
 [project.optional-dependencies]
@@ -100,7 +99,6 @@ url = "https://aws@qilimanjaro-723412851021.d.codeartifact.eu-west-1.amazonaws.c
 explicit = true
 
 [tool.uv.sources]
-qilisdk = { git = "https://github.com/qilimanjaro-tech/qilisdk.git", branch = "main" }
 qpysequence = { index = "qilimanjaro" }
 
 [tool.ruff]
