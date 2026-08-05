@@ -57,6 +57,7 @@ jobs:
           role-session-name: GitHubActions-DevOps
       
       - name: Assume deploy role in target account
+        id: chained
         uses: aws-actions/configure-aws-credentials@e6de054238d6b7531b4efff3b6587d9aade6a06c  # v6.2.3
         with:
           role-to-assume: arn:aws:iam::723412851021:role/Code-Artifact-Publish
@@ -67,6 +68,11 @@ jobs:
       
       - name: Build wheel and sdist
         shell: bash
+        env:
+          AWS_ACCESS_KEY_ID: ${{ steps.chained.outputs.aws-access-key-id }}
+          AWS_SECRET_ACCESS_KEY: ${{ steps.chained.outputs.aws-secret-access-key }}
+          AWS_SESSION_TOKEN: ${{ steps.chained.outputs.aws-session-token }}
+          AWS_REGION: eu-west-1
         run: |
           TOKEN=$(aws codeartifact get-authorization-token \
             --domain "$CA_DOMAIN" \
