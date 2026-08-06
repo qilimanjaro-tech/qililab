@@ -4,6 +4,9 @@
 
 ### New features since last release
 
+- Added a second crosstalk matrix, `Calibration.crosstalk_matrix_ac`, so DC and AC/fast-flux lines can be calibrated independently. Fluxoniums can be driven simultaneously through DC lines (Qdac, via the existing `crosstalk_matrix`) and fast-flux lines (QCM), which have different resistances and therefore need separate crosstalk calibrations. The routing now follows the instrument type: `QdacCompiler` keeps using `crosstalk_matrix` (DC), while `QbloxCompiler` uses `crosstalk_matrix_ac` (AC/fast flux). For backward compatibility, when `crosstalk_matrix_ac` is not set the Qblox compiler falls back to `crosstalk_matrix` and logs a warning.
+  [#1175](https://github.com/qilimanjaro-tech/qililab/pull/1175)
+
 - Added `PulseDistortion.amplitude_gain`, which returns the peak amplification that a distortion's correction filter applies to a given envelope (before normalization). This is useful when a distorted pulse is normalized back into the sequencer range (e.g. with `auto_norm=True`): the sequencer gain must be multiplied by this factor to reach the same physical amplitude, and the maximum reachable amplitude for a unit-height pulse is `1 / amplitude_gain(unit_pulse)`. Internally, each distortion's correction filter is now factored out into a `_filter` method (implemented per subclass), with `apply` becoming a shared `_filter` + `normalize_envelope` step in the base class.
   [#1170](https://github.com/qilimanjaro-tech/qililab/pull/1170)
 
