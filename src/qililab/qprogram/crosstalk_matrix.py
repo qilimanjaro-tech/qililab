@@ -330,7 +330,7 @@ class NonLinearCrosstalkMatrix(CrosstalkMatrix):
                 raise ValueError(
                     "Both 'amplitude' and 'beta_c' must be provided together — you cannot specify one without the other."
                 )
-            if ((beta_c is None) + (amplitude is None)) == 1:
+            if (beta_c is None) != (amplitude is None):
                 raise ValueError(  # Errors if you are setting only one of the two parameters to None.
                     "You can only set to None 'amplitude' and 'beta_c' together."
                 )
