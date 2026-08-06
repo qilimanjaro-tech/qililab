@@ -33,6 +33,7 @@ class Calibration:
         self.weights: dict[str, dict[str, IQWaveform]] = {}
         self.blocks: dict[str, Block] = {}
         self.crosstalk_matrix: CrosstalkMatrix | None = None
+        self.crosstalk_matrix_ac: CrosstalkMatrix | None = None
         self.parameters: dict[str, Any] = {}
         self.crosstalk_history: list[dict[str, Any]] = []
 
