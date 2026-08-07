@@ -73,6 +73,9 @@
 
 ### Bug fixes
 
+- Fixed `uv lock` failing on `qm-qua`'s pinned prerelease `betterproto==2.0.0b7` for some platforms. Now pinned via `override-dependencies`.
+  [#1178](https://github.com/qilimanjaro-tech/qililab/pull/1178)
+
 - Fixed incorrect Q1ASM emitted when a long wait (> `INST_MAX_WAIT`) follows a pending `upd_param`: the pending-instruction branch now uses `LongWait` consistently with the no-pending branch.
   [#1090](https://github.com/qilimanjaro-tech/qpysequence/pull/1090)
   
