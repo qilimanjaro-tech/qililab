@@ -13,7 +13,7 @@
 # limitations under the License.
 
 import enum
-from typing import Final, Literal
+from typing import Literal
 
 
 class _Sentinel(enum.Enum):
