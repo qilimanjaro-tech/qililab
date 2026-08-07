@@ -26,4 +26,5 @@ class _Sentinel(enum.Enum):
     def __repr__(self) -> str:
         return f"<{self.name}>"
 
+
 Unset = Literal[_Sentinel.UNSET]
