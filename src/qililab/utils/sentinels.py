@@ -16,7 +16,7 @@ import enum
 from typing import Literal
 
 
-class _Sentinel(enum.Enum):
+class Sentinel(enum.Enum):
     """Enum for sentinels in qililab. Enum members are what type checkers narrow
     on ``is`` / ``is not``. Add a member here plus its value and ``Literal`` alias below.
     """
@@ -27,4 +27,4 @@ class _Sentinel(enum.Enum):
         return f"<{self.name}>"
 
 
-Unset = Literal[_Sentinel.UNSET]
+Unset = Literal[Sentinel.UNSET]

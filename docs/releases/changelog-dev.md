@@ -7,7 +7,7 @@
 
 ### Improvements
 
-- Added the `_Sentinels` enum class in `utils/sentinels.py`, currently exposing only `UNSET` (more sentinels can be added later). Sentinels mark uninitialized, unset or otherwise undefined values without relying on `None`, which keeps the logic clearer and makes it possible to distinguish an explicit `None` from an unset default.
+- Added the `Sentinel` enum class in `utils/sentinels.py`, currently exposing only `UNSET` (more sentinels can be added later). Sentinels mark uninitialized, unset or otherwise undefined values without relying on `None`, which keeps the logic clearer and makes it possible to distinguish an explicit `None` from an unset default.
   [#1173](https://github.com/qilimanjaro-tech/qililab/pull/1173)
 
 - Migrated `QbloxCompiler` to the redesigned `qpysequence` API (version 0.11). The compiler now uses the new `Compiler` class (`qpysequence.compiler.Compiler`) to compile programs to Q1ASM, replacing the old `program.compile()` call. Program construction now uses `block.add()` throughout, loop sweeps use the new `SweepSpec`-based `IterativeLoop` API with `ConversionInstruction` subclasses (`SetNormalisedOffs`, `SetNormalisedGain`, `SetFrequencyHz`, `SetPhaseRad`) for automatic physical-unit-to-integer scaling, and label references no longer require the `@` prefix. `Sequence.todict()` is replaced by `Sequence.to_dict()` throughout. Several responsibilities have shifted from `qililab` to `qpysequence`:

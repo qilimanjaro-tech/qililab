@@ -17,10 +17,10 @@ from typing import Final, Mapping
 import numpy as np
 from scipy.special import jv
 
-from qililab.utils import Unset, _Sentinel, sort_buses
+from qililab.utils import Sentinel, Unset, sort_buses
 from qililab.yaml import yaml
 
-_UNSET: Final = _Sentinel.UNSET
+_UNSET: Final = Sentinel.UNSET
 
 
 @yaml.register_class
@@ -305,7 +305,7 @@ class NonLinearCrosstalkMatrix(CrosstalkMatrix):
             ValueError: If either bus is not present in the matrix.
             ValueError: If beta_c is zero, which would cause a division by zero in the
                 Bessel expansion.
-            ValueError: If both "amplitude" and "beta_c aren't set to the same type of value.
+            ValueError: If both "amplitude" and "beta_c" aren't set to the same type of value.
                 i.e. amplitude set to a float and beta to none or unset.
         """
         for bus in (bus_i, bus_j):
