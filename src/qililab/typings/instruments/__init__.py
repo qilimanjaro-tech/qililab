@@ -16,6 +16,7 @@
 
 from .cluster import Cluster
 from .device import Device
+from .keithley_2400 import Keithley2400Driver
 from .keithley_2600 import Keithley2600Driver
 from .mini_circuits import MiniCircuitsDriver
 from .qblox_d5a import QbloxD5a
@@ -29,6 +30,7 @@ from .yokogawa_gs200 import YokogawaGS200
 __all__ = [
     "Cluster",
     "Device",
+    "Keithley2400Driver",
     "Keithley2600Driver",
     "MiniCircuitsDriver",
     "QDevilQDac2",
