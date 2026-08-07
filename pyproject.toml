@@ -74,11 +74,12 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.uv]
-prerelease = "if-necessary"
+prerelease = "if-necessary-or-explicit"
 # qm-qua==1.2.4 depends on marshmallow>=3,<3.24; override until upstream loosens.
 override-dependencies = [
     "marshmallow==3.26.2",
     "spirack==0.2.12",
+    "betterproto==2.0.0b7",
 ]
 # Floor recurring transitive CVE offenders so a generic re-resolve cannot regress them.
 constraint-dependencies = [
