@@ -72,6 +72,9 @@
 
 ### Deprecations / Removals
 
+- Removed `Platform.compile_annealing_program` and `Platform.execute_annealing_program`.
+  [#1179](https://github.com/qilimanjaro-tech/qililab/pull/1179)
+
 ### Documentation
 
 ### Bug fixes
