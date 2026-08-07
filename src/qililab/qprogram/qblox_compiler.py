@@ -343,8 +343,14 @@ class QbloxCompiler:
             self._qprogram = self._qprogram.with_bus_mapping(bus_mapping=bus_mapping)
         if calibration is not None:
             self._qprogram = self._qprogram.with_calibration(calibration=calibration)
-            if calibration.crosstalk_matrix and crosstalk is None:
-                crosstalk = calibration.crosstalk_matrix
+            if crosstalk is None:
+                if calibration.crosstalk_matrix_ac is not None:
+                    crosstalk = calibration.crosstalk_matrix_ac
+                elif calibration.crosstalk_matrix is not None:
+                    logger.warning(
+                        "Using DC `crosstalk_matrix`.\nDefine `crosstalk_matrix_ac` to calibrate AC/fast-flux lines."
+                    )
+                    crosstalk = calibration.crosstalk_matrix
         if self._qprogram.has_calibrated_waveforms_or_weights():
             raise RuntimeError(
                 "Cannot compile to hardware-native instructions because QProgram contains named operations that are not mapped. Provide a calibration instance containing all necessary mappings."

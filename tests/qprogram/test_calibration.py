@@ -24,6 +24,7 @@ class TestCalibration:
         assert isinstance(calibration.blocks, dict)
         assert isinstance(calibration.parameters, dict)
         assert calibration.crosstalk_matrix is None
+        assert calibration.crosstalk_matrix_ac is None
         assert len(calibration.waveforms) == 0
         assert len(calibration.weights) == 0
         assert len(calibration.blocks) == 0
@@ -192,6 +193,27 @@ class TestCalibration:
         assert calibration.crosstalk_matrix["flux_1"]["flux_0"] == crosstalk_matrix["flux_1"]["flux_0"]
         assert calibration.crosstalk_matrix["flux_1"]["flux_1"] == crosstalk_matrix["flux_1"]["flux_1"]
 
+    def test_adding_ac_crosstalk_matrix(self):
+        """Test adding an AC / fast-flux crosstalk matrix independently from the DC one"""
+        dc_buses = {
+            "flux_0": {"flux_0": 1.47046905, "flux_1": 0.12276261},
+            "flux_1": {"flux_0": -0.55322207, "flux_1": 1.58247856},
+        }
+        ac_buses = {
+            "flux_0": {"flux_0": 1.0, "flux_1": 0.05},
+            "flux_1": {"flux_0": -0.02, "flux_1": 1.0},
+        }
+        dc_matrix = CrosstalkMatrix().from_buses(dc_buses)
+        ac_matrix = CrosstalkMatrix().from_buses(ac_buses)
+        calibration = Calibration()
+        calibration.crosstalk_matrix = dc_matrix
+        calibration.crosstalk_matrix_ac = ac_matrix
+
+        # The two matrices are independent.
+        assert calibration.crosstalk_matrix["flux_0"]["flux_1"] == dc_matrix["flux_0"]["flux_1"]
+        assert calibration.crosstalk_matrix_ac["flux_0"]["flux_1"] == ac_matrix["flux_0"]["flux_1"]
+        assert calibration.crosstalk_matrix["flux_0"]["flux_1"] != calibration.crosstalk_matrix_ac["flux_0"]["flux_1"]
+
     def test_dump_load_methods(self):
         """Test dump and load methods"""
         qp = QProgram()
@@ -202,7 +224,12 @@ class TestCalibration:
             "flux_0": {"flux_0": 1.47046905, "flux_1": 0.12276261},
             "flux_1": {"flux_0": -0.55322207, "flux_1": 1.58247856},
         }
+        ac_buses = {
+            "flux_0": {"flux_0": 1.0, "flux_1": 0.05},
+            "flux_1": {"flux_0": -0.02, "flux_1": 1.0},
+        }
         crosstalk_matrix = CrosstalkMatrix().from_buses(buses)
+        ac_crosstalk_matrix = CrosstalkMatrix().from_buses(ac_buses)
         calibration = Calibration()
         calibration.add_waveform(bus="drive_bus", name="Xpi", waveform=Square(1.0, 100))
         calibration.add_waveform(bus="drive_bus", name="Xpi2", waveform=Square(1.0, 50))
@@ -212,6 +239,7 @@ class TestCalibration:
         )
         calibration.add_block(name="flux_block", block=qp.body)
         calibration.crosstalk_matrix = crosstalk_matrix
+        calibration.crosstalk_matrix_ac = ac_crosstalk_matrix
 
         serialize_to(calibration, "calibration.yml")
         loaded_calibration = deserialize_from("calibration.yml", Calibration)
@@ -251,6 +279,9 @@ class TestCalibration:
         assert calibration.crosstalk_matrix["flux_0"]["flux_1"] == crosstalk_matrix["flux_0"]["flux_1"]
         assert calibration.crosstalk_matrix["flux_1"]["flux_0"] == crosstalk_matrix["flux_1"]["flux_0"]
         assert calibration.crosstalk_matrix["flux_1"]["flux_1"] == crosstalk_matrix["flux_1"]["flux_1"]
+
+        assert loaded_calibration.crosstalk_matrix_ac["flux_0"]["flux_1"] == ac_crosstalk_matrix["flux_0"]["flux_1"]
+        assert loaded_calibration.crosstalk_matrix_ac["flux_1"]["flux_0"] == ac_crosstalk_matrix["flux_1"]["flux_0"]
 
         os.remove(path="calibration.yml")
 

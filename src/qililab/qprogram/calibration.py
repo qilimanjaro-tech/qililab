@@ -33,8 +33,22 @@ class Calibration:
         self.weights: dict[str, dict[str, IQWaveform]] = {}
         self.blocks: dict[str, Block] = {}
         self.crosstalk_matrix: CrosstalkMatrix | None = None
+        self.crosstalk_matrix_ac: CrosstalkMatrix | None = None
         self.parameters: dict[str, Any] = {}
         self.crosstalk_history: list[dict[str, Any]] = []
+
+    def __setstate__(self, state: dict[str, Any]) -> None:
+        """Restore a Calibration during deserialization.
+
+        ``ruamel`` (and pickle) build the object with ``cls.__new__`` and never call
+        ``__init__``. Running ``__init__`` first seeds every
+        default, then the persisted values are overlaid on top.
+
+        Args:
+            state (dict[str, Any]): The attribute mapping reconstructed from the document.
+        """
+        self.__init__()  # type: ignore[misc]
+        self.__dict__.update(state)
 
     def add_waveform(self, bus: str, name: str, waveform: Waveform | IQWaveform):
         """Add a waveform or IQPair for the specified bus.
