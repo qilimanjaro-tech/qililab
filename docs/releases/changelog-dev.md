@@ -73,6 +73,9 @@
 
 ### Bug fixes
 
+- Added `scipy` as an explicit dependency. It was previously only pulled in transitively.
+  [#1176](https://github.com/qilimanjaro-tech/qililab/pull/1176)
+
 - Fixed incorrect Q1ASM emitted when a long wait (> `INST_MAX_WAIT`) follows a pending `upd_param`: the pending-instruction branch now uses `LongWait` consistently with the no-pending branch.
   [#1090](https://github.com/qilimanjaro-tech/qpysequence/pull/1090)
   
