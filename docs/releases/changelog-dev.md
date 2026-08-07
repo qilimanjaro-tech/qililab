@@ -79,6 +79,9 @@
 - Passing `None` to `NonLinearCrosstalkMatrix.set_non_linear_params` now clears the parameters instead of keeping their previously set values, allowing users to remove non-linear parameters that were set earlier.
   [#1173](https://github.com/qilimanjaro-tech/qililab/pull/1173)
 
+- Fixed `uv lock` failing on `qm-qua`'s pinned prerelease `betterproto==2.0.0b7` for some platforms. Now pinned via `override-dependencies`.
+  [#1178](https://github.com/qilimanjaro-tech/qililab/pull/1178)
+
 - Fixed incorrect Q1ASM emitted when a long wait (> `INST_MAX_WAIT`) follows a pending `upd_param`: the pending-instruction branch now uses `LongWait` consistently with the no-pending branch.
   [#1090](https://github.com/qilimanjaro-tech/qpysequence/pull/1090)
   
