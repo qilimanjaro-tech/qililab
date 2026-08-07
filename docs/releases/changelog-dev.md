@@ -71,6 +71,9 @@
 
 ### Documentation
 
+- Removed the Read the Docs integration (`.readthedocs.yaml` and the README badge/link), since its external build environment cannot authenticate to the private CodeArtifact index that `qpysequence` and other dependencies are now published to.
+  [#1177](https://github.com/qilimanjaro-tech/qililab/pull/1177)
+
 ### Bug fixes
 
 - Fixed incorrect Q1ASM emitted when a long wait (> `INST_MAX_WAIT`) follows a pending `upd_param`: the pending-instruction branch now uses `LongWait` consistently with the no-pending branch.
