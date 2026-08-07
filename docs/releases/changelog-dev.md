@@ -73,7 +73,7 @@
 
 ### Bug fixes
 
-- Added `scipy` as an explicit dependency. It was previously only pulled in transitively.
+- Added `scipy` as an explicit dependency. It was previously only pulled in transitively, so `import qililab` could fail with `No module named 'scipy'` if that transitive path ever changed. The version is split by platform (`>=1.16.3` on `darwin`, `>=1.15,<1.16.3` elsewhere) to match `qilisdk`'s own `scipy` constraint.
   [#1176](https://github.com/qilimanjaro-tech/qililab/pull/1176)
 
 - Fixed incorrect Q1ASM emitted when a long wait (> `INST_MAX_WAIT`) follows a pending `upd_param`: the pending-instruction branch now uses `LongWait` consistently with the no-pending branch.
