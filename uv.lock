@@ -10,9 +10,6 @@ resolution-markers = [
     "python_full_version < '3.12' and platform_machine == 'aarch64' and sys_platform != 'darwin'",
 ]
 
-[options]
-prerelease-mode = "if-necessary"
-
 [manifest]
 constraints = [
     { name = "aiohttp", specifier = ">=3.14.1" },
@@ -26,6 +23,7 @@ constraints = [
     { name = "ujson", specifier = ">=5.13.0" },
 ]
 overrides = [
+    { name = "betterproto", specifier = "==2.0.0b7" },
     { name = "marshmallow", specifier = "==3.26.2" },
     { name = "spirack", specifier = "==0.2.12" },
 ]
