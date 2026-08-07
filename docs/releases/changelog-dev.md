@@ -7,6 +7,9 @@
 
 ### Improvements
 
+- Added Dependabot configuration to keep GitHub Actions and Python dependencies up to date automatically.
+  [#1174](https://github.com/qilimanjaro-tech/qililab/pull/1174)
+
 - Migrated `QbloxCompiler` to the redesigned `qpysequence` API (version 0.11). The compiler now uses the new `Compiler` class (`qpysequence.compiler.Compiler`) to compile programs to Q1ASM, replacing the old `program.compile()` call. Program construction now uses `block.add()` throughout, loop sweeps use the new `SweepSpec`-based `IterativeLoop` API with `ConversionInstruction` subclasses (`SetNormalisedOffs`, `SetNormalisedGain`, `SetFrequencyHz`, `SetPhaseRad`) for automatic physical-unit-to-integer scaling, and label references no longer require the `@` prefix. `Sequence.todict()` is replaced by `Sequence.to_dict()` throughout. Several responsibilities have shifted from `qililab` to `qpysequence`:
   - **`nop` insertion**: `qililab` no longer emits `nop` instructions manually; `qpysequence`'s compiler handles read-after-write hazard guards automatically. Duplicate parameter instructions (e.g. double `set_awg_gain` or `set_freq`) that were previously emitted as a workaround are no longer needed.
   - **Physical-unit-to-integer conversion**: scaling of physical-unit values (normalised gain/offset, Hz frequency, radian phase) to Q1ASM integers is now fully owned by `qpysequence` via `ConversionInstruction.scale_factor`.
