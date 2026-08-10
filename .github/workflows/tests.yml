@@ -95,7 +95,7 @@ jobs:
         run: uv run pytest -n auto --dist loadfile --cov=qililab --cov-report=xml tests
 
       - name: Upload Coverage
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@v7
         with:
           use_pypi: true
           fail_ci_if_error: true
