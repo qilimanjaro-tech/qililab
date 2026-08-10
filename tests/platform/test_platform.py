@@ -30,7 +30,7 @@ from tests.data import (
 from tests.test_utils import build_platform
 
 
-from qililab import Arbitrary, save_platform
+from qililab import save_platform
 from qililab.constants import DEFAULT_PLATFORM_NAME
 from qililab.exceptions import ExceptionGroup
 from qililab.extra.quantum_machines import QuantumMachinesCluster, QuantumMachinesMeasurementResult
@@ -41,14 +41,11 @@ from qililab.instruments.instruments import Instruments
 from qililab.instruments.qblox import QbloxModule
 from qililab.instruments.qdevil import QDevilQDac2
 from qililab.platform import Bus, Buses, Platform
-from qililab.core.variables import Domain
 from qililab.qprogram import Calibration, Experiment, QProgram, QbloxCompilationOutput
 from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
 from qililab.result.database import get_db_manager
-from qililab.result.qprogram.qprogram_results import QProgramResults
 from qililab.result.qprogram.qblox_measurement_result import QbloxMeasurementResult
 from qililab.settings import AnalogCompilationSettings, DigitalCompilationSettings, Runcard
-from qililab.settings.analog.flux_control_topology import FluxControlTopology
 from qililab.settings.digital.gate_event import GateEvent
 from qililab.typings.enums import InstrumentName, Parameter
 from qililab.waveforms import Chained, IQPair, Ramp, Square
@@ -206,19 +203,6 @@ def fixture_raw_measurement_data_intertwinescope() -> dict:
     """Dictionary of raw measurement data as returned from QRM instruments."""
     return {"bins": {"integration": {"path0": [], "path1": []}, "threshold": [], "avg_cnt":[]}, "scope": {"path0":{"data": [1, 2, 3, 4]}, "path1":{"data": [5, 6, 7, 8]}}}
 
-@pytest.fixture(name="flux_to_bus_topology")
-def get_flux_to_bus_topology():
-    flux_control_topology_dict = [
-        {"flux": "phix_q0", "bus": "flux_line_phix_q0"},
-        {"flux": "phiz_q0", "bus": "flux_line_phiz_q0"},
-        {"flux": "phix_q1", "bus": "flux_line_phix_q1"},
-        {"flux": "phiz_q1", "bus": "flux_line_phiz_q1"},
-        {"flux": "phix_c0_1", "bus": "flux_line_phix_c0_1"},
-        {"flux": "phiz_c0_1", "bus": "flux_line_phiz_c0_1"},
-    ]
-    return [FluxControlTopology(**flux_control) for flux_control in flux_control_topology_dict]
-
-
 @pytest.fixture(name="calibration")
 def get_calibration():
     readout_duration = 2000
@@ -263,78 +247,6 @@ def get_calibration_with_preparation_block():
     calibration.add_block(name="measurement", block=measurement_qp.body)
 
     return calibration
-
-
-@pytest.fixture(name="anneal_qprogram")
-def get_anneal_qprogram(runcard, flux_to_bus_topology):
-    platform = Platform(runcard=runcard)
-    platform.analog_compilation_settings = flux_to_bus_topology
-    anneal_waveforms = {
-        next(element.bus for element in platform.analog_compilation_settings if element.flux == "phix_q0"): Arbitrary(
-            np.array([0.0, 0.0, 0.0, 1.0])
-        ),
-        next(element.bus for element in platform.analog_compilation_settings if element.flux == "phiz_q0"): Arbitrary(
-            np.array([0.0, 0.0, 0.0, 2.0])
-        ),
-    }
-    num_averages = 2
-    num_shots = 1
-    readout_duration = 2000
-    readout_amplitude = 1.0
-    r_wf_I = Square(amplitude=readout_amplitude, duration=readout_duration)
-    r_wf_Q = Square(amplitude=0.0, duration=readout_duration)
-    readout_waveform = IQPair(I=r_wf_I, Q=r_wf_Q)
-    weights_shape = Square(amplitude=1, duration=readout_duration)
-    weights = IQPair(I=weights_shape, Q=weights_shape)
-
-    qp_anneal = QProgram()
-    shots_variable = qp_anneal.variable("num_shots", Domain.Scalar, int)
-    with qp_anneal.for_loop(variable=shots_variable, start=0, stop=num_shots, step=1):
-        with qp_anneal.average(num_averages):
-            for bus, waveform in anneal_waveforms.items():
-                qp_anneal.play(bus=bus, waveform=waveform)
-            qp_anneal.sync()
-            qp_anneal.measure(bus="readout_bus", waveform=readout_waveform, weights=weights)
-    return qp_anneal
-
-
-@pytest.fixture(name="anneal_qprogram_with_preparation")
-def get_anneal_qprogram_with_preparation(runcard, flux_to_bus_topology):
-    platform = Platform(runcard=runcard)
-    platform.analog_compilation_settings = flux_to_bus_topology
-    anneal_waveforms = {
-        next(element.bus for element in platform.analog_compilation_settings if element.flux == "phix_q0"): Arbitrary(
-            np.array([0.0, 0.0, 0.0, 1.0])
-        ),
-        next(element.bus for element in platform.analog_compilation_settings if element.flux == "phiz_q0"): Arbitrary(
-            np.array([0.0, 0.0, 0.0, 2.0])
-        ),
-    }
-    num_averages = 2
-    num_shots = 1
-    readout_duration = 2000
-    readout_amplitude = 1.0
-    r_wf_I = Square(amplitude=readout_amplitude, duration=readout_duration)
-    r_wf_Q = Square(amplitude=0.0, duration=readout_duration)
-    readout_waveform = IQPair(I=r_wf_I, Q=r_wf_Q)
-    weights_shape = Square(amplitude=1, duration=readout_duration)
-    weights = IQPair(I=weights_shape, Q=weights_shape)
-    preparation_wf = Chained(
-        waveforms=[Ramp(from_amplitude=0.0, to_amplitude=1.0, duration=100), Square(amplitude=1.0, duration=200)]
-    )
-
-    qp_anneal = QProgram()
-    shots_variable = qp_anneal.variable("num_shots", Domain.Scalar, int)
-    with qp_anneal.for_loop(variable=shots_variable, start=0, stop=num_shots, step=1):
-        with qp_anneal.average(num_averages):
-            qp_anneal.play(bus="flux_line_phix_q0", waveform=preparation_wf)
-            qp_anneal.play(bus="flux_line_phiz_q0", waveform=preparation_wf)
-            qp_anneal.sync()
-            for bus, waveform in anneal_waveforms.items():
-                qp_anneal.play(bus=bus, waveform=waveform)
-            qp_anneal.sync()
-            qp_anneal.measure(bus="readout_bus", waveform=readout_waveform, weights=weights)
-    return qp_anneal
 
 
 @pytest.fixture(name="qp_quantum_machine")
@@ -1070,58 +982,6 @@ class TestMethods:
         platform.turn_on_instruments.assert_called_once()
         platform.turn_off_instruments.assert_called_once()
         platform.disconnect.assert_called_once()
-
-    @pytest.mark.parametrize(
-        "qprogram_fixture, calibration_fixture",
-        [
-            ("anneal_qprogram", "calibration"),
-            ("anneal_qprogram_with_preparation", "calibration_with_preparation_block"),
-        ],
-    )
-    def test_execute_anneal_program(
-        self,
-        platform: Platform,
-        qprogram_fixture: str,
-        flux_to_bus_topology: list[FluxControlTopology],
-        calibration_fixture: str,
-        request,
-    ):
-        anneal_qprogram = request.getfixturevalue(qprogram_fixture)
-        calibration = request.getfixturevalue(calibration_fixture)
-
-        mock_execute_qprogram = MagicMock()
-        mock_execute_qprogram.return_value = QProgramResults()
-        platform.execute_qprogram = mock_execute_qprogram  # type: ignore[method-assign]
-        platform.analog_compilation_settings.flux_control_topology = flux_to_bus_topology
-        transpiler = MagicMock()
-        transpiler.return_value = (1, 2)
-
-        results = platform.execute_annealing_program(
-            annealing_program_dict=[{"qubit_0": {"sigma_x": 0.1, "sigma_z": 0.2}}],
-            transpiler=transpiler,
-            calibration=calibration,
-            num_averages=2,
-            num_shots=1,
-        )
-        qprogram = mock_execute_qprogram.call_args[1]["qprogram"].with_calibration(calibration)
-        assert str(anneal_qprogram) == str(qprogram)
-        assert isinstance(results, QProgramResults)
-
-    def test_execute_anneal_program_no_measurement_raises_error(self, platform: Platform, calibration):
-        mock_execute_qprogram = MagicMock()
-        platform.execute_qprogram = mock_execute_qprogram  # type: ignore[method-assign]
-        transpiler = MagicMock()
-        transpiler.return_value = (1, 2)
-        error_string = "The calibrated measurement is not present in the calibration file."
-        with pytest.raises(ValueError, match=error_string):
-            platform.execute_annealing_program(
-                annealing_program_dict=[{"qubit_0": {"sigma_x": 0.1, "sigma_z": 0.2}}],
-                transpiler=transpiler,
-                calibration=calibration,
-                num_averages=2,
-                num_shots=1,
-                measurement_block="whatever",
-            )
 
     def test_execute_experiment(self, override_settings):
         """Test the execute_experiment method of the Platform class."""
@@ -1890,19 +1750,6 @@ class TestMethods:
         assert bus.get_parameter(parameter=parameter, channel_id=CHANNEL_ID) == platform.get_parameter(
             parameter=parameter, alias="drive_line_q0_bus", channel_id=CHANNEL_ID
         )
-
-    def test_no_bus_to_flux_raises_error(self, platform: Platform):
-        """Test that if flux to bus topology is not specified an error is raised"""
-        platform.analog_compilation_settings = None
-        error_string = "Flux to bus topology not given in the runcard"
-        with pytest.raises(ValueError, match=error_string):
-            platform.execute_annealing_program(
-                annealing_program_dict=[{}],
-                calibration=MagicMock(),
-                transpiler=MagicMock(),
-                num_averages=2,
-                num_shots=1,
-            )
 
     def test_get_element_flux(self, platform: Platform):
         """Get the bus from a flux using get_element"""
