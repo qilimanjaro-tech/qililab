@@ -10,6 +10,9 @@
 
 ### Improvements
 
+- Added Dependabot configuration to keep GitHub Actions and Python dependencies up to date automatically.
+  [#1174](https://github.com/qilimanjaro-tech/qililab/pull/1174)
+
 - Added the `Sentinel` enum class in `utils/sentinels.py`, currently exposing only `UNSET` (more sentinels can be added later). Sentinels mark uninitialized, unset or otherwise undefined values without relying on `None`, which keeps the logic clearer and makes it possible to distinguish an explicit `None` from an unset default.
   [#1173](https://github.com/qilimanjaro-tech/qililab/pull/1173)
 
@@ -75,10 +78,16 @@
 
 ### Deprecations / Removals
 
+- Removed `Platform.compile_annealing_program` and `Platform.execute_annealing_program`.
+  [#1179](https://github.com/qilimanjaro-tech/qililab/pull/1179)
+
 ### Documentation
 
 ### Bug fixes
 
+- Added `scipy` as an explicit dependency. It was previously only pulled in transitively, so `import qililab` could fail with `No module named 'scipy'` if that transitive path ever changed. The version is split by platform (`>=1.16.3` on `darwin`, `>=1.15,<1.16.3` elsewhere) to match `qilisdk`'s own `scipy` constraint.
+  [#1176](https://github.com/qilimanjaro-tech/qililab/pull/1176)
+  
 - Passing `None` to `NonLinearCrosstalkMatrix.set_non_linear_params` now clears the parameters instead of keeping their previously set values, allowing users to remove non-linear parameters that were set earlier.
   [#1173](https://github.com/qilimanjaro-tech/qililab/pull/1173)
 
