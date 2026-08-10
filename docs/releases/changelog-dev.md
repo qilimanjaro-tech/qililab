@@ -7,6 +7,9 @@
 
 ### Improvements
 
+- Added Dependabot configuration to keep GitHub Actions and Python dependencies up to date automatically.
+  [#1174](https://github.com/qilimanjaro-tech/qililab/pull/1174)
+
 - Added the `Sentinel` enum class in `utils/sentinels.py`, currently exposing only `UNSET` (more sentinels can be added later). Sentinels mark uninitialized, unset or otherwise undefined values without relying on `None`, which keeps the logic clearer and makes it possible to distinguish an explicit `None` from an unset default.
   [#1173](https://github.com/qilimanjaro-tech/qililab/pull/1173)
 
