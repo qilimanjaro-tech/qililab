@@ -219,7 +219,7 @@ class Calibration:
             ValueError: If no crosstalk has been given to calibration file.
         """
         if not self.crosstalk_matrix:
-            raise ValueError("No crosstalk has been given to the Calibration file")
+            raise ValueError("No crosstalk has been given to the Calibration file. AC Crosstalk is not accepted.")
 
         bus_list = list(self.crosstalk_matrix.matrix.keys())
         if set(bus_list) != set(block_diag_xt_matrix.keys()):
@@ -261,7 +261,7 @@ class Calibration:
             ValueError: If no crosstalk has been given to calibration file.
         """
         if not self.crosstalk_matrix:
-            raise ValueError("No crosstalk has been given to the Calibration file")
+            raise ValueError("No crosstalk has been given to the Calibration file. AC Crosstalk is not accepted.")
 
         bus_list = list(self.crosstalk_matrix.matrix.keys())
         if set(bus_list) != set(full_crosstalk_matrix.keys()):

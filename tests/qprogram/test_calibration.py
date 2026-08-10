@@ -357,7 +357,7 @@ class TestCalibration:
         }
         offsets_buses = {"flux_0": 1.0, "flux_1": 0.0}
 
-        with pytest.raises(ValueError, match="No crosstalk has been given to the Calibration file"):
+        with pytest.raises(ValueError, match="No crosstalk has been given to the Calibration file. AC Crosstalk is not accepted."):
             calibration.add_intra_crosstalk(block_diag_xt_matrix=diag_buses, flux_offsets=offsets_buses)
 
     def test_add_intra_crosstalk_raises_error_wrong_buses(self):
@@ -431,7 +431,7 @@ class TestCalibration:
             "flux_1": {"flux_0": 0.5, "flux_1": 2.0},
         }
 
-        with pytest.raises(ValueError, match="No crosstalk has been given to the Calibration file"):
+        with pytest.raises(ValueError, match="No crosstalk has been given to the Calibration file. AC Crosstalk is not accepted."):
             calibration.add_inter_crosstalk(full_crosstalk_matrix=matrix_buses)
 
     def test_add_inter_crosstalk_raises_error_wrong_buses(self):

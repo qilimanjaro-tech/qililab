@@ -12,6 +12,7 @@ from qililab.qprogram.operations import SetFrequency, SetPhase, SetGain, SetOffs
 from qililab import Calibration, Domain, FlatTop, Gaussian, IQPair, IQDrag, QProgram, Square
 from qililab.qprogram.blocks import ForLoop
 from qililab.qprogram import QbloxCompiler
+from qililab.qprogram.qblox_compiler import _warn_dc_crosstalk_fallback
 from tests.test_utils import is_q1asm_equal
 import logging
 
@@ -6084,11 +6085,35 @@ class TestQBloxCompiler:
             if bus in ("flux1", "flux2"):
                 assert not is_q1asm_equal(sequences[bus], dc_sequences[bus])
 
+    def test_crosstalk_compensation_ac_matrix_overrides_explicit_crosstalk(self, crosstalk_qprogram: QProgram):
+        """A calibration AC matrix takes precedence over an explicit `crosstalk` argument (e.g. platform-level)."""
+        ac_crosstalk = CrosstalkMatrix().from_array(["flux1", "flux2"], np.linalg.inv([[1, 0.3], [0.3, 1]]))
+        # An explicit crosstalk (as `platform.compile_qprogram` forwards `self.crosstalk`) that must NOT win.
+        explicit_crosstalk = CrosstalkMatrix().from_array(["flux1", "flux2"], np.linalg.inv([[1, 0.5], [0.5, 1]]))
+
+        calibration = Calibration()
+        calibration.crosstalk_matrix_ac = ac_crosstalk
+
+        sequences, _ = QbloxCompiler().compile(
+            qprogram=crosstalk_qprogram, calibration=calibration, crosstalk=explicit_crosstalk
+        )
+
+        # The AC matrix must be the one applied, not the explicit one.
+        ac_sequences, _ = QbloxCompiler().compile(qprogram=crosstalk_qprogram, crosstalk=ac_crosstalk)
+        explicit_sequences, _ = QbloxCompiler().compile(qprogram=crosstalk_qprogram, crosstalk=explicit_crosstalk)
+        for bus in sequences:
+            assert is_q1asm_equal(sequences[bus], ac_sequences[bus])
+            if bus in ("flux1", "flux2"):
+                assert not is_q1asm_equal(sequences[bus], explicit_sequences[bus])
+
     def test_crosstalk_compensation_falls_back_to_dc_with_warning(
         self, caplog, crosstalk_qprogram: QProgram, calibration_crosstalk: Calibration
     ):
         """When no AC matrix is set, the Qblox compiler falls back to the DC matrix and warns."""
         assert calibration_crosstalk.crosstalk_matrix_ac is None
+
+        # The warning is emitted at most once per process, so reset the cache to observe it here.
+        _warn_dc_crosstalk_fallback.cache_clear()
 
         compiler = QbloxCompiler()
         with caplog.at_level(logging.WARNING):
@@ -6109,6 +6134,20 @@ class TestQBloxCompiler:
             compiler.compile(qprogram=crosstalk_qprogram, calibration=calibration)
 
         assert "Define `crosstalk_matrix_ac`" not in caplog.text
+
+    def test_crosstalk_compensation_dc_warning_emitted_only_once(
+        self, caplog, crosstalk_qprogram: QProgram, calibration_crosstalk: Calibration
+    ):
+        """The DC fallback warning is logged at most once per process, even across multiple compilations."""
+        assert calibration_crosstalk.crosstalk_matrix_ac is None
+
+        _warn_dc_crosstalk_fallback.cache_clear()
+
+        with caplog.at_level(logging.WARNING):
+            for _ in range(3):
+                QbloxCompiler().compile(qprogram=crosstalk_qprogram, calibration=calibration_crosstalk)
+
+        assert caplog.text.count("Define `crosstalk_matrix_ac`") == 1
 
     def test_crosstalk_compensation_plays_raise_errors(self):
         """Test the different errors that might rise by using incorrectly the crosstalk play structure."""
