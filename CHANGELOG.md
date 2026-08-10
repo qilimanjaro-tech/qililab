@@ -258,20 +258,20 @@ As the conversion to the new bias is non-linear, the loops given to the qblox Q1
   nlxtalk = NonLinearCrosstalkMatrix.from_array(...)
   # (...set up xtalk...)
 
-  phi   = Variable("phi",   Domain.Voltage)
+  phi = Variable("phi", Domain.Voltage)
   theta = Variable("theta", Domain.Voltage)
 
   nlfv = NonLinearFluxVector()
   nlfv.set_crosstalk_from_bias(nlxtalk, {"flux_0": 0.1, "flux_1": 0.2, "flux_2": 0.3})
 
-  nlfv.set_loop(ForLoop(variable=phi,   start=0.0, stop=1.0, step=0.5))  # 3 steps → loop_1
+  nlfv.set_loop(ForLoop(variable=phi, start=0.0, stop=1.0, step=0.5))  # 3 steps → loop_1
   nlfv.set_loop(ForLoop(variable=theta, start=0.0, stop=4.0, step=1.0))  # 5 steps → loop_2
 
   nlfv.set_element(SetOffset(bus="flux_0", offset_path0=phi))
   nlfv.set_element(SetGain(bus="flux_1", gain=theta))
 
-  offsets = nlfv.get_corrected_offsets()   # shape (5, 3) per bus
-  plays   = nlfv.get_corrected_play({"flux_0": Square(0.5, 100)})  # shape (5, 3) per bus
+  offsets = nlfv.get_corrected_offsets()  # shape (5, 3) per bus
+  plays = nlfv.get_corrected_play({"flux_0": Square(0.5, 100)})  # shape (5, 3) per bus
   ```
 
   [#1115](https://github.com/qilimanjaro-tech/qililab/pull/1115)
@@ -319,20 +319,20 @@ As the conversion to the new bias is non-linear, the loops given to the qblox Q1
   nlxtalk = NonLinearCrosstalkMatrix.from_array(...)
   # (...set up xtalk...)
 
-  phi   = Variable("phi",   Domain.Voltage)
+  phi = Variable("phi", Domain.Voltage)
   theta = Variable("theta", Domain.Voltage)
 
   nlfv = NonLinearFluxVector()
   nlfv.set_crosstalk_from_bias(nlxtalk, {"flux_0": 0.1, "flux_1": 0.2, "flux_2": 0.3})
 
-  nlfv.set_loop(ForLoop(variable=phi,   start=0.0, stop=1.0, step=0.5))  # 3 steps → loop_1
+  nlfv.set_loop(ForLoop(variable=phi, start=0.0, stop=1.0, step=0.5))  # 3 steps → loop_1
   nlfv.set_loop(ForLoop(variable=theta, start=0.0, stop=4.0, step=1.0))  # 5 steps → loop_2
 
   nlfv.set_element(SetOffset(bus="flux_0", offset_path0=phi))
   nlfv.set_element(SetGain(bus="flux_1", gain=theta))
 
-  offsets = nlfv.get_corrected_offsets()   # shape (5, 3) per bus
-  plays   = nlfv.get_corrected_play({"flux_0": Square(0.5, 100)})  # shape (5, 3) per bus
+  offsets = nlfv.get_corrected_offsets()  # shape (5, 3) per bus
+  plays = nlfv.get_corrected_play({"flux_0": Square(0.5, 100)})  # shape (5, 3) per bus
   ```
 
   [#1115](https://github.com/qilimanjaro-tech/qililab/pull/1115)
@@ -1790,15 +1790,19 @@ platform.set_flux_to_zero()
   ```Python
   # Define the QProgram
   qp = QProgram()
-  gain = qp.variable(label='resonator gain', domain=Domain.Voltage)
+  gain = qp.variable(label="resonator gain", domain=Domain.Voltage)
   with qp.for_loop(gain, 0, 10, 1):
       qp.set_gain(bus="readout_bus", gain=gain)
-      qp.measure(bus="readout_bus", waveform=IQPair(I=Square(1.0, 1000), Q=Square(1.0, 1000)), weights=IQPair(I=Square(1.0, 2000), Q=Square(1.0, 2000)))
+      qp.measure(
+          bus="readout_bus",
+          waveform=IQPair(I=Square(1.0, 1000), Q=Square(1.0, 1000)),
+          weights=IQPair(I=Square(1.0, 2000), Q=Square(1.0, 2000)),
+      )
 
   # Define the Experiment
   experiment = Experiment()
-  bias_z = experiment.variable(label='bias_z voltage', domain=Domain.Voltage)
-  frequency = experiment.variable(label='LO Frequency', domain=Domain.Frequency)
+  bias_z = experiment.variable(label="bias_z voltage", domain=Domain.Voltage)
+  frequency = experiment.variable(label="LO Frequency", domain=Domain.Frequency)
   experiment.set_parameter(alias="drive_q0", parameter=Parameter.VOLTAGE, value=0.5)
   experiment.set_parameter(alias="drive_q1", parameter=Parameter.VOLTAGE, value=0.5)
   experiment.set_parameter(alias="drive_q2", parameter=Parameter.VOLTAGE, value=0.5)
@@ -1919,7 +1923,7 @@ platform.set_flux_to_zero()
 
   ```Python
   qp = QProgram()
-  qp.qblox.set_markers(bus='drive_q0', mask='0111')
+  qp.qblox.set_markers(bus="drive_q0", mask="0111")
   ```
 
   [#747](https://github.com/qilimanjaro-tech/qililab/pull/747)
@@ -2113,17 +2117,17 @@ platform.set_flux_to_zero()
   weights = ql.IQPair(I=ql.Square(amplitude=1.0, duration=200), Q=ql.Square(amplitude=1.0, duration=200))
 
   # Add waveforms to the calibration
-  calibration.add_waveform(bus='drive_q0_bus', name='Xpi', waveform=drag_wf)
-  calibration.add_waveform(bus='readout_q0_bus', name='Measure', waveform=readout_wf)
+  calibration.add_waveform(bus="drive_q0_bus", name="Xpi", waveform=drag_wf)
+  calibration.add_waveform(bus="readout_q0_bus", name="Measure", waveform=readout_wf)
 
   # Add weights to the calibration
-  calibration.add_weights(bus='readout_q0_bus', name='optimal_weights', weights=weights)
+  calibration.add_weights(bus="readout_q0_bus", name="optimal_weights", weights=weights)
 
   # Save the calibration data to a file
-  calibration.save_to('calibration_data.yml')
+  calibration.save_to("calibration_data.yml")
 
   # Load the calibration data from a file
-  loaded_calibration = Calibration.load_from('calibration_data.yml')
+  loaded_calibration = Calibration.load_from("calibration_data.yml")
   ```
 
   The contents of `calibration_data.yml` will be:
@@ -2152,8 +2156,8 @@ platform.set_flux_to_zero()
 
   ```Python
   qp = QProgram()
-  qp.play(bus='drive_q0_bus', waveform='Xpi')
-  qp.measure(bus='readout_q0_bus', waveform='Measure', weights='optimal_weights')
+  qp.play(bus="drive_q0_bus", waveform="Xpi")
+  qp.measure(bus="readout_q0_bus", waveform="Measure", weights="optimal_weights")
   ```
 
   In that case, a `Calibration` instance must be provided when executing the QProgram. (see following changelog entries)
@@ -2166,9 +2170,9 @@ platform.set_flux_to_zero()
   ```Python
   from qililab.yaml import yaml
 
+
   @yaml.register_class
-  class MyClass:
-      ...
+  class MyClass: ...
   ```
 
   `MyClass` can now be saved to and loaded from a yaml file.
@@ -2204,8 +2208,8 @@ platform.set_flux_to_zero()
   deserialized_qprogram = ql.deserialize(yaml_string, cls=ql.QProgram)
 
   # Serialize to and deserialize from a file.
-  ql.serialize_to(qp, 'qprogram.yml')
-  deserialized_qprogram = ql.deserialize_from('qprogram.yml', cls=ql.QProgram)
+  ql.serialize_to(qp, "qprogram.yml")
+  deserialized_qprogram = ql.deserialize_from("qprogram.yml", cls=ql.QProgram)
   ```
 
   [#737](https://github.com/qilimanjaro-tech/qililab/pull/737)
@@ -2253,7 +2257,7 @@ platform.set_flux_to_zero()
 
   ```Python
   # Load the calibration data from a file
-  calibration = Calibration.load_from('calibration_data.yml')
+  calibration = Calibration.load_from("calibration_data.yml")
 
   # Apply the calibration to a QProgram instance
   calibrated_qprogram = qprogram.with_calibration(calibration=calibration)
@@ -2266,7 +2270,7 @@ platform.set_flux_to_zero()
 
   ```Python
   # Load the calibration data from a file
-  calibration = Calibration.load_from('calibration_data.yml')
+  calibration = Calibration.load_from("calibration_data.yml")
 
   platform.execute_qprogram(qprogram=qprogram, calibration=calibration)
   ```
@@ -2307,7 +2311,9 @@ platform.set_flux_to_zero()
   # Measure method with parameters `rotation` and `demodulation` has been moved to Quantum Machines interface. Instead of running
   # qp.measure(bus="readout_q0_bus", waveform=waveform, weights=weights, save_adc=True, rotation=np.pi, demodulation=True)
   # you should run
-  qp.quantum_machines.measure(bus="readout_q0_bus", waveform=waveform, weights=weights, save_adc=True, rotation=np.pi, demodulation=True)
+  qp.quantum_machines.measure(
+      bus="readout_q0_bus", waveform=waveform, weights=weights, save_adc=True, rotation=np.pi, demodulation=True
+  )
   ```
 
   [#736](https://github.com/qilimanjaro-tech/qililab/pull/736)
