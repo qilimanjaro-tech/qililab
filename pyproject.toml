@@ -42,8 +42,7 @@ dependencies = [
     "xarray>=2025.11.0",
     "rustworkx>=0.17.1",
     "qilisdk",
-    "scipy>=1.16.3; sys_platform == 'darwin'",
-    "scipy>=1.15,<1.16.3; sys_platform != 'darwin'",
+    "scipy>=1.15",
 ]
 
 [project.optional-dependencies]
@@ -102,14 +101,8 @@ name = "qilimanjaro"
 url = "https://aws@qilimanjaro-723412851021.d.codeartifact.eu-west-1.amazonaws.com/pypi/qilimanjaro/simple"
 explicit = true
 
-[[tool.uv.index]]
-name = "numpy-mkl"
-url = "https://urob.github.io/numpy-mkl"
-explicit = true
-
 [tool.uv.sources]
 qilisdk = { git = "https://github.com/qilimanjaro-tech/qilisdk.git", branch = "main" }
-scipy = [{ index = "numpy-mkl", marker = "sys_platform != 'darwin' and platform_machine != 'aarch64'" }]
 qpysequence = { index = "qilimanjaro" }
 
 [tool.ruff]
