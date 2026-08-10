@@ -5,6 +5,9 @@
 - Added `platform.set_calibration`, which stores a `Calibration` (given an instance or file path) on the platform. `execute_qprogram`, `execute_qprograms_parallel`, and database/stream saving now fall back to it when no `calibration` argument is passed; an explicit argument always overrides it.
   [#1165](https://github.com/qilimanjaro-tech/qililab/pull/1165)
 
+- Added drivers to operate the Keithley 2400 through the runcard and run a measurement. Through the runcard the user can set the mode and a respective voltage or current. alternatively the user can sweep either current or voltage and retrieve the data of the other component.
+[#1065](https://github.com/qilimanjaro-tech/qililab/pull/1065)
+
 ### Improvements
 
 - Added Dependabot configuration to keep GitHub Actions and Python dependencies up to date automatically.
