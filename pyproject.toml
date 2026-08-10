@@ -66,6 +66,7 @@ dev = [
 docs = [
     "sphinx>=8.2.3",
     "sphinx-automodapi>=0.22.0",
+    "sphinx-design>=0.6.1",
     "sphinx-mdinclude>=0.6.2",
     "sphinxawesome-theme>=5.3.2",
 ]
