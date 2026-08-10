@@ -287,9 +287,9 @@ class NonLinearCrosstalkMatrix(CrosstalkMatrix):
         self,
         bus_i: str,
         bus_j: str,
-        beta_c: float | None | Unset = _UNSET,
-        amplitude: float | None | Unset = _UNSET,
-        junction_asym: float | None | Unset = _UNSET,
+        beta_c: float | Unset | None = _UNSET,
+        amplitude: float | Unset | None = _UNSET,
+        junction_asym: float | Unset | None = _UNSET,
     ) -> None:
         """Sets the nonlinear coupling parameters between bus_i (target) and bus_j (source).
             None eliminates the value stored.
