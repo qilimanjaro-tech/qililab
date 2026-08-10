@@ -214,6 +214,40 @@ class TestCalibration:
         assert calibration.crosstalk_matrix_ac["flux_0"]["flux_1"] == ac_matrix["flux_0"]["flux_1"]
         assert calibration.crosstalk_matrix["flux_0"]["flux_1"] != calibration.crosstalk_matrix_ac["flux_0"]["flux_1"]
 
+    def test_load_old_format_backfills_crosstalk_matrix_ac(self):
+        """A calibration file written before `crosstalk_matrix_ac` existed must still load,
+        with the missing attribute backfilled to its default (None) via `__setstate__`.
+
+        Deserialization builds the object with `cls.__new__` and never calls `__init__`, so
+        without the backfill the attribute would be absent and any `calibration.crosstalk_matrix_ac`
+        access (e.g. in the Qblox compiler) would raise AttributeError.
+        """
+        buses = {
+            "flux_0": {"flux_0": 1.0, "flux_1": 0.1},
+            "flux_1": {"flux_0": 0.1, "flux_1": 1.0},
+        }
+        calibration = Calibration()
+        calibration.crosstalk_matrix = CrosstalkMatrix().from_buses(buses)
+
+        serialize_to(calibration, "old_calibration.yml")
+
+        # Simulate an "old" file that predates the field by removing the key entirely.
+        with open("old_calibration.yml") as f:
+            content = f.read()
+        assert "crosstalk_matrix_ac" in content  # the fresh dump contains it
+        content = "\n".join(line for line in content.splitlines() if "crosstalk_matrix_ac" not in line) + "\n"
+        with open("old_calibration.yml", "w") as f:
+            f.write(content)
+
+        loaded = deserialize_from("old_calibration.yml", Calibration)
+
+        assert hasattr(loaded, "crosstalk_matrix_ac")
+        assert loaded.crosstalk_matrix_ac is None
+        # Existing data is still restored correctly.
+        assert loaded.crosstalk_matrix["flux_0"]["flux_1"] == 0.1
+
+        os.remove(path="old_calibration.yml")
+
     def test_dump_load_methods(self):
         """Test dump and load methods"""
         qp = QProgram()
