@@ -401,7 +401,7 @@ class TestPlatform:
         crosstalk_matrix = CrosstalkMatrix.from_buses(buses={"drive_line_q0_bus": {"drive_line_q0_bus": 0.1}})
         platform.set_crosstalk(crosstalk_matrix)
         platform.set_parameter(alias="drive_line_q0_bus", parameter=Parameter.FLUX, value=0.14, channel_id=0)
-        assert crosstalk_matrix == platform.crosstalk
+        assert platform.crosstalk == crosstalk_matrix
         assert platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.FLUX, channel_id=0) == 0.14
 
     def test_set_flux_parameter_with_wrong_bus_raises_error(self, platform: Platform):
