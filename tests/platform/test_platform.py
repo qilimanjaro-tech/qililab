@@ -1348,6 +1348,94 @@ class TestMethods:
 
         assert calibration.crosstalk_matrix == expected_crosstalk
 
+    def _qblox_qdac_crosstalk_qprogram(self) -> QProgram:
+        """Build a QProgram that spans both Qblox (drive/resonator) and Qdac (qdac_bus_*) buses."""
+        drive_wf = IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
+        readout_wf = IQPair(I=Square(amplitude=1.0, duration=120), Q=Square(amplitude=0.0, duration=120))
+        weights_wf = IQPair(I=Square(amplitude=1.0, duration=120), Q=Square(amplitude=0.0, duration=120))
+        qdac_wf = Square(amplitude=1.0, duration=100)
+        qprogram = QProgram()
+        qprogram.play(bus="qdac_bus_1", waveform=qdac_wf)
+        qprogram.set_offset(bus="qdac_bus_2", offset_path0=1)
+        qprogram.wait_trigger(bus="qdac_bus_1", duration=10e-6, port=1)
+        qprogram.play(bus="drive", waveform=drive_wf)
+        qprogram.measure(bus="resonator", waveform=readout_wf, weights=weights_wf)
+        return qprogram
+
+    def test_compile_qprogram_crosstalk_false_clears_dc_and_ac_matrices(self, platform_qblox_qdac: Platform):
+        """With crosstalk=False, compile_qprogram must strip BOTH the DC and AC crosstalk matrices
+        from the calibration handed to the compilers, without mutating the caller's calibration."""
+        qprogram = self._qblox_qdac_crosstalk_qprogram()
+
+        dc_matrix = CrosstalkMatrix.from_buses(buses={"qdac_bus_1": {"qdac_bus_1": 0.1}})
+        ac_matrix = CrosstalkMatrix.from_buses(buses={"drive": {"drive": 0.2}})
+        calibration = Calibration()
+        calibration.crosstalk_matrix = dc_matrix
+        calibration.crosstalk_matrix_ac = ac_matrix
+
+        captured: dict[str, Calibration] = {}
+
+        def capture_qblox(*_args, **kwargs):
+            captured["qblox"] = kwargs["calibration"]
+            return MagicMock()
+
+        def capture_qdac(*_args, **kwargs):
+            captured["qdac"] = kwargs["calibration"]
+            return MagicMock()
+
+        with (
+            patch("qililab.platform.platform.QbloxCompiler") as qblox_cls,
+            patch("qililab.platform.platform.QdacCompiler") as qdac_cls,
+        ):
+            qblox_cls.return_value.compile.side_effect = capture_qblox
+            qdac_cls.return_value.compile.side_effect = capture_qdac
+            platform_qblox_qdac.compile_qprogram(qprogram=qprogram, calibration=calibration, crosstalk=False)
+
+        # Both compilers receive a calibration with neither crosstalk matrix set.
+        assert captured["qblox"].crosstalk_matrix is None
+        assert captured["qblox"].crosstalk_matrix_ac is None
+        assert captured["qdac"].crosstalk_matrix is None
+        assert captured["qdac"].crosstalk_matrix_ac is None
+
+        # The caller's calibration is left untouched (a deepcopy is stripped instead).
+        assert calibration.crosstalk_matrix is dc_matrix
+        assert calibration.crosstalk_matrix_ac is ac_matrix
+
+    def test_compile_qprogram_crosstalk_true_keeps_dc_and_ac_matrices(self, platform_qblox_qdac: Platform):
+        """With crosstalk=True, both matrices flow through to the compilers, which route them by
+        instrument type (DC -> Qdac, AC -> Qblox)."""
+        qprogram = self._qblox_qdac_crosstalk_qprogram()
+
+        dc_matrix = CrosstalkMatrix.from_buses(buses={"qdac_bus_1": {"qdac_bus_1": 0.1}})
+        ac_matrix = CrosstalkMatrix.from_buses(buses={"drive": {"drive": 0.2}})
+        calibration = Calibration()
+        calibration.crosstalk_matrix = dc_matrix
+        calibration.crosstalk_matrix_ac = ac_matrix
+
+        captured: dict[str, Calibration] = {}
+
+        def capture_qblox(*_args, **kwargs):
+            captured["qblox"] = kwargs["calibration"]
+            return MagicMock()
+
+        def capture_qdac(*_args, **kwargs):
+            captured["qdac"] = kwargs["calibration"]
+            return MagicMock()
+
+        with (
+            patch("qililab.platform.platform.QbloxCompiler") as qblox_cls,
+            patch("qililab.platform.platform.QdacCompiler") as qdac_cls,
+        ):
+            qblox_cls.return_value.compile.side_effect = capture_qblox
+            qdac_cls.return_value.compile.side_effect = capture_qdac
+            platform_qblox_qdac.compile_qprogram(qprogram=qprogram, calibration=calibration, crosstalk=True)
+
+        # No deepcopy happens, so both matrices are preserved and reach the compilers.
+        assert captured["qblox"].crosstalk_matrix is dc_matrix
+        assert captured["qblox"].crosstalk_matrix_ac is ac_matrix
+        assert captured["qdac"].crosstalk_matrix is dc_matrix
+        assert captured["qdac"].crosstalk_matrix_ac is ac_matrix
+
     def test_execute_qprogram_single_baseband_channel(self, platform: Platform):
         """Test that the execute method compiles the qprogram, calls the buses to run and return the results."""
         drive_wf = Square(amplitude=1.0, duration=40)

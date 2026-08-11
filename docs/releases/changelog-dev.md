@@ -2,6 +2,9 @@
 
 ### New features since last release
 
+- Added a second crosstalk matrix, `Calibration.crosstalk_matrix_ac`, so DC and AC/fast-flux lines can be calibrated independently. Fluxoniums can be driven simultaneously through DC lines (Qdac, via the existing `crosstalk_matrix`) and fast-flux lines (QCM), which have different resistances and therefore need separate crosstalk calibrations. The routing now follows the instrument type: `QdacCompiler` keeps using `crosstalk_matrix` (DC), while `QbloxCompiler` uses `crosstalk_matrix_ac` (AC/fast flux). For backward compatibility, when `crosstalk_matrix_ac` is not set the Qblox compiler falls back to `crosstalk_matrix` and logs a warning.
+  [#1175](https://github.com/qilimanjaro-tech/qililab/pull/1175)
+
 - Added `platform.set_calibration`, which stores a `Calibration` (given an instance or file path) on the platform. `execute_qprogram`, `execute_qprograms_parallel`, and database/stream saving now fall back to it when no `calibration` argument is passed; an explicit argument always overrides it.
   [#1165](https://github.com/qilimanjaro-tech/qililab/pull/1165)
 

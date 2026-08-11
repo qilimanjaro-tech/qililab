@@ -6061,6 +6061,76 @@ class TestQBloxCompiler:
         for bus in sequences:
             assert isinstance(sequences[bus], QPy.Sequence)
 
+    def test_crosstalk_compensation_uses_ac_matrix(self, crosstalk_qprogram: QProgram):
+        """The Qblox (fast-flux / QCM) compiler must use the AC crosstalk matrix when it is set."""
+        ac_array = np.linalg.inv([[1, 0.3], [0.3, 1]])
+        ac_crosstalk = CrosstalkMatrix().from_array(["flux1", "flux2"], ac_array)
+        # A different DC matrix that must be ignored by the Qblox compiler.
+        dc_crosstalk = CrosstalkMatrix().from_array(["flux1", "flux2"], np.linalg.inv([[1, 0.5], [0.5, 1]]))
+
+        calibration = Calibration()
+        calibration.crosstalk_matrix = dc_crosstalk
+        calibration.crosstalk_matrix_ac = ac_crosstalk
+
+        compiler = QbloxCompiler()
+        sequences, _ = compiler.compile(qprogram=crosstalk_qprogram, calibration=calibration)
+
+        # The AC matrix must be the one applied, not the DC one.
+        ac_sequences, _ = QbloxCompiler().compile(qprogram=crosstalk_qprogram, crosstalk=ac_crosstalk)
+        dc_sequences, _ = QbloxCompiler().compile(qprogram=crosstalk_qprogram, crosstalk=dc_crosstalk)
+        for bus in sequences:
+            assert isinstance(sequences[bus], QPy.Sequence)
+            assert is_q1asm_equal(sequences[bus], ac_sequences[bus])
+            if bus in ("flux1", "flux2"):
+                assert not is_q1asm_equal(sequences[bus], dc_sequences[bus])
+
+    def test_crosstalk_compensation_ac_matrix_overrides_explicit_crosstalk(self, crosstalk_qprogram: QProgram):
+        """A calibration AC matrix takes precedence over an explicit `crosstalk` argument (e.g. platform-level)."""
+        ac_crosstalk = CrosstalkMatrix().from_array(["flux1", "flux2"], np.linalg.inv([[1, 0.3], [0.3, 1]]))
+        # An explicit crosstalk (as `platform.compile_qprogram` forwards `self.crosstalk`) that must NOT win.
+        explicit_crosstalk = CrosstalkMatrix().from_array(["flux1", "flux2"], np.linalg.inv([[1, 0.5], [0.5, 1]]))
+
+        calibration = Calibration()
+        calibration.crosstalk_matrix_ac = ac_crosstalk
+
+        sequences, _ = QbloxCompiler().compile(
+            qprogram=crosstalk_qprogram, calibration=calibration, crosstalk=explicit_crosstalk
+        )
+
+        # The AC matrix must be the one applied, not the explicit one.
+        ac_sequences, _ = QbloxCompiler().compile(qprogram=crosstalk_qprogram, crosstalk=ac_crosstalk)
+        explicit_sequences, _ = QbloxCompiler().compile(qprogram=crosstalk_qprogram, crosstalk=explicit_crosstalk)
+        for bus in sequences:
+            assert is_q1asm_equal(sequences[bus], ac_sequences[bus])
+            if bus in ("flux1", "flux2"):
+                assert not is_q1asm_equal(sequences[bus], explicit_sequences[bus])
+
+    def test_crosstalk_compensation_falls_back_to_dc_with_warning(
+        self, caplog, crosstalk_qprogram: QProgram, calibration_crosstalk: Calibration
+    ):
+        """When no AC matrix is set, the Qblox compiler falls back to the DC matrix and warns."""
+        assert calibration_crosstalk.crosstalk_matrix_ac is None
+
+        compiler = QbloxCompiler()
+        with caplog.at_level(logging.WARNING):
+            sequences, _ = compiler.compile(qprogram=crosstalk_qprogram, calibration=calibration_crosstalk)
+
+        assert "Define `crosstalk_matrix_ac`" in caplog.text
+        for bus in sequences:
+            assert isinstance(sequences[bus], QPy.Sequence)
+
+    def test_crosstalk_compensation_ac_no_warning(self, caplog, crosstalk_qprogram: QProgram):
+        """No warning is emitted when the AC matrix is present."""
+        ac_crosstalk = CrosstalkMatrix().from_array(["flux1", "flux2"], np.linalg.inv([[1, 0.3], [0.3, 1]]))
+        calibration = Calibration()
+        calibration.crosstalk_matrix_ac = ac_crosstalk
+
+        compiler = QbloxCompiler()
+        with caplog.at_level(logging.WARNING):
+            compiler.compile(qprogram=crosstalk_qprogram, calibration=calibration)
+
+        assert "Define `crosstalk_matrix_ac`" not in caplog.text
+
     def test_crosstalk_compensation_plays_raise_errors(self):
         """Test the different errors that might rise by using incorrectly the crosstalk play structure."""
 
