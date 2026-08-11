@@ -85,8 +85,9 @@
 
 ### Bug fixes
 
-- Added `scipy` as an explicit dependency. It was previously only pulled in transitively, so `import qililab` could fail with `No module named 'scipy'` if that transitive path ever changed. The version is split by platform (`>=1.16.3` on `darwin`, `>=1.15,<1.16.3` elsewhere) to match `qilisdk`'s own `scipy` constraint.
+- Added `scipy` as an explicit dependency. It was previously only pulled in transitively, so `import qililab` could fail with `No module named 'scipy'` if that transitive path ever changed. The version was initially split by platform (`>=1.16.3` on `darwin`, `>=1.15,<1.16.3` elsewhere) to match `qilisdk`'s own `scipy` constraint; that platform-specific split was later removed in favor of a single `scipy>=1.15` constraint on every platform, following the same change in `qilisdk`.
   [#1176](https://github.com/qilimanjaro-tech/qililab/pull/1176)
+  [#1183](https://github.com/qilimanjaro-tech/qililab/pull/1183)
   
 - Passing `None` to `NonLinearCrosstalkMatrix.set_non_linear_params` now clears the parameters instead of keeping their previously set values, allowing users to remove non-linear parameters that were set earlier.
   [#1173](https://github.com/qilimanjaro-tech/qililab/pull/1173)
