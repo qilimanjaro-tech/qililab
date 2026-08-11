@@ -24,6 +24,7 @@ class TestCalibration:
         assert isinstance(calibration.blocks, dict)
         assert isinstance(calibration.parameters, dict)
         assert calibration.crosstalk_matrix is None
+        assert calibration.crosstalk_matrix_ac is None
         assert len(calibration.waveforms) == 0
         assert len(calibration.weights) == 0
         assert len(calibration.blocks) == 0
@@ -192,6 +193,61 @@ class TestCalibration:
         assert calibration.crosstalk_matrix["flux_1"]["flux_0"] == crosstalk_matrix["flux_1"]["flux_0"]
         assert calibration.crosstalk_matrix["flux_1"]["flux_1"] == crosstalk_matrix["flux_1"]["flux_1"]
 
+    def test_adding_ac_crosstalk_matrix(self):
+        """Test adding an AC / fast-flux crosstalk matrix independently from the DC one"""
+        dc_buses = {
+            "flux_0": {"flux_0": 1.47046905, "flux_1": 0.12276261},
+            "flux_1": {"flux_0": -0.55322207, "flux_1": 1.58247856},
+        }
+        ac_buses = {
+            "flux_0": {"flux_0": 1.0, "flux_1": 0.05},
+            "flux_1": {"flux_0": -0.02, "flux_1": 1.0},
+        }
+        dc_matrix = CrosstalkMatrix().from_buses(dc_buses)
+        ac_matrix = CrosstalkMatrix().from_buses(ac_buses)
+        calibration = Calibration()
+        calibration.crosstalk_matrix = dc_matrix
+        calibration.crosstalk_matrix_ac = ac_matrix
+
+        # The two matrices are independent.
+        assert calibration.crosstalk_matrix["flux_0"]["flux_1"] == dc_matrix["flux_0"]["flux_1"]
+        assert calibration.crosstalk_matrix_ac["flux_0"]["flux_1"] == ac_matrix["flux_0"]["flux_1"]
+        assert calibration.crosstalk_matrix["flux_0"]["flux_1"] != calibration.crosstalk_matrix_ac["flux_0"]["flux_1"]
+
+    def test_load_old_format_backfills_crosstalk_matrix_ac(self):
+        """A calibration file written before `crosstalk_matrix_ac` existed must still load,
+        with the missing attribute backfilled to its default (None) via `__setstate__`.
+
+        Deserialization builds the object with `cls.__new__` and never calls `__init__`, so
+        without the backfill the attribute would be absent and any `calibration.crosstalk_matrix_ac`
+        access (e.g. in the Qblox compiler) would raise AttributeError.
+        """
+        buses = {
+            "flux_0": {"flux_0": 1.0, "flux_1": 0.1},
+            "flux_1": {"flux_0": 0.1, "flux_1": 1.0},
+        }
+        calibration = Calibration()
+        calibration.crosstalk_matrix = CrosstalkMatrix().from_buses(buses)
+
+        serialize_to(calibration, "old_calibration.yml")
+
+        # Simulate an "old" file that predates the field by removing the key entirely.
+        with open("old_calibration.yml") as f:
+            content = f.read()
+        assert "crosstalk_matrix_ac" in content  # the fresh dump contains it
+        content = "\n".join(line for line in content.splitlines() if "crosstalk_matrix_ac" not in line) + "\n"
+        with open("old_calibration.yml", "w") as f:
+            f.write(content)
+
+        loaded = deserialize_from("old_calibration.yml", Calibration)
+
+        assert hasattr(loaded, "crosstalk_matrix_ac")
+        assert loaded.crosstalk_matrix_ac is None
+        # Existing data is still restored correctly.
+        assert loaded.crosstalk_matrix["flux_0"]["flux_1"] == 0.1
+
+        os.remove(path="old_calibration.yml")
+
     def test_dump_load_methods(self):
         """Test dump and load methods"""
         qp = QProgram()
@@ -202,7 +258,12 @@ class TestCalibration:
             "flux_0": {"flux_0": 1.47046905, "flux_1": 0.12276261},
             "flux_1": {"flux_0": -0.55322207, "flux_1": 1.58247856},
         }
+        ac_buses = {
+            "flux_0": {"flux_0": 1.0, "flux_1": 0.05},
+            "flux_1": {"flux_0": -0.02, "flux_1": 1.0},
+        }
         crosstalk_matrix = CrosstalkMatrix().from_buses(buses)
+        ac_crosstalk_matrix = CrosstalkMatrix().from_buses(ac_buses)
         calibration = Calibration()
         calibration.add_waveform(bus="drive_bus", name="Xpi", waveform=Square(1.0, 100))
         calibration.add_waveform(bus="drive_bus", name="Xpi2", waveform=Square(1.0, 50))
@@ -212,6 +273,7 @@ class TestCalibration:
         )
         calibration.add_block(name="flux_block", block=qp.body)
         calibration.crosstalk_matrix = crosstalk_matrix
+        calibration.crosstalk_matrix_ac = ac_crosstalk_matrix
 
         serialize_to(calibration, "calibration.yml")
         loaded_calibration = deserialize_from("calibration.yml", Calibration)
@@ -251,6 +313,9 @@ class TestCalibration:
         assert calibration.crosstalk_matrix["flux_0"]["flux_1"] == crosstalk_matrix["flux_0"]["flux_1"]
         assert calibration.crosstalk_matrix["flux_1"]["flux_0"] == crosstalk_matrix["flux_1"]["flux_0"]
         assert calibration.crosstalk_matrix["flux_1"]["flux_1"] == crosstalk_matrix["flux_1"]["flux_1"]
+
+        assert loaded_calibration.crosstalk_matrix_ac["flux_0"]["flux_1"] == ac_crosstalk_matrix["flux_0"]["flux_1"]
+        assert loaded_calibration.crosstalk_matrix_ac["flux_1"]["flux_0"] == ac_crosstalk_matrix["flux_1"]["flux_0"]
 
         os.remove(path="calibration.yml")
 
@@ -292,7 +357,25 @@ class TestCalibration:
         }
         offsets_buses = {"flux_0": 1.0, "flux_1": 0.0}
 
-        with pytest.raises(ValueError, match="No crosstalk has been given to the Calibration file"):
+        with pytest.raises(ValueError, match="No crosstalk has been given to the Calibration file."):
+            calibration.add_intra_crosstalk(block_diag_xt_matrix=diag_buses, flux_offsets=offsets_buses)
+
+    def test_add_intra_crosstalk_raises_not_implemented_with_only_ac_matrix(self):
+        """Only an AC crosstalk matrix is not supported for crosstalk history; a NotImplementedError is raised."""
+        calibration = Calibration()
+        calibration.crosstalk_matrix_ac = CrosstalkMatrix().from_buses(
+            {
+                "flux_0": {"flux_0": 1.0, "flux_1": 0.3},
+                "flux_1": {"flux_0": 0.3, "flux_1": 1.0},
+            }
+        )
+        diag_buses = {
+            "flux_0": {"flux_0": 2, "flux_1": 0},
+            "flux_1": {"flux_0": 0, "flux_1": 2},
+        }
+        offsets_buses = {"flux_0": 1.0, "flux_1": 0.0}
+
+        with pytest.raises(NotImplementedError, match="crosstalk_matrix_ac is not valid for crosstalk history"):
             calibration.add_intra_crosstalk(block_diag_xt_matrix=diag_buses, flux_offsets=offsets_buses)
 
     def test_add_intra_crosstalk_raises_error_wrong_buses(self):
@@ -366,7 +449,24 @@ class TestCalibration:
             "flux_1": {"flux_0": 0.5, "flux_1": 2.0},
         }
 
-        with pytest.raises(ValueError, match="No crosstalk has been given to the Calibration file"):
+        with pytest.raises(ValueError, match="No crosstalk has been given to the Calibration file."):
+            calibration.add_inter_crosstalk(full_crosstalk_matrix=matrix_buses)
+
+    def test_add_inter_crosstalk_raises_not_implemented_with_only_ac_matrix(self):
+        """Only an AC crosstalk matrix is not supported for crosstalk history; a NotImplementedError is raised."""
+        calibration = Calibration()
+        calibration.crosstalk_matrix_ac = CrosstalkMatrix().from_buses(
+            {
+                "flux_0": {"flux_0": 1.0, "flux_1": 0.3},
+                "flux_1": {"flux_0": 0.3, "flux_1": 1.0},
+            }
+        )
+        matrix_buses = {
+            "flux_0": {"flux_0": 2.0, "flux_1": 0.5},
+            "flux_1": {"flux_0": 0.5, "flux_1": 2.0},
+        }
+
+        with pytest.raises(NotImplementedError, match="crosstalk_matrix_ac is not valid for crosstalk history"):
             calibration.add_inter_crosstalk(full_crosstalk_matrix=matrix_buses)
 
     def test_add_inter_crosstalk_raises_error_wrong_buses(self):

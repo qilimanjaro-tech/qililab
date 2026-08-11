@@ -1100,9 +1100,14 @@ class Platform:
         calibration: Calibration | None = None,
         crosstalk: bool = True,
     ) -> QProgramCompilationOutput:
-        if not crosstalk and calibration is not None and calibration.crosstalk_matrix is not None:
+        if (
+            not crosstalk
+            and calibration is not None
+            and (calibration.crosstalk_matrix is not None or calibration.crosstalk_matrix_ac is not None)
+        ):
             calibration = deepcopy(calibration)
             calibration.crosstalk_matrix = None
+            calibration.crosstalk_matrix_ac = None
 
         bus_aliases = {bus_mapping[bus] if bus_mapping and bus in bus_mapping else bus for bus in qprogram.buses}
         buses = [self.buses.get(alias=bus_alias) for bus_alias in bus_aliases]

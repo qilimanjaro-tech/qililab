@@ -1,5 +1,67 @@
 # CHANGELOG
 
+## 0.34.0
+
+### New features since last release
+
+- Added a second crosstalk matrix, `Calibration.crosstalk_matrix_ac`, so DC and AC/fast-flux lines can be calibrated independently. Fluxoniums can be driven simultaneously through DC lines (Qdac, via the existing `crosstalk_matrix`) and fast-flux lines (QCM), which have different resistances and therefore need separate crosstalk calibrations. The routing now follows the instrument type: `QdacCompiler` keeps using `crosstalk_matrix` (DC), while `QbloxCompiler` uses `crosstalk_matrix_ac` (AC/fast flux). For backward compatibility, when `crosstalk_matrix_ac` is not set the Qblox compiler falls back to `crosstalk_matrix` and logs a warning.
+  [#1175](https://github.com/qilimanjaro-tech/qililab/pull/1175)
+
+- Added `platform.set_calibration`, which stores a `Calibration` (given an instance or file path) on the platform. `execute_qprogram`, `execute_qprograms_parallel`, and database/stream saving now fall back to it when no `calibration` argument is passed; an explicit argument always overrides it.
+  [#1165](https://github.com/qilimanjaro-tech/qililab/pull/1165)
+
+### Improvements
+
+- Added Dependabot configuration to keep GitHub Actions and Python dependencies up to date automatically.
+  [#1174](https://github.com/qilimanjaro-tech/qililab/pull/1174)
+
+- Added the `Sentinel` enum class in `utils/sentinels.py`, currently exposing only `UNSET` (more sentinels can be added later). Sentinels mark uninitialized, unset or otherwise undefined values without relying on `None`, which keeps the logic clearer and makes it possible to distinguish an explicit `None` from an unset default.
+  [#1173](https://github.com/qilimanjaro-tech/qililab/pull/1173)
+
+- Migrated `QbloxCompiler` to the redesigned `qpysequence` API (version 0.11). The compiler now uses the new `Compiler` class (`qpysequence.compiler.Compiler`) to compile programs to Q1ASM, replacing the old `program.compile()` call. Program construction now uses `block.add()` throughout, loop sweeps use the new `SweepSpec`-based `IterativeLoop` API with `ConversionInstruction` subclasses (`SetNormalisedOffs`, `SetNormalisedGain`, `SetFrequencyHz`, `SetPhaseRad`) for automatic physical-unit-to-integer scaling, and label references no longer require the `@` prefix. `Sequence.todict()` is replaced by `Sequence.to_dict()` throughout. Several responsibilities have shifted from `qililab` to `qpysequence`:
+  - **`nop` insertion**: `qililab` no longer emits `nop` instructions manually; `qpysequence`'s compiler handles read-after-write hazard guards automatically. Duplicate parameter instructions (e.g. double `set_awg_gain` or `set_freq`) that were previously emitted as a workaround are no longer needed.
+  - **Physical-unit-to-integer conversion**: scaling of physical-unit values (normalised gain/offset, Hz frequency, radian phase) to Q1ASM integers is now fully owned by `qpysequence` via `ConversionInstruction.scale_factor`.
+  - **Long-wait handling**: durations exceeding `INST_MAX_WAIT`, for both `wait` and `wait_trigger`, are now managed by `qpysequence`'s `LongWait` instruction rather than `qililab`.
+  - **Adjacent wait merging**: consecutive `wait` instructions are now combined by `qpysequence`'s compiler rather than by `qililab`.
+  - **Setup block creation**: `qililab` now explicitly creates the `setup` block and adds its `WaitSync(4)` instruction before compilation, calling `Compiler.compile(..., wait_sync=False)` to opt out of the compiler's own automatic setup-block insertion. Previously, `qpysequence`'s `Program.__init__` created the `setup` block and its `WaitSync(4)` automatically.
+  - The Q1ASM output is functionally equivalent but may differ structurally from previous versions; see the `qpysequence` changelog for a full description.
+  [#1090](https://github.com/qilimanjaro-tech/qpysequence/pull/1090)
+
+- Updated `QbloxDraw` to iterate over all program blocks (`setup` and `main`) to match the new Q1ASM structure introduced by `qpysequence` 0.11.
+  [#1090](https://github.com/qilimanjaro-tech/qpysequence/pull/1090)
+
+- `QbloxCompiler` now emits a warning and clamps to 4 ns when a `wait`, `wait_trigger`, or `play` duration, or a hardware loop's start or stop value, is below the Q1ASM minimum of 4 ns.
+  [#1090](https://github.com/qilimanjaro-tech/qpysequence/pull/1090)
+
+### Deprecations / Removals
+
+- Removed `Platform.compile_annealing_program` and `Platform.execute_annealing_program`.
+  [#1179](https://github.com/qilimanjaro-tech/qililab/pull/1179)
+
+### Bug fixes
+
+- Added `scipy` as an explicit dependency. It was previously only pulled in transitively, so `import qililab` could fail with `No module named 'scipy'` if that transitive path ever changed. The version was initially split by platform (`>=1.16.3` on `darwin`, `>=1.15,<1.16.3` elsewhere) to match `qilisdk`'s own `scipy` constraint; that platform-specific split was later removed in favor of a single `scipy>=1.15` constraint on every platform, following the same change in `qilisdk`.
+  [#1176](https://github.com/qilimanjaro-tech/qililab/pull/1176)
+  [#1183](https://github.com/qilimanjaro-tech/qililab/pull/1183)
+
+- Passing `None` to `NonLinearCrosstalkMatrix.set_non_linear_params` now clears the parameters instead of keeping their previously set values, allowing users to remove non-linear parameters that were set earlier.
+  [#1173](https://github.com/qilimanjaro-tech/qililab/pull/1173)
+
+- Fixed `uv lock` failing on `qm-qua`'s pinned prerelease `betterproto==2.0.0b7` for some platforms. Now pinned via `override-dependencies`.
+  [#1178](https://github.com/qilimanjaro-tech/qililab/pull/1178)
+
+- Fixed incorrect Q1ASM emitted when a long wait (> `INST_MAX_WAIT`) follows a pending `upd_param`: the pending-instruction branch now uses `LongWait` consistently with the no-pending branch.
+  [#1090](https://github.com/qilimanjaro-tech/qpysequence/pull/1090)
+
+- Fixed numpy scalar passthrough in `QProgram` operations: `wait`, `wait_trigger`, `set_phase`, `set_frequency`, `set_gain`, `set_offset`, `set_trigger`, `for_loop`, and `average` parameters now call `_to_scalar()` to convert numpy integer/float types to native Python scalars before constructing operations, preventing type errors downstream.
+  [#1090](https://github.com/qilimanjaro-tech/qpysequence/pull/1090)
+
+- Fixed `wait_trigger` overshooting the requested duration by tens of thousands of ns whenever it exceeded `INST_MAX_WAIT`: `_handle_add_trigger_waits` now emits `LongWait`, like its sibling `_handle_add_waits`, instead of a manual splitting loop that always rounded up to a whole number of `INST_MAX_WAIT` chunks and dropped the remainder.
+  [#1090](https://github.com/qilimanjaro-tech/qpysequence/pull/1090)
+
+- Fixed a hardware loop's `wait` domain not clamping the `stop` value to the Q1ASM minimum of 4 ns: only `start` was previously clamped, so a descending `for_loop`/`parallel` sweep over `wait` durations could reach an invalid (< 4 ns) final register value with no warning.
+  [#1090](https://github.com/qilimanjaro-tech/qpysequence/pull/1090)
+
 ## 0.33.3
 
 ### New features since last release
@@ -203,7 +265,6 @@ In the runcard this parameter is located inside the instruments sequencer for QR
 - Pinned spirack to ==0.2.12 as some newer versions may cause an error when importing qblox-instruments.
   [#1135](https://github.com/qilimanjaro-tech/qililab/pull/1135)
 
-# CHANGELOG
 
 ## 0.33.1
 

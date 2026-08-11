@@ -1,6 +1,6 @@
 [project]
 name = "qililab"
-version = "0.33.3+internal1"
+version = "0.34.0"
 description = "Fundamental package for fast characterization and calibration of quantum chips."
 authors = [{name = "Qilimanjaro Quantum Tech", email = "info@qilimanjaro.tech"}]
 urls = {Repository = "https://github.com/qilimanjaro-tech/qililab"}
@@ -41,8 +41,7 @@ dependencies = [
     "urllib3>=2.3.0",
     "xarray>=2025.11.0",
     "rustworkx>=0.17.1",
-    "scipy>=1.16.3; sys_platform == 'darwin'",
-    "scipy>=1.15,<1.16.3; sys_platform != 'darwin'",
+    "scipy>=1.15",
 ]
 
 [project.optional-dependencies]
@@ -62,6 +61,7 @@ dev = [
     "pytest-xdist>=3.6.1",
     "pyvisa-sim>=0.6.0",
     "ruff>=0.14.6",
+    "towncrier>=25.8.0",
 ]
 docs = [
     "sphinx>=8.2.3",
@@ -102,13 +102,7 @@ name = "qilimanjaro"
 url = "https://aws@qilimanjaro-723412851021.d.codeartifact.eu-west-1.amazonaws.com/pypi/qilimanjaro/simple"
 explicit = true
 
-[[tool.uv.index]]
-name = "numpy-mkl"
-url = "https://urob.github.io/numpy-mkl"
-explicit = true
-
 [tool.uv.sources]
-scipy = [{ index = "numpy-mkl", marker = "sys_platform != 'darwin' and platform_machine != 'aarch64'" }]
 qpysequence = { index = "qilimanjaro" }
 
 [tool.ruff]
@@ -262,3 +256,9 @@ filterwarnings = [
 markers = [
     "qm: tests that require Quantum Machines",
 ]
+
+[tool.towncrier]
+package = "qililab"
+directory = "changes"
+filename = "CHANGELOG.md"
+issue_format = "[PR #{issue}](https://github.com/qilimanjaro-tech/qililab/pull/{issue})"
