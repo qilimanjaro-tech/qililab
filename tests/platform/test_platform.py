@@ -1542,8 +1542,6 @@ class TestMethods:
 
         error_string = "The QM `config` dictionary does not exist. Please run `initial_setup()` first."
         escaped_error_str = re.escape(error_string)
-        platform_quantum_machines.compile_circuit = MagicMock()  # type: ignore # don't care about compilation
-        platform_quantum_machines.compile_circuit.return_value = Exception(escaped_error_str)
 
         drive_wf = IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
         readout_wf = IQPair(I=Square(amplitude=1.0, duration=120), Q=Square(amplitude=0.0, duration=120))
