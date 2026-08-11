@@ -62,6 +62,7 @@ dev = [
     "pytest-xdist>=3.6.1",
     "pyvisa-sim>=0.6.0",
     "ruff>=0.14.6",
+    "towncrier>=25.8.0",
 ]
 docs = [
     "sphinx>=8.2.3",
@@ -256,3 +257,9 @@ filterwarnings = [
 markers = [
     "qm: tests that require Quantum Machines",
 ]
+
+[tool.towncrier]
+package = "qililab"
+directory = "changes"
+filename = "CHANGELOG.md"
+issue_format = "[PR #{issue}](https://github.com/qilimanjaro-tech/qililab/pull/{issue})"
