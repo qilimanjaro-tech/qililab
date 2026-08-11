@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import functools
 import math
 from collections import deque
 from copy import deepcopy
@@ -68,12 +67,6 @@ MAX_ACQUISITION_INDEX = 31  # 32 is the max number of acquisitions that can be s
 ENABLE_CONDITIONAL = 1
 DISABLE_CONDITIONAL = 0
 AND_MASK_CONDITIONAL = 0  # Return true if any of the selected counters crossed their thresholds
-
-
-@functools.lru_cache(maxsize=1)
-def _warn_dc_crosstalk_fallback() -> None:
-    """Warn that the DC crosstalk matrix is being used as a fallback. Emitted at most once per process."""
-    logger.warning("Using DC `crosstalk_matrix`.\nDefine `crosstalk_matrix_ac` to calibrate AC/fast-flux lines.")
 
 
 @dataclass
@@ -353,7 +346,9 @@ class QbloxCompiler:
             if calibration.crosstalk_matrix_ac is not None:
                 crosstalk = calibration.crosstalk_matrix_ac
             elif crosstalk is None and calibration.crosstalk_matrix is not None:
-                _warn_dc_crosstalk_fallback()
+                logger.warning(
+                    "Using DC `crosstalk_matrix`.\nDefine `crosstalk_matrix_ac` to calibrate AC/fast-flux lines."
+                )
                 crosstalk = calibration.crosstalk_matrix
         if self._qprogram.has_calibrated_waveforms_or_weights():
             raise RuntimeError(

@@ -12,7 +12,6 @@ from qililab.qprogram.operations import SetFrequency, SetPhase, SetGain, SetOffs
 from qililab import Calibration, Domain, FlatTop, Gaussian, IQPair, IQDrag, QProgram, Square
 from qililab.qprogram.blocks import ForLoop
 from qililab.qprogram import QbloxCompiler
-from qililab.qprogram.qblox_compiler import _warn_dc_crosstalk_fallback
 from tests.test_utils import is_q1asm_equal
 import logging
 
@@ -6112,9 +6111,6 @@ class TestQBloxCompiler:
         """When no AC matrix is set, the Qblox compiler falls back to the DC matrix and warns."""
         assert calibration_crosstalk.crosstalk_matrix_ac is None
 
-        # The warning is emitted at most once per process, so reset the cache to observe it here.
-        _warn_dc_crosstalk_fallback.cache_clear()
-
         compiler = QbloxCompiler()
         with caplog.at_level(logging.WARNING):
             sequences, _ = compiler.compile(qprogram=crosstalk_qprogram, calibration=calibration_crosstalk)
@@ -6134,20 +6130,6 @@ class TestQBloxCompiler:
             compiler.compile(qprogram=crosstalk_qprogram, calibration=calibration)
 
         assert "Define `crosstalk_matrix_ac`" not in caplog.text
-
-    def test_crosstalk_compensation_dc_warning_emitted_only_once(
-        self, caplog, crosstalk_qprogram: QProgram, calibration_crosstalk: Calibration
-    ):
-        """The DC fallback warning is logged at most once per process, even across multiple compilations."""
-        assert calibration_crosstalk.crosstalk_matrix_ac is None
-
-        _warn_dc_crosstalk_fallback.cache_clear()
-
-        with caplog.at_level(logging.WARNING):
-            for _ in range(3):
-                QbloxCompiler().compile(qprogram=crosstalk_qprogram, calibration=calibration_crosstalk)
-
-        assert caplog.text.count("Define `crosstalk_matrix_ac`") == 1
 
     def test_crosstalk_compensation_plays_raise_errors(self):
         """Test the different errors that might rise by using incorrectly the crosstalk play structure."""
