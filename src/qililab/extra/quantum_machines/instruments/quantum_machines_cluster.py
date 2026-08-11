@@ -91,7 +91,7 @@ class QuantumMachinesCluster(Instrument):
             The values of the rest keys are empty, meant to be updated in runtime.
 
             Returns:
-                config: DictQuaConfig
+                DictQuaConfig: The QUA config dictionary.
             """
             elements, mixers = self._get_elements_and_mixers_config()
             controllers = self._get_controllers_config()

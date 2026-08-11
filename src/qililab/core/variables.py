@@ -23,7 +23,7 @@ from uuid import UUID, uuid4
 from qililab.yaml import yaml
 
 
-@yaml.register_class(shared=True)
+@yaml.register_class
 class Domain(Enum):
     """Domain class."""
 
@@ -37,7 +37,7 @@ class Domain(Enum):
     @classmethod
     def to_yaml(cls, representer, node):
         """Method to be called automatically during YAML serialization."""
-        return representer.represent_scalar(cls.yaml_tag, f"{node.name}-{node.value}")
+        return representer.represent_scalar("!Domain", f"{node.name}-{node.value}")
 
     @classmethod
     def from_yaml(cls, _, node):

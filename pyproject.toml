@@ -41,7 +41,6 @@ dependencies = [
     "urllib3>=2.3.0",
     "xarray>=2025.11.0",
     "rustworkx>=0.17.1",
-    "qilisdk",
     "scipy>=1.15",
 ]
 
@@ -67,6 +66,7 @@ dev = [
 docs = [
     "sphinx>=8.2.3",
     "sphinx-automodapi>=0.22.0",
+    "sphinx-design>=0.6.1",
     "sphinx-mdinclude>=0.6.2",
     "sphinxawesome-theme>=5.3.2",
 ]
@@ -103,7 +103,6 @@ url = "https://aws@qilimanjaro-723412851021.d.codeartifact.eu-west-1.amazonaws.c
 explicit = true
 
 [tool.uv.sources]
-qilisdk = { git = "https://github.com/qilimanjaro-tech/qilisdk.git", branch = "main" }
 qpysequence = { index = "qilimanjaro" }
 
 [tool.ruff]
