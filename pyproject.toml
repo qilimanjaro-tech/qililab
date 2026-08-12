@@ -1,6 +1,6 @@
 [project]
 name = "qililab"
-version = "0.34.0"
+version = "0.35.0"
 description = "Fundamental package for fast characterization and calibration of quantum chips."
 authors = [{name = "Qilimanjaro Quantum Tech", email = "info@qilimanjaro.tech"}]
 urls = {Repository = "https://github.com/qilimanjaro-tech/qililab"}
@@ -262,3 +262,28 @@ package = "qililab"
 directory = "changes"
 filename = "CHANGELOG.md"
 issue_format = "[PR #{issue}](https://github.com/qilimanjaro-tech/qililab/pull/{issue})"
+
+[[tool.towncrier.type]]
+directory = "feature"
+name = "Features"
+showcontent = true
+
+[[tool.towncrier.type]]
+directory = "bugfix"
+name = "Bugfixes"
+showcontent = true
+
+[[tool.towncrier.type]]
+directory = "doc"
+name = "Improved Documentation"
+showcontent = true
+
+[[tool.towncrier.type]]
+directory = "removal"
+name = "Deprecations and Removals"
+showcontent = true
+
+[[tool.towncrier.type]]
+directory = "misc"
+name = "Misc"
+showcontent = true
