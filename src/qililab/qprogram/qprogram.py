@@ -17,7 +17,7 @@ from typing import TYPE_CHECKING, Sequence, overload
 import numpy as np
 
 from qililab.core.variables import Domain, Variable, requires_domain
-from qililab.qprogram.blocks import Block, ForLoop, Parallel
+from qililab.qprogram.blocks import Block, Conditional, ForLoop, Parallel
 from qililab.qprogram.calibration import Calibration
 from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix, NonLinearCrosstalkMatrix
 from qililab.qprogram.flux_vector import FluxVector, NonLinearFluxVector
@@ -118,6 +118,8 @@ class QProgram(StructuredProgram):
 
     def __init__(self) -> None:
         super().__init__()
+        self._uses_wait_trigger: bool = False
+        self._uses_conditional_trigger: bool = False
         self.qblox = self._QbloxInterface(self)
         self.quantum_machines = self._QuantumMachinesInterface(self)
         self.qdac = self._QdacInterface(self)
@@ -219,6 +221,14 @@ class QProgram(StructuredProgram):
             for index, element in enumerate(block.elements):
                 if isinstance(element, Block):
                     traverse(element)
+                    if isinstance(element, Conditional):
+                        new_buses_using_conditional_trigger = set()
+                        for bus_using_trigger in copied_qprogram.qblox.buses_using_conditional_trigger:
+                            if bus_using_trigger in bus_mapping:
+                                new_buses_using_conditional_trigger.add(bus_mapping[bus_using_trigger])
+                            else:
+                                new_buses_using_conditional_trigger.add(bus_using_trigger)
+                        copied_qprogram.qblox.buses_using_conditional_trigger = new_buses_using_conditional_trigger
                 elif isinstance(element, (MeasureReset, MeasureResetCalibrated)):
                     bus = getattr(element, "bus")
                     control_bus = getattr(element, "control_bus")
@@ -1102,10 +1112,52 @@ class QProgram(StructuredProgram):
             bus (str): Unique identifier of the bus.
             duration (int): Duration of the delay after the trigger is received. Minimum of 4 ns.
             port (optional, int | None): Port channel of the trigger input. Defaults to None.
+
+        Raises:
+            NotImplementedError: If ``qp.if_trigger()`` is also used in this QProgram.
         """
+        if self._uses_conditional_trigger:
+            raise NotImplementedError("wait_trigger cannot be used together with if_trigger() in the same QProgram.")
+        self._uses_wait_trigger = True
         operation = WaitTrigger(bus=bus, duration=_to_scalar(duration), port=port)
         self._active_block.append(operation)
         self._buses.add(bus)
+
+    def if_trigger(self, expected_wait_time_ns: int | None = None):
+        """Define a block that only executes if the external trigger was received in time.
+
+        Guards a block so it only runs if the external trigger the bus is waiting on arrived in time;
+        otherwise the block is skipped so its bus moves on to the next bin (recorded as NaN) instead of
+        hanging on a missed trigger.
+
+        Blocks need to open a scope.
+
+        Args:
+            expected_wait_time_ns (int | None, optional): How long to wait for the trigger, in ns. If not
+                given, it is derived from the QDAC bus driving the trigger in this QProgram (its ``dwell``,
+                when ``qp.set_trigger(..., position="step"|"end_step")`` is used). Compiling raises if
+                neither an explicit value nor a derivable QDAC dwell is available.
+
+        Returns:
+            Conditional: The conditional block.
+
+        Raises:
+            NotImplementedError: If ``qp.wait_trigger`` is also used in this QProgram.
+
+        Examples:
+
+            >>> with qp.if_trigger():
+            >>> # operations that shall be executed if the trigger was received
+        """
+        if self._uses_wait_trigger:
+            raise NotImplementedError("if_trigger() cannot be used together with wait_trigger in the same QProgram.")
+        self._uses_conditional_trigger = True
+        return QProgram._ConditionalContext(program=self, expected_wait_time_ns=expected_wait_time_ns)
+
+    class _ConditionalContext(StructuredProgram._BlockContext):
+        def __init__(self, program: "QProgram", expected_wait_time_ns: int | None):
+            self.program = program
+            self.block: Conditional = Conditional(expected_wait_time_ns=expected_wait_time_ns)
 
     @overload
     def measure(self, bus: str, waveform: IQWaveform, weights: IQWaveform, save_adc: bool = False):
@@ -1276,6 +1328,7 @@ class QProgram(StructuredProgram):
             self.disable_autosync: bool = False
             self.latch_enabled: list[str] = []
             self.trigger_network_required: dict[str, int] = {}
+            self.buses_using_conditional_trigger: set[str] = set()
 
         @overload
         def acquire(self, bus: str, weights: IQWaveform, save_adc: bool = False):
@@ -1307,8 +1360,11 @@ class QProgram(StructuredProgram):
                 if isinstance(weights, IQWaveform)
                 else AcquireWithCalibratedWeights(bus=bus, weights=weights, save_adc=save_adc)
             )
-            self.qprogram._active_block.append(operation)
+            active_block = self.qprogram._active_block
+            active_block.append(operation)
             self.qprogram._buses.add(bus)
+            if isinstance(active_block, Conditional):
+                self.buses_using_conditional_trigger.add(bus)
 
         @overload
         def play(self, bus: str, waveform: Waveform | IQWaveform, wait_time: int) -> None:

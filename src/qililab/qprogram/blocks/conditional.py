@@ -12,12 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from .average import Average
-from .block import Block
-from .conditional import Conditional
-from .for_loop import ForLoop
-from .infinite_loop import InfiniteLoop
-from .loop import Loop
-from .parallel import Parallel
+from qililab.qprogram.blocks.block import Block
+from qililab.yaml import yaml
 
-__all__ = ["Average", "Block", "Conditional", "ForLoop", "InfiniteLoop", "Loop", "Parallel"]
+
+@yaml.register_class
+class Conditional(Block):
+    """Block whose elements only execute if the external trigger was received in time, e.g. ``qp.if_trigger()``."""
+
+    def __init__(self, expected_wait_time_ns: int | None = None) -> None:
+        super().__init__()
+        self.expected_wait_time_ns = expected_wait_time_ns
