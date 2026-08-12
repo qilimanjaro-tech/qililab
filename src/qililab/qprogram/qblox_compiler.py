@@ -54,6 +54,9 @@ from qililab.qprogram.operations import (
 from qililab.qprogram.qprogram import QProgram
 from qililab.waveforms import Arbitrary, FlatTop, IQWaveform, Square, Waveform
 
+if TYPE_CHECKING:
+    from qililab.pulse_distortion.pulse_distortion import PulseDistortion
+
 SIGN_BIT = 2**31  # 2147483648 -> values >= this are "negative" in 2's complement (MSB = 1)
 NEG_ONE_TO_THREE = (2**32) - 3  # 4294967293 == -3 in 2's complement
 
@@ -271,16 +274,6 @@ class QbloxCompiler:
         ``depth`` is the tree nesting depth of that block. This metadata is consumed by
         ``compile()`` to detect the exceeds-depth regime and by ``traverse()`` to set
         ``counter_acquire`` on each bus.
-
-        Also validates any ``qp.if_trigger()`` block found and records, in
-        ``_conditional_bus``, the single bus it is allowed to gate. That validation needs the
-        full set of leaf (non-``Block``) operations nested underneath, however many ``Average``/
-        ``Loop``/... layers deep, so it reuses the leaf list this same walk already produces
-        instead of re-walking each conditional's subtree separately.
-
-        Returns:
-            list: the leaf (non-``Block``) elements directly and transitively inside ``block``,
-                for the parent call to extend its own list with.
         """
         leaves: list = []
         for element in block.elements:
@@ -397,6 +390,7 @@ class QbloxCompiler:
         ext_trigger: bool = False,
         qblox_buses: list[str] | None = None,
         single_channel: list[str] | None = None,
+        bus_distortions: dict[str, list["PulseDistortion"]] | None = None,
         crosstalk: CrosstalkMatrix | None = None,
     ) -> QbloxCompilationOutput:
         """Compile QProgram to qpysequence.Sequence
@@ -464,7 +458,12 @@ class QbloxCompiler:
             self._qprogram = self._qprogram.with_bus_mapping(bus_mapping=bus_mapping)
         if calibration is not None:
             self._qprogram = self._qprogram.with_calibration(calibration=calibration)
-            if calibration.crosstalk_matrix and crosstalk is None:
+            if calibration.crosstalk_matrix_ac is not None:
+                crosstalk = calibration.crosstalk_matrix_ac
+            elif crosstalk is None and calibration.crosstalk_matrix is not None:
+                logger.warning(
+                    "Using DC `crosstalk_matrix`.\nDefine `crosstalk_matrix_ac` to calibrate AC/fast-flux lines."
+                )
                 crosstalk = calibration.crosstalk_matrix
         if self._qprogram.has_calibrated_waveforms_or_weights():
             raise RuntimeError(
@@ -472,6 +471,8 @@ class QbloxCompiler:
             )
         if crosstalk is not None:
             self._qprogram = self._qprogram.with_crosstalk_qblox(crosstalk=crosstalk)
+        if bus_distortions is not None:
+            self._qprogram = self._qprogram.with_distortions(bus_distortions=bus_distortions)
 
         self._qblox_buses = qblox_buses if qblox_buses else []
 
