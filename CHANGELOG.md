@@ -1,4 +1,18 @@
-# CHANGELOG
+# qililab 0.35.0 (2026-08-12)
+
+## Improved Documentation
+
+- Documented the development workflow in the README: environment setup with `uv`, linting/formatting with `ruff` and `mdformat`, type checking with `mypy`, running tests with `pytest`, and the new towncrier-based changelog process. ([PR #1185](https://github.com/qilimanjaro-tech/qililab/pull/1185))
+
+## Deprecations and Removals
+
+- Removed `qilisdk` as a dependency of `qililab`. The `qililab.digital` module (`CircuitTranspiler`, `CircuitToQProgramCompiler`, native gates, transpiler passes, `Rmw`, `qprogram_results_to_samples`) and `Platform.execute_circuit`/`Platform.compile_circuit` have been removed. ([PR #1116](https://github.com/qilimanjaro-tech/qililab/pull/1116))
+
+## Misc
+
+- `qililab.yaml` no longer imports its shared YAML instance from `qilisdk.yaml`. It now defines its own `ruamel.yaml.YAML` instance with the same custom representers/constructors for `numpy.ndarray`, `deque`, lambdas, and `UUID`. YAML-registered enums (`Parameter`, `Domain`) now register with `yaml.register_class` instead of the shared `yaml.register_class(shared=True)`, and use a hardcoded YAML tag instead of the shared registry's `cls.yaml_tag`. ([PR #1116](https://github.com/qilimanjaro-tech/qililab/pull/1116))
+- Replaced the manual `changelog-dev.md` with towncrier. Each PR now adds a news fragment under `changes/` instead of editing a shared file, and `towncrier build` compiles them into `CHANGELOG.md` at release time. The GitHub Action reminding authors to update `changelog-dev.md` has been removed. ([PR #1185](https://github.com/qilimanjaro-tech/qililab/pull/1185))
+
 
 ## 0.34.0
 
