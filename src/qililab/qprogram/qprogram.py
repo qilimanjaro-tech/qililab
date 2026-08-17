@@ -11,8 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from collections.abc import Sequence
 from copy import deepcopy
-from typing import TYPE_CHECKING, Sequence, overload
+from typing import TYPE_CHECKING, overload
 
 import numpy as np
 
@@ -138,7 +139,8 @@ class QProgram(StructuredProgram):
                     if "UUID" not in str(attr_value):
                         string_elements.append(f"\t{attr_name}: {attr_value}\n")
                     else:
-                        string_elements.append(f"\t{attr_name}: None\n")  # pragma: no cover
+                        # pragma: no cover
+                        string_elements.append(f"\t{attr_name}: None\n")
 
                 if isinstance(element, Block):
                     # handle blocks
@@ -1040,7 +1042,8 @@ class QProgram(StructuredProgram):
                     envelope = element.waveform.envelope()
                 elif isinstance(element.waveform, IQWaveform):
                     envelope = element.waveform.get_I().envelope()
-            elif isinstance(element, SetOffset):  # square with same dimension as play
+            # square with same dimension as play
+            elif isinstance(element, SetOffset):
                 envelope = element.offset_path0  # type: ignore
 
             if isinstance(envelope, np.ndarray):

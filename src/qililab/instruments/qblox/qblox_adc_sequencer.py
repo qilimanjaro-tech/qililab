@@ -24,8 +24,10 @@ from qililab.utils.castings import cast_enum_fields
 class QbloxADCSequencer(QbloxSequencer):
     scope_acquire_trigger_mode: AcquireTriggerMode
     scope_hardware_averaging: bool
-    sampling_rate: float  # default sampling rate for Qblox is 1.e+09
-    hardware_demodulation: bool  # demodulation flag
+    # default sampling rate for Qblox is 1.e+09
+    sampling_rate: float
+    # demodulation flag
+    hardware_demodulation: bool
     integration_mode: IntegrationMode
     sequence_timeout: int  # minutes
     acquisition_timeout: int  # minutes

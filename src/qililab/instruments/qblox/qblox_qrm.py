@@ -14,8 +14,9 @@
 
 """Qblox pulsar QRM class"""
 
+from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Sequence, cast
+from typing import cast
 
 from qililab.config import logger
 from qililab.instruments.decorators import check_device_initialized

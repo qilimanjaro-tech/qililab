@@ -684,9 +684,8 @@ class Platform:
                     self.qblox_active_filter_exponential.append(exponential_idx)
                 self._update_qblox_filter_state_exponential()
             else:
-                if (
-                    exponential_idx in self.qblox_active_filter_exponential
-                ):  # cannot put the filter as bypassed otherwise this would cause a delay with the other sequencers
+                # cannot put the filter as bypassed otherwise this would cause a delay with the other sequencers
+                if exponential_idx in self.qblox_active_filter_exponential:
                     element.set_parameter(
                         parameter=parameter,
                         value=DistortionState.DELAY_COMP,
@@ -704,9 +703,8 @@ class Platform:
                 self.qblox_active_filter_fir = True
                 self._update_qblox_filter_state_fir()
 
-            elif (
-                self.qblox_active_filter_fir
-            ):  # cannot put the filter as bypassed otherwise this would cause a delay with the other sequencers
+            # cannot put the filter as bypassed otherwise this would cause a delay with the other sequencers
+            elif self.qblox_active_filter_fir:
                 element.set_parameter(
                     parameter=parameter, value=DistortionState.DELAY_COMP, channel_id=channel_id, output_id=output_id
                 )
@@ -747,7 +745,8 @@ class Platform:
                                         value=DistortionState.DELAY_COMP,
                                         output_id=output_id,
                                     )
-                    if pre_exisisting_filter is False:  # filter needs to be created
+                    # filter needs to be created
+                    if pre_exisisting_filter is False:
                         self.set_parameter(
                             alias=alias, parameter=parameter, value=DistortionState.DELAY_COMP, output_id=output_id
                         )
@@ -777,7 +776,8 @@ class Platform:
                                 value=DistortionState.DELAY_COMP,
                                 output_id=output_id,
                             )
-                if pre_exisisting_filter is False:  # filter needs to be created
+                # filter needs to be created
+                if pre_exisisting_filter is False:
                     self.set_parameter(
                         alias=alias,
                         parameter=Parameter.FIR_STATE,
@@ -987,14 +987,18 @@ class Platform:
         try:
             # Track successfully called setup methods and their cleanup counterparts
             self.connect()
-            cleanup_methods.append(self.disconnect)  # Store disconnect for cleanup
+            # Store disconnect for cleanup
+            cleanup_methods.append(self.disconnect)
 
-            self.initial_setup()  # No specific cleanup for initial_setup
+            # No specific cleanup for initial_setup
+            self.initial_setup()
 
             self.turn_on_instruments()
-            cleanup_methods.append(self.turn_off_instruments)  # Store turn_off_instruments for cleanup
+            # Store turn_off_instruments for cleanup
+            cleanup_methods.append(self.turn_off_instruments)
 
-            yield  # Experiment logic goes here
+            # Experiment logic goes here
+            yield
 
         except Exception as e:  # noqa: BLE001
             logger.error(f"An error occurred: {e}")

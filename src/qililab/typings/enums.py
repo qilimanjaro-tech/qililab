@@ -154,7 +154,8 @@ class InstrumentName(str, Enum):
     QBLOX_QRM = "QRM"
     QRMRF = "QRM-RF"
     ROHDE_SCHWARZ = "rohde_schwarz"
-    MINI_CIRCUITS = "mini_circuits"  # step attenuator
+    # step attenuator
+    MINI_CIRCUITS = "mini_circuits"
     KEITHLEY2600 = "keithley_2600"
     QBLOX_D5A = "D5a"
     QBLOX_S4G = "S4g"
@@ -296,7 +297,8 @@ class InstrumentControllerName(str, Enum):
 
     QBLOX_CLUSTER = "qblox_cluster"
     ROHDE_SCHWARZ = "rohde_schwarz"
-    MINI_CIRCUITS = "mini_circuits"  # step attenuator
+    # step attenuator
+    MINI_CIRCUITS = "mini_circuits"
     KEITHLEY2600 = "keithley_2600"
     QBLOX_SPIRACK = "qblox_spi_rack"
     KEYSIGHT_E5080B = "keysight_e5080b"
