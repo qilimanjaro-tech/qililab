@@ -20,7 +20,7 @@ import numpy as np
 
 from qililab.config import logger
 from qililab.instruments.qdevil import QDevilQDac2
-from qililab.qprogram.blocks import Average, Block, ForLoop, InfiniteLoop, Loop, Parallel
+from qililab.qprogram.blocks import Average, Block, Conditional, ForLoop, InfiniteLoop, Loop, Parallel
 from qililab.qprogram.calibration import Calibration
 from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
 from qililab.qprogram.operations import (
@@ -175,6 +175,8 @@ class QdacCompiler:
                 "Cannot compile to hardware-native instructions because QProgram contains named operations that are not mapped. Provide a calibration instance containing all necessary mappings."
             )
 
+        self._validate_no_conditional_qdac_ops(self._qprogram._body)
+
         self._populate_qdac_buses()
         traverse(self._qprogram._body)
 
@@ -184,6 +186,25 @@ class QdacCompiler:
         return QdacCompilationOutput(
             qprogram=self._qprogram, qdacs=self._qdacs, trigger_position=self._trigger_position
         )
+
+    def _validate_no_conditional_qdac_ops(self, block: Block, inside_conditional: bool = False) -> None:
+        """Raise if a QDAC-bus operation is found inside a ``qp.if_trigger()`` block.
+
+        QDAC generates the external trigger; it has no way to conditionally skip an operation based on
+        whether that same trigger was received in time on the Qblox side, so a QDAC-bus operation placed
+        inside ``qp.if_trigger()`` would compile and execute unconditionally, silently ignoring the
+        "only if trigger received" semantics the block is supposed to enforce.
+        """
+        for element in block.elements:
+            currently_conditional = inside_conditional or isinstance(element, Conditional)
+            bus = getattr(element, "bus", None)
+            if currently_conditional and bus in self._qdac_buses_alias:
+                raise NotImplementedError(
+                    f"{type(element).__name__} on QDAC bus '{bus}' cannot be used inside "
+                    "qp.if_trigger(): QDAC has no way to conditionally gate on the external trigger it generates."
+                )
+            if isinstance(element, Block):
+                self._validate_no_conditional_qdac_ops(element, inside_conditional=currently_conditional)
 
     def _populate_qdac_buses(self):
         """Map each bus in the QProgram to a BusCompilationInfo instance.
