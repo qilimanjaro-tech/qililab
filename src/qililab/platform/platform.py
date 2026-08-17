@@ -1124,6 +1124,9 @@ class Platform:
         self.qdac_buses = [
             bus for bus in self.buses if any(isinstance(instrument, QDevilQDac2) for instrument in bus.instruments)
         ]
+        # Known target fluxes (set via set_parameter(FLUX)).
+        target_fluxes = dict(self.flux_vector.flux_vector) if self.flux_vector is not None else None
+        # Voltage bias offset defined in the runcard.
         qdac_offsets = [float(bus.get_parameter(Parameter.VOLTAGE)) for bus in self.qdac_buses]
 
         compiled_qdac = None
@@ -1154,6 +1157,7 @@ class Platform:
                 calibration=calibration,
                 crosstalk=self.crosstalk if crosstalk else None,
                 out_instrument=out_trigger_qdac,
+                target_fluxes=target_fluxes,
             )
 
         if all(isinstance(instrument, QbloxModule) for instrument in instruments):
