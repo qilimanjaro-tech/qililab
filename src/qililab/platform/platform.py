@@ -1125,7 +1125,8 @@ class Platform:
             bus for bus in self.buses if any(isinstance(instrument, QDevilQDac2) for instrument in bus.instruments)
         ]
         # Known target fluxes (set via set_parameter(FLUX)).
-        target_fluxes = dict(self.flux_vector.flux_vector) if self.flux_vector is not None else None
+        flux_vector = getattr(self, "flux_vector", None)
+        target_fluxes = dict(flux_vector.flux_vector) if flux_vector is not None else None
         # Voltage bias offset defined in the runcard.
         qdac_offsets = [float(bus.get_parameter(Parameter.VOLTAGE)) for bus in self.qdac_buses]
 
