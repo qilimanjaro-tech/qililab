@@ -12,13 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Mapping
+from typing import Final, Mapping
 
 import numpy as np
 from scipy.special import jv
 
-from qililab.utils import sort_buses
+from qililab.utils import Sentinel, Unset, sort_buses
 from qililab.yaml import yaml
+
+_UNSET: Final = Sentinel.UNSET
 
 
 @yaml.register_class
@@ -285,32 +287,39 @@ class NonLinearCrosstalkMatrix(CrosstalkMatrix):
         self,
         bus_i: str,
         bus_j: str,
-        beta_c: float | None = None,
-        amplitude: float | None = None,
-        junction_asym: float | None = None,
+        beta_c: float | Unset | None = _UNSET,
+        amplitude: float | Unset | None = _UNSET,
+        junction_asym: float | Unset | None = _UNSET,
     ) -> None:
         """Sets the nonlinear coupling parameters between bus_i (target) and bus_j (source).
+            None eliminates the value stored.
 
         Args:
             bus_i (str): The bus that receives the nonlinear flux correction.
             bus_j (str): The bus whose flux drives the nonlinear term.
-            beta_c (float): Bessel modulation parameter beta_c. Must be non-zero.
-            amplitude (float): Amplitude of the nonlinear correction in flux units.
-            junction_asym (float): Junction asymmetry, d ∈ [-1, 1].
+            beta_c (float | None): Bessel modulation parameter beta_c. Must be non-zero.
+            amplitude (float | None): Amplitude of the nonlinear correction in flux units.
+            junction_asym (float | None): Junction asymmetry, d ∈ [-1, 1].
 
         Raises:
             ValueError: If either bus is not present in the matrix.
             ValueError: If beta_c is zero, which would cause a division by zero in the
                 Bessel expansion.
+            ValueError: If both "amplitude" and "beta_c" aren't set to the same type of value.
+                i.e. amplitude set to a float and beta to none or unset.
         """
         for bus in (bus_i, bus_j):
             if bus not in self.matrix:
                 raise ValueError(f"Bus '{bus}' not present in the crosstalk matrix.")
 
-        if beta_c is not None or amplitude is not None:
-            if not (beta_c is not None and amplitude is not None):
+        if beta_c is not _UNSET or amplitude is not _UNSET:
+            if beta_c is _UNSET or amplitude is _UNSET:
                 raise ValueError(
                     "Both 'amplitude' and 'beta_c' must be provided together — you cannot specify one without the other."
+                )
+            if (beta_c is None) != (amplitude is None):
+                raise ValueError(  # Errors if you are setting only one of the two parameters to None.
+                    "You can only set to None 'amplitude' and 'beta_c' together."
                 )
 
             if beta_c == 0:
@@ -324,7 +333,7 @@ class NonLinearCrosstalkMatrix(CrosstalkMatrix):
             self.beta_c_matrix[bus_i][bus_j] = beta_c
             self.non_lin_amp_matrix[bus_i][bus_j] = amplitude
 
-        if junction_asym is not None:
+        if junction_asym is not _UNSET:
             if bus_i not in self.junction_asym_matrix:
                 self.junction_asym_matrix[bus_i] = {}
             self.junction_asym_matrix[bus_i][bus_j] = junction_asym

@@ -19,6 +19,13 @@ jobs:
 
     env:
       HOME_REPO: /home/repo
+      CA_DOMAIN: qilimanjaro
+      CA_DOMAIN_OWNER: "723412851021"
+      CA_REGION: eu-west-1
+    
+    permissions:
+      contents: read
+      id-token: write  # OIDC: needed to read the private CodeArtifact indexes during the build
 
     strategy:
       matrix:
@@ -28,12 +35,12 @@ jobs:
           - "3.13"
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
           fetch-depth: 1
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v7
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9  # v9.0.0
         with:
           python-version: ${{ matrix.python-version }}
           enable-cache: true
@@ -41,15 +48,54 @@ jobs:
             **/pyproject.toml
             **/uv.lock
 
-      - name: Install the project
-        run: uv sync --group dev --all-extras
+      - name: Configure AWS Credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@e6de054238d6b7531b4efff3b6587d9aade6a06c  # v6.2.3
+        with:
+          role-to-assume: arn:aws:iam::723412851021:role/GitHub_actions_role
+          aws-region: eu-west-1
+          role-session-name: GitHubActions-DevOps
+      
+      - name: Assume deploy role in target account
+        id: chained
+        uses: aws-actions/configure-aws-credentials@e6de054238d6b7531b4efff3b6587d9aade6a06c  # v6.2.3
+        with:
+          role-to-assume: arn:aws:iam::723412851021:role/Code-Artifact-Publish
+          aws-region: eu-west-1
+          role-session-name: GitHubActions-Deploy
+          role-chaining: true
+          role-skip-session-tagging: true
+      
+      - name: Authenticate uv to CodeArtifact
+        shell: bash
+        run: |
+          token="$(
+            aws codeartifact get-authorization-token \
+              --domain "$CA_DOMAIN" \
+              --domain-owner "$CA_DOMAIN_OWNER" \
+              --region "$CA_REGION" \
+              --duration-seconds 0 \
+              --query authorizationToken \
+              --output text
+          )"
+
+          test -n "$token"
+          test "$token" != "None"
+
+          # Prevent accidental exposure in GitHub Actions logs.
+          echo "::add-mask::$token"
+
+          # These names must match [[tool.uv.index]].name = "qilimanjaro".
+          printf 'UV_INDEX_QILIMANJARO_USERNAME=%s\n' "aws" >> "$GITHUB_ENV"
+          printf 'UV_INDEX_QILIMANJARO_PASSWORD=%s\n' "$token" >> "$GITHUB_ENV"
+
+      - name: Install dependencies
+        run: uv sync --locked --group dev --all-extras
 
       - name: Run tests
-        run: |
-          uv run pytest -n auto --dist loadfile --cov=qililab --cov-report=xml tests
+        run: uv run pytest -n auto --dist loadfile --cov=qililab --cov-report=xml tests
 
       - name: Upload Coverage
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f  # v7.0.0
         with:
           use_pypi: true
           fail_ci_if_error: true
