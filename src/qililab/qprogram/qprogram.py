@@ -121,6 +121,7 @@ class QProgram(StructuredProgram):
         super().__init__()
         self._uses_wait_trigger: bool = False
         self._uses_conditional_trigger: bool = False
+        self._uses_measure_reset: bool = False
         self.qblox = self._QbloxInterface(self)
         self.quantum_machines = self._QuantumMachinesInterface(self)
         self.qdac = self._QdacInterface(self)
@@ -222,14 +223,6 @@ class QProgram(StructuredProgram):
             for index, element in enumerate(block.elements):
                 if isinstance(element, Block):
                     traverse(element)
-                    if isinstance(element, Conditional):
-                        new_buses_using_conditional_trigger = set()
-                        for bus_using_trigger in copied_qprogram.qblox.buses_using_conditional_trigger:
-                            if bus_using_trigger in bus_mapping:
-                                new_buses_using_conditional_trigger.add(bus_mapping[bus_using_trigger])
-                            else:
-                                new_buses_using_conditional_trigger.add(bus_using_trigger)
-                        copied_qprogram.qblox.buses_using_conditional_trigger = new_buses_using_conditional_trigger
                 elif isinstance(element, (MeasureReset, MeasureResetCalibrated)):
                     bus = getattr(element, "bus")
                     control_bus = getattr(element, "control_bus")
@@ -1209,7 +1202,8 @@ class QProgram(StructuredProgram):
             Conditional: The conditional block.
 
         Raises:
-            NotImplementedError: If ``qp.wait_trigger`` is also used in this QProgram.
+            NotImplementedError: If ``qp.wait_trigger`` or ``qp.qblox.measure_reset`` is also used in this
+                QProgram.
 
         Examples:
 
@@ -1218,6 +1212,10 @@ class QProgram(StructuredProgram):
         """
         if self._uses_wait_trigger:
             raise NotImplementedError("if_trigger() cannot be used together with wait_trigger in the same QProgram.")
+        if self._uses_measure_reset:
+            raise NotImplementedError(
+                "if_trigger() cannot be used together with qp.qblox.measure_reset() in the same QProgram."
+            )
         self._uses_conditional_trigger = True
         return QProgram._ConditionalContext(program=self, expected_wait_time_ns=expected_wait_time_ns)
 
@@ -1395,7 +1393,6 @@ class QProgram(StructuredProgram):
             self.disable_autosync: bool = False
             self.latch_enabled: list[str] = []
             self.trigger_network_required: dict[str, int] = {}
-            self.buses_using_conditional_trigger: set[str] = set()
 
         @overload
         def acquire(self, bus: str, weights: IQWaveform, save_adc: bool = False):
@@ -1430,8 +1427,6 @@ class QProgram(StructuredProgram):
             active_block = self.qprogram._active_block
             active_block.append(operation)
             self.qprogram._buses.add(bus)
-            if isinstance(active_block, Conditional):
-                self.buses_using_conditional_trigger.add(bus)
 
         @overload
         def play(self, bus: str, waveform: Waveform | IQWaveform, wait_time: int) -> None:
@@ -1545,7 +1540,15 @@ class QProgram(StructuredProgram):
                 reset_pulse (IQWaveform | str): Pulse used for active reset.
                 trigger_address (int, optional): Trigger address for synchronization. Defaults to 1.
                 save_adc (bool, optional): Whether to save ADC data. Defaults to False.
+
+            Raises:
+                NotImplementedError: If ``qp.if_trigger()`` is also used in this QProgram.
             """
+            if self.qprogram._uses_conditional_trigger:
+                raise NotImplementedError(
+                    "qp.qblox.measure_reset() cannot be used together with if_trigger() in the same QProgram."
+                )
+            self.qprogram._uses_measure_reset = True
             operation: MeasureReset | MeasureResetCalibrated
             if (
                 isinstance(waveform, IQWaveform)

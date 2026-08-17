@@ -1,4 +1,5 @@
 import logging
+import re
 from unittest.mock import MagicMock, patch
 
 import numpy as np
@@ -884,6 +885,23 @@ class TestQdacCompiler:
         compiler.compile(qprogram=qp, qdacs=[qdac], qdac_buses=[flux1], qdac_offsets=[0])
 
         assert qdac_bus.upload_voltage_list.call_count == 1
+
+    def test_conditional_qdac_op_inside_if_trigger_raises_error(self, qdac: QDevilQDac2, flux1: Bus):
+        """A QDAC-bus operation cannot be placed inside qp.if_trigger(): QDAC generates the external trigger
+        and has no way to conditionally gate on whether that same trigger was received on the Qblox side."""
+        qp = QProgram()
+        with qp.if_trigger(expected_wait_time_ns=1000):
+            qp.qdac.play(bus="flux1", waveform=Square(1.0, 100))
+
+        compiler = QdacCompiler()
+        with pytest.raises(
+            NotImplementedError,
+            match=re.escape(
+                "Play on QDAC bus 'flux1' cannot be used inside qp.if_trigger(): QDAC has no way to conditionally "
+                "gate on the external trigger it generates."
+            ),
+        ):
+            compiler.compile(qprogram=qp, qdacs=[qdac], qdac_buses=[flux1], qdac_offsets=[0])
 
     def test_sync_raises_error(self, qdac: QDevilQDac2, flux1: Bus, flux2: Bus):
         """Test all possible combinations of play + set_trigger on the QDACII."""

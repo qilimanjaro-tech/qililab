@@ -7,7 +7,7 @@ import numpy as np
 import pytest
 
 from qililab import Arbitrary, Domain, GaussianDragCorrection, Gaussian, IQPair, QProgram, Square, IQDrag
-from qililab.qprogram.blocks import Average
+from qililab.qprogram.blocks import Average, Conditional
 from qililab.qprogram.calibration import Calibration
 from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix, NonLinearCrosstalkMatrix
 from qililab.pulse_distortion import ExponentialCorrection
@@ -1208,6 +1208,75 @@ class TestQProgram(TestStructuredProgram):
         qp.wait_trigger(bus="drive", duration=np.int64(100))
         assert qp._body.elements[0].duration == 100
         assert type(qp._body.elements[0].duration) is int
+
+    def test_if_trigger_creates_conditional_block_with_expected_wait_time(self):
+        qp = QProgram()
+        with qp.if_trigger(expected_wait_time_ns=2252):
+            qp.wait(bus="readout", duration=100)
+
+        conditional = qp._body.elements[0]
+        assert isinstance(conditional, Conditional)
+        assert conditional.expected_wait_time_ns == 2252
+        assert len(conditional.elements) == 1
+
+    def test_if_trigger_default_expected_wait_time_is_none(self):
+        qp = QProgram()
+        with qp.if_trigger():
+            qp.wait(bus="readout", duration=100)
+
+        conditional = qp._body.elements[0]
+        assert isinstance(conditional, Conditional)
+        assert conditional.expected_wait_time_ns is None
+
+    def test_wait_trigger_then_if_trigger_raises_error(self):
+        qp = QProgram()
+        qp.wait_trigger(bus="drive", duration=100)
+        with pytest.raises(
+            NotImplementedError, match="if_trigger\\(\\) cannot be used together with wait_trigger in the same QProgram."
+        ):
+            with qp.if_trigger():
+                qp.wait(bus="readout", duration=100)
+
+    def test_if_trigger_then_wait_trigger_raises_error(self):
+        qp = QProgram()
+        with qp.if_trigger():
+            qp.wait(bus="readout", duration=100)
+        with pytest.raises(
+            NotImplementedError, match="wait_trigger cannot be used together with if_trigger\\(\\) in the same QProgram."
+        ):
+            qp.wait_trigger(bus="drive", duration=100)
+
+    def test_measure_reset_then_if_trigger_raises_error(self):
+        qp = QProgram()
+        qp.qblox.measure_reset(
+            bus="readout2",
+            waveform=IQPair(I=Square(1.0, 1000), Q=Square(0.0, 1000)),
+            weights=IQPair(I=Square(1.0, 2000), Q=Square(0.0, 2000)),
+            control_bus="drive",
+            reset_pulse=IQDrag(amplitude=1.0, duration=100, num_sigmas=5, drag_coefficient=1.5),
+        )
+        with pytest.raises(
+            NotImplementedError,
+            match="if_trigger\\(\\) cannot be used together with qp.qblox.measure_reset\\(\\) in the same QProgram.",
+        ):
+            with qp.if_trigger():
+                qp.wait(bus="readout", duration=100)
+
+    def test_if_trigger_then_measure_reset_raises_error(self):
+        qp = QProgram()
+        with qp.if_trigger():
+            qp.wait(bus="readout", duration=100)
+        with pytest.raises(
+            NotImplementedError,
+            match="qp.qblox.measure_reset\\(\\) cannot be used together with if_trigger\\(\\) in the same QProgram.",
+        ):
+            qp.qblox.measure_reset(
+                bus="readout2",
+                waveform=IQPair(I=Square(1.0, 1000), Q=Square(0.0, 1000)),
+                weights=IQPair(I=Square(1.0, 2000), Q=Square(0.0, 2000)),
+                control_bus="drive",
+                reset_pulse=IQDrag(amplitude=1.0, duration=100, num_sigmas=5, drag_coefficient=1.5),
+            )
 
     def test_set_offset_with_numpy_float_stores_python_float(self):
         qp = QProgram()
