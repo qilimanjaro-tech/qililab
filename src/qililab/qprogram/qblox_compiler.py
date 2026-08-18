@@ -1150,18 +1150,12 @@ class QbloxCompiler:
             bus (str): Bus identifier.
             duration (int): Duration to wait in ns.
         """
-
         if self._buses[bus].upd_param_instruction_pending:
-            # you cannot play an `update_param` and then a `wait` because both have a minimum of 4
-            if INST_MIN_WAIT <= duration < 8:
+            if duration <= INST_MAX_WAIT:
                 self._buses[bus].qpy_block_stack[-1].add(component=QPyInstructions.UpdParam(duration=duration))
             else:
-                self._buses[bus].qpy_block_stack[-1].add(component=QPyInstructions.UpdParam(duration=INST_MIN_WAIT))
-                duration -= INST_MIN_WAIT
-                if duration <= INST_MAX_WAIT:
-                    self._buses[bus].qpy_block_stack[-1].add(component=QPyInstructions.Wait(duration=duration))
-                else:
-                    self._buses[bus].qpy_block_stack[-1].add(component=QPyInstructions.LongWait(duration=duration))
+                self._buses[bus].qpy_block_stack[-1].add(component=QPyInstructions.LongWait(duration=duration, upd_param=True))
+            
             self._buses[bus].upd_param_instruction_pending = False
 
         else:  # no instructions pending
@@ -1196,40 +1190,20 @@ class QbloxCompiler:
         """
         if not port:
             port = EXT_TRIGGER_ADDRESS
+
         if self._buses[bus].upd_param_instruction_pending:
-            if (
-                4 <= duration and duration <= 8
-            ):  # you cannot play an update param and then a wait bc both have a minimum of 4
-                self._buses[bus].qpy_block_stack[-1].add(component=QPyInstructions.UpdParam(duration))
-                self._buses[bus].qpy_block_stack[-1].add(
-                    component=QPyInstructions.WaitTrigger(trigger=port, duration=4)
-                )
+            if duration <= INST_MAX_WAIT:
+                self._buses[bus].qpy_block_stack[-1].add(component=QPyInstructions.WaitTriggerUpdParam(trig_addr=port, duration=duration))
             else:
-                self._buses[bus].qpy_block_stack[-1].add(component=QPyInstructions.UpdParam(4))
-                duration -= 4
-                if duration <= INST_MAX_WAIT:
-                    self._buses[bus].qpy_block_stack[-1].add(
-                        component=QPyInstructions.WaitTrigger(trigger=port, duration=duration)
-                    )
-                else:
-                    self._buses[bus].qpy_block_stack[-1].add(
-                        component=QPyInstructions.WaitTrigger(trigger=port, duration=4)
-                    )
-                    duration -= 4
-                    self._buses[bus].qpy_block_stack[-1].add(component=QPyInstructions.LongWait(duration=duration))
+                self._buses[bus].qpy_block_stack[-1].add(component=QPyInstructions.LongWaitTrigger(trig_addr=port, duration=duration, upd_param=True))
+
             self._buses[bus].upd_param_instruction_pending = False
 
         else:  # no instructions pending
             if duration <= INST_MAX_WAIT:
-                self._buses[bus].qpy_block_stack[-1].add(
-                    component=QPyInstructions.WaitTrigger(trigger=port, duration=duration)
-                )
+                self._buses[bus].qpy_block_stack[-1].add(component=QPyInstructions.WaitTrigger(trigger=port, duration=duration))
             else:
-                self._buses[bus].qpy_block_stack[-1].add(
-                    component=QPyInstructions.WaitTrigger(trigger=port, duration=4)
-                )
-                duration -= 4
-                self._buses[bus].qpy_block_stack[-1].add(component=QPyInstructions.LongWait(duration=duration))
+                self._buses[bus].qpy_block_stack[-1].add(component=QPyInstructions.LongWaitTrigger(trig_addr=port, duration=duration))
 
         # Sync all other buses with WaitSync
         for sync_bus in self._buses:
