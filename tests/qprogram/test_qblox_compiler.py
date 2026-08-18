@@ -1394,7 +1394,7 @@ class TestQBloxCompiler:
 
     def test_wait_trigger(self, wait_trigger: QProgram):
         compiler = QbloxCompiler()
-        sequences, _ = compiler.compile(qprogram=wait_trigger, ext_trigger=True)
+        sequences, _ = compiler.compile(qprogram=wait_trigger)
 
         assert len(sequences["drive"]._program.compiler_flags) == 0
 
@@ -1450,21 +1450,13 @@ class TestQBloxCompiler:
         assert is_q1asm_equal(sequences["drive"], drive_str)
         assert is_q1asm_equal(sequences["readout"], readout_str)
 
-    def test_wait_trigger_no_ext_trigger_raises_error(self, wait_trigger: QProgram):
-
-        compiler = QbloxCompiler()
-        with pytest.raises(
-            AttributeError, match="External trigger has not been set as True inside runcard's instrument controllers."
-        ):
-            compiler.compile(qprogram=wait_trigger, ext_trigger=False)
-
     def test_wait_trigger_duration_above_max_wait_is_not_overshot(self):
         """A wait_trigger longer than INST_MAX_WAIT must be split by LongWait without dropping the remainder."""
         qp = QProgram()
         qp.wait_trigger(bus="drive", duration=70000, port=1)
 
         compiler = QbloxCompiler()
-        sequences, _ = compiler.compile(qprogram=qp, ext_trigger=True)
+        sequences, _ = compiler.compile(qprogram=qp)
 
         total_duration = 0
         for line in repr(sequences["drive"]._program).splitlines():
@@ -1486,7 +1478,7 @@ class TestQBloxCompiler:
 
         compiler = QbloxCompiler()
         with pytest.raises(ValueError, match="WaitTrigger does not support variable sweep in a loop."):
-            compiler.compile(qprogram=qp, ext_trigger=True)
+            compiler.compile(qprogram=qp)
 
     def test_wait_trigger_var_duration_raises_error_handler(self):
 
@@ -1498,7 +1490,7 @@ class TestQBloxCompiler:
 
         compiler = QbloxCompiler()
         with pytest.raises(ValueError, match="Wait trigger duration cannot be a Variable, it must be an int."):
-            compiler.compile(qprogram=qp, ext_trigger=True)
+            compiler.compile(qprogram=qp)
     
     def test_block_handlers(self, measurement_blocked_operation: QProgram, calibration: Calibration):
         drag_wf = IQDrag(amplitude=1.0, duration=100, num_sigmas=5, drag_coefficient=1.5)
@@ -4661,7 +4653,7 @@ class TestQBloxCompiler:
         qp.wait_trigger(bus="drive", duration=0)
         compiler = QbloxCompiler()
         with caplog.at_level(logging.WARNING):
-            sequences, _ = compiler.compile(qprogram=qp, ext_trigger=True)
+            sequences, _ = compiler.compile(qprogram=qp)
         assert "wait_trigger duration 0 ns is below the Q1ASM minimum (4 ns), clamping to 4 ns." in caplog.text
         expected = """
             setup:
@@ -4682,7 +4674,7 @@ class TestQBloxCompiler:
         qp.wait_trigger(bus="drive", duration=2)
         compiler = QbloxCompiler()
         with caplog.at_level(logging.WARNING):
-            sequences, _ = compiler.compile(qprogram=qp, ext_trigger=True)
+            sequences, _ = compiler.compile(qprogram=qp)
         assert "wait_trigger duration 2 ns is below the Q1ASM minimum (4 ns), clamping to 4 ns." in caplog.text
         expected = """
             setup:

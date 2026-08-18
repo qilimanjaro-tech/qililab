@@ -276,7 +276,6 @@ class QbloxCompiler:
         times_of_flight: dict[str, int] | None = None,
         delays: dict[str, int] | None = None,
         markers: dict[str, str] | None = None,
-        ext_trigger: bool = False,
         qblox_buses: list[str] | None = None,
         single_channel: list[str] | None = None,
         bus_distortions: dict[str, list["PulseDistortion"]] | None = None,
@@ -363,7 +362,6 @@ class QbloxCompiler:
 
         self._sync_counter = 0
         self._buses = self._populate_buses()
-        self._ext_trigger = ext_trigger
         self._single_channel = single_channel if single_channel is not None else []
         self._acquisition_metadata = {}
 
@@ -1178,9 +1176,6 @@ class QbloxCompiler:
             raise ValueError("Wait trigger duration cannot be a Variable, it must be an int.")
 
         element.duration = QbloxCompiler._clamp_duration(element.duration, label="wait_trigger")
-
-        if not self._ext_trigger:
-            raise AttributeError("External trigger has not been set as True inside runcard's instrument controllers.")
 
         # loop over wait instructions if static duration is longer than allowed qblox max wait time of 2**16 -4
         self._handle_add_trigger_waits(bus=element.bus, duration=element.duration, port=element.port)
