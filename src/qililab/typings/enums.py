@@ -306,7 +306,7 @@ class InstrumentControllerName(str, Enum):
     RSWU_SP16TR = "rswu_sp16tr"
 
 
-@yaml.register_class(shared=True)
+@yaml.register_class
 class Parameter(str, Enum):
     """Parameter names."""
 
@@ -452,7 +452,7 @@ class Parameter(str, Enum):
     @classmethod
     def to_yaml(cls, representer, node):
         """Method to be called automatically during YAML serialization."""
-        return representer.represent_scalar(cls.yaml_tag, f"{node.name}-{node.value}")
+        return representer.represent_scalar("!Parameter", f"{node.name}-{node.value}")
 
     @classmethod
     def from_yaml(cls, _, node):

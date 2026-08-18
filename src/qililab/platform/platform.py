@@ -23,16 +23,13 @@ import re
 from contextlib import contextmanager
 from copy import deepcopy
 from dataclasses import asdict
-from typing import TYPE_CHECKING, Any, Callable, cast
+from typing import TYPE_CHECKING, Any, cast
 
 import numpy as np
 from ruamel.yaml import YAML
 
-from qililab.analog import AnnealingProgram
 from qililab.config import logger
 from qililab.constants import FLUX_CONTROL_REGEX, GATE_ALIAS_REGEX, RUNCARD
-from qililab.core.variables import Domain
-from qililab.digital import CircuitToQProgramCompiler, CircuitTranspiler, qprogram_results_to_samples
 from qililab.exceptions import ExceptionGroup
 from qililab.extra.quantum_machines import (
     QuantumMachinesCluster,
@@ -69,10 +66,10 @@ from qililab.result.qprogram.qblox_measurement_result import QbloxMeasurementRes
 from qililab.result.qprogram.qprogram_results import QProgramResults
 from qililab.result.stream_results import StreamArray
 from qililab.typings import ChannelID, DistortionState, InstrumentName, OutputID, Parameter, ParameterValue
+from qililab.utils.serialization import deserialize_from
 
 if TYPE_CHECKING:
     import numpy as np
-    from qilisdk.digital import Circuit
 
     from qililab.instrument_controllers.instrument_controller import InstrumentController
     from qililab.instruments.instrument import Instrument
@@ -334,6 +331,9 @@ class Platform:
 
         self._qpy_sequence_cache: dict[str, str] = {}
         """Dictionary for caching qpysequences."""
+
+        self.calibration: Calibration | None = None
+        """Calibration class introduced to platform, defaults to None"""
 
         self.crosstalk: CrosstalkMatrix | None = None
         """Crosstalk matrix information, defaults to None (only used on FLUX parameters)"""
@@ -850,6 +850,17 @@ class Platform:
 
         self.flux_vector[alias] = value
 
+    def set_calibration(self, calibration: Calibration | str) -> None:
+        """Sets the Calibration class from a given Calibration or the file's path.
+
+        Args:
+            calibration (Calibration | str): Calibration class or file path.
+        """
+        if isinstance(calibration, str):
+            self.calibration = deserialize_from(file=calibration, cls=Calibration)
+            return
+        self.calibration = calibration
+
     def set_crosstalk(self, crosstalk: CrosstalkMatrix):
         """Sets the crosstalk matrix using the crosstalk matrix class.
 
@@ -1010,142 +1021,6 @@ class Platform:
             if execution_error is not None:
                 raise execution_error
 
-    def compile_annealing_program(
-        self,
-        annealing_program_dict: list[dict[str, dict[str, float]]],
-        transpiler: Callable,
-        calibration: Calibration,
-        num_averages: int = 1000,
-        num_shots: int = 1,
-        preparation_block: str = "preparation",
-        measurement_block: str = "measurement",
-    ) -> QProgram:
-        """
-        Compile an annealing program into a `QProgram` by mapping Ising coefficients to flux waveforms.
-
-        This method takes an annealing program, represented as a time-ordered list of circuit elements with
-        corresponding Ising coefficients, and compiles it into a quantum program (QProgram) that can be
-        executed on a quantum annealing hardware setup.
-
-        The input `annealing_program_dict` is structured as a list of dictionaries, each representing a
-        specific time point. Each dictionary maps qubit and coupler identifiers to Ising terms (`sigma_x`,
-        `sigma_y`, `sigma_z`), indicating the coefficient values for each term. For example:
-
-        .. code-block:: python
-
-            [
-                {"qubit_0": {"sigma_x": 0, "sigma_y": 1, "sigma_z": 2}, "coupler_1_0": {...}},
-                {...},  # time=1ns
-                ...,
-            ]
-
-        Using the provided `transpiler`, these Ising coefficients are converted to flux values. These fluxes
-        are then transformed into waveforms assigned to specific hardware buses, as defined by a `flux_to_bus`
-        mapping in the analog compilation settings.
-
-        Args:
-            annealing_program_dict (list[dict[str, dict[str, float]]]): The time-ordered list of qubit and
-                coupler Ising coefficients to be compiled.
-            transpiler (Callable): A function to convert Ising parameters (delta, epsilon) to flux values
-                (phix, phiz).
-            calibration (Calibration): Calibration data containing the required blocks (e.g., `preparation`,
-                `measurement`) and any applicable crosstalk corrections.
-            num_averages (int, optional): Number of times the program should be averaged per shot. Defaults to 1000.
-            num_shots (int, optional): Number of shots to execute the program. Defaults to 1.
-            preparation_block (str, optional): Name of the calibration block used for preparation. Defaults to "preparation".
-            measurement_block (str, optional): Name of the calibration block used for measurement. Defaults to "measurement".
-
-        Returns:
-            QProgram: A compiled quantum program (QProgram) ready for execution on the target hardware.
-
-        Raises:
-            ValueError: If the flux-to-bus topology is not defined in the analog compilation settings.
-            ValueError: If the specified `measurement_block` is not available in the calibration.
-
-        Notes:
-            - The method checks for essential compilation settings and calibrated blocks, ensuring the program can be executed successfully.
-            - Transpiled waveforms are adjusted for crosstalk when a crosstalk matrix is available in the calibration.
-            - Execution includes optional `preparation_block` and synchronizes waveforms before the final `measurement_block`.
-
-        """
-        if self.analog_compilation_settings is None:
-            raise ValueError("Flux to bus topology not given in the runcard")
-
-        if not calibration.has_block(name=measurement_block):
-            raise ValueError("The calibrated measurement is not present in the calibration file.")
-
-        annealing_program = AnnealingProgram(
-            flux_to_bus_topology=self.analog_compilation_settings.flux_control_topology,
-            annealing_program=annealing_program_dict,
-        )
-        annealing_program.transpile(transpiler)
-        crosstalk_matrix = calibration.crosstalk_matrix.inverse() if calibration.crosstalk_matrix is not None else None
-        annealing_waveforms = annealing_program.get_waveforms(crosstalk_matrix=crosstalk_matrix, minimum_clock_time=4)
-
-        qp_annealing = QProgram()
-        shots_variable = qp_annealing.variable("num_shots", Domain.Scalar, int)
-
-        with qp_annealing.for_loop(variable=shots_variable, start=0, stop=num_shots, step=1):
-            with qp_annealing.average(num_averages):
-                if calibration.has_block(name=preparation_block):
-                    qp_annealing.insert_block(calibration.get_block(name=preparation_block))
-                    qp_annealing.sync()
-                for bus, waveform in annealing_waveforms.items():
-                    qp_annealing.play(bus=bus, waveform=waveform)
-                qp_annealing.sync()
-                qp_annealing.insert_block(calibration.get_block(name=measurement_block))
-
-        return qp_annealing
-
-    def execute_annealing_program(
-        self,
-        annealing_program_dict: list[dict[str, dict[str, float]]],
-        transpiler: Callable,
-        calibration: Calibration,
-        num_averages: int = 1000,
-        num_shots: int = 1,
-        preparation_block: str = "preparation",
-        measurement_block: str = "measurement",
-        bus_mapping: dict[str, str] | None = None,
-        debug: bool = False,
-    ) -> QProgramResults:
-        """Given an annealing program execute it as a qprogram.
-        The annealing program should contain a time ordered list of circuit elements and their corresponding ising coefficients as a dictionary. Example structure:
-
-        .. code-block:: python
-
-            [
-                {"qubit_0": {"sigma_x" : 0, "sigma_y" : 1, "sigma_z" : 2},
-                "coupler_1_0 : {...},
-                },      # time=0ns
-                {...},  # time=1ns
-            .
-            .
-            .
-            ]
-
-        This dictionary containing ising coefficients is transpiled to fluxes using the given transpiler. Then the corresponding waveforms are obtained and assigned to a bus
-        from the bus to flux mapping given by the runcard.
-
-        Args:
-            annealing_program_dict (list[dict[str, dict[str, float]]]): annealing program to run
-            transpiler (Callable): ising to flux transpiler. The transpiler should take 2 values as arguments (delta, epsilon) and return 2 values (phix, phiz)
-            averages (int, optional): Amount of times to run and average the program over. Defaults to 1.
-            debug (bool, optional): Whether to create debug information. For ``Qblox`` clusters all the program information is printed on screen.
-                For ``Quantum Machines`` clusters a ``.py`` file is created containing the ``QUA`` and config compilation. Defaults to False.
-        """
-
-        qprogram = self.compile_annealing_program(
-            annealing_program_dict=annealing_program_dict,
-            transpiler=transpiler,
-            calibration=calibration,
-            num_averages=num_averages,
-            num_shots=num_shots,
-            preparation_block=preparation_block,
-            measurement_block=measurement_block,
-        )
-        return self.execute_qprogram(qprogram=qprogram, calibration=calibration, bus_mapping=bus_mapping, debug=debug)
-
     def execute_experiment(
         self,
         experiment: Experiment,
@@ -1226,9 +1101,14 @@ class Platform:
         calibration: Calibration | None = None,
         crosstalk: bool = True,
     ) -> QProgramCompilationOutput:
-        if not crosstalk and calibration is not None and calibration.crosstalk_matrix is not None:
+        if (
+            not crosstalk
+            and calibration is not None
+            and (calibration.crosstalk_matrix is not None or calibration.crosstalk_matrix_ac is not None)
+        ):
             calibration = deepcopy(calibration)
             calibration.crosstalk_matrix = None
+            calibration.crosstalk_matrix_ac = None
 
         bus_aliases = {bus_mapping[bus] if bus_mapping and bus in bus_mapping else bus for bus in qprogram.buses}
         buses = [self.buses.get(alias=bus_alias) for bus_alias in bus_aliases]
@@ -1257,9 +1137,6 @@ class Platform:
                     if isinstance(instrument, QDevilQDac2)
                 }
             )
-            # Start from a clean instrument state before the compiler re-populates it
-            for qdac_instrument in self.qdac_instruments:
-                qdac_instrument.clear_cache()
             out_trigger_qdac = None
             if len(self.qdac_instruments) > 1:
                 out_trigger_qdac = next(
@@ -1289,6 +1166,8 @@ class Platform:
             # Determine what should be the initial value of the markers for each bus.
             # This depends on the model of the associated Qblox module and the `output` setting of the associated sequencer.
             markers = {}
+            # In this bus loop the distortions are also stored.
+            bus_distortions = {}
             single_channel = []
             for bus in buses:
                 for instrument, channel in zip(bus.instruments, bus.channels):
@@ -1306,6 +1185,8 @@ class Platform:
                             markers[bus.alias] = "0000"
                             if len(sequencer.outputs) == 1:
                                 single_channel.append(bus.alias)
+                if bus.distortions:
+                    bus_distortions[bus.alias] = bus.distortions
 
             qblox_compiler = QbloxCompiler()
             qblox_buses = [
@@ -1321,6 +1202,7 @@ class Platform:
                     markers=markers,
                     qblox_buses=qblox_buses,
                     single_channel=single_channel,
+                    bus_distortions=bus_distortions,
                     crosstalk=self.crosstalk if crosstalk else None,
                 ),
                 qdac=compiled_qdac,
@@ -1403,10 +1285,6 @@ class Platform:
                     for controller in self.instrument_controllers.elements:
                         if isinstance(controller, QbloxClusterController):
                             controller.device.reset_trigger_monitor_count(address=trigger_address)
-                if bus.distortions:
-                    for distortion in bus.distortions:
-                        for waveform in sequences[bus_alias]._waveforms._waveforms:
-                            sequences[bus_alias]._waveforms.modify(waveform.name, distortion.apply(waveform.data))
             if debug:
                 with open("debug_qblox_execution.txt", "w", encoding="utf-8") as sourceFile:
                     for bus_alias, sequence in sequences.items():
@@ -1432,9 +1310,6 @@ class Platform:
                 if output.qdac.trigger_position == "front":
                     for qdac in output.qdac.qdacs:
                         qdac.start()
-                for qdac in output.qdac.qdacs:
-                    # Remove QDAC-II trigger network and dc / awg generators from the QDAC-II instrument
-                    qdac.clear_cache()
             else:
                 for bus_alias in sequences:
                     buses[bus_alias].run()
@@ -1611,6 +1486,9 @@ class Platform:
             QProgramResults: The results of the execution. ``QProgramResults.results()`` returns a dictionary (``dict[str, list[Result]]``) of measurement results.
             The keys correspond to the buses a measurement were performed upon, and the values are the list of measurement results in chronological order.
         """
+        if calibration is None:
+            calibration = self.calibration
+
         output = self.compile_qprogram(
             qprogram=qprogram, bus_mapping=bus_mapping, calibration=calibration, crosstalk=crosstalk
         )
@@ -1709,6 +1587,9 @@ class Platform:
         """
         if not qprograms:
             return []
+        # Fall back to the platform-level calibration when none is provided.
+        if calibrations is None:
+            calibrations = self.calibration
 
         # Normalize mappings and calibrations to one-per-qprogram
         bus_mapping_list = self._normalize_bus_mappings(bus_mappings=bus_mappings, n=len(qprograms))
@@ -1891,67 +1772,6 @@ class Platform:
                 ):
                     if isinstance(instrument, QbloxModule):
                         instrument.desync_sequencer(sequencer_id=int(channel))  # type: ignore[arg-type]
-
-    def execute_circuit(
-        self, circuit: Circuit, nshots: int = 1000, *, qubit_mapping: dict[int, int] | None = None
-    ) -> dict[str, int]:
-        # Compile pulse schedule
-        qprogram, logical_to_physical_mapping = self.compile_circuit(circuit, nshots, qubit_mapping=qubit_mapping)
-
-        results = self.execute_qprogram(qprogram)
-
-        samples = qprogram_results_to_samples(results, logical_to_physical_mapping)
-
-        return samples
-
-    def compile_circuit(
-        self, circuit: Circuit, nshots: int, *, qubit_mapping: dict[int, int] | None = None
-    ) -> tuple[QProgram, dict[int, int]]:
-        """Compiles the circuit / pulse schedule into a set of assembly programs, to be uploaded into the awg buses.
-
-        If the ``program`` argument is a :class:`.Circuit`, it will first be translated into a :class:`.PulseSchedule` using the transpilation
-        settings of the platform and passed  transpile configuration. Then the pulse schedules will be compiled into the assembly programs.
-
-        .. note::
-
-            Compile is called during ``platform.execute()``, check its documentation for more information.
-
-        The transpilation is performed using the :meth:`.CircuitTranspiler.transpile_circuit()` method. Refer to the method's documentation or :ref:`Transpilation <transpilation>` for more detailed information.
-
-        The main stages of this process are: **1.** Routing, **2.** Canceling Hermitian pairs, **3.** Translate to native gates, **4.** Correcting Drag phases, **5** Optimize Drag gates, **6.** Convert to pulse schedule.
-
-        .. note ::
-
-            Default steps are only: **3.**, **4.**, and **6.**, since they are always needed.
-
-            To do Step **1.** set routing=True in transpilation_config (default behavior skips it).
-
-            To do Steps **2.** and **5.** set optimize=True in transpilation_config (default behavior skips it)
-
-        Args:
-            program (PulseSchedule | Circuit): Circuit or pulse schedule to compile.
-            num_avg (int): Number of hardware averages used.
-            repetition_duration (int): Minimum duration of a single execution.
-            num_bins (int): Number of bins used.
-
-        Returns:
-            tuple[dict, list[int] | None]: Tuple containing the dictionary of compiled assembly programs (The key is the bus alias (``str``),
-                and the value is the assembly compilation (``list``)), and its corresponding final layout (Initial Re-mapping + SWAPs routing) of
-                the Original Logical Qubits (l_q) in the physical circuit (wires): [l_q in wire 0, l_q in wire 1, ...] (None = trivial mapping).
-
-        Raises:
-            ValueError: raises value error if the circuit execution time is longer than ``repetition_duration`` for some qubit.
-        """
-        if self.digital_compilation_settings is None:
-            raise ValueError("Cannot compile Circuit without defining DigitalCompilationSettings.")
-
-        transpiler = CircuitTranspiler(self.digital_compilation_settings, qubit_mapping=qubit_mapping)
-        transpiled_circuit = transpiler.run(circuit)
-
-        compiler = CircuitToQProgramCompiler(self.digital_compilation_settings)
-        qprogram = compiler.compile(transpiled_circuit, nshots)
-
-        return qprogram, transpiler.context.final_layout
 
     def calibrate_mixers(self, alias: str, cal_type: str, channel_id: ChannelID | None = None):
         bus = self.get_element(alias=alias)

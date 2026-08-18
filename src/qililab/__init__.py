@@ -20,7 +20,7 @@ from importlib.metadata import PackageNotFoundError, version
 try:
     __version__ = version("qililab")
 except PackageNotFoundError:
-    __version__ = "0.33.2"
+    __version__ = "0.0.0"
 
 import contextlib
 
@@ -47,9 +47,8 @@ from .waveforms import (
     Chained,
 )
 
-# moving circuit_transpiler module imports here because it has instruments module dependencies so circular imports can be avoided
-from .digital import Rmw
-from .analog import AnnealingProgram  # same as circuit transpiler, top modules should be imported at top
+# moved here because it has instruments module dependencies so circular imports can be avoided
+from .analog import AnnealingProgram
 from .result import Cooldown, DatabaseManager, Sample, get_db_manager, load_results, save_results, Measurement
 from .qililab_settings import get_settings
 
@@ -76,7 +75,6 @@ __all__ = [
     "QbloxCompiler",
     "QdacCompiler",
     "Ramp",
-    "Rmw",
     "Sample",
     "Square",
     "SuddenNetZero",

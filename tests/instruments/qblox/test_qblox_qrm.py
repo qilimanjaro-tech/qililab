@@ -332,7 +332,7 @@ class TestQbloxQRM:
         sequence = Sequence(program=Program(), waveforms=Waveforms(), acquisitions=Acquisitions(), weights=Weights())
         qrm.upload_qpysequence(qpysequence=sequence, channel_id=0)
 
-        qrm.device.sequencers[0].sequence.assert_called_once_with(sequence.todict())
+        qrm.device.sequencers[0].sequence.assert_called_once_with(sequence.to_dict())
 
     def test_acquire_qprogram_results(self, qrm: QbloxQRM):
         acquisitions = Acquisitions()
@@ -418,6 +418,12 @@ class TestQbloxQRM:
             f"Expected exactly one empty-acquisitions call (final wipe), got {len(wipe_calls)}. "
             "With the buggy code the wipe happened inside the loop, once per acquisition."
         )
+
+    def test_acquire_qprogram_results_with_no_acquisitions_does_not_raise(self, qrm: QbloxQRM):
+        # QHC-1455 regression: empty acquisitions dict on a played-but-not-acquired bus must not raise UnboundLocalError.
+        results = qrm.acquire_qprogram_results(acquisitions={}, channel_id=0)
+
+        assert results == []
 
     def test_clear_cache(self, qrm: QbloxQRM):
         """Test clearing the cache of the QCM module."""

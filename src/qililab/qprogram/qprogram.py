@@ -44,13 +44,14 @@ from qililab.qprogram.operations import (
     Wait,
     WaitTrigger,
 )
-from qililab.qprogram.structured_program import StructuredProgram, VariableInfo
+from qililab.qprogram.structured_program import StructuredProgram, VariableInfo, _to_scalar
 from qililab.qprogram.utils_crosstalk import CrosstalkElements, NonLinearFlagState
 from qililab.waveforms import Arbitrary, FlatTop, IQPair, IQWaveform, Square, Waveform
 from qililab.yaml import yaml
 
 if TYPE_CHECKING:
     from qililab.extra.quantum_machines.qprogram.quantum_machines_compiler import QuantumMachinesCompilationOutput
+    from qililab.pulse_distortion.pulse_distortion import PulseDistortion
     from qililab.qprogram.qblox_compiler import QbloxCompilationOutput
     from qililab.qprogram.qdac_compiler import QdacCompilationOutput
 
@@ -1050,6 +1051,72 @@ class QProgram(StructuredProgram):
         traverse(copied_qprogram.body)
         return copied_qprogram
 
+    def with_distortions(self, bus_distortions: dict[str, list["PulseDistortion"]]) -> "QProgram":
+        """Returns a copy of the QProgram with pulse distortions applied to the played waveforms.
+
+        For every ``Play``, ``Measure`` and ``MeasureReset`` operation whose bus is present in
+        ``bus_distortions``, the corresponding distortions are applied in order to the operation's
+        waveform. Each distortion is evaluated on the waveform's envelope and the result is stored as
+        an ``Arbitrary`` waveform (an ``IQPair`` of ``Arbitrary`` waveforms for I/Q waveforms), so the
+        applied distortions are baked into the samples that will later be compiled and uploaded.
+
+        Note:
+            The ``reset_pulse`` of a ``MeasureReset`` operation is played on ``control_bus`` at
+            compile time (not part of the QProgram tree this method traverses), so it cannot be
+            distorted here. Configuring distortions on a bus used as ``control_bus`` in a
+            ``MeasureReset`` is not supported and raises ``NotImplementedError``.
+
+        Args:
+            bus_distortions (dict[str, list[PulseDistortion]]): A dictionary mapping each bus alias to
+                the list of distortions to apply, in the order they should be applied, to the
+                waveforms played on that bus.
+
+        Returns:
+            QProgram: A new instance of QProgram with the distortions applied to the affected
+            waveforms. The original QProgram is left unchanged.
+
+        Raises:
+            NotImplementedError: If a ``MeasureReset`` operation uses, as its ``control_bus``, a bus
+                that has distortions configured.
+        """
+
+        def traverse(block: Block):
+            for index, element in enumerate(block.elements):
+                if isinstance(element, Block):
+                    traverse(element)
+                elif isinstance(element, (Play, Measure, MeasureReset)):
+                    if isinstance(element, MeasureReset) and element.control_bus in bus_distortions:
+                        raise NotImplementedError(
+                            "Applying pulse distortions to the control bus of a `MeasureReset` (active "
+                            f"reset) operation is not supported, but bus '{element.control_bus}' has "
+                            "distortions configured."
+                        )
+                    if element.bus in bus_distortions:
+                        waveform = element.waveform
+                        for distortion in bus_distortions[element.bus]:
+                            if isinstance(waveform, IQWaveform):
+                                distorted_waveform_I = Arbitrary(distortion.apply(waveform.get_I().envelope()))
+                                distorted_waveform_Q = Arbitrary(distortion.apply(waveform.get_Q().envelope()))
+                                distorted_waveform: IQPair | Arbitrary = IQPair(
+                                    I=distorted_waveform_I, Q=distorted_waveform_Q
+                                )
+                            elif isinstance(waveform, Waveform):
+                                distorted_waveform = Arbitrary(distortion.apply(waveform.envelope()))
+                            else:
+                                raise NotImplementedError(
+                                    f"Cannot apply distortions to waveform of type {type(waveform)}."
+                                )
+                            waveform = distorted_waveform
+                        block.elements[index].waveform = waveform  # type: ignore [union-attr]
+
+        # Copy qprogram so the original remain unaffected
+        copied_qprogram = deepcopy(self)
+
+        # Recursively traverse qprogram applying the distortions to all waveforms
+        traverse(copied_qprogram.body)
+
+        return copied_qprogram
+
     @overload
     def play(self, bus: str, waveform: Waveform | IQWaveform) -> None:
         """Play a single waveform or an I/Q pair of waveforms on the bus.
@@ -1098,7 +1165,7 @@ class QProgram(StructuredProgram):
             bus (str): Unique identifier of the bus.
             time (int): Duration of the delay.
         """
-        operation = Wait(bus=bus, duration=duration)
+        operation = Wait(bus=bus, duration=_to_scalar(duration))
         self._active_block.append(operation)
         self._buses.add(bus)
 
@@ -1112,7 +1179,7 @@ class QProgram(StructuredProgram):
             port (optional, int | None): Port channel of the trigger input. Defaults to None.
         """
         self.qblox.external_trigger.append(bus)  # qblox-only external_trigger bus
-        operation = WaitTrigger(bus=bus, duration=duration, port=port)
+        operation = WaitTrigger(bus=bus, duration=_to_scalar(duration), port=port)
         self._active_block.append(operation)
         self._buses.add(bus)
 
@@ -1219,7 +1286,7 @@ class QProgram(StructuredProgram):
             bus (str): Unique identifier of the bus.
             phase (float): The new absolute phase of the NCO.
         """
-        operation = SetPhase(bus=bus, phase=phase)
+        operation = SetPhase(bus=bus, phase=_to_scalar(phase))
         self._active_block.append(operation)
         self._buses.add(bus)
 
@@ -1231,7 +1298,7 @@ class QProgram(StructuredProgram):
             bus (str): Unique identifier of the bus.
             frequency (float): The new frequency of the NCO.
         """
-        operation = SetFrequency(bus=bus, frequency=frequency)
+        operation = SetFrequency(bus=bus, frequency=_to_scalar(frequency))
         self._active_block.append(operation)
         self._buses.add(bus)
 
@@ -1243,7 +1310,7 @@ class QProgram(StructuredProgram):
             bus (str): Unique identifier of the bus.
             gain (float): The new gain of the AWG.
         """
-        operation = SetGain(bus=bus, gain=gain)
+        operation = SetGain(bus=bus, gain=_to_scalar(gain))
         self._active_block.append(operation)
         self._buses.add(bus)
 
@@ -1257,7 +1324,11 @@ class QProgram(StructuredProgram):
             offset_path0 (float): The new offset of the AWG for path0.
             offset_path1 (float): The new offset of the AWG for path1.
         """
-        operation = SetOffset(bus=bus, offset_path0=offset_path0, offset_path1=offset_path1)
+        operation = SetOffset(
+            bus=bus,
+            offset_path0=_to_scalar(offset_path0),
+            offset_path1=_to_scalar(offset_path1) if offset_path1 is not None else None,
+        )
         self._active_block.append(operation)
         self._buses.add(bus)
 
@@ -1270,7 +1341,7 @@ class QProgram(StructuredProgram):
             outputs(optional, list[int] | int | None): Port channel/s of the trigger output. Defaults to None.
             outputs(optional, str): Trigger position in respective to the pulse location, it can be either `start` or `end. Defaults to start.
         """
-        operation = SetTrigger(bus=bus, outputs=outputs, duration=duration, position=position)
+        operation = SetTrigger(bus=bus, outputs=outputs, duration=_to_scalar(duration), position=position)
         self._active_block.append(operation)
         self._buses.add(bus)
 

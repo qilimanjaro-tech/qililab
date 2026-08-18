@@ -26,7 +26,7 @@ class Waveform(ABC):
 
     The `envelope` method will create the corresponding array of each shape.
 
-    Derived: :class:`Arbitrary`,  :class:`Square`, :class:`Gaussian` and :class:`DragCorrection`.
+    Derived: :class:`Arbitrary`,  :class:`Square`, :class:`Gaussian` and :class:`GaussianDragCorrection`.
     """
 
     @abstractmethod
