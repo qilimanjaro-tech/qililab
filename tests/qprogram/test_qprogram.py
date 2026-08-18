@@ -78,6 +78,18 @@ class TestQProgram(TestStructuredProgram):
     def instance(self):
         return QProgram()
 
+    def test_str_replaces_variable_repr_with_none(self):
+        """A Variable's repr embeds its UUID (e.g. `Variable(uuid=UUID(...), ...)`), so __str__
+        must replace such attribute values with `None` instead of leaking the UUID."""
+        qp = QProgram()
+        gain = qp.variable(label="gain", domain=Domain.Voltage)
+        qp.set_gain(bus="drive_bus", gain=gain)
+
+        result = str(qp)
+
+        assert "gain: None\n" in result
+        assert "UUID" not in result
+
     def test_with_bus_mapping_remaps_weight_duration_keys(self):
         """with_bus_mapping must remap qblox.weight_duration keys, otherwise threshold programming
         can never find the duration for a mapped bus."""
