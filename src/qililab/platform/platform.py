@@ -20,10 +20,10 @@ from __future__ import annotations
 import ast
 import io
 import re
-from time import perf_counter
 from contextlib import contextmanager
 from copy import deepcopy
 from dataclasses import asdict, dataclass
+from time import perf_counter
 from typing import TYPE_CHECKING, Any, cast
 
 import numpy as np
