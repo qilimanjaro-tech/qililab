@@ -30,7 +30,6 @@ from ruamel.yaml import YAML
 
 from qililab.config import logger
 from qililab.constants import FLUX_CONTROL_REGEX, GATE_ALIAS_REGEX, RUNCARD
-from qililab.core import Domain
 from qililab.exceptions import ExceptionGroup
 from qililab.extra.quantum_machines import (
     QuantumMachinesCluster,
