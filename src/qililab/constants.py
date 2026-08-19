@@ -123,15 +123,6 @@ class BUS:
     RESULTS = "results"
 
 
-class NODE:
-    """Chip node class and attribute names"""
-
-    NODES = "nodes"
-    FREQUENCY = "frequency"
-    QUBIT_INDEX = "qubit_index"
-    LINE = "line"
-
-
 class PULSESCHEDULES:
     """Pulse Schedules attribute names."""
 
