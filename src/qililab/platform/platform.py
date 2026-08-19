@@ -20,6 +20,7 @@ from __future__ import annotations
 import ast
 import io
 import re
+import time
 from contextlib import contextmanager
 from copy import deepcopy
 from dataclasses import asdict
@@ -984,6 +985,7 @@ class Platform:
         cleanup_methods = []
         cleanup_errors = []
         execution_error: Exception | None = None
+        start_time = time.time()
         try:
             # Track successfully called setup methods and their cleanup counterparts
             self.connect()
@@ -1011,6 +1013,9 @@ class Platform:
                 except Exception as cleanup_exception:  # noqa: BLE001
                     logger.error(f"Error during cleanup: {cleanup_exception}")
                     cleanup_errors.append(cleanup_exception)
+
+            elapsed_time = time.time() - start_time
+            logger.info(f"Platform session took {elapsed_time:.2f} seconds")
 
             # Raise any exception that might have happened during cleanup
             if cleanup_errors:

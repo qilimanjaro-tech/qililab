@@ -721,6 +721,21 @@ class TestMethods:
         platform.turn_off_instruments.assert_called_once()
         platform.disconnect.assert_called_once()
 
+    def test_session_logs_duration_on_success(self):
+        """Test that the session method logs how long the session took when it succeeds."""
+        platform = create_autospec(Platform, instance=True)
+        platform.session = Platform.session.__get__(platform, Platform)
+
+        with patch("qililab.platform.platform.logger", autospec=True) as mock_logger:
+            with platform.session():
+                pass
+
+        duration_messages = [
+            call.args[0] for call in mock_logger.info.call_args_list if re.match(r"^Platform session took .* seconds$", call.args[0])
+        ]
+        assert len(duration_messages) == 1
+        assert re.match(r"^Platform session took \d+\.\d{2} seconds$", duration_messages[0])
+
     def test_session_with_exception(self):
         """Test the session method when an exception occurs during execution."""
         # Create an autospec of the Platform class
@@ -742,6 +757,22 @@ class TestMethods:
         # Ensure cleanup is still called in reverse order even after the exception
         platform.turn_off_instruments.assert_called_once()
         platform.disconnect.assert_called_once()
+
+    def test_session_logs_duration_on_exception(self):
+        """Test that the session method still logs how long the session took when an exception occurs."""
+        platform = create_autospec(Platform, instance=True)
+        platform.session = Platform.session.__get__(platform, Platform)
+
+        with patch("qililab.platform.platform.logger", autospec=True) as mock_logger:
+            with pytest.raises(AttributeError, match="Test Error"):
+                with platform.session():
+                    raise AttributeError("Test Error")
+
+        duration_messages = [
+            call.args[0] for call in mock_logger.info.call_args_list if re.match(r"^Platform session took .* seconds$", call.args[0])
+        ]
+        assert len(duration_messages) == 1
+        assert re.match(r"^Platform session took \d+\.\d{2} seconds$", duration_messages[0])
 
     def test_session_with_exception_in_setup(self):
         """Test the session method when an error occurs before turning on instruments."""
