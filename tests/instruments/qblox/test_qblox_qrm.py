@@ -153,7 +153,6 @@ class TestQbloxQRM:
             (Parameter.HARDWARE_DEMODULATION, False),
 
             (Parameter.INTEGRATION_MODE, "ssb"),
-            (Parameter.SEQUENCE_TIMEOUT, 2),
             (Parameter.ACQUISITION_TIMEOUT, 2),
             (Parameter.TIMEOUT_REPETITIONS, 2),
             (Parameter.TIME_OF_FLIGHT, 80),
@@ -194,8 +193,6 @@ class TestQbloxQRM:
             assert sequencer.sampling_rate == value  # type: ignore[attr-defined]
         elif parameter == Parameter.INTEGRATION_MODE:
             assert sequencer.integration_mode == IntegrationMode(value)  # type: ignore[attr-defined]
-        elif parameter == Parameter.SEQUENCE_TIMEOUT:
-            assert sequencer.sequence_timeout == value  # type: ignore[attr-defined]
         elif parameter == Parameter.ACQUISITION_TIMEOUT:
             assert sequencer.acquisition_timeout == value  # type: ignore[attr-defined]
         elif parameter == Parameter.TIMEOUT_REPETITIONS:
@@ -269,7 +266,6 @@ class TestQbloxQRM:
             (Parameter.HARDWARE_DEMODULATION, True),
 
             (Parameter.INTEGRATION_MODE, "ssb"),
-            (Parameter.SEQUENCE_TIMEOUT, 5.0),
             (Parameter.ACQUISITION_TIMEOUT, 1.0),
             (Parameter.TIMEOUT_REPETITIONS, 3),
             (Parameter.TIME_OF_FLIGHT, 120),
@@ -495,3 +491,18 @@ class TestQbloxQRM:
     def test_parameter_integration_length_not_in_enum(self):
         """Parameter.INTEGRATION_LENGTH must not exist — it was removed to prevent silent no-ops."""
         assert not hasattr(Parameter, "INTEGRATION_LENGTH")
+
+    def test_platform_load_warns_on_sequence_timeout_in_runcard(self):
+        """Loading a runcard that contains sequence_timeout must emit a FutureWarning."""
+        with pytest.warns(
+            FutureWarning,
+            match=re.escape(
+                "sequence_timeout in the runcard is deprecated and will be removed in a future release. "
+                "It has no effect on the instrument's behavior."
+            ),
+        ):
+            build_platform(runcard="tests/instruments/qblox/qblox_runcard.yaml")
+
+    def test_parameter_sequence_timeout_not_in_enum(self):
+        """Parameter.SEQUENCE_TIMEOUT must not exist — it was removed to prevent silent no-ops."""
+        assert not hasattr(Parameter, "SEQUENCE_TIMEOUT")

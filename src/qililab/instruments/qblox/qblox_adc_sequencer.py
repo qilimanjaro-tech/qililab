@@ -29,16 +29,14 @@ class QbloxADCSequencer(QbloxSequencer):
     # demodulation flag
     hardware_demodulation: bool
     integration_mode: IntegrationMode
-    # minutes
-    sequence_timeout: int
-    # minutes
-    acquisition_timeout: int
+    acquisition_timeout: int  # minutes
     scope_store_enabled: bool
     threshold: float
     threshold_rotation: float
     # nanoseconds
     time_of_flight: int
     integration_length: int | None = None
+    sequence_timeout: int | None = None  # minutes
     timeout_repetitions: int = 0
 
     def __post_init__(self):
@@ -47,6 +45,13 @@ class QbloxADCSequencer(QbloxSequencer):
             warnings.warn(
                 "Integration_length in the runcard is deprecated and will be removed in a future release. "
                 "The integration length is now derived from the QProgram's first weight duration.",
+                FutureWarning,
+                stacklevel=1,
+            )
+        if self.sequence_timeout is not None:
+            warnings.warn(
+                "sequence_timeout in the runcard is deprecated and will be removed in a future release. "
+                "It has no effect on the instrument's behavior.",
                 FutureWarning,
                 stacklevel=1,
             )
