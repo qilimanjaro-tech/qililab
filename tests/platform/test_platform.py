@@ -40,7 +40,7 @@ from qililab.instruments.instruments import Instruments
 from qililab.instruments.qblox import QbloxModule
 from qililab.instruments.qblox.qblox_qrm import QbloxQRM
 from qililab.instruments.qdevil import QDevilQDac2
-from qililab.platform import Bus, Buses, Platform
+from qililab.platform import Bus, Buses, Platform, Session
 from qililab.qprogram import Calibration, Experiment, QProgram, QbloxCompilationOutput
 from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
 from qililab.result.database import get_db_manager
@@ -736,6 +736,20 @@ class TestMethods:
         assert len(duration_messages) == 1
         assert re.match(r"^Platform session took \d+\.\d{2} seconds$", duration_messages[0])
 
+    def test_session_yields_session_object_on_success(self):
+        """Test that the session method yields a Session object populated after a successful run."""
+        platform = create_autospec(Platform, instance=True)
+        platform.session = Platform.session.__get__(platform, Platform)
+
+        with platform.session() as running_session:
+            pass
+
+        assert isinstance(running_session, Session)
+        assert running_session.success is True
+        assert running_session.error is None
+        assert running_session.execution_time is not None
+        assert running_session.execution_time >= 0
+
     def test_session_with_exception(self):
         """Test the session method when an exception occurs during execution."""
         # Create an autospec of the Platform class
@@ -773,6 +787,24 @@ class TestMethods:
         ]
         assert len(duration_messages) == 1
         assert re.match(r"^Platform session took \d+\.\d{2} seconds$", duration_messages[0])
+
+    def test_session_yields_session_object_on_exception(self):
+        """Test that the session method's Session object records failure when the experiment code raises."""
+        platform = create_autospec(Platform, instance=True)
+        platform.session = Platform.session.__get__(platform, Platform)
+
+        running_session = None
+        with pytest.raises(AttributeError, match="Test Error"):
+            with platform.session() as session:
+                running_session = session
+                raise AttributeError("Test Error")
+
+        assert isinstance(running_session, Session)
+        assert running_session.success is False
+        assert isinstance(running_session.error, AttributeError)
+        assert str(running_session.error) == "Test Error"
+        assert running_session.execution_time is not None
+        assert running_session.execution_time >= 0
 
     def test_session_with_exception_in_setup(self):
         """Test the session method when an error occurs before turning on instruments."""

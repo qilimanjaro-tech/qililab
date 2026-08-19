@@ -20,10 +20,10 @@ from __future__ import annotations
 import ast
 import io
 import re
-import time
+from time import perf_counter
 from contextlib import contextmanager
 from copy import deepcopy
-from dataclasses import asdict
+from dataclasses import asdict, dataclass
 from typing import TYPE_CHECKING, Any, cast
 
 import numpy as np
@@ -79,6 +79,15 @@ if TYPE_CHECKING:
     from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
     from qililab.result.database import DatabaseManager
     from qililab.settings import Runcard
+
+
+@dataclass
+class Session:
+    """Runtime information about a `Platform.session()` context, populated as the session progresses."""
+
+    execution_time: float | None = None
+    success: bool | None = None
+    error: Exception | None = None
 
 
 class Platform:
@@ -985,6 +994,7 @@ class Platform:
         cleanup_methods = []
         cleanup_errors = []
         execution_error: Exception | None = None
+        running_session = Session()
         try:
             # Track successfully called setup methods and their cleanup counterparts
             self.connect()
@@ -999,11 +1009,18 @@ class Platform:
             cleanup_methods.append(self.turn_off_instruments)
 
             # Experiment logic goes here
-            start_time = time.time()
+            start_time = perf_counter()
             try:
-                yield
+                yield running_session
+            except Exception as exc:
+                running_session.success = False
+                running_session.error = exc
+                raise
+            else:
+                running_session.success = True
             finally:
-                logger.info(f"Platform session took {time.time() - start_time:.2f} seconds")
+                running_session.execution_time = perf_counter() - start_time
+                logger.info(f"Platform session took {running_session.execution_time:.2f} seconds")
 
         except Exception as e:  # noqa: BLE001
             logger.error(f"An error occurred: {e}")
