@@ -134,7 +134,6 @@ data/
 _build
 slurm_job_data*
 
-.qibo_configuration
 .tmp/*
 tmp.*
 .tmp/*
