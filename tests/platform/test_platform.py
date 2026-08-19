@@ -777,10 +777,13 @@ class TestMethods:
         platform = create_autospec(Platform, instance=True)
         platform.session = Platform.session.__get__(platform, Platform)
 
+        def run_session_raising_error():
+            with platform.session():
+                raise AttributeError("Test Error")
+
         with patch("qililab.platform.platform.logger", autospec=True) as mock_logger:
             with pytest.raises(AttributeError, match="Test Error"):
-                with platform.session():
-                    raise AttributeError("Test Error")
+                run_session_raising_error()
 
         duration_messages = [
             call.args[0] for call in mock_logger.info.call_args_list if re.match(r"^Platform session took .* seconds$", call.args[0])
@@ -794,10 +797,15 @@ class TestMethods:
         platform.session = Platform.session.__get__(platform, Platform)
 
         running_session = None
-        with pytest.raises(AttributeError, match="Test Error"):
+
+        def run_session_raising_error():
+            nonlocal running_session
             with platform.session() as session:
                 running_session = session
                 raise AttributeError("Test Error")
+
+        with pytest.raises(AttributeError, match="Test Error"):
+            run_session_raising_error()
 
         assert isinstance(running_session, Session)
         assert running_session.success is False
