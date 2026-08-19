@@ -759,7 +759,7 @@ class TestMethods:
         platform.disconnect.assert_called_once()
 
     def test_session_logs_duration_on_exception(self):
-        """Test that the session method still logs how long the session took when an exception occurs."""
+        """Test that the session method still logs the duration when the experiment code raises."""
         platform = create_autospec(Platform, instance=True)
         platform.session = Platform.session.__get__(platform, Platform)
 
