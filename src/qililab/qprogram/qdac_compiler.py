@@ -193,9 +193,7 @@ class QdacCompiler:
 
         self._buses = {bus: QdacBusCompilationInfo() for bus in self._qdac_buses_alias}
         self._loop_repetitions.update(dict.fromkeys(self._qdac_buses_alias, 1))
-
         self._channels = {bus.alias: bus.channels[0] for bus in self._qdac_buses if bus.alias in self._qdac_buses_alias}
-        return
 
     def _handle_parallel(self, element: Parallel):
         if not element.loops:
@@ -434,9 +432,9 @@ class QdacCompiler:
                 raise NotImplementedError(f"{element.__class__} is not supported in QDACII.")
 
     def _hash_trigger(self, element: SetTrigger, output: int | None):
-        hash = f"trigger_{element.bus}_{output}_{element.position}"
-        self._trigger_hashes[element.bus] = hash
-        return hash
+        _hash = f"trigger_{element.bus}_{output}_{element.position}"
+        self._trigger_hashes[element.bus] = _hash
+        return _hash
 
     def _handle_simultaneous_qdacs(self):
         out_bus = next(

@@ -11,15 +11,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from collections.abc import Sequence
+from __future__ import annotations
+
 from copy import deepcopy
-from typing import TYPE_CHECKING, overload
+from typing import TYPE_CHECKING, Self, Sequence, overload
 
 import numpy as np
 
-from qililab.core.variables import Domain, Variable, requires_domain
+from qililab.core import Domain, Variable, requires_domain
 from qililab.qprogram.blocks import Block, ForLoop, Parallel
-from qililab.qprogram.calibration import Calibration
 from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix, NonLinearCrosstalkMatrix
 from qililab.qprogram.flux_vector import FluxVector, NonLinearFluxVector
 from qililab.qprogram.operations import (
@@ -34,12 +34,11 @@ from qililab.qprogram.operations import (
     Operation,
     Play,
     PlayWithCalibratedWaveform,
-    ResetPhase,
-    SetFrequency,
+    SdkMeasure,
+    SdkPlay,
     SetGain,
     SetMarkers,
     SetOffset,
-    SetPhase,
     SetTrigger,
     Sync,
     Wait,
@@ -50,9 +49,12 @@ from qililab.qprogram.utils_crosstalk import CrosstalkElements, NonLinearFlagSta
 from qililab.waveforms import Arbitrary, FlatTop, IQPair, IQWaveform, Square, Waveform
 from qililab.yaml import yaml
 
+from . import SdkQProgram
+
 if TYPE_CHECKING:
     from qililab.extra.quantum_machines.qprogram.quantum_machines_compiler import QuantumMachinesCompilationOutput
     from qililab.pulse_distortion.pulse_distortion import PulseDistortion
+    from qililab.qprogram.calibration import Calibration
     from qililab.qprogram.qblox_compiler import QbloxCompilationOutput
     from qililab.qprogram.qdac_compiler import QdacCompilationOutput
 
@@ -62,9 +64,9 @@ class QProgramCompilationOutput:
 
     def __init__(
         self,
-        qblox: "QbloxCompilationOutput | None" = None,
-        qdac: "QdacCompilationOutput | None" = None,
-        quantum_machines: "QuantumMachinesCompilationOutput | None" = None,
+        qblox: QbloxCompilationOutput | None = None,
+        qdac: QdacCompilationOutput | None = None,
+        quantum_machines: QuantumMachinesCompilationOutput | None = None,
     ):
         self.qblox = qblox
         self.qdac = qdac
@@ -72,7 +74,7 @@ class QProgramCompilationOutput:
 
 
 @yaml.register_class
-class QProgram(StructuredProgram):
+class QProgram(SdkQProgram, StructuredProgram):
     """QProgram is a hardware-agnostic pulse-level programming interface for describing quantum programs.
 
     This class provides an interface for building quantum programs,
@@ -124,89 +126,59 @@ class QProgram(StructuredProgram):
         self.quantum_machines = self._QuantumMachinesInterface(self)
         self.qdac = self._QdacInterface(self)
 
-    def __str__(self) -> str:
-        def traverse(block: Block):
-            string_elements = []
-            for element in block.elements:
-                string_elements.append(f"{type(element).__name__}:\n")
-                for attr_name in vars(element):
-                    # ignore uuid, variables. elements, waveforms and weights are handled separately
-                    if attr_name in ("_uuid", "variable", "elements", "waveform", "weights"):
-                        continue
+    @classmethod
+    def from_sdk(cls: type[Self], program: SdkQProgram) -> Self:
+        """Create a QProgram instance from a parent SdkQProgram.
 
-                    attr_value = getattr(element, attr_name)
-                    # Handle UUID checking and append to string_elements
-                    if "UUID" not in str(attr_value):
-                        string_elements.append(f"\t{attr_name}: {attr_value}\n")
-                    else:
-                        # pragma: no cover
-                        string_elements.append(f"\t{attr_name}: None\n")
-
-                if isinstance(element, Block):
-                    # handle blocks
-                    for string_element in traverse(element):
-                        string_elements.append(f"\t{string_element}")
-
-                # if not a block, it is assumed that element is type Operation
-                if hasattr(element, "waveform"):
-                    waveform_string = (
-                        [f"\tWaveform {type(element.waveform).__name__}:\n"]
-                        + [f"\t\t{array_line}\n" for array_line in str(element.waveform.envelope()).split("\n")]
-                        if isinstance(element.waveform, Waveform)
-                        else [f"\tWaveform I {type(element.waveform.get_I()).__name__}:\n"]
-                        + [f"\t\t{array_line}\n" for array_line in str(element.waveform.get_I().envelope()).split("\n")]
-                        + [f"\tWaveform Q {type(element.waveform.get_Q()).__name__}):\n"]
-                        + [f"\t\t{array_line}\n" for array_line in str(element.waveform.get_Q().envelope()).split("\n")]
-                    )
-                    string_elements.extend(waveform_string)
-
-                if hasattr(element, "weights"):
-                    string_elements.append(f"\tWeights I {type(element.weights.get_I()).__name__}:\n")
-                    string_elements.extend(
-                        [
-                            f"\t\t{array_element}\n"
-                            for array_element in str(element.weights.get_I().envelope()).split("\n")
-                        ]
-                    )
-                    string_elements.append(f"\tWeights Q {type(element.weights.get_Q()).__name__}:\n")
-                    string_elements.extend(
-                        [
-                            f"\t\t{array_element}\n"
-                            for array_element in str(element.weights.get_Q().envelope()).split("\n")
-                        ]
-                    )
-
-            return string_elements
-
-        return "".join(traverse(self._body))
-
-    def has_calibrated_waveforms_or_weights(self) -> bool:
-        """Checks if QProgram has named waveforms or weights. These need to be mapped before compiling to hardware-native code.
+        Args:
+            program (SdkQProgram): The SDK QProgram instance to convert.
 
         Returns:
-            bool: True, if QProgram has waveforms or weights that need to be mapped from calibration.
+            QProgram: A new QProgram instance with the same state.
+
+        Raises:
+            TypeError: If the provided program is not an instance of SdkQProgram.
         """
 
-        def traverse(block: Block):
-            for element in block.elements:
+        def traverse(block: Block) -> None:
+            for index, element in enumerate(block.elements):
                 if isinstance(element, Block):
-                    if traverse(element):
-                        return True
-                elif isinstance(
-                    element,
-                    (
-                        PlayWithCalibratedWaveform,
-                        AcquireWithCalibratedWeights,
-                        MeasureWithCalibratedWaveform,
-                        MeasureWithCalibratedWeights,
-                        MeasureWithCalibratedWaveformWeights,
-                        MeasureResetCalibrated,
-                    ),
-                ):
-                    return True
-            return False
+                    traverse(element)
+                elif isinstance(element, SdkPlay):
+                    play_operation = Play(bus=element.bus, waveform=element.waveform)
+                    block.elements[index] = play_operation
+                elif isinstance(element, SdkMeasure):
+                    measure_operation = Measure(bus=element.bus, waveform=element.waveform, weights=element.weights)
+                    block.elements[index] = measure_operation
 
-        return traverse(self.body)
+        if isinstance(program, cls):
+            return deepcopy(program)
+
+        if not isinstance(program, SdkQProgram):
+            raise TypeError(f"Expected SdkQProgram, got {type(program).__name__}.")
+
+        try:
+            state = deepcopy(program.__dict__)
+        except AttributeError:
+            copied_program = deepcopy(program)
+            try:
+                copied_program.__class__ = cls
+            except TypeError as exc:
+                raise TypeError(
+                    "SdkQProgram instance cannot be converted to QProgram due to incompatible class layout."
+                ) from exc
+            qprogram = copied_program
+        else:
+            qprogram = cls.__new__(cls)
+            qprogram.__dict__ = state
+
+        qprogram.qblox = cls._QbloxInterface(qprogram)  # type: ignore[attr-defined, arg-type]
+        qprogram.quantum_machines = cls._QuantumMachinesInterface(qprogram)  # type: ignore[attr-defined, arg-type]
+        qprogram.qdac = cls._QdacInterface(qprogram)  # type: ignore[attr-defined, arg-type]
+
+        traverse(qprogram.body)
+
+        return qprogram  # type: ignore[return-value]  # ty:ignore[invalid-return-type]
 
     def with_bus_mapping(self, bus_mapping: dict[str, str]) -> "QProgram":
         """Returns a copy of the QProgram with bus mappings applied.
@@ -277,6 +249,34 @@ class QProgram(StructuredProgram):
         copied_qprogram.qblox._weight_duration = remapped_weight_duration
 
         return copied_qprogram
+
+    def has_calibrated_waveforms_or_weights(self) -> bool:
+        """Checks if QProgram has named waveforms or weights. These need to be mapped before compiling to hardware-native code.
+
+        Returns:
+            bool: True, if QProgram has waveforms or weights that need to be mapped from calibration.
+        """
+
+        def traverse(block: Block):
+            for element in block.elements:
+                if isinstance(element, Block):
+                    if traverse(element):
+                        return True
+                elif isinstance(
+                    element,
+                    (
+                        PlayWithCalibratedWaveform,
+                        AcquireWithCalibratedWeights,
+                        MeasureWithCalibratedWaveform,
+                        MeasureWithCalibratedWeights,
+                        MeasureWithCalibratedWaveformWeights,
+                        MeasureResetCalibrated,
+                    ),
+                ):
+                    return True
+            return False
+
+        return traverse(self.body)
 
     def with_calibration(self, calibration: Calibration):
         """Apply calibration to the operations within the QProgram.
@@ -1206,9 +1206,7 @@ class QProgram(StructuredProgram):
             bus (str): Unique identifier of the bus.
             time (int): Duration of the delay.
         """
-        operation = Wait(bus=bus, duration=_to_scalar(duration))
-        self._active_block.append(operation)
-        self._buses.add(bus)
+        super().wait(bus=bus, duration=_to_scalar(duration))
 
     @requires_domain("duration", Domain.Time)
     def wait_trigger(self, bus: str, duration: int, port: int | None = None):
@@ -1298,29 +1296,6 @@ class QProgram(StructuredProgram):
             weights.get_duration() if isinstance(weights, IQWaveform) else weights
         )
 
-    def sync(self, buses: list[str] | None = None):
-        """Synchronize operations between buses, so the operations following will start at the same time.
-
-        If no buses are given, then the synchronization will involve all buses present in the QProgram.
-
-        Args:
-            buses (list[str], optional): List of unique identifiers of the buses. Defaults to None.
-        """
-        operation = Sync(buses=buses)
-        self._active_block.append(operation)
-        if buses:
-            self._buses.update(buses)
-
-    def reset_phase(self, bus: str):
-        """Reset the absolute phase of the NCO associated with the bus.
-
-        Args:
-            bus (str): Unique identifier of the bus.
-        """
-        operation = ResetPhase(bus=bus)
-        self._active_block.append(operation)
-        self._buses.add(bus)
-
     @requires_domain("phase", Domain.Phase)
     def set_phase(self, bus: str, phase: float):
         """Set the absolute phase of the NCO associated with the bus.
@@ -1329,9 +1304,7 @@ class QProgram(StructuredProgram):
             bus (str): Unique identifier of the bus.
             phase (float): The new absolute phase of the NCO.
         """
-        operation = SetPhase(bus=bus, phase=_to_scalar(phase))
-        self._active_block.append(operation)
-        self._buses.add(bus)
+        super().set_phase(bus=bus, phase=_to_scalar(phase))
 
     @requires_domain("frequency", Domain.Frequency)
     def set_frequency(self, bus: str, frequency: float):
@@ -1341,9 +1314,7 @@ class QProgram(StructuredProgram):
             bus (str): Unique identifier of the bus.
             frequency (float): The new frequency of the NCO.
         """
-        operation = SetFrequency(bus=bus, frequency=_to_scalar(frequency))
-        self._active_block.append(operation)
-        self._buses.add(bus)
+        super().set_frequency(bus=bus, frequency=_to_scalar(frequency))
 
     @requires_domain("gain", Domain.Voltage)
     def set_gain(self, bus: str, gain: float):

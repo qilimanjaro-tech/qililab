@@ -10,7 +10,7 @@ from qililab.qprogram.experiment import Experiment
 from qililab.qprogram.operations import ExecuteQProgram, SetParameter
 from qililab.qprogram.operations.set_crosstalk import SetCrosstalk
 from qililab.qprogram.qprogram import QProgram
-from qililab.core.variables import Domain
+from qililab.core import Domain
 from qililab.typings.enums import Parameter
 from qililab.utils.serialization import deserialize, deserialize_from, serialize, serialize_to
 from qililab.waveforms import IQPair, Square

@@ -1,12 +1,12 @@
 [project]
 name = "qililab"
-version = "0.35.0"
+version = "0.35.0+euroqcs1"
 description = "Fundamental package for fast characterization and calibration of quantum chips."
-authors = [{name = "Qilimanjaro Quantum Tech", email = "info@qilimanjaro.tech"}]
-urls = {Repository = "https://github.com/qilimanjaro-tech/qililab"}
+authors = [{name = "Qilimanjaro Quantum Tech", email = "info@qilimanjaro.tech" }]
+urls = {Repository = "https://github.com/qilimanjaro-tech/qililab" }
 readme = "README.md"
 requires-python = ">=3.11"
-keywords = ["quantum control"]
+keywords = [ "quantum control" ]
 classifiers = [
     "Development Status :: 5 - Production/Stable",
     "Topic :: Scientific/Engineering",
@@ -42,6 +42,7 @@ dependencies = [
     "xarray>=2025.11.0",
     "rustworkx>=0.17.1",
     "scipy>=1.15",
+    "qprogram>=0.0.1"
 ]
 
 [project.optional-dependencies]
@@ -98,12 +99,13 @@ constraint-dependencies = [
 keyring-provider = "subprocess"
 
 [[tool.uv.index]]
-name = "qilimanjaro"
-url = "https://aws@qilimanjaro-723412851021.d.codeartifact.eu-west-1.amazonaws.com/pypi/qilimanjaro/simple"
+name = "bsc"
+url = "https://aws@qilimanjaro-723412851021.d.codeartifact.eu-west-1.amazonaws.com/pypi/bsc/simple"
 explicit = true
 
 [tool.uv.sources]
-qpysequence = { index = "qilimanjaro" }
+qpysequence = { index = "bsc" }
+qprogram = { index = "bsc" }
 
 [tool.ruff]
 line-length = 120

@@ -3,8 +3,9 @@ from unittest.mock import MagicMock, patch
 
 import numpy as np
 from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix, NonLinearCrosstalkMatrix
+from qililab.waveforms import Arbitrary
 from qililab.pulse_distortion import ExponentialCorrection
-from qililab.waveforms.arbitrary import Arbitrary
+
 import pytest
 import qpysequence as QPy
 import qpysequence.program.instructions as QPyInstructions

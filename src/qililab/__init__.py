@@ -27,7 +27,7 @@ import contextlib
 from .about import about
 from .config import logger
 from .data_management import build_platform, save_platform
-from .core.variables import Domain
+from .core import Domain
 from .qprogram import Calibration, CrosstalkMatrix, QProgram, Experiment, QbloxCompiler, QdacCompiler
 from .platform import Platform
 from .result import ExperimentResults, load_by_id, stream_results
@@ -47,7 +47,7 @@ from .waveforms import (
     Chained,
 )
 
-# moved here because it has instruments module dependencies so circular imports can be avoided
+# moving circuit_transpiler module imports here because it has instruments module dependencies so circular imports can be avoided
 from .analog import AnnealingProgram
 from .result import Cooldown, DatabaseManager, Sample, get_db_manager, load_results, save_results, Measurement
 from .qililab_settings import get_settings
