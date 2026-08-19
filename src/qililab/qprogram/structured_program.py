@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import numbers
+
 import numpy as np
 
 from qililab.core import Domain, FloatVariable, IntVariable, Variable
@@ -20,6 +22,17 @@ from qililab.qprogram.blocks import ForLoop, InfiniteLoop, Loop, Parallel
 from qililab.yaml import yaml
 
 from . import SdkStructuredProgram, VariableInfo
+
+
+def _to_scalar(value):
+    """Convert any numeric value to a Python int or float. Passthrough for all other types."""
+    if isinstance(value, Variable):
+        return value
+    if isinstance(value, numbers.Integral):
+        return int(value)
+    if isinstance(value, numbers.Real):
+        return float(value)
+    return value
 
 
 @yaml.register_class
@@ -62,6 +75,31 @@ class StructuredProgram(SdkStructuredProgram):
         """
         return StructuredProgram._InfiniteLoopContext(program=self)
 
+    def for_loop(self, variable: Variable, start: int | float, stop: int | float, step: int | float = 1):
+        """Define a for_loop block to iterate values over a variable.
+
+        Blocks need to open a scope.
+
+        Args:
+            variable (Variable): The variable to be affected from the loop.
+            start (int | float): The start value.
+            stop (int | float): The stop value.
+            step (int | float, optional): The step value. Defaults to 1.
+
+        Returns:
+            Loop: The loop block.
+
+        Examples:
+
+            >>> variable = qp.variable(int)
+            >>> with qp.for_loop(variable=variable, start=0, stop=100, step=5)):
+            >>> # operations that shall be executed in the for_loop block
+        """
+
+        return StructuredProgram._ForLoopContext(
+            program=self, variable=variable, start=_to_scalar(start), stop=_to_scalar(stop), step=_to_scalar(step)
+        )
+
     def parallel(self, loops: list[Loop | ForLoop]):
         """Define a block for running multiple loops in parallel.
 
@@ -81,6 +119,24 @@ class StructuredProgram(SdkStructuredProgram):
             Parallel: The parallel block.
         """
         return StructuredProgram._ParallelContext(program=self, loops=loops)
+
+    def average(self, shots: int):
+        """Define an acquire loop block with averaging in real time.
+
+        Blocks need to open a scope.
+
+        Args:
+            iterations (int): The number of acquire iterations.
+
+        Returns:
+            Average: The average block.
+
+        Examples:
+
+            >>> with qp.average(shots=1000):
+            >>> # operations that shall be executed in the average block
+        """
+        return StructuredProgram._AverageContext(program=self, shots=_to_scalar(shots))
 
     def variable(self, label: str, domain: Domain, type: type[int | float] | None = None):
         """Declare a variable.

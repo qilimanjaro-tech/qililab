@@ -325,6 +325,18 @@ class TestNonLinearCrosstalkMatrix:
         with pytest.raises(ValueError, match="Both 'amplitude' and 'beta_c' must be provided together"):
             non_linear_crosstalk_matrix.set_non_linear_params("flux_0", "flux_1", amplitude=-0.08)
 
+    def test_set_non_linear_params_with_none(self, non_linear_crosstalk_matrix):
+        non_linear_crosstalk_matrix.set_non_linear_params("flux_0", "flux_1", beta_c=-0.3, amplitude=-0.08)
+        non_linear_crosstalk_matrix.set_non_linear_params("flux_0", "flux_1", junction_asym=0.3)    
+        non_linear_crosstalk_matrix.set_non_linear_params("flux_0", "flux_1", beta_c=None, amplitude=None, junction_asym=None)
+        assert non_linear_crosstalk_matrix.beta_c_matrix["flux_0"]["flux_1"] == pytest.approx(None)
+        assert non_linear_crosstalk_matrix.non_lin_amp_matrix["flux_0"]["flux_1"] == pytest.approx(None)
+        assert non_linear_crosstalk_matrix.junction_asym_matrix["flux_0"]["flux_1"] == pytest.approx(None)
+        # Raises on only one of the beta-sin parameters being set to None
+        with pytest.raises(ValueError, match="You can only set to None 'amplitude' and 'beta_c' together."):
+            non_linear_crosstalk_matrix.set_non_linear_params("flux_0", "flux_1", beta_c=None, amplitude=-0.08)
+
+
     def test_set_non_linear_params_raises_on_zero_beta_c(self, non_linear_crosstalk_matrix):
         with pytest.raises(ValueError, match="beta_c cannot be zero"):
             non_linear_crosstalk_matrix.set_non_linear_params("flux_0", "flux_1", beta_c=0, amplitude=-0.08)

@@ -1,4 +1,80 @@
-# CHANGELOG
+# qililab 0.35.0 (2026-08-12)
+
+## Improved Documentation
+
+- Documented the development workflow in the README: environment setup with `uv`, linting/formatting with `ruff` and `mdformat`, type checking with `mypy`, running tests with `pytest`, and the new towncrier-based changelog process. ([PR #1185](https://github.com/qilimanjaro-tech/qililab/pull/1185))
+
+## Deprecations and Removals
+
+- Removed `qilisdk` as a dependency of `qililab`. The `qililab.digital` module (`CircuitTranspiler`, `CircuitToQProgramCompiler`, native gates, transpiler passes, `Rmw`, `qprogram_results_to_samples`) and `Platform.execute_circuit`/`Platform.compile_circuit` have been removed. ([PR #1116](https://github.com/qilimanjaro-tech/qililab/pull/1116))
+
+## Misc
+
+- `qililab.yaml` no longer imports its shared YAML instance from `qilisdk.yaml`. It now defines its own `ruamel.yaml.YAML` instance with the same custom representers/constructors for `numpy.ndarray`, `deque`, lambdas, and `UUID`. YAML-registered enums (`Parameter`, `Domain`) now register with `yaml.register_class` instead of the shared `yaml.register_class(shared=True)`, and use a hardcoded YAML tag instead of the shared registry's `cls.yaml_tag`. ([PR #1116](https://github.com/qilimanjaro-tech/qililab/pull/1116))
+- Replaced the manual `changelog-dev.md` with towncrier. Each PR now adds a news fragment under `changes/` instead of editing a shared file, and `towncrier build` compiles them into `CHANGELOG.md` at release time. The GitHub Action reminding authors to update `changelog-dev.md` has been removed. ([PR #1185](https://github.com/qilimanjaro-tech/qililab/pull/1185))
+
+
+## 0.34.0
+
+### New features since last release
+
+- Added a second crosstalk matrix, `Calibration.crosstalk_matrix_ac`, so DC and AC/fast-flux lines can be calibrated independently. Fluxoniums can be driven simultaneously through DC lines (Qdac, via the existing `crosstalk_matrix`) and fast-flux lines (QCM), which have different resistances and therefore need separate crosstalk calibrations. The routing now follows the instrument type: `QdacCompiler` keeps using `crosstalk_matrix` (DC), while `QbloxCompiler` uses `crosstalk_matrix_ac` (AC/fast flux). For backward compatibility, when `crosstalk_matrix_ac` is not set the Qblox compiler falls back to `crosstalk_matrix` and logs a warning.
+  [#1175](https://github.com/qilimanjaro-tech/qililab/pull/1175)
+
+- Added `platform.set_calibration`, which stores a `Calibration` (given an instance or file path) on the platform. `execute_qprogram`, `execute_qprograms_parallel`, and database/stream saving now fall back to it when no `calibration` argument is passed; an explicit argument always overrides it.
+  [#1165](https://github.com/qilimanjaro-tech/qililab/pull/1165)
+
+### Improvements
+
+- Added Dependabot configuration to keep GitHub Actions and Python dependencies up to date automatically.
+  [#1174](https://github.com/qilimanjaro-tech/qililab/pull/1174)
+
+- Added the `Sentinel` enum class in `utils/sentinels.py`, currently exposing only `UNSET` (more sentinels can be added later). Sentinels mark uninitialized, unset or otherwise undefined values without relying on `None`, which keeps the logic clearer and makes it possible to distinguish an explicit `None` from an unset default.
+  [#1173](https://github.com/qilimanjaro-tech/qililab/pull/1173)
+
+- Migrated `QbloxCompiler` to the redesigned `qpysequence` API (version 0.11). The compiler now uses the new `Compiler` class (`qpysequence.compiler.Compiler`) to compile programs to Q1ASM, replacing the old `program.compile()` call. Program construction now uses `block.add()` throughout, loop sweeps use the new `SweepSpec`-based `IterativeLoop` API with `ConversionInstruction` subclasses (`SetNormalisedOffs`, `SetNormalisedGain`, `SetFrequencyHz`, `SetPhaseRad`) for automatic physical-unit-to-integer scaling, and label references no longer require the `@` prefix. `Sequence.todict()` is replaced by `Sequence.to_dict()` throughout. Several responsibilities have shifted from `qililab` to `qpysequence`:
+  - **`nop` insertion**: `qililab` no longer emits `nop` instructions manually; `qpysequence`'s compiler handles read-after-write hazard guards automatically. Duplicate parameter instructions (e.g. double `set_awg_gain` or `set_freq`) that were previously emitted as a workaround are no longer needed.
+  - **Physical-unit-to-integer conversion**: scaling of physical-unit values (normalised gain/offset, Hz frequency, radian phase) to Q1ASM integers is now fully owned by `qpysequence` via `ConversionInstruction.scale_factor`.
+  - **Long-wait handling**: durations exceeding `INST_MAX_WAIT`, for both `wait` and `wait_trigger`, are now managed by `qpysequence`'s `LongWait` instruction rather than `qililab`.
+  - **Adjacent wait merging**: consecutive `wait` instructions are now combined by `qpysequence`'s compiler rather than by `qililab`.
+  - **Setup block creation**: `qililab` now explicitly creates the `setup` block and adds its `WaitSync(4)` instruction before compilation, calling `Compiler.compile(..., wait_sync=False)` to opt out of the compiler's own automatic setup-block insertion. Previously, `qpysequence`'s `Program.__init__` created the `setup` block and its `WaitSync(4)` automatically.
+  - The Q1ASM output is functionally equivalent but may differ structurally from previous versions; see the `qpysequence` changelog for a full description.
+  [#1090](https://github.com/qilimanjaro-tech/qpysequence/pull/1090)
+
+- Updated `QbloxDraw` to iterate over all program blocks (`setup` and `main`) to match the new Q1ASM structure introduced by `qpysequence` 0.11.
+  [#1090](https://github.com/qilimanjaro-tech/qpysequence/pull/1090)
+
+- `QbloxCompiler` now emits a warning and clamps to 4 ns when a `wait`, `wait_trigger`, or `play` duration, or a hardware loop's start or stop value, is below the Q1ASM minimum of 4 ns.
+  [#1090](https://github.com/qilimanjaro-tech/qpysequence/pull/1090)
+
+### Deprecations / Removals
+
+- Removed `Platform.compile_annealing_program` and `Platform.execute_annealing_program`.
+  [#1179](https://github.com/qilimanjaro-tech/qililab/pull/1179)
+
+### Bug fixes
+
+- Added `scipy` as an explicit dependency. It was previously only pulled in transitively, so `import qililab` could fail with `No module named 'scipy'` if that transitive path ever changed. The version was initially split by platform (`>=1.16.3` on `darwin`, `>=1.15,<1.16.3` elsewhere) to match `qilisdk`'s own `scipy` constraint; that platform-specific split was later removed in favor of a single `scipy>=1.15` constraint on every platform, following the same change in `qilisdk`.
+  [#1176](https://github.com/qilimanjaro-tech/qililab/pull/1176)
+  [#1183](https://github.com/qilimanjaro-tech/qililab/pull/1183)
+
+- Passing `None` to `NonLinearCrosstalkMatrix.set_non_linear_params` now clears the parameters instead of keeping their previously set values, allowing users to remove non-linear parameters that were set earlier.
+  [#1173](https://github.com/qilimanjaro-tech/qililab/pull/1173)
+
+- Fixed `uv lock` failing on `qm-qua`'s pinned prerelease `betterproto==2.0.0b7` for some platforms. Now pinned via `override-dependencies`.
+  [#1178](https://github.com/qilimanjaro-tech/qililab/pull/1178)
+
+- Fixed incorrect Q1ASM emitted when a long wait (> `INST_MAX_WAIT`) follows a pending `upd_param`: the pending-instruction branch now uses `LongWait` consistently with the no-pending branch.
+  [#1090](https://github.com/qilimanjaro-tech/qpysequence/pull/1090)
+
+- Fixed numpy scalar passthrough in `QProgram` operations: `wait`, `wait_trigger`, `set_phase`, `set_frequency`, `set_gain`, `set_offset`, `set_trigger`, `for_loop`, and `average` parameters now call `_to_scalar()` to convert numpy integer/float types to native Python scalars before constructing operations, preventing type errors downstream.
+  [#1090](https://github.com/qilimanjaro-tech/qpysequence/pull/1090)
+
+- Fixed `wait_trigger` overshooting the requested duration by tens of thousands of ns whenever it exceeded `INST_MAX_WAIT`: `_handle_add_trigger_waits` now emits `LongWait`, like its sibling `_handle_add_waits`, instead of a manual splitting loop that always rounded up to a whole number of `INST_MAX_WAIT` chunks and dropped the remainder.
+  [#1090](https://github.com/qilimanjaro-tech/qpysequence/pull/1090)
+
+- Fixed a hardware loop's `wait` domain not clamping the `stop` value to the Q1ASM minimum of 4 ns: only `start` was previously clamped, so a descending `for_loop`/`parallel` sweep over `wait` durations could reach an invalid (< 4 ns) final register value with no warning.
+  [#1090](https://github.com/qilimanjaro-tech/qpysequence/pull/1090)
 
 ## 0.33.3
 
@@ -203,13 +279,12 @@ In the runcard this parameter is located inside the instruments sequencer for QR
 - Pinned spirack to ==0.2.12 as some newer versions may cause an error when importing qblox-instruments.
   [#1135](https://github.com/qilimanjaro-tech/qililab/pull/1135)
 
-# CHANGELOG
 
 ## 0.33.1
 
 ### New features since last release
 
-- Added `load_sequence_by_id` inside the database manager. This function allows to retrieve simultaneous measurements given a list of IDs from a sequence of measurements. `Measurement.sequence_id`has been added as a measurement expression inside head and tail.
+- Added `load_sequence_by_id` inside the database manager. This function allows to retrieve simultaneous measurements given a list of IDs from a sequence of measurements. `Measurement.sequence_id` has been added as a measurement expression inside head and tail.
   [#1121](https://github.com/qilimanjaro-tech/qililab/pull/1121)
 
 ### Bug fixes
@@ -258,20 +333,20 @@ As the conversion to the new bias is non-linear, the loops given to the qblox Q1
   nlxtalk = NonLinearCrosstalkMatrix.from_array(...)
   # (...set up xtalk...)
 
-  phi   = Variable("phi",   Domain.Voltage)
+  phi = Variable("phi", Domain.Voltage)
   theta = Variable("theta", Domain.Voltage)
 
   nlfv = NonLinearFluxVector()
   nlfv.set_crosstalk_from_bias(nlxtalk, {"flux_0": 0.1, "flux_1": 0.2, "flux_2": 0.3})
 
-  nlfv.set_loop(ForLoop(variable=phi,   start=0.0, stop=1.0, step=0.5))  # 3 steps → loop_1
+  nlfv.set_loop(ForLoop(variable=phi, start=0.0, stop=1.0, step=0.5))  # 3 steps → loop_1
   nlfv.set_loop(ForLoop(variable=theta, start=0.0, stop=4.0, step=1.0))  # 5 steps → loop_2
 
   nlfv.set_element(SetOffset(bus="flux_0", offset_path0=phi))
   nlfv.set_element(SetGain(bus="flux_1", gain=theta))
 
-  offsets = nlfv.get_corrected_offsets()   # shape (5, 3) per bus
-  plays   = nlfv.get_corrected_play({"flux_0": Square(0.5, 100)})  # shape (5, 3) per bus
+  offsets = nlfv.get_corrected_offsets()  # shape (5, 3) per bus
+  plays = nlfv.get_corrected_play({"flux_0": Square(0.5, 100)})  # shape (5, 3) per bus
   ```
 
   [#1115](https://github.com/qilimanjaro-tech/qililab/pull/1115)
@@ -319,20 +394,20 @@ As the conversion to the new bias is non-linear, the loops given to the qblox Q1
   nlxtalk = NonLinearCrosstalkMatrix.from_array(...)
   # (...set up xtalk...)
 
-  phi   = Variable("phi",   Domain.Voltage)
+  phi = Variable("phi", Domain.Voltage)
   theta = Variable("theta", Domain.Voltage)
 
   nlfv = NonLinearFluxVector()
   nlfv.set_crosstalk_from_bias(nlxtalk, {"flux_0": 0.1, "flux_1": 0.2, "flux_2": 0.3})
 
-  nlfv.set_loop(ForLoop(variable=phi,   start=0.0, stop=1.0, step=0.5))  # 3 steps → loop_1
+  nlfv.set_loop(ForLoop(variable=phi, start=0.0, stop=1.0, step=0.5))  # 3 steps → loop_1
   nlfv.set_loop(ForLoop(variable=theta, start=0.0, stop=4.0, step=1.0))  # 5 steps → loop_2
 
   nlfv.set_element(SetOffset(bus="flux_0", offset_path0=phi))
   nlfv.set_element(SetGain(bus="flux_1", gain=theta))
 
-  offsets = nlfv.get_corrected_offsets()   # shape (5, 3) per bus
-  plays   = nlfv.get_corrected_play({"flux_0": Square(0.5, 100)})  # shape (5, 3) per bus
+  offsets = nlfv.get_corrected_offsets()  # shape (5, 3) per bus
+  plays = nlfv.get_corrected_play({"flux_0": Square(0.5, 100)})  # shape (5, 3) per bus
   ```
 
   [#1115](https://github.com/qilimanjaro-tech/qililab/pull/1115)
@@ -1790,15 +1865,19 @@ platform.set_flux_to_zero()
   ```Python
   # Define the QProgram
   qp = QProgram()
-  gain = qp.variable(label='resonator gain', domain=Domain.Voltage)
+  gain = qp.variable(label="resonator gain", domain=Domain.Voltage)
   with qp.for_loop(gain, 0, 10, 1):
       qp.set_gain(bus="readout_bus", gain=gain)
-      qp.measure(bus="readout_bus", waveform=IQPair(I=Square(1.0, 1000), Q=Square(1.0, 1000)), weights=IQPair(I=Square(1.0, 2000), Q=Square(1.0, 2000)))
+      qp.measure(
+          bus="readout_bus",
+          waveform=IQPair(I=Square(1.0, 1000), Q=Square(1.0, 1000)),
+          weights=IQPair(I=Square(1.0, 2000), Q=Square(1.0, 2000)),
+      )
 
   # Define the Experiment
   experiment = Experiment()
-  bias_z = experiment.variable(label='bias_z voltage', domain=Domain.Voltage)
-  frequency = experiment.variable(label='LO Frequency', domain=Domain.Frequency)
+  bias_z = experiment.variable(label="bias_z voltage", domain=Domain.Voltage)
+  frequency = experiment.variable(label="LO Frequency", domain=Domain.Frequency)
   experiment.set_parameter(alias="drive_q0", parameter=Parameter.VOLTAGE, value=0.5)
   experiment.set_parameter(alias="drive_q1", parameter=Parameter.VOLTAGE, value=0.5)
   experiment.set_parameter(alias="drive_q2", parameter=Parameter.VOLTAGE, value=0.5)
@@ -1919,7 +1998,7 @@ platform.set_flux_to_zero()
 
   ```Python
   qp = QProgram()
-  qp.qblox.set_markers(bus='drive_q0', mask='0111')
+  qp.qblox.set_markers(bus="drive_q0", mask="0111")
   ```
 
   [#747](https://github.com/qilimanjaro-tech/qililab/pull/747)
@@ -2113,17 +2192,17 @@ platform.set_flux_to_zero()
   weights = ql.IQPair(I=ql.Square(amplitude=1.0, duration=200), Q=ql.Square(amplitude=1.0, duration=200))
 
   # Add waveforms to the calibration
-  calibration.add_waveform(bus='drive_q0_bus', name='Xpi', waveform=drag_wf)
-  calibration.add_waveform(bus='readout_q0_bus', name='Measure', waveform=readout_wf)
+  calibration.add_waveform(bus="drive_q0_bus", name="Xpi", waveform=drag_wf)
+  calibration.add_waveform(bus="readout_q0_bus", name="Measure", waveform=readout_wf)
 
   # Add weights to the calibration
-  calibration.add_weights(bus='readout_q0_bus', name='optimal_weights', weights=weights)
+  calibration.add_weights(bus="readout_q0_bus", name="optimal_weights", weights=weights)
 
   # Save the calibration data to a file
-  calibration.save_to('calibration_data.yml')
+  calibration.save_to("calibration_data.yml")
 
   # Load the calibration data from a file
-  loaded_calibration = Calibration.load_from('calibration_data.yml')
+  loaded_calibration = Calibration.load_from("calibration_data.yml")
   ```
 
   The contents of `calibration_data.yml` will be:
@@ -2152,8 +2231,8 @@ platform.set_flux_to_zero()
 
   ```Python
   qp = QProgram()
-  qp.play(bus='drive_q0_bus', waveform='Xpi')
-  qp.measure(bus='readout_q0_bus', waveform='Measure', weights='optimal_weights')
+  qp.play(bus="drive_q0_bus", waveform="Xpi")
+  qp.measure(bus="readout_q0_bus", waveform="Measure", weights="optimal_weights")
   ```
 
   In that case, a `Calibration` instance must be provided when executing the QProgram. (see following changelog entries)
@@ -2166,9 +2245,9 @@ platform.set_flux_to_zero()
   ```Python
   from qililab.yaml import yaml
 
+
   @yaml.register_class
-  class MyClass:
-      ...
+  class MyClass: ...
   ```
 
   `MyClass` can now be saved to and loaded from a yaml file.
@@ -2204,8 +2283,8 @@ platform.set_flux_to_zero()
   deserialized_qprogram = ql.deserialize(yaml_string, cls=ql.QProgram)
 
   # Serialize to and deserialize from a file.
-  ql.serialize_to(qp, 'qprogram.yml')
-  deserialized_qprogram = ql.deserialize_from('qprogram.yml', cls=ql.QProgram)
+  ql.serialize_to(qp, "qprogram.yml")
+  deserialized_qprogram = ql.deserialize_from("qprogram.yml", cls=ql.QProgram)
   ```
 
   [#737](https://github.com/qilimanjaro-tech/qililab/pull/737)
@@ -2253,7 +2332,7 @@ platform.set_flux_to_zero()
 
   ```Python
   # Load the calibration data from a file
-  calibration = Calibration.load_from('calibration_data.yml')
+  calibration = Calibration.load_from("calibration_data.yml")
 
   # Apply the calibration to a QProgram instance
   calibrated_qprogram = qprogram.with_calibration(calibration=calibration)
@@ -2266,7 +2345,7 @@ platform.set_flux_to_zero()
 
   ```Python
   # Load the calibration data from a file
-  calibration = Calibration.load_from('calibration_data.yml')
+  calibration = Calibration.load_from("calibration_data.yml")
 
   platform.execute_qprogram(qprogram=qprogram, calibration=calibration)
   ```
@@ -2307,7 +2386,9 @@ platform.set_flux_to_zero()
   # Measure method with parameters `rotation` and `demodulation` has been moved to Quantum Machines interface. Instead of running
   # qp.measure(bus="readout_q0_bus", waveform=waveform, weights=weights, save_adc=True, rotation=np.pi, demodulation=True)
   # you should run
-  qp.quantum_machines.measure(bus="readout_q0_bus", waveform=waveform, weights=weights, save_adc=True, rotation=np.pi, demodulation=True)
+  qp.quantum_machines.measure(
+      bus="readout_q0_bus", waveform=waveform, weights=weights, save_adc=True, rotation=np.pi, demodulation=True
+  )
   ```
 
   [#736](https://github.com/qilimanjaro-tech/qililab/pull/736)
@@ -2652,7 +2733,7 @@ platform.set_flux_to_zero()
 
 - Buses serialization have been implemented: [#515](https://github.com/qilimanjaro-tech/qililab/pull/515)
 
-  When printing the runcard, in the buses part we will now have the normal Buses serialization, plus the parameters of the instruments associated to that bus, with the `to_dict/from_dict` methods.\`
+  When printing the runcard, in the buses part we will now have the normal Buses serialization, plus the parameters of the instruments associated to that bus, with the `to_dict/from_dict` methods.
 
   Also the serialization includes using the `set/get_params` for setting/getting the instruments params.
 

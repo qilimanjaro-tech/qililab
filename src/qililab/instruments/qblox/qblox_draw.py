@@ -406,7 +406,7 @@ class QbloxDraw:
 
         seq_parsed_program = {}
         for bus in sequences:  # Iterate through the bus of the sequences
-            sequence = sequences[bus].todict()
+            sequence = sequences[bus].to_dict()
             program_line = sequence["program"].split("\n")
             processed_lines = []
 
@@ -546,23 +546,24 @@ class QbloxDraw:
             register["avg_no_loop"] = 1
             loop_info = {}
 
-            for Q1ASM_line in Q1ASM_ordered[bus]["program"]["main"]:
-                if Q1ASM_line[0] == "move":
-                    reg = Q1ASM_line[1].split(",")[1].strip()
-                    value = Q1ASM_line[1].split(",")[0].strip()
-                    register[reg] = int(value)
+            for block in Q1ASM_ordered[bus]["program"].values():
+                for q1asm_line in block:
+                    if q1asm_line[0] == "move":
+                        reg = q1asm_line[1].split(",")[1].strip()
+                        value = q1asm_line[1].split(",")[0].strip()
+                        register[reg] = int(value)
 
-                # sorted labels (label, [start index, end index, register key])
-                _, value, label, index = Q1ASM_line
-                for l in label:
-                    if l not in loop_info:
-                        loop_info[l] = [index, index, None]
-                    else:
-                        loop_info[l][1] = index
-                        loop_info[l][2] = value.split(",")[0]
-                        if l.startswith("avg") and not averages_displayed:
-                            loop_info[l][2] = "avg_no_loop"
-                sorted_labels = sorted(loop_info.items(), key=lambda x: x[1][0])
+                    # sorted labels (label, [start index, end index, register key])
+                    _, value, label, index = q1asm_line
+                    for l in label:
+                        if l not in loop_info:
+                            loop_info[l] = [index, index, None]
+                        else:
+                            loop_info[l][1] = index
+                            loop_info[l][2] = value.split(",")[0]
+                            if l.startswith("avg") and not averages_displayed:
+                                loop_info[l][2] = "avg_no_loop"
+                    sorted_labels = sorted(loop_info.items(), key=lambda x: x[1][0])
 
             def process_loop(recursive_input, i):
                 if not parameters[bus]["time_reached"]:
@@ -603,22 +604,22 @@ class QbloxDraw:
                             current_idx += 1
                 return current_idx
 
-            for Q1ASM_line in Q1ASM_ordered[bus]["program"]["main"]:
+            for q1asm_line in Q1ASM_ordered[bus]["program"]["main"]:
                 if parameters[bus]["time_reached"]:
                     break
 
                 if (
-                    Q1ASM_line[2] and Q1ASM_line[-1] not in instructions_ran
+                    q1asm_line[2] and q1asm_line[-1] not in instructions_ran
                 ):  # if there is a loop label and if the index has not been ran before
                     index = 0
                     for x in sorted_labels:
-                        if x[0] == Q1ASM_line[2][0]:
+                        if x[0] == q1asm_line[2][0]:
                             input_recursive = x
                             break  # Stop as soon as the first match is found
                     process_loop(input_recursive, index)
 
-                elif Q1ASM_line[-1] not in instructions_ran:  # run if no loop label
-                    self._call_handlers(Q1ASM_line, param, register, data_draw[bus], wf)
+                elif q1asm_line[-1] not in instructions_ran:  # run if no loop label
+                    self._call_handlers(q1asm_line, param, register, data_draw[bus], wf)
                     if time_window is not None and len(data_draw[bus][0]) >= time_window:
                         parameters[bus]["time_reached"] = True
                         break

@@ -23,12 +23,11 @@ import re
 from contextlib import contextmanager
 from copy import deepcopy
 from dataclasses import asdict
-from typing import TYPE_CHECKING, Any, Callable, cast
+from typing import TYPE_CHECKING, Any, cast
 
 import numpy as np
 from ruamel.yaml import YAML
 
-from qililab.analog import AnnealingProgram
 from qililab.config import logger
 from qililab.constants import FLUX_CONTROL_REGEX, GATE_ALIAS_REGEX, RUNCARD
 from qililab.core import Domain
@@ -47,6 +46,7 @@ from qililab.instruments.instrument import Instrument
 from qililab.instruments.instruments import Instruments
 from qililab.instruments.qblox import QbloxModule
 from qililab.instruments.qblox.qblox_draw import QbloxDraw
+from qililab.instruments.qblox.qblox_qrm import QbloxQRM
 from qililab.instruments.qdevil.qdevil_qdac2 import QDevilQDac2
 from qililab.instruments.utils import InstrumentFactory
 from qililab.platform.components.bus import Bus
@@ -75,6 +75,7 @@ if TYPE_CHECKING:
 
     from qililab.instrument_controllers.instrument_controller import InstrumentController
     from qililab.instruments.instrument import Instrument
+    from qililab.instruments.qblox.qblox_adc_sequencer import QbloxADCSequencer
     from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
     from qililab.result.database import DatabaseManager
     from qililab.settings import Runcard
@@ -684,9 +685,8 @@ class Platform:
                     self.qblox_active_filter_exponential.append(exponential_idx)
                 self._update_qblox_filter_state_exponential()
             else:
-                if (
-                    exponential_idx in self.qblox_active_filter_exponential
-                ):  # cannot put the filter as bypassed otherwise this would cause a delay with the other sequencers
+                # cannot put the filter as bypassed otherwise this would cause a delay with the other sequencers
+                if exponential_idx in self.qblox_active_filter_exponential:
                     element.set_parameter(
                         parameter=parameter,
                         value=DistortionState.DELAY_COMP,
@@ -704,9 +704,8 @@ class Platform:
                 self.qblox_active_filter_fir = True
                 self._update_qblox_filter_state_fir()
 
-            elif (
-                self.qblox_active_filter_fir
-            ):  # cannot put the filter as bypassed otherwise this would cause a delay with the other sequencers
+            # cannot put the filter as bypassed otherwise this would cause a delay with the other sequencers
+            elif self.qblox_active_filter_fir:
                 element.set_parameter(
                     parameter=parameter, value=DistortionState.DELAY_COMP, channel_id=channel_id, output_id=output_id
                 )
@@ -747,7 +746,8 @@ class Platform:
                                         value=DistortionState.DELAY_COMP,
                                         output_id=output_id,
                                     )
-                    if pre_exisisting_filter is False:  # filter needs to be created
+                    # filter needs to be created
+                    if pre_exisisting_filter is False:
                         self.set_parameter(
                             alias=alias, parameter=parameter, value=DistortionState.DELAY_COMP, output_id=output_id
                         )
@@ -777,7 +777,8 @@ class Platform:
                                 value=DistortionState.DELAY_COMP,
                                 output_id=output_id,
                             )
-                if pre_exisisting_filter is False:  # filter needs to be created
+                # filter needs to be created
+                if pre_exisisting_filter is False:
                     self.set_parameter(
                         alias=alias,
                         parameter=Parameter.FIR_STATE,
@@ -987,14 +988,18 @@ class Platform:
         try:
             # Track successfully called setup methods and their cleanup counterparts
             self.connect()
-            cleanup_methods.append(self.disconnect)  # Store disconnect for cleanup
+            # Store disconnect for cleanup
+            cleanup_methods.append(self.disconnect)
 
-            self.initial_setup()  # No specific cleanup for initial_setup
+            # No specific cleanup for initial_setup
+            self.initial_setup()
 
             self.turn_on_instruments()
-            cleanup_methods.append(self.turn_off_instruments)  # Store turn_off_instruments for cleanup
+            # Store turn_off_instruments for cleanup
+            cleanup_methods.append(self.turn_off_instruments)
 
-            yield  # Experiment logic goes here
+            # Experiment logic goes here
+            yield
 
         except Exception as e:  # noqa: BLE001
             logger.error(f"An error occurred: {e}")
@@ -1021,142 +1026,6 @@ class Platform:
 
             if execution_error is not None:
                 raise execution_error
-
-    def compile_annealing_program(
-        self,
-        annealing_program_dict: list[dict[str, dict[str, float]]],
-        transpiler: Callable,
-        calibration: Calibration,
-        num_averages: int = 1000,
-        num_shots: int = 1,
-        preparation_block: str = "preparation",
-        measurement_block: str = "measurement",
-    ) -> QProgram:
-        """
-        Compile an annealing program into a `QProgram` by mapping Ising coefficients to flux waveforms.
-
-        This method takes an annealing program, represented as a time-ordered list of circuit elements with
-        corresponding Ising coefficients, and compiles it into a quantum program (QProgram) that can be
-        executed on a quantum annealing hardware setup.
-
-        The input `annealing_program_dict` is structured as a list of dictionaries, each representing a
-        specific time point. Each dictionary maps qubit and coupler identifiers to Ising terms (`sigma_x`,
-        `sigma_y`, `sigma_z`), indicating the coefficient values for each term. For example:
-
-        .. code-block:: python
-
-            [
-                {"qubit_0": {"sigma_x": 0, "sigma_y": 1, "sigma_z": 2}, "coupler_1_0": {...}},
-                {...},  # time=1ns
-                ...,
-            ]
-
-        Using the provided `transpiler`, these Ising coefficients are converted to flux values. These fluxes
-        are then transformed into waveforms assigned to specific hardware buses, as defined by a `flux_to_bus`
-        mapping in the analog compilation settings.
-
-        Args:
-            annealing_program_dict (list[dict[str, dict[str, float]]]): The time-ordered list of qubit and
-                coupler Ising coefficients to be compiled.
-            transpiler (Callable): A function to convert Ising parameters (delta, epsilon) to flux values
-                (phix, phiz).
-            calibration (Calibration): Calibration data containing the required blocks (e.g., `preparation`,
-                `measurement`) and any applicable crosstalk corrections.
-            num_averages (int, optional): Number of times the program should be averaged per shot. Defaults to 1000.
-            num_shots (int, optional): Number of shots to execute the program. Defaults to 1.
-            preparation_block (str, optional): Name of the calibration block used for preparation. Defaults to "preparation".
-            measurement_block (str, optional): Name of the calibration block used for measurement. Defaults to "measurement".
-
-        Returns:
-            QProgram: A compiled quantum program (QProgram) ready for execution on the target hardware.
-
-        Raises:
-            ValueError: If the flux-to-bus topology is not defined in the analog compilation settings.
-            ValueError: If the specified `measurement_block` is not available in the calibration.
-
-        Notes:
-            - The method checks for essential compilation settings and calibrated blocks, ensuring the program can be executed successfully.
-            - Transpiled waveforms are adjusted for crosstalk when a crosstalk matrix is available in the calibration.
-            - Execution includes optional `preparation_block` and synchronizes waveforms before the final `measurement_block`.
-
-        """
-        if self.analog_compilation_settings is None:
-            raise ValueError("Flux to bus topology not given in the runcard")
-
-        if not calibration.has_block(name=measurement_block):
-            raise ValueError("The calibrated measurement is not present in the calibration file.")
-
-        annealing_program = AnnealingProgram(
-            flux_to_bus_topology=self.analog_compilation_settings.flux_control_topology,
-            annealing_program=annealing_program_dict,
-        )
-        annealing_program.transpile(transpiler)
-        crosstalk_matrix = calibration.crosstalk_matrix.inverse() if calibration.crosstalk_matrix is not None else None
-        annealing_waveforms = annealing_program.get_waveforms(crosstalk_matrix=crosstalk_matrix, minimum_clock_time=4)
-
-        qp_annealing = QProgram()
-        shots_variable = qp_annealing.variable("num_shots", Domain.Scalar, int)
-
-        with qp_annealing.for_loop(variable=shots_variable, start=0, stop=num_shots, step=1):
-            with qp_annealing.average(num_averages):
-                if calibration.has_block(name=preparation_block):
-                    qp_annealing.insert_block(calibration.get_block(name=preparation_block))
-                    qp_annealing.sync()
-                for bus, waveform in annealing_waveforms.items():
-                    qp_annealing.play(bus=bus, waveform=waveform)
-                qp_annealing.sync()
-                qp_annealing.insert_block(calibration.get_block(name=measurement_block))
-
-        return qp_annealing
-
-    def execute_annealing_program(
-        self,
-        annealing_program_dict: list[dict[str, dict[str, float]]],
-        transpiler: Callable,
-        calibration: Calibration,
-        num_averages: int = 1000,
-        num_shots: int = 1,
-        preparation_block: str = "preparation",
-        measurement_block: str = "measurement",
-        bus_mapping: dict[str, str] | None = None,
-        debug: bool = False,
-    ) -> QProgramResults:
-        """Given an annealing program execute it as a qprogram.
-        The annealing program should contain a time ordered list of circuit elements and their corresponding ising coefficients as a dictionary. Example structure:
-
-        .. code-block:: python
-
-            [
-                {"qubit_0": {"sigma_x" : 0, "sigma_y" : 1, "sigma_z" : 2},
-                "coupler_1_0 : {...},
-                },      # time=0ns
-                {...},  # time=1ns
-            .
-            .
-            .
-            ]
-
-        This dictionary containing ising coefficients is transpiled to fluxes using the given transpiler. Then the corresponding waveforms are obtained and assigned to a bus
-        from the bus to flux mapping given by the runcard.
-
-        Args:
-            annealing_program_dict (list[dict[str, dict[str, float]]]): annealing program to run
-            transpiler (Callable): ising to flux transpiler. The transpiler should take 2 values as arguments (delta, epsilon) and return 2 values (phix, phiz)
-            averages (int, optional): Amount of times to run and average the program over. Defaults to 1.
-            debug (bool, optional): Whether to create debug information. For ``Qblox`` clusters all the program information is printed on screen.
-                For ``Quantum Machines`` clusters a ``.py`` file is created containing the ``QUA`` and config compilation. Defaults to False.
-        """
-
-        qprogram = self.compile_annealing_program(
-            annealing_program_dict=annealing_program_dict,
-            transpiler=transpiler,
-            calibration=calibration,
-            num_averages=num_averages,
-            num_shots=num_shots,
-            preparation_block=preparation_block,
-            measurement_block=measurement_block,
-        )
-        return self.execute_qprogram(qprogram=qprogram, calibration=calibration, bus_mapping=bus_mapping, debug=debug)
 
     def execute_experiment(
         self,
@@ -1238,9 +1107,14 @@ class Platform:
         calibration: Calibration | None = None,
         crosstalk: bool = True,
     ) -> QProgramCompilationOutput:
-        if not crosstalk and calibration is not None and calibration.crosstalk_matrix is not None:
+        if (
+            not crosstalk
+            and calibration is not None
+            and (calibration.crosstalk_matrix is not None or calibration.crosstalk_matrix_ac is not None)
+        ):
             calibration = deepcopy(calibration)
             calibration.crosstalk_matrix = None
+            calibration.crosstalk_matrix_ac = None
 
         bus_aliases = {bus_mapping[bus] if bus_mapping and bus in bus_mapping else bus for bus in qprogram.buses}
         buses = [self.buses.get(alias=bus_alias) for bus_alias in bus_aliases]
@@ -1326,6 +1200,7 @@ class Platform:
                 if bus.distortions:
                     bus_distortions[bus.alias] = bus.distortions
 
+            qprogram = qprogram.with_resolved_weight_duration(calibration, bus_mapping)
             qblox_compiler = QbloxCompiler()
             qblox_buses = [
                 bus.alias for bus in buses if any(isinstance(instrument, QbloxModule) for instrument in bus.instruments)
@@ -1404,6 +1279,7 @@ class Platform:
             sequences, acquisitions = output.qblox.sequences, output.qblox.acquisitions  # type: ignore[union-attr]
             buses = {bus_alias: self.buses.get(alias=bus_alias) for bus_alias in sequences}
 
+            weight_durations = output.qblox.qprogram.qblox.weight_duration  # type: ignore[union-attr]
             for bus_alias, bus in buses.items():
                 # set up the trigger network if required
                 if bus_alias in output.qblox.qprogram.qblox.trigger_network_required:  # type: ignore[union-attr]
@@ -1412,6 +1288,21 @@ class Platform:
                     for controller in self.instrument_controllers.elements:
                         if isinstance(controller, QbloxClusterController):
                             controller.device.reset_trigger_monitor_count(address=trigger_address)
+                durations = weight_durations.get(bus_alias)
+                if bus.has_adc() and durations:
+                    if len(set(durations)) > 1:
+                        logger.warning(
+                            f"Bus {bus_alias!r} has multiple different weight durations: {durations}. "
+                            f"Using the first value ({durations[0]} ns) as integration length for threshold."
+                        )
+                    for instrument, channel in zip(bus.instruments, bus.channels):
+                        if isinstance(instrument, QbloxQRM) and instrument.is_device_active():
+                            sequencer = cast("QbloxADCSequencer", instrument.get_sequencer(channel))
+                            instrument._set_device_threshold(
+                                value=sequencer.threshold,
+                                sequencer_id=int(channel),
+                                integration_length=int(durations[0]),
+                            )
             if debug:
                 with open("debug_qblox_execution.txt", "w", encoding="utf-8") as sourceFile:
                     for bus_alias, sequence in sequences.items():
@@ -1779,6 +1670,7 @@ class Platform:
         self._apply_qblox_distortions_parallel(
             sequences_per_qprogram=sequences_per_qprogram, buses_per_qprogram=buses_per_qprogram
         )
+        self._apply_qblox_threshold_parallel(outputs=outputs, buses_per_qprogram=buses_per_qprogram)
 
         if debug:
             self._write_qblox_parallel_debug(sequences_per_qprogram=sequences_per_qprogram)
@@ -1825,6 +1717,30 @@ class Platform:
                         for waveform in sequences_per_qprogram[qprogram_idx][bus_alias]._waveforms._waveforms:
                             sequences_per_qprogram[qprogram_idx][bus_alias]._waveforms.modify(
                                 waveform.name, distortion.apply(waveform.data)
+                            )
+
+    def _apply_qblox_threshold_parallel(
+        self,
+        outputs: list[QbloxCompilationOutput],
+        buses_per_qprogram: list[dict[str, Bus]],
+    ) -> None:
+        for qprogram_idx, buses in enumerate(buses_per_qprogram):
+            weight_durations = outputs[qprogram_idx].qprogram.qblox.weight_duration
+            for bus_alias, bus in buses.items():
+                durations = weight_durations.get(bus_alias)
+                if bus.has_adc() and durations:
+                    if len(set(durations)) > 1:
+                        logger.warning(
+                            f"Bus {bus_alias!r} has multiple different weight durations: {durations}. "
+                            f"Using the first value ({durations[0]} ns) as integration length for threshold."
+                        )
+                    for instrument, channel in zip(bus.instruments, bus.channels):
+                        if isinstance(instrument, QbloxQRM) and instrument.is_device_active():
+                            sequencer = cast("QbloxADCSequencer", instrument.get_sequencer(int(channel)))  # type: ignore[arg-type]
+                            instrument._set_device_threshold(
+                                value=sequencer.threshold,
+                                sequencer_id=int(channel),  # type: ignore[arg-type]
+                                integration_length=int(durations[0]),
                             )
 
     def _write_qblox_parallel_debug(self, sequences_per_qprogram: list[dict[str, Any]]) -> None:

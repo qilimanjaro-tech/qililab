@@ -64,7 +64,6 @@ Qililab Documentation
    fundamentals/platform
    fundamentals/runcard
    fundamentals/qprogram
-   fundamentals/transpilation
 
 .. toctree::
    :caption: Contributor's Guide

@@ -33,8 +33,22 @@ class Calibration:
         self.weights: dict[str, dict[str, IQWaveform]] = {}
         self.blocks: dict[str, Block] = {}
         self.crosstalk_matrix: CrosstalkMatrix | None = None
+        self.crosstalk_matrix_ac: CrosstalkMatrix | None = None
         self.parameters: dict[str, Any] = {}
         self.crosstalk_history: list[dict[str, Any]] = []
+
+    def __setstate__(self, state: dict[str, Any]) -> None:
+        """Restore a Calibration during deserialization.
+
+        ``ruamel`` (and pickle) build the object with ``cls.__new__`` and never call
+        ``__init__``. Running ``__init__`` first seeds every
+        default, then the persisted values are overlaid on top.
+
+        Args:
+            state (dict[str, Any]): The attribute mapping reconstructed from the document.
+        """
+        self.__init__()  # type: ignore[misc]
+        self.__dict__.update(state)
 
     def add_waveform(self, bus: str, name: str, waveform: Waveform | IQWaveform):
         """Add a waveform or IQPair for the specified bus.
@@ -205,7 +219,11 @@ class Calibration:
             ValueError: If no crosstalk has been given to calibration file.
         """
         if not self.crosstalk_matrix:
-            raise ValueError("No crosstalk has been given to the Calibration file")
+            if self.crosstalk_matrix_ac:
+                raise NotImplementedError(
+                    "crosstalk_matrix_ac is not valid for crosstalk history, use crosstalk_matrix."
+                )
+            raise ValueError("No crosstalk has been given to the Calibration file.")
 
         bus_list = list(self.crosstalk_matrix.matrix.keys())
         if set(bus_list) != set(block_diag_xt_matrix.keys()):
@@ -247,7 +265,11 @@ class Calibration:
             ValueError: If no crosstalk has been given to calibration file.
         """
         if not self.crosstalk_matrix:
-            raise ValueError("No crosstalk has been given to the Calibration file")
+            if self.crosstalk_matrix_ac:
+                raise NotImplementedError(
+                    "crosstalk_matrix_ac is not valid for crosstalk history, use crosstalk_matrix."
+                )
+            raise ValueError("No crosstalk has been given to the Calibration file.")
 
         bus_list = list(self.crosstalk_matrix.matrix.keys())
         if set(bus_list) != set(full_crosstalk_matrix.keys()):

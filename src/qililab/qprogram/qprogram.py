@@ -44,7 +44,7 @@ from qililab.qprogram.operations import (
     Wait,
     WaitTrigger,
 )
-from qililab.qprogram.structured_program import StructuredProgram, VariableInfo
+from qililab.qprogram.structured_program import StructuredProgram, VariableInfo, _to_scalar
 from qililab.qprogram.utils_crosstalk import CrosstalkElements, NonLinearFlagState
 from qililab.waveforms import Arbitrary, FlatTop, IQPair, IQWaveform, Square, Waveform
 from qililab.yaml import yaml
@@ -172,15 +172,15 @@ class QProgram(SdkQProgram, StructuredProgram):
             qprogram = cls.__new__(cls)
             qprogram.__dict__ = state
 
-        qprogram.qblox = cls._QbloxInterface(qprogram)  # type: ignore[attr-defined, arg-type]  # ty:ignore[invalid-assignment]
-        qprogram.quantum_machines = cls._QuantumMachinesInterface(qprogram)  # type: ignore[attr-defined, arg-type]  # ty:ignore[invalid-assignment]
-        qprogram.qdac = cls._QdacInterface(qprogram)  # type: ignore[attr-defined, arg-type]  # ty:ignore[invalid-assignment]
+        qprogram.qblox = cls._QbloxInterface(qprogram)  # type: ignore[attr-defined, arg-type]
+        qprogram.quantum_machines = cls._QuantumMachinesInterface(qprogram)  # type: ignore[attr-defined, arg-type]
+        qprogram.qdac = cls._QdacInterface(qprogram)  # type: ignore[attr-defined, arg-type]
 
         traverse(qprogram.body)
 
         return qprogram  # type: ignore[return-value]  # ty:ignore[invalid-return-type]
 
-    def with_bus_mapping(self, bus_mapping: dict[str, str]) -> Self:
+    def with_bus_mapping(self, bus_mapping: dict[str, str]) -> "QProgram":
         """Returns a copy of the QProgram with bus mappings applied.
 
         Args:
@@ -190,26 +190,43 @@ class QProgram(SdkQProgram, StructuredProgram):
             QProgram: A new instance of QProgram with updated bus names.
         """
 
-        def traverse(block: Block) -> None:
+        def traverse(block: Block):
             for index, element in enumerate(block.elements):
                 if isinstance(element, Block):
                     traverse(element)
-                    continue
-                if hasattr(element, "bus"):
+                elif isinstance(element, (MeasureReset, MeasureResetCalibrated)):
+                    bus = getattr(element, "bus")
+                    control_bus = getattr(element, "control_bus")
+                    if isinstance(bus, str) and bus in bus_mapping:
+                        setattr(block.elements[index], "bus", bus_mapping[bus])
+                    if isinstance(control_bus, str) and control_bus in bus_mapping:
+                        setattr(block.elements[index], "control_bus", bus_mapping[control_bus])
+                    new_latch_enabled = []
+                    for bus in copied_qprogram.qblox.latch_enabled:
+                        if bus in bus_mapping:
+                            new_latch_enabled.append(bus_mapping[bus])
+                        else:
+                            new_latch_enabled.append(bus)
+                    copied_qprogram.qblox.latch_enabled = new_latch_enabled
+
+                    new_trigger_network_required = {}
+                    for bus, value in copied_qprogram.qblox.trigger_network_required.items():
+                        if bus in bus_mapping:
+                            new_trigger_network_required[bus_mapping[bus]] = value
+                        else:
+                            new_trigger_network_required[bus] = value
+                    copied_qprogram.qblox.trigger_network_required = new_trigger_network_required
+                elif hasattr(element, "bus"):
                     bus = getattr(element, "bus")
                     if isinstance(bus, str) and bus in bus_mapping:
                         setattr(block.elements[index], "bus", bus_mapping[bus])
-                if hasattr(element, "control_bus"):
-                    control_bus = getattr(element, "control_bus")
-                    if isinstance(control_bus, str) and control_bus in bus_mapping:
-                        setattr(block.elements[index], "control_bus", bus_mapping[control_bus])
-                if hasattr(element, "buses"):
+                elif hasattr(element, "buses"):
                     buses = getattr(element, "buses")
                     if isinstance(buses, list):
                         setattr(
                             block.elements[index],
                             "buses",
-                            [bus_mapping.get(bus, bus) for bus in buses],
+                            [bus_mapping[bus] if bus in bus_mapping else bus for bus in buses],
                         )
 
         # Copy qprogram so the original remain unaffected
@@ -219,10 +236,17 @@ class QProgram(SdkQProgram, StructuredProgram):
         traverse(copied_qprogram.body)
 
         # Apply the mapping to buses property
-        for bus in copied_qprogram.buses:
+        for bus in list(copied_qprogram.buses):
             if bus in bus_mapping:
                 copied_qprogram.buses.remove(bus)
                 copied_qprogram.buses.add(bus_mapping[bus])
+
+        # Apply the mapping to weight_duration keys, merging entries when multiple source buses map onto
+        # the same target bus (e.g. multiplexed readout) instead of one overwriting the other
+        remapped_weight_duration: dict[str, list[int | str]] = {}
+        for bus, durations in copied_qprogram.qblox._weight_duration.items():
+            remapped_weight_duration.setdefault(bus_mapping.get(bus, bus), []).extend(durations)
+        copied_qprogram.qblox._weight_duration = remapped_weight_duration
 
         return copied_qprogram
 
@@ -365,6 +389,45 @@ class QProgram(SdkQProgram, StructuredProgram):
         if trigger_network_to_add:
             copied_qprogram.qblox.trigger_network_required.update(trigger_network_to_add)
 
+        return copied_qprogram
+
+    def with_resolved_weight_duration(
+        self, calibration: Calibration | None, bus_mapping: dict[str, str] | None = None
+    ) -> "QProgram":
+        """Return a copy of the QProgram with calibrated weight names in ``qblox.weight_duration``
+        resolved to integer durations.
+
+        Calibration lookups use each bus's mapped (physical) alias when ``bus_mapping`` is given,
+        matching how ``with_bus_mapping``/``with_calibration`` resolve calibration after applying the
+        mapping.
+
+        Args:
+            calibration (Calibration | None): Calibration instance used to resolve calibrated weight
+                names. Required if any acquisition uses a calibrated weight name.
+            bus_mapping (dict[str, str] | None): Optional bus mapping; calibration lookups use the
+                mapped bus alias when provided.
+
+        Returns:
+            QProgram: A new instance of QProgram with ``qblox.weight_duration`` resolved.
+        """
+        copied_qprogram = deepcopy(self)
+        resolved: dict[str, list[int | str]] = {}
+        for bus, entries in copied_qprogram.qblox.weight_duration.items():
+            mapped_bus = bus_mapping.get(bus, bus) if bus_mapping else bus
+            resolved_entries: list[int | str] = []
+            for entry in entries:
+                if isinstance(entry, int):
+                    resolved_entries.append(entry)
+                else:
+                    if calibration is None:
+                        raise ValueError(
+                            f"Calibrated weight {entry!r} requires a calibration object, but none was provided."
+                        )
+                    if not calibration.has_weights(mapped_bus, entry):
+                        raise ValueError(f"Calibrated weight {entry!r} not found in calibration.")
+                    resolved_entries.append(calibration.get_weights(mapped_bus, entry).get_duration())
+            resolved[bus] = resolved_entries
+        copied_qprogram.qblox._weight_duration = resolved
         return copied_qprogram
 
     def with_crosstalk_qblox(self, crosstalk: CrosstalkMatrix):
@@ -979,7 +1042,8 @@ class QProgram(SdkQProgram, StructuredProgram):
                     envelope = element.waveform.envelope()
                 elif isinstance(element.waveform, IQWaveform):
                     envelope = element.waveform.get_I().envelope()
-            elif isinstance(element, SetOffset):  # square with same dimension as play
+            # square with same dimension as play
+            elif isinstance(element, SetOffset):
                 envelope = element.offset_path0  # type: ignore
 
             if isinstance(envelope, np.ndarray):
@@ -1135,6 +1199,16 @@ class QProgram(SdkQProgram, StructuredProgram):
         self._buses.add(bus)
 
     @requires_domain("duration", Domain.Time)
+    def wait(self, bus: str, duration: int):
+        """Adds a delay on the bus with a specified time.
+
+        Args:
+            bus (str): Unique identifier of the bus.
+            time (int): Duration of the delay.
+        """
+        super().wait(bus=bus, duration=_to_scalar(duration))
+
+    @requires_domain("duration", Domain.Time)
     def wait_trigger(self, bus: str, duration: int, port: int | None = None):
         """Adds a delay on the bus and wait for an trigger signal to arrive.
 
@@ -1143,7 +1217,7 @@ class QProgram(SdkQProgram, StructuredProgram):
             duration (int): Duration of the delay after the trigger is received. Minimum of 4 ns.
             port (optional, int | None): Port channel of the trigger input. Defaults to None.
         """
-        operation = WaitTrigger(bus=bus, duration=duration, port=port)
+        operation = WaitTrigger(bus=bus, duration=_to_scalar(duration), port=port)
         self._active_block.append(operation)
         self._buses.add(bus)
 
@@ -1218,6 +1292,29 @@ class QProgram(SdkQProgram, StructuredProgram):
             )
         self._active_block.append(operation)
         self._buses.add(bus)
+        self.qblox._weight_duration.setdefault(bus, []).append(
+            weights.get_duration() if isinstance(weights, IQWaveform) else weights
+        )
+
+    @requires_domain("phase", Domain.Phase)
+    def set_phase(self, bus: str, phase: float):
+        """Set the absolute phase of the NCO associated with the bus.
+
+        Args:
+            bus (str): Unique identifier of the bus.
+            phase (float): The new absolute phase of the NCO.
+        """
+        super().set_phase(bus=bus, phase=_to_scalar(phase))
+
+    @requires_domain("frequency", Domain.Frequency)
+    def set_frequency(self, bus: str, frequency: float):
+        """Set the frequency of the NCO associated with bus.
+
+        Args:
+            bus (str): Unique identifier of the bus.
+            frequency (float): The new frequency of the NCO.
+        """
+        super().set_frequency(bus=bus, frequency=_to_scalar(frequency))
 
     @requires_domain("gain", Domain.Voltage)
     def set_gain(self, bus: str, gain: float):
@@ -1227,7 +1324,7 @@ class QProgram(SdkQProgram, StructuredProgram):
             bus (str): Unique identifier of the bus.
             gain (float): The new gain of the AWG.
         """
-        operation = SetGain(bus=bus, gain=gain)
+        operation = SetGain(bus=bus, gain=_to_scalar(gain))
         self._active_block.append(operation)
         self._buses.add(bus)
 
@@ -1241,7 +1338,11 @@ class QProgram(SdkQProgram, StructuredProgram):
             offset_path0 (float): The new offset of the AWG for path0.
             offset_path1 (float): The new offset of the AWG for path1.
         """
-        operation = SetOffset(bus=bus, offset_path0=offset_path0, offset_path1=offset_path1)
+        operation = SetOffset(
+            bus=bus,
+            offset_path0=_to_scalar(offset_path0),
+            offset_path1=_to_scalar(offset_path1) if offset_path1 is not None else None,
+        )
         self._active_block.append(operation)
         self._buses.add(bus)
 
@@ -1254,7 +1355,7 @@ class QProgram(SdkQProgram, StructuredProgram):
             outputs(optional, list[int] | int | None): Port channel/s of the trigger output. Defaults to None.
             outputs(optional, str): Trigger position in respective to the pulse location, it can be either `start` or `end. Defaults to start.
         """
-        operation = SetTrigger(bus=bus, outputs=outputs, duration=duration, position=position)
+        operation = SetTrigger(bus=bus, outputs=outputs, duration=_to_scalar(duration), position=position)
         self._active_block.append(operation)
         self._buses.add(bus)
 
@@ -1265,6 +1366,12 @@ class QProgram(SdkQProgram, StructuredProgram):
             self.disable_autosync: bool = False
             self.latch_enabled: list[str] = []
             self.trigger_network_required: dict[str, int] = {}
+            self._weight_duration: dict[str, list[int | str]] = {}
+
+        @property
+        def weight_duration(self) -> dict[str, list[int | str]]:
+            """Weight durations per bus: list of durations (int ns or calibrated weight name str) in acquisition order."""
+            return self._weight_duration
 
         @overload
         def acquire(self, bus: str, weights: IQWaveform, save_adc: bool = False):
@@ -1298,6 +1405,9 @@ class QProgram(SdkQProgram, StructuredProgram):
             )
             self.qprogram._active_block.append(operation)
             self.qprogram._buses.add(bus)
+            self._weight_duration.setdefault(bus, []).append(
+                weights.get_duration() if isinstance(weights, IQWaveform) else weights
+            )
 
         @overload
         def play(self, bus: str, waveform: Waveform | IQWaveform, wait_time: int) -> None:
@@ -1449,6 +1559,9 @@ class QProgram(SdkQProgram, StructuredProgram):
             self.qprogram._buses.add(control_bus)
             self.latch_enabled.append(control_bus)
             self.trigger_network_required[bus] = trigger_address
+            self._weight_duration.setdefault(bus, []).append(
+                weights.get_duration() if isinstance(weights, IQWaveform) else weights
+            )
 
         def set_markers(self, bus: str, mask: str):
             """Set the markers based on a 4-bit binary mask.

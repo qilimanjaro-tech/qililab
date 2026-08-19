@@ -29,7 +29,7 @@ from tests.data import (
 from tests.test_utils import build_platform
 
 
-from qililab import Arbitrary, save_platform
+from qililab import save_platform
 from qililab.constants import DEFAULT_PLATFORM_NAME
 from qililab.exceptions import ExceptionGroup
 from qililab.extra.quantum_machines import QuantumMachinesCluster, QuantumMachinesMeasurementResult
@@ -38,16 +38,15 @@ from qililab.instrument_controllers.qblox import QbloxClusterController
 from qililab.instruments import SGS100A
 from qililab.instruments.instruments import Instruments
 from qililab.instruments.qblox import QbloxModule
+from qililab.instruments.qblox.qblox_qrm import QbloxQRM
 from qililab.instruments.qdevil import QDevilQDac2
 from qililab.platform import Bus, Buses, Platform
 from qililab.core import Domain
 from qililab.qprogram import Calibration, Experiment, QProgram, QbloxCompilationOutput
 from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
 from qililab.result.database import get_db_manager
-from qililab.result.qprogram.qprogram_results import QProgramResults
 from qililab.result.qprogram.qblox_measurement_result import QbloxMeasurementResult
 from qililab.settings import AnalogCompilationSettings, DigitalCompilationSettings, Runcard
-from qililab.settings.analog.flux_control_topology import FluxControlTopology
 from qililab.settings.digital.gate_event import GateEvent
 from qililab.typings.enums import InstrumentName, Parameter
 from qililab.waveforms import Chained, IQPair, Ramp, Square
@@ -205,19 +204,6 @@ def fixture_raw_measurement_data_intertwinescope() -> dict:
     """Dictionary of raw measurement data as returned from QRM instruments."""
     return {"bins": {"integration": {"path0": [], "path1": []}, "threshold": [], "avg_cnt":[]}, "scope": {"path0":{"data": [1, 2, 3, 4]}, "path1":{"data": [5, 6, 7, 8]}}}
 
-@pytest.fixture(name="flux_to_bus_topology")
-def get_flux_to_bus_topology():
-    flux_control_topology_dict = [
-        {"flux": "phix_q0", "bus": "flux_line_phix_q0"},
-        {"flux": "phiz_q0", "bus": "flux_line_phiz_q0"},
-        {"flux": "phix_q1", "bus": "flux_line_phix_q1"},
-        {"flux": "phiz_q1", "bus": "flux_line_phiz_q1"},
-        {"flux": "phix_c0_1", "bus": "flux_line_phix_c0_1"},
-        {"flux": "phiz_c0_1", "bus": "flux_line_phiz_c0_1"},
-    ]
-    return [FluxControlTopology(**flux_control) for flux_control in flux_control_topology_dict]
-
-
 @pytest.fixture(name="calibration")
 def get_calibration():
     readout_duration = 2000
@@ -262,78 +248,6 @@ def get_calibration_with_preparation_block():
     calibration.add_block(name="measurement", block=measurement_qp.body)
 
     return calibration
-
-
-@pytest.fixture(name="anneal_qprogram")
-def get_anneal_qprogram(runcard, flux_to_bus_topology):
-    platform = Platform(runcard=runcard)
-    platform.analog_compilation_settings = flux_to_bus_topology
-    anneal_waveforms = {
-        next(element.bus for element in platform.analog_compilation_settings if element.flux == "phix_q0"): Arbitrary(
-            np.array([0.0, 0.0, 0.0, 1.0])
-        ),
-        next(element.bus for element in platform.analog_compilation_settings if element.flux == "phiz_q0"): Arbitrary(
-            np.array([0.0, 0.0, 0.0, 2.0])
-        ),
-    }
-    num_averages = 2
-    num_shots = 1
-    readout_duration = 2000
-    readout_amplitude = 1.0
-    r_wf_I = Square(amplitude=readout_amplitude, duration=readout_duration)
-    r_wf_Q = Square(amplitude=0.0, duration=readout_duration)
-    readout_waveform = IQPair(I=r_wf_I, Q=r_wf_Q)
-    weights_shape = Square(amplitude=1, duration=readout_duration)
-    weights = IQPair(I=weights_shape, Q=weights_shape)
-
-    qp_anneal = QProgram()
-    shots_variable = qp_anneal.variable("num_shots", Domain.Scalar, int)
-    with qp_anneal.for_loop(variable=shots_variable, start=0, stop=num_shots, step=1):
-        with qp_anneal.average(num_averages):
-            for bus, waveform in anneal_waveforms.items():
-                qp_anneal.play(bus=bus, waveform=waveform)
-            qp_anneal.sync()
-            qp_anneal.measure(bus="readout_bus", waveform=readout_waveform, weights=weights)
-    return qp_anneal
-
-
-@pytest.fixture(name="anneal_qprogram_with_preparation")
-def get_anneal_qprogram_with_preparation(runcard, flux_to_bus_topology):
-    platform = Platform(runcard=runcard)
-    platform.analog_compilation_settings = flux_to_bus_topology
-    anneal_waveforms = {
-        next(element.bus for element in platform.analog_compilation_settings if element.flux == "phix_q0"): Arbitrary(
-            np.array([0.0, 0.0, 0.0, 1.0])
-        ),
-        next(element.bus for element in platform.analog_compilation_settings if element.flux == "phiz_q0"): Arbitrary(
-            np.array([0.0, 0.0, 0.0, 2.0])
-        ),
-    }
-    num_averages = 2
-    num_shots = 1
-    readout_duration = 2000
-    readout_amplitude = 1.0
-    r_wf_I = Square(amplitude=readout_amplitude, duration=readout_duration)
-    r_wf_Q = Square(amplitude=0.0, duration=readout_duration)
-    readout_waveform = IQPair(I=r_wf_I, Q=r_wf_Q)
-    weights_shape = Square(amplitude=1, duration=readout_duration)
-    weights = IQPair(I=weights_shape, Q=weights_shape)
-    preparation_wf = Chained(
-        waveforms=[Ramp(from_amplitude=0.0, to_amplitude=1.0, duration=100), Square(amplitude=1.0, duration=200)]
-    )
-
-    qp_anneal = QProgram()
-    shots_variable = qp_anneal.variable("num_shots", Domain.Scalar, int)
-    with qp_anneal.for_loop(variable=shots_variable, start=0, stop=num_shots, step=1):
-        with qp_anneal.average(num_averages):
-            qp_anneal.play(bus="flux_line_phix_q0", waveform=preparation_wf)
-            qp_anneal.play(bus="flux_line_phiz_q0", waveform=preparation_wf)
-            qp_anneal.sync()
-            for bus, waveform in anneal_waveforms.items():
-                qp_anneal.play(bus=bus, waveform=waveform)
-            qp_anneal.sync()
-            qp_anneal.measure(bus="readout_bus", waveform=readout_waveform, weights=weights)
-    return qp_anneal
 
 
 @pytest.fixture(name="qp_quantum_machine")
@@ -489,7 +403,7 @@ class TestPlatform:
         crosstalk_matrix = CrosstalkMatrix.from_buses(buses={"drive_line_q0_bus": {"drive_line_q0_bus": 0.1}})
         platform.set_crosstalk(crosstalk_matrix)
         platform.set_parameter(alias="drive_line_q0_bus", parameter=Parameter.FLUX, value=0.14, channel_id=0)
-        assert crosstalk_matrix == platform.crosstalk
+        assert platform.crosstalk == crosstalk_matrix
         assert platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.FLUX, channel_id=0) == 0.14
 
     def test_set_flux_parameter_with_wrong_bus_raises_error(self, platform: Platform):
@@ -940,58 +854,6 @@ class TestMethods:
         platform.turn_off_instruments.assert_called_once()
         platform.disconnect.assert_called_once()
 
-    @pytest.mark.parametrize(
-        "qprogram_fixture, calibration_fixture",
-        [
-            ("anneal_qprogram", "calibration"),
-            ("anneal_qprogram_with_preparation", "calibration_with_preparation_block"),
-        ],
-    )
-    def test_execute_anneal_program(
-        self,
-        platform: Platform,
-        qprogram_fixture: str,
-        flux_to_bus_topology: list[FluxControlTopology],
-        calibration_fixture: str,
-        request,
-    ):
-        anneal_qprogram = request.getfixturevalue(qprogram_fixture)
-        calibration = request.getfixturevalue(calibration_fixture)
-
-        mock_execute_qprogram = MagicMock()
-        mock_execute_qprogram.return_value = QProgramResults()
-        platform.execute_qprogram = mock_execute_qprogram  # type: ignore[method-assign]
-        platform.analog_compilation_settings.flux_control_topology = flux_to_bus_topology
-        transpiler = MagicMock()
-        transpiler.return_value = (1, 2)
-
-        results = platform.execute_annealing_program(
-            annealing_program_dict=[{"qubit_0": {"sigma_x": 0.1, "sigma_z": 0.2}}],
-            transpiler=transpiler,
-            calibration=calibration,
-            num_averages=2,
-            num_shots=1,
-        )
-        qprogram = mock_execute_qprogram.call_args[1]["qprogram"].with_calibration(calibration)
-        assert str(anneal_qprogram) == str(qprogram)
-        assert isinstance(results, QProgramResults)
-
-    def test_execute_anneal_program_no_measurement_raises_error(self, platform: Platform, calibration):
-        mock_execute_qprogram = MagicMock()
-        platform.execute_qprogram = mock_execute_qprogram  # type: ignore[method-assign]
-        transpiler = MagicMock()
-        transpiler.return_value = (1, 2)
-        error_string = "The calibrated measurement is not present in the calibration file."
-        with pytest.raises(ValueError, match=error_string):
-            platform.execute_annealing_program(
-                annealing_program_dict=[{"qubit_0": {"sigma_x": 0.1, "sigma_z": 0.2}}],
-                transpiler=transpiler,
-                calibration=calibration,
-                num_averages=2,
-                num_shots=1,
-                measurement_block="whatever",
-            )
-
     def test_execute_experiment(self, override_settings):
         """Test the execute_experiment method of the Platform class."""
         # Create an autospec of the Platform class
@@ -1357,6 +1219,94 @@ class TestMethods:
 
         assert calibration.crosstalk_matrix == expected_crosstalk
 
+    def _qblox_qdac_crosstalk_qprogram(self) -> QProgram:
+        """Build a QProgram that spans both Qblox (drive/resonator) and Qdac (qdac_bus_*) buses."""
+        drive_wf = IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
+        readout_wf = IQPair(I=Square(amplitude=1.0, duration=120), Q=Square(amplitude=0.0, duration=120))
+        weights_wf = IQPair(I=Square(amplitude=1.0, duration=120), Q=Square(amplitude=0.0, duration=120))
+        qdac_wf = Square(amplitude=1.0, duration=100)
+        qprogram = QProgram()
+        qprogram.play(bus="qdac_bus_1", waveform=qdac_wf)
+        qprogram.set_offset(bus="qdac_bus_2", offset_path0=1)
+        qprogram.wait_trigger(bus="qdac_bus_1", duration=10e-6, port=1)
+        qprogram.play(bus="drive", waveform=drive_wf)
+        qprogram.measure(bus="resonator", waveform=readout_wf, weights=weights_wf)
+        return qprogram
+
+    def test_compile_qprogram_crosstalk_false_clears_dc_and_ac_matrices(self, platform_qblox_qdac: Platform):
+        """With crosstalk=False, compile_qprogram must strip BOTH the DC and AC crosstalk matrices
+        from the calibration handed to the compilers, without mutating the caller's calibration."""
+        qprogram = self._qblox_qdac_crosstalk_qprogram()
+
+        dc_matrix = CrosstalkMatrix.from_buses(buses={"qdac_bus_1": {"qdac_bus_1": 0.1}})
+        ac_matrix = CrosstalkMatrix.from_buses(buses={"drive": {"drive": 0.2}})
+        calibration = Calibration()
+        calibration.crosstalk_matrix = dc_matrix
+        calibration.crosstalk_matrix_ac = ac_matrix
+
+        captured: dict[str, Calibration] = {}
+
+        def capture_qblox(*_args, **kwargs):
+            captured["qblox"] = kwargs["calibration"]
+            return MagicMock()
+
+        def capture_qdac(*_args, **kwargs):
+            captured["qdac"] = kwargs["calibration"]
+            return MagicMock()
+
+        with (
+            patch("qililab.platform.platform.QbloxCompiler") as qblox_cls,
+            patch("qililab.platform.platform.QdacCompiler") as qdac_cls,
+        ):
+            qblox_cls.return_value.compile.side_effect = capture_qblox
+            qdac_cls.return_value.compile.side_effect = capture_qdac
+            platform_qblox_qdac.compile_qprogram(qprogram=qprogram, calibration=calibration, crosstalk=False)
+
+        # Both compilers receive a calibration with neither crosstalk matrix set.
+        assert captured["qblox"].crosstalk_matrix is None
+        assert captured["qblox"].crosstalk_matrix_ac is None
+        assert captured["qdac"].crosstalk_matrix is None
+        assert captured["qdac"].crosstalk_matrix_ac is None
+
+        # The caller's calibration is left untouched (a deepcopy is stripped instead).
+        assert calibration.crosstalk_matrix is dc_matrix
+        assert calibration.crosstalk_matrix_ac is ac_matrix
+
+    def test_compile_qprogram_crosstalk_true_keeps_dc_and_ac_matrices(self, platform_qblox_qdac: Platform):
+        """With crosstalk=True, both matrices flow through to the compilers, which route them by
+        instrument type (DC -> Qdac, AC -> Qblox)."""
+        qprogram = self._qblox_qdac_crosstalk_qprogram()
+
+        dc_matrix = CrosstalkMatrix.from_buses(buses={"qdac_bus_1": {"qdac_bus_1": 0.1}})
+        ac_matrix = CrosstalkMatrix.from_buses(buses={"drive": {"drive": 0.2}})
+        calibration = Calibration()
+        calibration.crosstalk_matrix = dc_matrix
+        calibration.crosstalk_matrix_ac = ac_matrix
+
+        captured: dict[str, Calibration] = {}
+
+        def capture_qblox(*_args, **kwargs):
+            captured["qblox"] = kwargs["calibration"]
+            return MagicMock()
+
+        def capture_qdac(*_args, **kwargs):
+            captured["qdac"] = kwargs["calibration"]
+            return MagicMock()
+
+        with (
+            patch("qililab.platform.platform.QbloxCompiler") as qblox_cls,
+            patch("qililab.platform.platform.QdacCompiler") as qdac_cls,
+        ):
+            qblox_cls.return_value.compile.side_effect = capture_qblox
+            qdac_cls.return_value.compile.side_effect = capture_qdac
+            platform_qblox_qdac.compile_qprogram(qprogram=qprogram, calibration=calibration, crosstalk=True)
+
+        # No deepcopy happens, so both matrices are preserved and reach the compilers.
+        assert captured["qblox"].crosstalk_matrix is dc_matrix
+        assert captured["qblox"].crosstalk_matrix_ac is ac_matrix
+        assert captured["qdac"].crosstalk_matrix is dc_matrix
+        assert captured["qdac"].crosstalk_matrix_ac is ac_matrix
+
     def test_execute_qprogram_single_baseband_channel(self, platform: Platform):
         """Test that the execute method compiles the qprogram, calls the buses to run and return the results."""
         drive_wf = Square(amplitude=1.0, duration=40)
@@ -1594,8 +1544,6 @@ class TestMethods:
 
         error_string = "The QM `config` dictionary does not exist. Please run `initial_setup()` first."
         escaped_error_str = re.escape(error_string)
-        platform_quantum_machines.compile_circuit = MagicMock()  # type: ignore # don't care about compilation
-        platform_quantum_machines.compile_circuit.return_value = Exception(escaped_error_str)
 
         drive_wf = IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
         readout_wf = IQPair(I=Square(amplitude=1.0, duration=120), Q=Square(amplitude=0.0, duration=120))
@@ -1671,19 +1619,6 @@ class TestMethods:
         assert bus.get_parameter(parameter=parameter, channel_id=CHANNEL_ID) == platform.get_parameter(
             parameter=parameter, alias="drive_line_q0_bus", channel_id=CHANNEL_ID
         )
-
-    def test_no_bus_to_flux_raises_error(self, platform: Platform):
-        """Test that if flux to bus topology is not specified an error is raised"""
-        platform.analog_compilation_settings = None
-        error_string = "Flux to bus topology not given in the runcard"
-        with pytest.raises(ValueError, match=error_string):
-            platform.execute_annealing_program(
-                annealing_program_dict=[{}],
-                calibration=MagicMock(),
-                transpiler=MagicMock(),
-                num_averages=2,
-                num_shots=1,
-            )
 
     def test_get_element_flux(self, platform: Platform):
         """Get the bus from a flux using get_element"""
@@ -1998,7 +1933,68 @@ class TestMethods:
             # check that each element of the result list of the parallel execution is the same as the regular execution for each respective qprograms
             assert result_parallel[0].results == non_parallel_results1.results
             assert result_parallel[1].results == non_parallel_results2.results
-            assert [] == no_qprograms
+            assert no_qprograms == []
+
+    def test_parallelisation_execute_qblox_programs_threshold_with_weight_duration(self, platform: Platform):
+        """In parallel execution, each qprogram's bus must get its hardware threshold programmed using
+        its own weight duration."""
+        weights_wf1 = IQPair(I=Square(amplitude=1.0, duration=120), Q=Square(amplitude=0.0, duration=120))
+        weights_wf2 = IQPair(I=Square(amplitude=1.0, duration=200), Q=Square(amplitude=0.0, duration=200))
+
+        qprogram1 = QProgram()
+        qprogram1.qblox.acquire(bus="feedline_input_output_bus", weights=weights_wf1)
+
+        qprogram2 = QProgram()
+        qprogram2.qblox.acquire(bus="feedline_input_output_bus_2", weights=weights_wf2)
+
+        with (
+            patch("builtins.open"),
+            patch.object(Bus, "upload_qpysequence"),
+            patch.object(Bus, "run"),
+            patch.object(Bus, "acquire_qprogram_results", return_value=[123]),
+            patch.object(QbloxModule, "sync_sequencer"),
+            patch.object(QbloxModule, "desync_sequencer"),
+            patch.object(QbloxQRM, "is_device_active", return_value=True),
+            patch.object(QbloxQRM, "_set_device_threshold") as mock_set_threshold,
+        ):
+            platform.execute_qprograms_parallel([qprogram1, qprogram2])
+
+        assert mock_set_threshold.call_count == 2
+        mock_set_threshold.assert_any_call(value=ANY, sequencer_id=ANY, integration_length=120)
+        mock_set_threshold.assert_any_call(value=ANY, sequencer_id=ANY, integration_length=200)
+
+    def test_parallelisation_execute_qblox_warns_when_bus_has_multiple_different_weight_durations(
+        self, platform: Platform, caplog
+    ):
+        """A warning must be logged when, in parallel execution, an ADC bus has acquisitions with
+        different weight durations."""
+        w1 = IQPair(I=Square(amplitude=1.0, duration=120), Q=Square(amplitude=0.0, duration=120))
+        w2 = IQPair(I=Square(amplitude=1.0, duration=200), Q=Square(amplitude=0.0, duration=200))
+
+        qprogram1 = QProgram()
+        qprogram1.qblox.acquire(bus="feedline_input_output_bus", weights=w1)
+        qprogram1.qblox.acquire(bus="feedline_input_output_bus", weights=w2)
+
+        qprogram2 = QProgram()
+        qprogram2.qblox.acquire(bus="feedline_input_output_bus_2", weights=w1)
+
+        with (
+            patch("builtins.open"),
+            patch.object(Bus, "upload_qpysequence"),
+            patch.object(Bus, "run"),
+            patch.object(Bus, "acquire_qprogram_results", return_value=[]),
+            patch.object(QbloxModule, "sync_sequencer"),
+            patch.object(QbloxModule, "desync_sequencer"),
+            patch.object(QbloxQRM, "is_device_active", return_value=True),
+            patch.object(QbloxQRM, "_set_device_threshold"),
+        ):
+            with caplog.at_level(logging.WARNING):
+                platform.execute_qprograms_parallel([qprogram1, qprogram2])
+
+        assert any(
+            msg == "Bus 'feedline_input_output_bus' has multiple different weight durations: [120, 200]. Using the first value (120 ns) as integration length for threshold."
+            for msg in caplog.messages
+        )
 
     def test_calibrate_mixers(self, platform: Platform):
         """Test calibrating the Qblox mixers."""
@@ -2330,6 +2326,59 @@ class TestMethods:
 
         assert len(results.results["feedline_input_output_bus"]) == n_measures
 
+    def test_execute_qprogram_programs_threshold_with_weight_duration(self, platform: Platform):
+        """The hardware threshold must be programmed using the weight duration derived from the QProgram,
+        not a static integration_length from the runcard."""
+        weights_wf = IQPair(I=Square(amplitude=1.0, duration=120), Q=Square(amplitude=0.0, duration=120))
+        qprogram = QProgram()
+        qprogram.qblox.acquire(bus="feedline_input_output_bus", weights=weights_wf)
+
+        with (
+            patch("builtins.open"),
+            patch.object(Bus, "upload_qpysequence"),
+            patch.object(Bus, "run"),
+            patch.object(Bus, "acquire_qprogram_results", return_value=[]),
+            patch.object(QbloxModule, "sync_sequencer"),
+            patch.object(QbloxModule, "desync_sequencer"),
+            patch.object(QbloxQRM, "is_device_active", return_value=True),
+            patch.object(QbloxQRM, "_set_device_threshold") as mock_set_threshold,
+        ):
+            platform.execute_qprogram(qprogram=qprogram)
+
+        mock_set_threshold.assert_called_once_with(
+            value=ANY,
+            sequencer_id=ANY,
+            integration_length=120,
+        )
+
+    def test_execute_qprogram_warns_when_bus_has_multiple_different_weight_durations(
+        self, platform: Platform, caplog
+    ):
+        """A warning must be logged when the same ADC bus has acquisitions with different weight durations."""
+        w1 = IQPair(I=Square(amplitude=1.0, duration=120), Q=Square(amplitude=0.0, duration=120))
+        w2 = IQPair(I=Square(amplitude=1.0, duration=200), Q=Square(amplitude=0.0, duration=200))
+        qprogram = QProgram()
+        qprogram.qblox.acquire(bus="feedline_input_output_bus", weights=w1)
+        qprogram.qblox.acquire(bus="feedline_input_output_bus", weights=w2)
+
+        with (
+            patch("builtins.open"),
+            patch.object(Bus, "upload_qpysequence"),
+            patch.object(Bus, "run"),
+            patch.object(Bus, "acquire_qprogram_results", return_value=[]),
+            patch.object(QbloxModule, "sync_sequencer"),
+            patch.object(QbloxModule, "desync_sequencer"),
+            patch.object(QbloxQRM, "is_device_active", return_value=True),
+            patch.object(QbloxQRM, "_set_device_threshold"),
+        ):
+            with caplog.at_level(logging.WARNING):
+                platform.execute_qprogram(qprogram=qprogram)
+
+        assert any(
+            msg == "Bus 'feedline_input_output_bus' has multiple different weight durations: [120, 200]. Using the first value (120 ns) as integration length for threshold."
+            for msg in caplog.messages
+        )
+
     def test_setting_getting_filter_bus_error_raised(self, platform: Platform):
         #  Check that setting/getting a filter through a bus incorrectly raises the adequate error
         output_id = 1
@@ -2371,3 +2420,4 @@ class TestMethods:
 
         with pytest.raises(Exception, match=f"ChannelID {sequencer} is not linked to bus with alias {bus_alias}"):
             platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.IF, channel_id=sequencer)
+    

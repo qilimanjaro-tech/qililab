@@ -1,12 +1,12 @@
 [project]
 name = "qililab"
-version = "0.33.3"
+version = "0.35.0+euroqcs1"
 description = "Fundamental package for fast characterization and calibration of quantum chips."
-authors = [{name = "Qilimanjaro Quantum Tech", email = "info@qilimanjaro.tech"}]
-urls = {Repository = "https://github.com/qilimanjaro-tech/qililab"}
+authors = [{name = "Qilimanjaro Quantum Tech", email = "info@qilimanjaro.tech" }]
+urls = {Repository = "https://github.com/qilimanjaro-tech/qililab" }
 readme = "README.md"
 requires-python = ">=3.11"
-keywords = ["quantum control"]
+keywords = [ "quantum control" ]
 classifiers = [
     "Development Status :: 5 - Production/Stable",
     "Topic :: Scientific/Engineering",
@@ -33,17 +33,16 @@ dependencies = [
     "qblox-instruments==1.0.3",
     "qcodes==0.54.3",
     "qcodes-contrib-drivers>=0.23.0",
-    "qpysequence==0.10.8",
+    "qpysequence>=0.11.0",
     "rich>=14.0.0",
-    "ruamel-yaml>=0.18.16",
+    "ruamel-yaml>=0.18.10",
     "sqlalchemy<2.1",
     "submitit>=1.5.2",
     "urllib3>=2.3.0",
     "xarray>=2025.11.0",
     "rustworkx>=0.17.1",
-    "scipy>=1.16.3; sys_platform == 'darwin'",
-    "scipy>=1.15,<1.16.3; sys_platform != 'darwin'",
-    "qprogram==0.0.1"
+    "scipy>=1.15",
+    "qprogram>=0.0.1"
 ]
 
 [project.optional-dependencies]
@@ -63,13 +62,14 @@ dev = [
     "pytest-xdist>=3.6.1",
     "pyvisa-sim>=0.6.0",
     "ruff>=0.14.6",
+    "towncrier>=25.8.0",
 ]
 docs = [
     "sphinx>=8.2.3",
     "sphinx-automodapi>=0.22.0",
+    "sphinx-design>=0.6.1",
     "sphinx-mdinclude>=0.6.2",
     "sphinxawesome-theme>=5.3.2",
-    "sphinx-design>=0.7.0",
 ]
 
 [build-system]
@@ -78,10 +78,11 @@ build-backend = "hatchling.build"
 
 [tool.uv]
 prerelease = "if-necessary-or-explicit"
+# qm-qua==1.2.4 depends on marshmallow>=3,<3.24; override until upstream loosens.
 override-dependencies = [
     "marshmallow==3.26.2",
     "spirack==0.2.12",
-    "betterproto==2.0.0b7"
+    "betterproto==2.0.0b7",
 ]
 # Floor recurring transitive CVE offenders so a generic re-resolve cannot regress them.
 constraint-dependencies = [
@@ -95,24 +96,16 @@ constraint-dependencies = [
     "tornado>=6.5.6",   # CVE-2026-49854 (W-24)
     "ujson>=5.13.0",              # CVE-2026-54911 (W-26)
 ]
+keyring-provider = "subprocess"
+
+[[tool.uv.index]]
+name = "bsc"
+url = "https://aws@qilimanjaro-723412851021.d.codeartifact.eu-west-1.amazonaws.com/pypi/bsc/simple"
+explicit = true
 
 [tool.uv.sources]
-qprogram = { index = "dev-refactor-experiments" }
-
-[[tool.uv.index]]
-name = "euroqcs"
-url = "https://api.pyx.dev/simple/qilimanjaro/euroqcs"
-publish-url = "https://api.pyx.dev/v1/upload/qilimanjaro/euroqcs"
-
-[[tool.uv.index]]
-name = "dev-refactor-experiments"
-url = "https://api.pyx.dev/simple/qilimanjaro/dev-refactor-experiments"
-publish-url = "https://api.pyx.dev/v1/upload/qilimanjaro/dev-refactor-experiments"
-
-# [[tool.uv.index]]
-# name = "internal-qili-experiments"
-# url = "https://qilimanjaro-721195454194.d.codeartifact.eu-west-1.amazonaws.com/pypi/internal-qili-experiments/simple/"
-# publish-url = "https://qilimanjaro-721195454194.d.codeartifact.eu-west-1.amazonaws.com/pypi/internal-qili-experiments/"
+qpysequence = { index = "bsc" }
+qprogram = { index = "bsc" }
 
 [tool.ruff]
 line-length = 120
@@ -265,3 +258,34 @@ filterwarnings = [
 markers = [
     "qm: tests that require Quantum Machines",
 ]
+
+[tool.towncrier]
+package = "qililab"
+directory = "changes"
+filename = "CHANGELOG.md"
+issue_format = "[PR #{issue}](https://github.com/qilimanjaro-tech/qililab/pull/{issue})"
+
+[[tool.towncrier.type]]
+directory = "feature"
+name = "Features"
+showcontent = true
+
+[[tool.towncrier.type]]
+directory = "bugfix"
+name = "Bugfixes"
+showcontent = true
+
+[[tool.towncrier.type]]
+directory = "doc"
+name = "Improved Documentation"
+showcontent = true
+
+[[tool.towncrier.type]]
+directory = "removal"
+name = "Deprecations and Removals"
+showcontent = true
+
+[[tool.towncrier.type]]
+directory = "misc"
+name = "Misc"
+showcontent = true
