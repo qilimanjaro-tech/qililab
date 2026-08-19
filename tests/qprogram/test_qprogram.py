@@ -741,7 +741,8 @@ class TestQProgram(TestStructuredProgram):
         assert isinstance(new_qp.body.elements[6], Play)
         assert isinstance(new_qp.body.elements[6].waveform, Square)
         assert new_qp.body.elements[6].bus == "flux1"
-        assert math.isclose(new_qp.body.elements[6].waveform.amplitude, 1.0)  #Check that Square pulses are normalized
+        #Check that Square pulses are normalized
+        assert math.isclose(new_qp.body.elements[6].waveform.amplitude, 1.0)
         assert isinstance(new_qp.body.elements[7], SetGain)
         assert new_qp.body.elements[7].bus == "flux2"
         assert math.isclose(new_qp.body.elements[7].gain, 0.5442355808140428)
@@ -774,7 +775,8 @@ class TestQProgram(TestStructuredProgram):
         assert isinstance(new_qp.body.elements[19], Play)
         assert isinstance(new_qp.body.elements[19].waveform, Square)
         assert new_qp.body.elements[19].bus == "flux1"
-        assert math.isclose(new_qp.body.elements[19].waveform.amplitude, 1.0)  #Check that Square pulses are normalized
+        #Check that Square pulses are normalized
+        assert math.isclose(new_qp.body.elements[19].waveform.amplitude, 1.0)
         assert isinstance(new_qp.body.elements[20], SetGain)
         assert new_qp.body.elements[20].bus == "flux2"
         assert math.isclose(new_qp.body.elements[20].gain, 0.012862935904286998)
@@ -993,7 +995,8 @@ class TestQProgram(TestStructuredProgram):
         assert isinstance(new_qp.body.elements[11], Play)
         assert isinstance(new_qp.body.elements[11].waveform, Square)
         assert new_qp.body.elements[11].bus == "flux1"
-        assert math.isclose(new_qp.body.elements[11].waveform.amplitude, 1.0)  #Check that Square pulses are normalized
+        #Check that Square pulses are normalized
+        assert math.isclose(new_qp.body.elements[11].waveform.amplitude, 1.0)
         assert isinstance(new_qp.body.elements[12], SetGain)
         assert new_qp.body.elements[12].bus == "flux2"
         assert math.isclose(new_qp.body.elements[12].gain, 0.012862935904286998)
@@ -1402,7 +1405,8 @@ class TestQProgram(TestStructuredProgram):
         qp = QProgram()
         freq = qp.variable(label="freq", domain=Domain.Frequency)
         with qp.for_loop(variable=freq, start=np.float64(1e6), stop=np.float64(10e6), step=np.float64(1e6)):
-            pass  # body is irrelevant; only the loop bounds' types are under test
+            # body is irrelevant; only the loop bounds' types are under test
+            pass
         loop = qp._body.elements[0]
         assert type(loop.start) is float
         assert type(loop.stop) is float
@@ -1411,7 +1415,8 @@ class TestQProgram(TestStructuredProgram):
     def test_average_with_numpy_int_stores_python_int(self):
         qp = QProgram()
         with qp.average(shots=np.int64(1000)):
-            pass  # body is irrelevant; only the shots type is under test
+            # body is irrelevant; only the shots type is under test
+            pass
         loop = qp._body.elements[0]
         assert loop.shots == 1000
         assert type(loop.shots) is int

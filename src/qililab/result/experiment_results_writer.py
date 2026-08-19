@@ -171,7 +171,8 @@ class ExperimentResultsWriter(ExperimentResults):
                     label, values = variable["label"], variable["values"]
                     loop = qloop_group.create_dataset(label, data=values)
                     loop.dims[0].label = label
-                    loop.make_scale(label)  # Register as dimension scale
+                    # Register as dimension scale
+                    loop.make_scale(label)
 
                 # Write measurements
                 measurement_group = qgroup.create_group(ExperimentResults.MEASUREMENTS_PATH)
@@ -187,7 +188,8 @@ class ExperimentResultsWriter(ExperimentResults):
                         label, values = variable["label"], variable["values"]
                         loop = mloop_group.create_dataset(label, data=values)
                         loop.dims[0].label = label
-                        loop.make_scale(label)  # Register as dimension scale
+                        # Register as dimension scale
+                        loop.make_scale(label)
 
                     # Create the results dataset
                     results_ds = mgroup.create_dataset(ExperimentResults.RESULTS_PATH, shape=measurement_data["shape"])

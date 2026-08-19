@@ -50,7 +50,8 @@ class AnnealingProgram:
         """Init method"""
         self._flux_to_bus_topology = flux_to_bus_topology
         self._annealing_program = annealing_program
-        self._transpiled_program = []  # type: list # [anneal_step[chip_element_flux_line,value]]
+        # type: list # [anneal_step[chip_element_flux_line,value]]
+        self._transpiled_program = []
 
     def transpile(self, transpiler: Callable):
         """First implementation of a transpiler, pretty basic but good as a first step. Transpiles from ising coefficients to fluxes
