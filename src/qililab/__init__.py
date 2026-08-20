@@ -49,10 +49,9 @@ from .waveforms import (
 
 # moved here because it has instruments module dependencies so circular imports can be avoided
 from .analog import AnnealingProgram
+from .digital import *
 from .result import Cooldown, DatabaseManager, Sample, get_db_manager, load_results, save_results, Measurement
 from .qililab_settings import get_settings
-
-from .digital import *
 
 __all__ = [
     "AnnealingProgram",
