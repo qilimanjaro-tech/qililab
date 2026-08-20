@@ -70,7 +70,9 @@ class TestInstrumentBase:
         assert instrument.set_parameter(parameter, value) is True
 
     def test_instrument_is_awg(self, instrument):
-        assert instrument.is_awg() is False  # Default implementation returns False
+        # Default implementation returns False
+        assert instrument.is_awg() is False
 
     def test_instrument_is_adc(self, instrument):
-        assert instrument.is_adc() is False  # Default implementation returns False
+        # Default implementation returns False
+        assert instrument.is_adc() is False

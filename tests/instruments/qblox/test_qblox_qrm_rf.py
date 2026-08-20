@@ -171,7 +171,8 @@ class TestQbloxQRMRF:
         "parameter, value",
         [
             # Invalid parameter (should raise ParameterNotFound)
-            (Parameter.BUS_FREQUENCY, 42),  # Invalid parameter
+            # Invalid parameter
+            (Parameter.BUS_FREQUENCY, 42),
         ],
     )
     def test_set_parameter_raises_error(self, qrm_rf: QbloxQRMRF, parameter, value):
@@ -222,8 +223,10 @@ class TestQbloxQRMRF:
     @pytest.mark.parametrize(
         "channel_id, expected_error",
         [
-            (0, None),  # Valid channel ID
-            (5, Exception),  # Invalid channel ID
+            # Valid channel ID
+            (0, None),
+            # Invalid channel ID
+            (5, Exception),
         ],
     )
     def test_invalid_channel(self, qrm_rf: QbloxQRMRF, channel_id, expected_error):

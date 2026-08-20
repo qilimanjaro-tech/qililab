@@ -114,7 +114,8 @@ class ExperimentLivePlot:
             self._dash_app.layout = html.Div(
                 [
                     dcc.Graph(figure=self._live_plot_fig, id="live-plot-graph"),
-                    dcc.Interval(id="interval-component", interval=1 * 1000, n_intervals=0),  # in milliseconds
+                    # in milliseconds
+                    dcc.Interval(id="interval-component", interval=1 * 1000, n_intervals=0),
                 ]
             )
 

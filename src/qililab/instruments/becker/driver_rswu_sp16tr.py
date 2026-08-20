@@ -67,7 +67,8 @@ class DriverRSWUSP16TR(VisaInstrument):
         for channel in (f"RF{i}" for i in range(1, 17)):
             if rep.endswith(channel):
                 return channel
-        return rep  # fallback
+        # fallback
+        return rep
 
     def route(self, channel: str) -> None:
         """Route to a specific RF output (RF1..RF16)."""

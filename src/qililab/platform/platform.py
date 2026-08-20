@@ -45,6 +45,7 @@ from qililab.instruments.instrument import Instrument
 from qililab.instruments.instruments import Instruments
 from qililab.instruments.qblox import QbloxModule
 from qililab.instruments.qblox.qblox_draw import QbloxDraw
+from qililab.instruments.qblox.qblox_qrm import QbloxQRM
 from qililab.instruments.qdevil.qdevil_qdac2 import QDevilQDac2
 from qililab.instruments.utils import InstrumentFactory
 from qililab.platform.components.bus import Bus
@@ -73,6 +74,7 @@ if TYPE_CHECKING:
 
     from qililab.instrument_controllers.instrument_controller import InstrumentController
     from qililab.instruments.instrument import Instrument
+    from qililab.instruments.qblox.qblox_adc_sequencer import QbloxADCSequencer
     from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
     from qililab.result.database import DatabaseManager
     from qililab.settings import Runcard
@@ -82,8 +84,6 @@ class Platform:
     """Platform object representing the laboratory setup used to control quantum devices.
 
     The platform is responsible for managing the initializations, connections, setups, and executions of the laboratory, which mainly consists of:
-
-    - :class:`.Chip`
 
     - Buses
 
@@ -105,10 +105,10 @@ class Platform:
     And then, for each experiment you want to run, you would typically repeat:
 
     >>> platform.set_parameter(...)  # Sets any parameter of the Platform.
-    >>> result = platform.execute(...)  # Executes the platform.
+    >>> result = platform.execute_qprogram(...)  # Executes a QProgram on the platform.
 
     Args:
-        runcard (Runcard): Dataclass containing the serialized platform (chip, instruments, buses...), created during :meth:`ql.build_platform()` with the given runcard dictionary.
+        runcard (Runcard): Dataclass containing the serialized platform (instruments, buses...), created during :meth:`ql.build_platform()` with the given runcard dictionary.
 
     Examples:
 
@@ -126,25 +126,27 @@ class Platform:
 
             - ``platform.turn_on_instruments()`` is used to turn on the signal output of all the sources defined in the runcard (RF, Voltage and Current sources).
 
-            - You can print ``platform.chip`` and ``platform.buses`` at any time to check the platform's structure.
+            - You can print ``platform.buses`` at any time to check the platform's structure.
 
-        **1. Executing a circuit with Platform:**
+        **1. Executing a QProgram with Platform:**
 
 
-        To execute a circuit you first need to define your circuit, for example, one with a pi pulse and a measurement gate in qubit ``q`` (``int``).
-        Then you also need to build, connect, set up, and execute the platform, which together look like:
+        To execute a :class:`.QProgram` you first need to define it, for example, one with a pi pulse on the drive bus of qubit ``0``
+        followed by a readout on its feedline bus. Then you also need to build, connect, set up, and execute the platform, which together look like:
 
         .. code-block:: python
 
             import qililab as ql
+            from qililab.waveforms import IQDrag, Square, IQPair
 
-            from qibo.models import Circuit
-            from qibo import gates
+            pi_pulse = IQDrag(amplitude=1.0, duration=100, num_sigmas=4.5, drag_coefficient=-2.0)
+            readout_pulse = IQPair(I=Square(amplitude=1.0, duration=2000), Q=Square(amplitude=0.0, duration=2000))
+            weights = IQPair(I=Square(amplitude=1.0, duration=2000), Q=Square(amplitude=0.0, duration=2000))
 
-            # Defining the Rabi circuit:
-            circuit = Circuit(q + 1)
-            circuit.add(gates.X(q))
-            circuit.add(gates.M(q))
+            # Defining the QProgram:
+            qp = ql.QProgram()
+            qp.play(bus="drive_line_q0_bus", waveform=pi_pulse)
+            qp.measure(bus="feedline_bus", waveform=readout_pulse, weights=weights)
 
             # Building the platform:
             platform = ql.build_platform(runcard="runcards/galadriel.yml")
@@ -155,11 +157,11 @@ class Platform:
             platform.turn_on_instruments()
 
             # Executing the platform:
-            result = platform.execute(program=circuit, num_avg=1000, repetition_duration=6000)
+            result = platform.execute_qprogram(qprogram=qp)
 
         The results would look something like this:
 
-        >>> result.array
+        >>> result.results["feedline_bus"][0].array
         array([[6.],
                 [6.]])
 
@@ -168,104 +170,61 @@ class Platform:
             The obtained values correspond to the integral of the I/Q signals received by the digitizer.
             And they have shape `(#sequencers, 2, #bins)`, in this case you only have 1 sequencer and 1 bin.
 
-        You could also get the results in a more standard format, as already classified ``counts`` or ``probabilities`` dictionaries.
-        To do so the call to execute circuit must be slightly different, as the number of averages must be 1:
-
-        .. code-block:: python
-
-            # Executing the platform with the same amount of loops but using bins:
-            result = platform.execute(program=circuit, num_avg=1, num_bins=1000, repetition_duration=6000)
-
-        Then:
-
-        >>> result.counts
-        {'0': 501, '1': 499}
-
-        >>> result.probabilities
-        {'0': .501, '1': .499}
-
         .. note::
 
-            You can find more information about the results, in the :class:`.Results` class documentation.
+            ``result.results`` maps each measured bus alias to the list of :class:`.MeasurementResult` produced on that bus, one per
+            ``measure()``/``acquire()`` call, in the order they were issued.
 
         |
 
         **2. Running a Rabi sweep with Platform:**
 
-        To perform a Rabi sweep, you need the previous circuit, and again, you also need to build, connect and setup the platform.
-        But this time, instead than executing the circuit once, you will loop changing the amplitude parameter of the AWG (generator of the pi pulse):
-
-        .. code-block:: python
-
-            # Looping over the AWG amplitude to execute the Rabi sweep:
-            results = []
-            amp_values = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.9, 1.0]
-
-            for amp in amp_values:
-                platform.set_parameter(alias="drive_q", parameter=ql.Parameter.AMPLITUDE, value=amp)
-                result = platform.execute(program=circuit, num_avg=1000, repetition_duration=6000)
-                results.append(result.array)
-
-        Now you can use ``np.hstack`` to stack the results horizontally. By doing this, you would obtain an
-        array with shape `(2, N)`, where N is the number of elements inside the loop:
-
-        >>> import numpy as np
-        >>> np.hstack(results)
-        array([[5, 4, 3, 2, 1, 2, 3, 4, 5, 4, 3],
-                [5, 4, 3, 2, 1, 2, 3, 4, 5, 4, 3]])
-
-        You can see how the integrated I/Q values oscillate, indicating that qubit ``q`` oscillates between the ground and
-        excited states!
-
-        |
-
-        **3. A faster Rabi sweep, translating the circuit to pulses:**
-
-        Since you are looping over variables that are independent of the circuit (in this case, the amplitude of the AWG),
-        you can speed up the experiment by translating the circuit into pulses beforehand, only once, and then, executing the obtained
-        pulses inside the loop.
-
-        Which is the same as before, but passing the ``pulse_schedule`` instead than the ``circuit``, to the ``execute()`` method:
-
-        .. code-block:: python
-
-            from qililab.pulse.circuit_to_pulses import CircuitToPulses
-
-            # Translating the circuit to pulses:
-            pulse_schedule = CircuitToPulses(platform=platform).translate(circuits=[circuit])
-
-            # Looping over the AWG amplitude to execute the Rabi sweep:
-            results = []
-            amp_values = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.9, 1.0]
-
-            for amp in amp_values:
-                platform.set_parameter(alias="drive_q", parameter=ql.Parameter.AMPLITUDE, value=amp)
-                result = platform.execute(program=pulse_schedule, num_avg=1000, repetition_duration=6000)
-                results.append(result.array)
-
-        If you now stack and print the results, you will obtain similar results, but much faster!
-
-        >>> np.hstack(results)
-        array([[5, 4, 3, 2, 1, 2, 3, 4, 5, 4, 3],
-                [5, 4, 3, 2, 1, 2, 3, 4, 5, 4, 3]])
-        TODO: !!! Change this results for the actual ones !!!
-
-        |
-
-        **4. Ramsey sequence, looping over a parameter inside the circuit:**
-
-        To run a Ramsey sequence you also need to build, connect and set up the platform as before. However, the circuit will be different from the previous one,
-        and also, this time, you need to loop over a parameter of the circuit itself, specifically over the time of the ``Wait`` gate.
-
-        To do this, since the parameter is inside the Qibo circuit, you will need to use Qibo own ``circuit.set_parameters()`` method, specifying the
-        parameters you want to set, in the same order they appear in the circuit construction:
+        To perform a Rabi sweep, build, connect and set up the platform as before. Instead of looping in Python and re-executing a program for
+        each amplitude, sweep the drive gain directly inside the QProgram, so the whole sweep runs as a single, hardware-timed loop:
 
         .. code-block:: python
 
             import qililab as ql
+            from qililab.waveforms import IQDrag, Square, IQPair
 
-            from qibo.models import Circuit
-            from qibo import gates
+            pi_pulse = IQDrag(amplitude=1.0, duration=100, num_sigmas=4.5, drag_coefficient=-2.0)
+            readout_pulse = IQPair(I=Square(amplitude=1.0, duration=2000), Q=Square(amplitude=0.0, duration=2000))
+            weights = IQPair(I=Square(amplitude=1.0, duration=2000), Q=Square(amplitude=0.0, duration=2000))
+
+            # Defining the Rabi sweep as a single QProgram:
+            qp = ql.QProgram()
+            gain = qp.variable(label="gain", domain=ql.Domain.Voltage)
+            with qp.for_loop(variable=gain, start=0.0, stop=1.0, step=0.1):
+                qp.set_gain(bus="drive_line_q0_bus", gain=gain)
+                qp.play(bus="drive_line_q0_bus", waveform=pi_pulse)
+                qp.measure(bus="feedline_bus", waveform=readout_pulse, weights=weights)
+
+            result = platform.execute_qprogram(qprogram=qp)
+
+        The single measurement now holds one value per point of the sweep, with shape `(2, #bins)`:
+
+        >>> result.results["feedline_bus"][0].array
+        array([[5, 4, 3, 2, 1, 2, 3, 4, 5, 4],
+                [5, 4, 3, 2, 1, 2, 3, 4, 5, 4]])
+
+        You can see how the integrated I/Q values oscillate, indicating that qubit ``0`` oscillates between the ground and
+        excited states!
+
+        |
+
+        **3. Ramsey sequence, looping over a wait time:**
+
+        To run a Ramsey sequence you also need to build, connect and set up the platform as before. This time, define a QProgram with two
+        half-pi pulses separated by a variable delay, swept with ``qp.wait()`` in the same hardware-timed loop as the Rabi sweep above:
+
+        .. code-block:: python
+
+            import qililab as ql
+            from qililab.waveforms import IQDrag, Square, IQPair
+
+            half_pi_pulse = IQDrag(amplitude=0.5, duration=100, num_sigmas=4.5, drag_coefficient=-2.0)
+            readout_pulse = IQPair(I=Square(amplitude=1.0, duration=2000), Q=Square(amplitude=0.0, duration=2000))
+            weights = IQPair(I=Square(amplitude=1.0, duration=2000), Q=Square(amplitude=0.0, duration=2000))
 
             # Building the platform:
             platform = ql.build_platform(runcard="runcards/galadriel.yml")
@@ -275,32 +234,24 @@ class Platform:
             platform.initial_setup()
             platform.turn_on_instruments()
 
-            # Defining the Ramsey circuit:
-            circuit = Circuit(q + 1)
-            circuit.add(gates.RX(q, theta=np.pi / 2))
-            circuit.add(ql.Wait(q, t=0))
-            circuit.add(gates.RX(q, theta=np.pi / 2))
-            circuit.add(gates.M(q))
+            # Defining the Ramsey sweep as a single QProgram:
+            qp = ql.QProgram()
+            wait_time = qp.variable(label="wait_time", domain=ql.Domain.Time)
+            with qp.for_loop(variable=wait_time, start=0, stop=10000, step=1000):
+                qp.play(bus="drive_line_q0_bus", waveform=half_pi_pulse)
+                qp.wait(bus="drive_line_q0_bus", duration=wait_time)
+                qp.play(bus="drive_line_q0_bus", waveform=half_pi_pulse)
+                qp.measure(bus="feedline_bus", waveform=readout_pulse, weights=weights)
 
-            # Looping over the wait time t to execute the Ramsey:
-            results = []
-            wait_times = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+            result = platform.execute_qprogram(qprogram=qp)
 
-            for wait in wait_times:
-                circuit.set_parameters([np.pi / 2, wait, np.pi / 2])
-                result = platform.execute(program=circuit, num_avg=1000, repetition_duration=6000)
-                results.append(result.array)
-
-        which for each execution, would set ``np.pi/2`` to the ``theta`` parameters of the ``RX`` gates, and the looped ``wait`` time  to the ``t`` parameter of the
-        ``Wait`` gate.
+        Looping over ``wait_time`` produces a different `Z` axis height projection for each delay, resulting in a sinusoidal pattern.
 
         If you print the results, you'll see how you obtain the sinusoidal expected behavior!
 
-        >>> results = np.hstack(results)
-        >>> results
+        >>> result.results["feedline_bus"][0].array
         array([[5, 4, 3, 2, 1, 2, 3, 4, 5, 4, 3],
                 [5, 4, 3, 2, 1, 2, 3, 4, 5, 4, 3]])
-        TODO: !!! Change this results for the actual sinusoidal ones (change wait_times of execution if needed) !!!
     """
 
     def __init__(self, runcard: Runcard):
@@ -682,9 +633,8 @@ class Platform:
                     self.qblox_active_filter_exponential.append(exponential_idx)
                 self._update_qblox_filter_state_exponential()
             else:
-                if (
-                    exponential_idx in self.qblox_active_filter_exponential
-                ):  # cannot put the filter as bypassed otherwise this would cause a delay with the other sequencers
+                # cannot put the filter as bypassed otherwise this would cause a delay with the other sequencers
+                if exponential_idx in self.qblox_active_filter_exponential:
                     element.set_parameter(
                         parameter=parameter,
                         value=DistortionState.DELAY_COMP,
@@ -702,9 +652,8 @@ class Platform:
                 self.qblox_active_filter_fir = True
                 self._update_qblox_filter_state_fir()
 
-            elif (
-                self.qblox_active_filter_fir
-            ):  # cannot put the filter as bypassed otherwise this would cause a delay with the other sequencers
+            # cannot put the filter as bypassed otherwise this would cause a delay with the other sequencers
+            elif self.qblox_active_filter_fir:
                 element.set_parameter(
                     parameter=parameter, value=DistortionState.DELAY_COMP, channel_id=channel_id, output_id=output_id
                 )
@@ -745,7 +694,8 @@ class Platform:
                                         value=DistortionState.DELAY_COMP,
                                         output_id=output_id,
                                     )
-                    if pre_exisisting_filter is False:  # filter needs to be created
+                    # filter needs to be created
+                    if pre_exisisting_filter is False:
                         self.set_parameter(
                             alias=alias, parameter=parameter, value=DistortionState.DELAY_COMP, output_id=output_id
                         )
@@ -775,7 +725,8 @@ class Platform:
                                 value=DistortionState.DELAY_COMP,
                                 output_id=output_id,
                             )
-                if pre_exisisting_filter is False:  # filter needs to be created
+                # filter needs to be created
+                if pre_exisisting_filter is False:
                     self.set_parameter(
                         alias=alias,
                         parameter=Parameter.FIR_STATE,
@@ -985,14 +936,18 @@ class Platform:
         try:
             # Track successfully called setup methods and their cleanup counterparts
             self.connect()
-            cleanup_methods.append(self.disconnect)  # Store disconnect for cleanup
+            # Store disconnect for cleanup
+            cleanup_methods.append(self.disconnect)
 
-            self.initial_setup()  # No specific cleanup for initial_setup
+            # No specific cleanup for initial_setup
+            self.initial_setup()
 
             self.turn_on_instruments()
-            cleanup_methods.append(self.turn_off_instruments)  # Store turn_off_instruments for cleanup
+            # Store turn_off_instruments for cleanup
+            cleanup_methods.append(self.turn_off_instruments)
 
-            yield  # Experiment logic goes here
+            # Experiment logic goes here
+            yield
 
         except Exception as e:  # noqa: BLE001
             logger.error(f"An error occurred: {e}")
@@ -1236,6 +1191,7 @@ class Platform:
                 if bus.distortions:
                     bus_distortions[bus.alias] = bus.distortions
 
+            qprogram = qprogram.with_resolved_weight_duration(calibration, bus_mapping)
             qblox_compiler = QbloxCompiler()
             qblox_buses = [
                 bus.alias for bus in buses if any(isinstance(instrument, QbloxModule) for instrument in bus.instruments)
@@ -1314,6 +1270,7 @@ class Platform:
             sequences, acquisitions = output.qblox.sequences, output.qblox.acquisitions  # type: ignore[union-attr]
             buses = {bus_alias: self.buses.get(alias=bus_alias) for bus_alias in sequences}
 
+            weight_durations = output.qblox.qprogram.qblox.weight_duration  # type: ignore[union-attr]
             for bus_alias, bus in buses.items():
                 # set up the trigger network if required
                 if bus_alias in output.qblox.qprogram.qblox.trigger_network_required:  # type: ignore[union-attr]
@@ -1322,6 +1279,21 @@ class Platform:
                     for controller in self.instrument_controllers.elements:
                         if isinstance(controller, QbloxClusterController):
                             controller.device.reset_trigger_monitor_count(address=trigger_address)
+                durations = weight_durations.get(bus_alias)
+                if bus.has_adc() and durations:
+                    if len(set(durations)) > 1:
+                        logger.warning(
+                            f"Bus {bus_alias!r} has multiple different weight durations: {durations}. "
+                            f"Using the first value ({durations[0]} ns) as integration length for threshold."
+                        )
+                    for instrument, channel in zip(bus.instruments, bus.channels):
+                        if isinstance(instrument, QbloxQRM) and instrument.is_device_active():
+                            sequencer = cast("QbloxADCSequencer", instrument.get_sequencer(channel))
+                            instrument._set_device_threshold(
+                                value=sequencer.threshold,
+                                sequencer_id=int(channel),
+                                integration_length=int(durations[0]),
+                            )
             if debug:
                 with open("debug_qblox_execution.txt", "w", encoding="utf-8") as sourceFile:
                     for bus_alias, sequence in sequences.items():
@@ -1640,7 +1612,8 @@ class Platform:
         all_physical: set[str] = set()
         if bus_mapping_list:
             for qp, bus_mapping in zip(qprograms, bus_mapping_list):
-                phys = self._mapped_buses(qp.buses, bus_mapping)  # qp.buses is the set of logical buses
+                # qp.buses is the set of logical buses
+                phys = self._mapped_buses(qp.buses, bus_mapping)
                 if all_physical & phys:
                     raise ValueError(
                         f"QPrograms cannot be executed in parallel (bus collision on {all_physical & phys})."
@@ -1694,6 +1667,7 @@ class Platform:
         self._apply_qblox_distortions_parallel(
             sequences_per_qprogram=sequences_per_qprogram, buses_per_qprogram=buses_per_qprogram
         )
+        self._apply_qblox_threshold_parallel(outputs=outputs, buses_per_qprogram=buses_per_qprogram)
 
         if debug:
             self._write_qblox_parallel_debug(sequences_per_qprogram=sequences_per_qprogram)
@@ -1740,6 +1714,30 @@ class Platform:
                         for waveform in sequences_per_qprogram[qprogram_idx][bus_alias]._waveforms._waveforms:
                             sequences_per_qprogram[qprogram_idx][bus_alias]._waveforms.modify(
                                 waveform.name, distortion.apply(waveform.data)
+                            )
+
+    def _apply_qblox_threshold_parallel(
+        self,
+        outputs: list[QbloxCompilationOutput],
+        buses_per_qprogram: list[dict[str, Bus]],
+    ) -> None:
+        for qprogram_idx, buses in enumerate(buses_per_qprogram):
+            weight_durations = outputs[qprogram_idx].qprogram.qblox.weight_duration
+            for bus_alias, bus in buses.items():
+                durations = weight_durations.get(bus_alias)
+                if bus.has_adc() and durations:
+                    if len(set(durations)) > 1:
+                        logger.warning(
+                            f"Bus {bus_alias!r} has multiple different weight durations: {durations}. "
+                            f"Using the first value ({durations[0]} ns) as integration length for threshold."
+                        )
+                    for instrument, channel in zip(bus.instruments, bus.channels):
+                        if isinstance(instrument, QbloxQRM) and instrument.is_device_active():
+                            sequencer = cast("QbloxADCSequencer", instrument.get_sequencer(int(channel)))  # type: ignore[arg-type]
+                            instrument._set_device_threshold(
+                                value=sequencer.threshold,
+                                sequencer_id=int(channel),  # type: ignore[arg-type]
+                                integration_length=int(durations[0]),
                             )
 
     def _write_qblox_parallel_debug(self, sequences_per_qprogram: list[dict[str, Any]]) -> None:

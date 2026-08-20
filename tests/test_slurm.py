@@ -89,7 +89,8 @@ class TestSubmitJob:
             line=f"-o results -g aQPU1 -l {slurm_job_data_test} -n unit_test -e local",
             cell="results=a+b",
         )
-        time.sleep(3)  # give time to ensure processes/cleanup are finished
+        # give time to ensure processes/cleanup are finished
+        time.sleep(3)
         assert not os.path.isfile(os.path.join(slurm_job_data_test, "abc.py"))
 
     def test_cleanup_keeps_only_last_n_job_groups(self, ip):
@@ -193,12 +194,18 @@ class TestSubmitJob:
     @pytest.mark.parametrize(
         "code, expected",
         [
-            ("results = 1", True),                      # Assign
-            ("results += 1", True),                     # AugAssign
-            ("results: int = 1", True),                 # AnnAssign
-            ("(results, other) = (1, 2)", True),        # Tuple destructuring
-            ("x = (results := 5)", True),               # NamedExpr (walrus)
-            ("x = 1\ny = 2", False),                    # Not assigned
+            # Assign
+            ("results = 1", True),
+            # AugAssign
+            ("results += 1", True),
+            # AnnAssign
+            ("results: int = 1", True),
+            # Tuple destructuring
+            ("(results, other) = (1, 2)", True),
+            # NamedExpr (walrus)
+            ("x = (results := 5)", True),
+            # Not assigned
+            ("x = 1\ny = 2", False),
         ],
     )
     def test_is_variable_assigned_variants(self, code, expected):
@@ -240,7 +247,8 @@ class TestSubmitJob:
     def test_collect_user_variables_filters_unwanted(self, monkeypatch, tmp_path):
         fpath = tmp_path / "f.txt"
         fpath.write_text("x")
-        f = open(fpath, "r")  # unpicklable
+        # unpicklable
+        f = open(fpath, "r")
 
         try:
             ns = {
@@ -251,10 +259,14 @@ class TestSubmitJob:
                 "quit": object(),
                 "open": open,
                 "get_ipython": lambda: None,
-                "mod": logging,                         # ModuleType
-                "log": logging.getLogger("t"),          # Logger
-                "ok": 42,                               # picklable
-                "unpick": f,                            # not picklable
+                # ModuleType
+                "mod": logging,
+                # Logger
+                "log": logging.getLogger("t"),
+                # picklable
+                "ok": 42,
+                # not picklable
+                "unpick": f,
             }
             collected = ql.slurm._collect_user_variables(ns, "results")
             assert "ok" in collected
@@ -270,7 +282,8 @@ class TestSubmitJob:
         Patch AutoExecutor to capture the submitted function, then invoke it with a
         non-existent workdir to cover the try/except path that prints a warning.
         """
-        workdir = tmp_path / "does-not-exist"  # we do NOT create it
+        # we do NOT create it
+        workdir = tmp_path / "does-not-exist"
 
         with patch("qililab.slurm.AutoExecutor") as executor:
             executor_instance = MagicMock()

@@ -121,7 +121,8 @@ class CrosstalkMatrix:
             str: A string representation of the crosstalk matrix.
         """
         sorted_buses = self._sorted_buses()
-        col_width = max(len(bus) for bus in sorted_buses) + 4  # Determine column width
+        # Determine column width
+        col_width = max(len(bus) for bus in sorted_buses) + 4
         header = " " * col_width + " ".join(f"{bus:>{col_width}}" for bus in sorted_buses) + "\n"
         rows = []
         for bus1 in sorted_buses:
@@ -318,9 +319,8 @@ class NonLinearCrosstalkMatrix(CrosstalkMatrix):
                     "Both 'amplitude' and 'beta_c' must be provided together — you cannot specify one without the other."
                 )
             if (beta_c is None) != (amplitude is None):
-                raise ValueError(  # Errors if you are setting only one of the two parameters to None.
-                    "You can only set to None 'amplitude' and 'beta_c' together."
-                )
+                # Errors if you are setting only one of the two parameters to None.
+                raise ValueError("You can only set to None 'amplitude' and 'beta_c' together.")
 
             if beta_c == 0:
                 raise ValueError("beta_c cannot be zero: it appears as a divisor in the Bessel expansion ")
