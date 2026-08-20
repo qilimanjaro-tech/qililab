@@ -52,6 +52,8 @@ from .analog import AnnealingProgram
 from .result import Cooldown, DatabaseManager, Sample, get_db_manager, load_results, save_results, Measurement
 from .qililab_settings import get_settings
 
+from .digital import *
+
 __all__ = [
     "AnnealingProgram",
     "Arbitrary",
