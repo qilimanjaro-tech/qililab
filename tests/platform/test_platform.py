@@ -710,7 +710,8 @@ class TestMethods:
 
         # Run the session successfully
         with platform.session():
-            pass  # Simulate a successful experiment execution
+            # Simulate a successful experiment execution
+            pass
 
         # Ensure methods were called in the correct order
         platform.connect.assert_called_once()
@@ -757,7 +758,8 @@ class TestMethods:
         # Simulate an error after connect() and initial_setup() but before turn_on_instruments()
         with pytest.raises(Exception, match="Instrument failure"):
             with platform.session():
-                pass  # The exception will occur inside the context
+                # The exception will occur inside the context
+                pass
 
         # Ensure methods were called until the point of failure
         platform.connect.assert_called_once()
@@ -782,7 +784,8 @@ class TestMethods:
         # Simulate no exception during the experiment, but failure during cleanup
         with pytest.raises(Exception, match="Turn off instruments error"):
             with platform.session():
-                pass  # No exception during the experiment
+                # No exception during the experiment
+                pass
 
         # Ensure methods were called in the correct order
         platform.connect.assert_called_once()
@@ -873,7 +876,8 @@ class TestMethods:
 
         # Mock the ExperimentExecutor to ensure it's used correctly
         with patch("qililab.platform.platform.ExperimentExecutor") as MockExecutor:
-            mock_executor_instance = MockExecutor.return_value  # Mock instance of ExperimentExecutor
+            # Mock instance of ExperimentExecutor
+            mock_executor_instance = MockExecutor.return_value
             mock_executor_instance.execute.return_value = expected_results_path
 
             # Call the method under test
@@ -928,7 +932,8 @@ class TestMethods:
                 ):
                     # Mock the ExperimentExecutor to ensure it's used correctly
                     with patch("qililab.platform.platform.ExperimentExecutor") as MockExecutor:
-                        mock_executor_instance = MockExecutor.return_value  # Mock instance of ExperimentExecutor
+                        # Mock instance of ExperimentExecutor
+                        mock_executor_instance = MockExecutor.return_value
                         mock_executor_instance.execute.return_value = expected_results_path
 
                         platform.execute_experiment(experiment=mock_experiment)
@@ -968,8 +973,10 @@ class TestMethods:
 
         # assert run executed all three times (12 because there are 4 buses)
         assert run.call_count == 12
-        assert acquire_qprogram_results.call_count == 6  # only readout buses
-        assert sync_sequencer.call_count == 12  # called as many times as run
+        # only readout buses
+        assert acquire_qprogram_results.call_count == 6
+        # called as many times as run
+        assert sync_sequencer.call_count == 12
         assert desync_sequencer.call_count == 12
         assert first_execution_results.results["feedline_input_output_bus"] == [123]
         assert first_execution_results.results["feedline_input_output_bus_1"] == [123]
@@ -1017,14 +1024,19 @@ class TestMethods:
 
         # assert run executed all three times (6 because there are 2 buses)
         assert run.call_count == 6
-        assert acquire_qprogram_results.call_count == 3  # only readout buses
-        assert sync_sequencer.call_count == 6  # called as many times as run
+        # only readout buses
+        assert acquire_qprogram_results.call_count == 3
+        # called as many times as run
+        assert sync_sequencer.call_count == 6
         assert desync_sequencer.call_count == 6
         assert first_execution_results.results["resonator"] == [123]
         assert second_execution_results.results["resonator"] == [456]
-        assert upload_voltage_list.call_count == 3  # called as many times as executes
-        assert set_start_marker_external_trigger.call_count == 3  # called as many times as executes
-        assert start.call_count == 3  # called as many times as executes
+        # called as many times as executes
+        assert upload_voltage_list.call_count == 3
+        # called as many times as executes
+        assert set_start_marker_external_trigger.call_count == 3
+        # called as many times as executes
+        assert start.call_count == 3
 
         # assure only one debug was called
         assert patched_open.call_count == 1
@@ -1081,16 +1093,23 @@ class TestMethods:
 
         # assert run executed all three times (6 because there are 2 buses)
         assert run.call_count == 6
-        assert acquire_qprogram_results.call_count == 3  # only readout buses
-        assert sync_sequencer.call_count == 6  # called as many times as run
+        # only readout buses
+        assert acquire_qprogram_results.call_count == 3
+        # called as many times as run
+        assert sync_sequencer.call_count == 6
         assert desync_sequencer.call_count == 6
         assert first_execution_results.results["resonator"] == [123]
         assert second_execution_results.results["resonator"] == [456]
-        assert upload_voltage_list.call_count == 3  # called as many times as executes
-        assert set_out_external_trigger.call_count == 3  # called as many times as executes
-        assert set_in_external_trigger.call_count == 3  # called as many times as executes
-        assert set_start_marker_external_trigger.call_count == 3  # called as many times as executes
-        assert start.call_count == 6  # called as many times as executes
+        # called as many times as executes
+        assert upload_voltage_list.call_count == 3
+        # called as many times as executes
+        assert set_out_external_trigger.call_count == 3
+        # called as many times as executes
+        assert set_in_external_trigger.call_count == 3
+        # called as many times as executes
+        assert set_start_marker_external_trigger.call_count == 3
+        # called as many times as executes
+        assert start.call_count == 6
 
         # assure only one debug was called
         assert patched_open.call_count == 1
@@ -1150,14 +1169,19 @@ class TestMethods:
 
         # assert run executed all three times (6 because there are 2 buses)
         assert run.call_count == 6
-        assert acquire_qprogram_results.call_count == 3  # only readout buses
-        assert sync_sequencer.call_count == 6  # called as many times as run
+        # only readout buses
+        assert acquire_qprogram_results.call_count == 3
+        # called as many times as run
+        assert sync_sequencer.call_count == 6
         assert desync_sequencer.call_count == 6
         assert first_execution_results.results["resonator"] == [123]
         assert second_execution_results.results["resonator"] == [456]
-        assert upload_voltage_list.call_count == 3  # called as many times as executes
-        assert set_in_external_trigger.call_count == 3  # called as many times as executes
-        assert start.call_count == 3  # called as many times as executes
+        # called as many times as executes
+        assert upload_voltage_list.call_count == 3
+        # called as many times as executes
+        assert set_in_external_trigger.call_count == 3
+        # called as many times as executes
+        assert start.call_count == 3
 
         # assure only one debug was called
         assert patched_open.call_count == 1
@@ -1204,14 +1228,19 @@ class TestMethods:
 
         # assert run executed all three times (6 because there are 2 buses)
         assert run.call_count == 6
-        assert acquire_qprogram_results.call_count == 3  # only readout buses
-        assert sync_sequencer.call_count == 6  # called as many times as run
+        # only readout buses
+        assert acquire_qprogram_results.call_count == 3
+        # called as many times as run
+        assert sync_sequencer.call_count == 6
         assert desync_sequencer.call_count == 6
         assert first_execution_results.results["resonator"] == [123]
         assert second_execution_results.results["resonator"] == [456]
-        assert upload_voltage_list.call_count == 3  # called as many times as executes
-        assert set_in_external_trigger.call_count == 3  # called as many times as executes
-        assert start.call_count == 3  # called as many times as executes
+        # called as many times as executes
+        assert upload_voltage_list.call_count == 3
+        # called as many times as executes
+        assert set_in_external_trigger.call_count == 3
+        # called as many times as executes
+        assert start.call_count == 3
 
         # assure only one debug was called
         assert patched_open.call_count == 1
@@ -1333,7 +1362,8 @@ class TestMethods:
 
         # assert run executed all three times (3 because there is 1 bus)
         assert run.call_count == 3
-        assert sync_sequencer.call_count == 3  # called as many times as run
+        # called as many times as run
+        assert sync_sequencer.call_count == 3
         assert desync_sequencer.call_count == 3
 
         # assure only one debug was called
@@ -1456,9 +1486,12 @@ class TestMethods:
         np.testing.assert_array_equal(first_execution_results.results["readout"][0].Q, np.array([4, 5, 6]))
         np.testing.assert_array_equal(second_execution_results.results["readout"][0].I, np.array([3, 2, 1]))
         np.testing.assert_array_equal(second_execution_results.results["readout"][0].Q, np.array([6, 5, 4]))
-        assert upload_voltage_list.call_count == 3  # called as many times as executes
-        assert set_start_marker_external_trigger.call_count == 3  # called as many times as executes
-        assert start.call_count == 3  # called as many times as executes
+        # called as many times as executes
+        assert upload_voltage_list.call_count == 3
+        # called as many times as executes
+        assert set_start_marker_external_trigger.call_count == 3
+        # called as many times as executes
+        assert start.call_count == 3
 
         # assure only one debug was called
         assert patched_open.call_count == 1
@@ -2320,7 +2353,8 @@ class TestMethods:
             patch.object(QbloxModule, "desync_sequencer"),
             patch.object(Platform, "_unintertwined_qblox_results", side_effect=lambda r, i: [r]),
         ):
-            mock_acquire.return_value = list(range(n_measures))  # [0, 1] — distinct sentinel values
+            # [0, 1] — distinct sentinel values
+            mock_acquire.return_value = list(range(n_measures))
             results = platform.execute_qprogram(qprogram=qprogram)
 
         assert len(results.results["feedline_input_output_bus"]) == n_measures

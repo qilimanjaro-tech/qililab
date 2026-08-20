@@ -38,7 +38,8 @@ def _split_tag_and_payload(txt: str) -> tuple[str, str]:
     s = txt.strip()
     if not s.startswith("!"):
         return "", s
-    parts = s.split(None, 1)  # split on any whitespace
+    # split on any whitespace
+    parts = s.split(None, 1)
     if len(parts) == 1:
         return parts[0], ""
     return parts[0], parts[1]
@@ -147,7 +148,8 @@ class GateEvent(BaseModel):
     wait_time: int = 0
     options: dict | None = None
 
-    @field_serializer("waveform")  # default is "always" → used by model_dump & model_dump_json
+    # default is "always" → used by model_dump & model_dump_json
+    @field_serializer("waveform")
     def _serialize_waveform(self, waveform: Waveform | IQWaveform, _info):
         # Return a dict, not a string → nested object in model_dump()
         return _wf_to_mapping(waveform)
@@ -169,7 +171,8 @@ class GateEvent(BaseModel):
             return _mapping_to_wf(v)
         raise TypeError("waveform must be a Waveform/IQWaveform, tagged YAML string, or mapping")
 
-    @field_serializer("weights")  # default is "always" → used by model_dump & model_dump_json
+    # default is "always" → used by model_dump & model_dump_json
+    @field_serializer("weights")
     def _serialize_weights(self, weights: IQWaveform, _info):
         # Return a dict, not a string → nested object in model_dump()
         return _wf_to_mapping(weights) if weights is not None else None

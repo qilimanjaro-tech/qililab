@@ -530,7 +530,8 @@ class NonLinearFluxVector:
             raise ValueError(f"Unsupported VariableExpression operator: {expr.operator}")
         if isinstance(expr, Variable):
             return self._expand_variable(expr, unique_loop_refs, loop_lengths)
-        return float(expr)  # plain int / float — numpy broadcasts with arrays above
+        # plain int / float — numpy broadcasts with arrays above
+        return float(expr)
 
     def set_crosstalk(self, crosstalk: CrosstalkMatrix):
         """Attaches a crosstalk matrix and populates the bus registry.

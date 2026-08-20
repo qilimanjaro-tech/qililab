@@ -24,7 +24,8 @@ from qililab.result.database.database_manager import (
 )
 from qililab.result.database.database_measurements import Measurement, SequenceRun
 
-mpl.use("Agg")  # Use non-interactive backend for testing
+# Use non-interactive backend for testing
+mpl.use("Agg")
 
 
 # Dummy path for testing
@@ -470,7 +471,8 @@ class Testdatabase:
         # Mock sample and cooldown
         mock_sample = MagicMock()
         mock_sample.scalar.return_value = True
-        mock_cd_object = MagicMock(active=False)  # Mocking CD active as false
+        # Mocking CD active as false
+        mock_cd_object = MagicMock(active=False)
         mock_cd = MagicMock()
         mock_cd.filter.return_value.one_or_none.return_value = mock_cd_object
 
@@ -901,7 +903,8 @@ class Testdatabase:
         result_pandas = db_manager.tail(order_limit=None, pandas_output=True, light_read=True)
 
         # Assertions
-        query_mock.order_by.assert_called()  # same mock
+        # same mock
+        query_mock.order_by.assert_called()
         query_mock.with_entities.assert_called()
         mock_read_sql.assert_called_once()
         assert result_pandas == df_mock
@@ -939,7 +942,8 @@ class Testdatabase:
         result_pandas = db_manager.head(order_limit=None, pandas_output=True, light_read=True)
 
         # Assertions
-        assert query_mock.order_by.called  # same mock
+        # same mock
+        assert query_mock.order_by.called
         mock_read_sql.assert_called_once()
         assert result_pandas == df_mock
 
@@ -1009,7 +1013,8 @@ class Testdatabase:
 
         fixed_time = datetime.datetime(2023, 1, 1, 12, 0, 0)
         mock_datetime.datetime.now.return_value = fixed_time
-        mock_datetime.datetime.strftime = datetime.datetime.strftime  # fallback
+        # fallback
+        mock_datetime.datetime.strftime = datetime.datetime.strftime
 
         calibration = Calibration()
         calibration.parameters = {"sample_name": "sampleA", "cooldown": "cdX", "data_folder": "/shared_test/"}
@@ -1029,7 +1034,8 @@ class Testdatabase:
 
         fixed_time = datetime.datetime(2023, 1, 1, 12, 0, 0)
         mock_datetime.datetime.now.return_value = fixed_time
-        mock_datetime.datetime.strftime = datetime.datetime.strftime  # fallback
+        # fallback
+        mock_datetime.datetime.strftime = datetime.datetime.strftime
 
         mock_session = MagicMock()
         mock_session.__enter__.return_value = mock_session
@@ -1073,7 +1079,8 @@ class Testdatabase:
 
         fixed_time = datetime.datetime(2023, 1, 1, 12, 0, 0)
         mock_datetime.datetime.now.return_value = fixed_time
-        mock_datetime.datetime.strftime = datetime.datetime.strftime  # fallback
+        # fallback
+        mock_datetime.datetime.strftime = datetime.datetime.strftime
 
         expected_path = "/shared_test/measurement_folder/sampleA/cdX/2023-01-01/12_00_00/exp1.h5"
 
@@ -1090,7 +1097,8 @@ class Testdatabase:
 
         fixed_time = datetime.datetime(2023, 1, 1, 12, 0, 0)
         mock_datetime.datetime.now.return_value = fixed_time
-        mock_datetime.datetime.strftime = datetime.datetime.strftime  # fallback
+        # fallback
+        mock_datetime.datetime.strftime = datetime.datetime.strftime
 
         mock_session = MagicMock()
         mock_session.__enter__.return_value = mock_session
@@ -1120,7 +1128,8 @@ class Testdatabase:
 
         fixed_time = datetime.datetime(2023, 1, 1, 12, 0, 0)
         mock_datetime.datetime.now.return_value = fixed_time
-        mock_datetime.datetime.strftime = datetime.datetime.strftime  # fallback
+        # fallback
+        mock_datetime.datetime.strftime = datetime.datetime.strftime
 
         # Act
         measurement = db_manager.add_measurement("exp1", experiment_completed=True)
@@ -1141,7 +1150,8 @@ class Testdatabase:
 
         fixed_time = datetime.datetime(2023, 1, 1, 12, 0, 0)
         mock_datetime.datetime.now.return_value = fixed_time
-        mock_datetime.datetime.strftime = datetime.datetime.strftime  # fallback
+        # fallback
+        mock_datetime.datetime.strftime = datetime.datetime.strftime
 
         bus_map = {"readout": "resonator"}
         # Act
@@ -1170,7 +1180,8 @@ class Testdatabase:
 
         fixed_time = datetime.datetime(2023, 1, 1, 12, 0, 0)
         mock_datetime.datetime.now.return_value = fixed_time
-        mock_datetime.datetime.strftime = datetime.datetime.strftime  # fallback
+        # fallback
+        mock_datetime.datetime.strftime = datetime.datetime.strftime
 
         mock_session = MagicMock()
         mock_session.__enter__.return_value = mock_session
@@ -1217,7 +1228,8 @@ class Testdatabase:
         file_mock.create_dataset.assert_called_once_with("results", data=results)
         db_manager._mock_session.add.assert_called_once()
         db_manager._mock_session.commit.assert_called_once()
-        mock_makedirs.assert_called_once()  # make sure directory was attempted to be created
+        # make sure directory was attempted to be created
+        mock_makedirs.assert_called_once()
 
     def test_add_results_raises_exception_no_sample(self, db_manager: DatabaseManager):
         # Set current_sample to None to simulate no sample set

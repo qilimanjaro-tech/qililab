@@ -356,7 +356,8 @@ class DatabaseManager:
 
             Measurement.platform.isnot
             if light_read:
-                query = query.with_entities(  # Note that some columns are missing that currently are not being used
+                # Note that some columns are missing that currently are not being used
+                query = query.with_entities(
                     Measurement.measurement_id,
                     Measurement.sequence_id,
                     Measurement.experiment_name,
@@ -420,7 +421,8 @@ class DatabaseManager:
                 query = query.order_by(Measurement.measurement_id)
 
             if light_read:
-                query = query.with_entities(  # Note that some columns are missing that currently are not being used
+                # Note that some columns are missing that currently are not being used
+                query = query.with_entities(
                     Measurement.measurement_id,
                     Measurement.sequence_id,
                     Measurement.experiment_name,

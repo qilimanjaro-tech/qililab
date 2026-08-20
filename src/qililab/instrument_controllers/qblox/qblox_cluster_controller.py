@@ -105,4 +105,5 @@ class QbloxClusterController(InstrumentController):
     def _set_device_to_all_modules(self):
         """Set the initialized device to all attached modules."""
         for module, slot_id in zip(self.modules, self.connected_modules_slot_ids):
-            module.device = self.device.modules[slot_id - 1]  # slot_id represents the number displayed in the cluster
+            # slot_id represents the number displayed in the cluster
+            module.device = self.device.modules[slot_id - 1]

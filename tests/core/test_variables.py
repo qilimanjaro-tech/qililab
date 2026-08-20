@@ -165,8 +165,10 @@ class TestVariables:
 
     def test_variable_expression_unitary_operations(self, instance: StructuredProgram):
         """Test unary expression with Variables"""
-        time_variable = instance.variable(label="time", domain=Domain.Time)  # IntVariable
-        gain_variable = instance.variable(label="gain", domain=Domain.Voltage)  # FloatVariable
+        # IntVariable
+        time_variable = instance.variable(label="time", domain=Domain.Time)
+        # FloatVariable
+        gain_variable = instance.variable(label="gain", domain=Domain.Voltage)
 
         expr1 = +time_variable
         expr2 = -time_variable
@@ -280,8 +282,10 @@ class TestVariables:
             (operator.lt, "less-than (<)"),
             (operator.le, "lesser-or-equal (<=)"),
             # reflected ops
-            (operator.mul, "reflected multiplication (*)"),  # 10 * gain
-            (operator.truediv, "reflected division (/)"),  # 10 / gain
+            # 10 * gain
+            (operator.mul, "reflected multiplication (*)"),
+            # 10 / gain
+            (operator.truediv, "reflected division (/)"),
         ],
     )
     def test_unsupported_operations(self, instance, op, operation_str):
@@ -307,28 +311,32 @@ class TestVariables:
             TypeError,
             match=re.escape("'in-place addition (+=)' is not a valid operation for QProgram variables."),
         ):
-            gain = instance.variable(label="gain", domain=Domain.Voltage) # NOSONAR
+            # NOSONAR
+            gain = instance.variable(label="gain", domain=Domain.Voltage)
             gain += 10
 
         with pytest.raises(
             TypeError,
             match=re.escape("'in-place subtraction (-=)' is not a valid operation for QProgram variables."),
         ):
-            gain = instance.variable(label="gain", domain=Domain.Voltage) # NOSONAR
+            # NOSONAR
+            gain = instance.variable(label="gain", domain=Domain.Voltage)
             gain -= 10
 
         with pytest.raises(
             TypeError,
             match=re.escape("'in-place multiplication (*=)' is not a valid operation for QProgram variables."),
         ):
-            gain = instance.variable(label="gain", domain=Domain.Voltage) # NOSONAR
+            # NOSONAR
+            gain = instance.variable(label="gain", domain=Domain.Voltage)
             gain *= 10
 
         with pytest.raises(
             TypeError,
             match=re.escape("'in-place division (/=)' is not a valid operation for QProgram variables."),
         ):
-            gain = instance.variable(label="gain", domain=Domain.Voltage) # NOSONAR
+            # NOSONAR
+            gain = instance.variable(label="gain", domain=Domain.Voltage)
             gain /= 10
 
     def test_non_int_constant_raise_error(self, instance):
@@ -345,12 +353,14 @@ class TestVariables:
 
         expr1 = 10 + gain
         expr2 = gain + 10
-        expr3 = -10 + gain  # gain - 10
+        # gain - 10
+        expr3 = -10 + gain
         expr4 = gain - 10
         expr5 = -10 - gain
         expr6 = 10.5 + gain
         expr7 = gain + 10.5
-        expr8 = -10.5 + gain  # gain - 10.5
+        # gain - 10.5
+        expr8 = -10.5 + gain
         expr9 = gain - 10.5
         expr10 = -10.5 - gain
 
