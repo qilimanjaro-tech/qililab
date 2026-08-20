@@ -285,7 +285,8 @@ class SGS100A(Instrument):
     def turn_on(self):
         """Start generating microwaves."""
         if not self.settings.rf_on:
-            self.device.off()  # this avoids the initialisation to overwrite the runcard
+            # this avoids the initialisation to overwrite the runcard
+            self.device.off()
         else:
             self.device.on()
 

@@ -344,5 +344,6 @@ class Driver_KeySight_E5080B(VisaInstrument):
 
     def get_frequencies(self):
         """return freqpoints"""
-        self.format_data("REAL,64")  # recommended to avoid frequency rounding errors
+        # recommended to avoid frequency rounding errors
+        self.format_data("REAL,64")
         return np.array(self.visa_handle.query_binary_values("CALC:MEAS:X?"))

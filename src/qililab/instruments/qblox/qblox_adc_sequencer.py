@@ -29,13 +29,16 @@ class QbloxADCSequencer(QbloxSequencer):
     # demodulation flag
     hardware_demodulation: bool
     integration_mode: IntegrationMode
-    acquisition_timeout: int  # minutes
+    # minutes
+    acquisition_timeout: int
     scope_store_enabled: bool
     threshold: float
     threshold_rotation: float
-    time_of_flight: int  # nanoseconds
+    # nanoseconds
+    time_of_flight: int
     integration_length: int | None = None
-    sequence_timeout: int | None = None  # minutes
+    # minutes
+    sequence_timeout: int | None = None
     timeout_repetitions: int = 0
 
     def __post_init__(self):

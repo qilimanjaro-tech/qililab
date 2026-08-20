@@ -67,10 +67,14 @@ class SuddenNetZero(Waveform):
                 self.duration / resolution,
             )
 
-        envelope[:half_pulse_t] = self.amplitude * np.ones(half_pulse_t)  # positive square halfpulse
-        envelope[half_pulse_t] = self.b * self.amplitude  # impulse b
-        envelope[half_pulse_t + 1 + self.t_phi] = -self.b * self.amplitude  # impulse -b
-        envelope[half_pulse_t + 2 + self.t_phi :] = -self.amplitude * np.ones(half_pulse_t)  # negative square halfpulse
+        # positive square halfpulse
+        envelope[:half_pulse_t] = self.amplitude * np.ones(half_pulse_t)
+        # impulse b
+        envelope[half_pulse_t] = self.b * self.amplitude
+        # impulse -b
+        envelope[half_pulse_t + 1 + self.t_phi] = -self.b * self.amplitude
+        # negative square halfpulse
+        envelope[half_pulse_t + 2 + self.t_phi :] = -self.amplitude * np.ones(half_pulse_t)
 
         return envelope
 

@@ -44,7 +44,8 @@ class Instrument(BusElement, ABC):
 
         alias: str
 
-    settings: InstrumentSettings  # a subtype of settings must be specified by the subclass
+    # a subtype of settings must be specified by the subclass
+    settings: InstrumentSettings
     device: Device
 
     def is_device_active(self) -> bool:

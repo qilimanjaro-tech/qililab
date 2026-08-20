@@ -15,19 +15,23 @@
 """Constants"""
 
 # Environment variables
-DATA = "DATA"  # variable containing the path where data is saved
-RUNCARDS = "RUNCARDS"  # variable containing the runcard's path
+# variable containing the path where data is saved
+DATA = "DATA"
+# variable containing the runcard's path
+RUNCARDS = "RUNCARDS"
 
 RESULTS_FILENAME = "results.yml"
 EXPERIMENT_FILENAME = "experiment.yml"
 
 DEFAULT_PLATFORM_NAME = "galadriel"
 
-DEFAULT_TIMEOUT = 259200  # 3 days
+# 3 days
+DEFAULT_TIMEOUT = 259200
 
 GATE_ALIAS_REGEX = r"(?P<gate>[a-zA-Z]+)\((?P<qubits>\d+(?:,\s*\d+)*)\)"
 
-FLUX_CONTROL_REGEX = r"^(?P<flux>phi[xzy])_(?:q(?P<qubit>\d+)|c(?P<coupler>\d+_\d+))$"  # regex to identify flux control to bus mapping. Example flux control "phix_c0_1" corresponding to phix control of the coupler between qubits 0 and 1
+# regex to identify flux control to bus mapping. Example flux control "phix_c0_1" corresponding to phix control of the coupler between qubits 0 and 1
+FLUX_CONTROL_REGEX = r"^(?P<flux>phi[xzy])_(?:q(?P<qubit>\d+)|c(?P<coupler>\d+_\d+))$"
 
 # TODO: Distribute constants over different classes
 
@@ -119,7 +123,8 @@ class BUS:
     ATTENUATOR = "attenuator"
     SCHEDULES = "schedules"
     NUM_SCHEDULES = "num_schedules"
-    SHAPE = "shape"  # shape of the results
+    # shape of the results
+    SHAPE = "shape"
     RESULTS = "results"
 
 
@@ -228,24 +233,42 @@ class RESULTSDATAFRAME:
 UNITS = {"frequency": "Hz"}
 
 UNIT_PREFIX = {
-    1e-24: "y",  # yocto
-    1e-21: "z",  # zepto
-    1e-18: "a",  # atto
-    1e-15: "f",  # femto
-    1e-12: "p",  # pico
-    1e-9: "n",  # nano
-    1e-6: "u",  # micro
-    1e-3: "m",  # mili
-    1e-2: "c",  # centi
-    1e-1: "d",  # deci
-    1e3: "k",  # kilo
-    1e6: "M",  # mega
-    1e9: "G",  # giga
-    1e12: "T",  # tera
-    1e15: "P",  # peta
-    1e18: "E",  # exa
-    1e21: "Z",  # zetta
-    1e24: "Y",  # yotta
+    # yocto
+    1e-24: "y",
+    # zepto
+    1e-21: "z",
+    # atto
+    1e-18: "a",
+    # femto
+    1e-15: "f",
+    # pico
+    1e-12: "p",
+    # nano
+    1e-9: "n",
+    # micro
+    1e-6: "u",
+    # mili
+    1e-3: "m",
+    # centi
+    1e-2: "c",
+    # deci
+    1e-1: "d",
+    # kilo
+    1e3: "k",
+    # mega
+    1e6: "M",
+    # giga
+    1e9: "G",
+    # tera
+    1e12: "T",
+    # peta
+    1e15: "P",
+    # exa
+    1e18: "E",
+    # zetta
+    1e21: "Z",
+    # yotta
+    1e24: "Y",
 }
 
 
