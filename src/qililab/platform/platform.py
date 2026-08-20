@@ -20,6 +20,7 @@ from __future__ import annotations
 import ast
 import io
 import re
+from builtins import ExceptionGroup
 from contextlib import contextmanager
 from copy import deepcopy
 from dataclasses import asdict, dataclass
@@ -31,7 +32,6 @@ from ruamel.yaml import YAML
 
 from qililab.config import logger
 from qililab.constants import FLUX_CONTROL_REGEX, GATE_ALIAS_REGEX, RUNCARD
-from qililab.exceptions import ExceptionGroup
 from qililab.extra.quantum_machines import (
     QuantumMachinesCluster,
     QuantumMachinesCompilationOutput,
@@ -939,7 +939,11 @@ class Platform:
 
     @contextmanager
     def session(self):
-        """Context manager to manage platform session, ensuring that resources are always released."""
+        """Context manager to manage platform session, ensuring that resources are always released.
+
+        A session is only considered successful if it runs start to finish without any error, including
+        errors raised during cleanup (e.g. ``disconnect()`` failing after a successful execution).
+        """
         cleanup_methods = []
         cleanup_errors = []
         execution_error: Exception | None = None
@@ -961,16 +965,9 @@ class Platform:
             start_time = perf_counter()
             try:
                 yield running_session
-            except Exception as exc:
-                running_session.success = False
-                running_session.error = exc
-                raise
-            else:
-                running_session.success = True
             finally:
                 running_session.execution_time = perf_counter() - start_time
                 logger.info(f"Platform session took {running_session.execution_time:.2f} seconds")
-
         except Exception as e:  # noqa: BLE001
             logger.error(f"An error occurred: {e}")
             execution_error = e
@@ -983,18 +980,24 @@ class Platform:
                     logger.error(f"Error during cleanup: {cleanup_exception}")
                     cleanup_errors.append(cleanup_exception)
 
-            # Raise any exception that might have happened during cleanup
+            running_session.success = execution_error is None and not cleanup_errors
+
+            # Raise any exception that might have happened during execution and/or cleanup
             if cleanup_errors:
                 if execution_error is not None:
-                    raise ExceptionGroup(
+                    running_session.error = ExceptionGroup(
                         "Exceptions occurred during execution and cleanup",
                         [execution_error, *cleanup_errors],
                     )
+                    raise running_session.error
                 if len(cleanup_errors) == 1:
+                    running_session.error = cleanup_errors[0]
                     raise cleanup_errors[0]
-                raise ExceptionGroup("Exceptions occurred during cleanup", cleanup_errors)
+                running_session.error = ExceptionGroup("Exceptions occurred during cleanup", cleanup_errors)
+                raise running_session.error
 
             if execution_error is not None:
+                running_session.error = execution_error
                 raise execution_error
 
     def execute_experiment(
