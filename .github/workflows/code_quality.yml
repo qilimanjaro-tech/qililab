@@ -11,7 +11,14 @@ on:
       - "synchronize"
       - "ready_for_review"
 
+concurrency:
+  group: code-quality-${{ github.head_ref || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
+  # One job, not one per Python version: ruff takes its target version from
+  # pyproject.toml, mypy is pinned to python_version there, and mdformat does not
+  # care, so a matrix here would run the same analysis three times.
   code-quality:
     if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
 
@@ -19,21 +26,13 @@ jobs:
     timeout-minutes: 7
 
     env:
-      HOME_REPO: /home/repo
       CA_DOMAIN: qilimanjaro
       CA_DOMAIN_OWNER: "723412851021"
       CA_REGION: eu-west-1
-    
+
     permissions:
       contents: read
       id-token: write  # OIDC: needed to read the private CodeArtifact indexes during the build
-
-    strategy:
-      matrix:
-        python-version:
-          - "3.11"
-          - "3.12"
-          - "3.13"
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
@@ -47,7 +46,7 @@ jobs:
           cache-dependency-glob: |
             **/pyproject.toml
             **/uv.lock
-          python-version: ${{ matrix.python-version }}
+          python-version: "3.13"
 
       - name: Configure AWS Credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@e6de054238d6b7531b4efff3b6587d9aade6a06c  # v6.2.3
@@ -55,7 +54,7 @@ jobs:
           role-to-assume: arn:aws:iam::723412851021:role/GitHub_actions_role
           aws-region: eu-west-1
           role-session-name: GitHubActions-DevOps
-      
+
       - name: Assume deploy role in target account
         id: chained
         uses: aws-actions/configure-aws-credentials@e6de054238d6b7531b4efff3b6587d9aade6a06c  # v6.2.3
@@ -65,7 +64,7 @@ jobs:
           role-session-name: GitHubActions-Deploy
           role-chaining: true
           role-skip-session-tagging: true
-      
+
       - name: Authenticate uv to CodeArtifact
         shell: bash
         run: |
@@ -92,14 +91,21 @@ jobs:
       - name: Install dependencies
         run: uv sync --locked --group dev --all-extras
 
+      - name: Put the synced environment on PATH
+        run: |
+          echo "VIRTUAL_ENV=$PWD/.venv" >> "$GITHUB_ENV"
+          echo "$PWD/.venv/bin" >> "$GITHUB_PATH"
+
       - name: Ruff Lint
-        run: uv run ruff check --output-format=github .
+        run: ruff check --output-format=github .
 
       - name: Ruff Format
-        run: uv run ruff format --diff --output-format=github .
+        run: ruff format --diff --output-format=github .
 
       - name: Mypy
-        run: uv run mypy src --ignore-missing-imports
+        run: mypy src --ignore-missing-imports
 
+      # CHANGELOG.md belongs to towncrier, and .venv is here because the install
+      # step just created it.
       - name: Mdformat
-        run: uv run mdformat .
+        run: mdformat --check --exclude 'CHANGELOG.md' --exclude '.venv/**' .
