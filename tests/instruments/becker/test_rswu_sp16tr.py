@@ -27,6 +27,12 @@ def test_route_valid_updates_settings_and_calls_device(switch: RSWUSP16TR):
     assert switch.active_channel == "RF5"
     switch.device.active_channel.assert_called_once_with("RF5")
 
+def test_route_ignores_same_channel(switch: RSWUSP16TR):
+    """Test route valid updates."""
+    switch.settings.active_channel = "RF6"
+    switch.route("RF6")
+    assert switch.active_channel == "RF6"
+    switch.device.active_channel.assert_not_called()
 
 @pytest.mark.parametrize("bad", ["RF0", "RF17", "SOMETHING", "",])
 def test_route_invalid_raises_valueerror(switch: RSWUSP16TR, bad: str):

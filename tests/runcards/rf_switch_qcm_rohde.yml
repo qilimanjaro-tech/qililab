@@ -1,0 +1,78 @@
+name: Platform_rf_switch_QCM_rohde
+
+buses:
+  - alias: bus_base
+    instruments: [rs_1, QCM1, rf_switch]
+    channels: [0, 0, 5]
+  - alias: bus_uses_same_channel
+    instruments: [rs_1, QCM1, rf_switch]
+    channels: [0, 0, 5]
+  - alias: bus_uses_different_channel
+    instruments: [rs_1, QCM1, rf_switch]
+    channels: [0, 0, 3]
+
+instruments:
+  - name: QCM
+    alias: QCM1  
+    out_offsets:
+    - 0
+    - 0
+    - 0
+    - 0
+    awg_sequencers:
+    - identifier: 0
+      outputs: [0, 1]
+      intermediate_frequency : 0.0
+      gain_imbalance: 1.0
+      phase_imbalance: 0.0
+      hardware_modulation: true
+      gain_i: 1.0
+      gain_q: 1.0
+      offset_i: 0.0
+      offset_q: 0.0
+
+  - name: rohde_schwarz
+    alias: rs_1
+    power: -40 
+    frequency: 4.5e9
+    rf_on: False
+    iq_wideband: True
+    iq_modulation: True
+    alc: true
+
+  - name: rswu_sp16tr
+    alias: rf_switch
+
+
+instrument_controllers:
+  - name: rswu_sp16tr
+    alias: rf_switch_controller
+    connection:
+      name: tcp_ip
+      address: 192.168.6.218
+    modules:
+    - alias: rf_switch
+      slot_id: 0
+
+  - name: qblox_cluster
+    alias: cluster_controller_0
+    connection:
+      name: tcp_ip
+      address: 192.168.6.50
+    modules:
+    - alias: QCM1
+      slot_id: 6
+    reset: true
+    reference_clock: internal
+    ext_trigger: True
+
+  - name: rohde_schwarz
+    alias: rs_controller_1
+    connection:
+      name: tcp_ip
+      address:  192.168.6.129
+    modules:
+    - alias: rs_1
+      slot_id: 0
+    reset: true
+    reference_clock: int

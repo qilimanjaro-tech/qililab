@@ -73,6 +73,11 @@ def fixture_platform_qm_qdac():
     return platform_build_platform(runcard="tests/runcards/qm_and_qdac.yml")
 
 
+@pytest.fixture(name="platform_rf_switch")
+def fixture_platform_rf_switch():
+    return platform_build_platform("tests/runcards/rf_switch_qcm_rohde.yml")
+
+
 @pytest.fixture(name="platform_quantum_machines")
 def fixture_platform_quantum_machines():
     return build_platform(runcard=SauronQuantumMachines.runcard)
@@ -1827,6 +1832,24 @@ class TestMethods:
 
         assert mock_compile.call_args.kwargs["calibration"] is None
 
+    def test_execute_qprogram_errors_buses_with_same_rf_switch(self, platform_rf_switch: Platform):
+        qprogram_1 = QProgram()
+        qprogram_1._buses = {"bus_base", "bus_uses_same_channel"}
+        qprogram_2 = QProgram()
+        qprogram_2._buses = {"bus_base", "bus_uses_different_channel"}
+
+        with (
+            patch.object(Platform, "compile_qprogram"),
+            patch.object(Platform, "execute_compilation_output"),
+        ):
+            # If it uses the same channel it should not fail since the current can reach the fridge
+            platform_rf_switch.execute_qprogram(qprogram_1)
+
+            # If it uses different channels it should error since two channels can't be active at the same time
+            with pytest.raises(ValueError):
+                platform_rf_switch.execute_qprogram(qprogram_2)
+                
+
     @staticmethod
     def _two_disjoint_qprograms() -> list[QProgram]:
         """Build two QPrograms that act on non-overlapping buses (valid for parallel execution)."""
@@ -1908,6 +1931,25 @@ class TestMethods:
 
         for call in mock_compile.call_args_list:
             assert call.kwargs["calibration"] is None
+
+    def test_execute_qprograms_parallel_errors_buses_with_same_rf_switch(self, platform_rf_switch: Platform):
+            qprogram_1 = QProgram()
+            qprogram_1._buses = {"bus_base"}
+            qprogram_2 = QProgram()
+            qprogram_2._buses = {"bus_uses_same_channel"}
+            qprogram_3 = QProgram()
+            qprogram_3._buses = {"bus_uses_different_channel"}
+    
+            with (
+                patch.object(Platform, "compile_qprogram"),
+                patch.object(Platform, "execute_compilation_outputs_parallel"),
+            ):
+                # If it uses the same channel it should not fail since the current can reach the fridge
+                platform_rf_switch.execute_qprograms_parallel(qprograms=[qprogram_1, qprogram_2])
+    
+                # If it uses different channels it should error since two channels can't be active at the same time
+                with pytest.raises(ValueError):
+                    platform_rf_switch.execute_qprograms_parallel(qprograms=[qprogram_1, qprogram_3])
 
     def test_mapped_buses(self, platform: Platform):
         """Test the mappings of buses"""

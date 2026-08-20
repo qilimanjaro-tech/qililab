@@ -66,9 +66,11 @@ class RSWUSP16TR(Instrument):
                 f"Invalid channel {channel}, valid: Numbers 1 to 16 preceded by one of the following [RF, rf] "
                 "or nothing or X followed by a number from 101 to 116, the two last numbers denoting the channel."
             )
-        self.settings.active_channel = channel
+        if self.settings.active_channel == channel:
+            return
         if self.is_device_active():
             self.device.active_channel(channel)
+        self.settings.active_channel = channel
 
     def query_active(self) -> str:
         """Query active channel from the device and update settings.
