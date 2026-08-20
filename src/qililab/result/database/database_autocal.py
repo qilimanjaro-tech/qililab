@@ -13,7 +13,7 @@
 # limitations under the License.
 
 import datetime
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from sqlalchemy import ARRAY, Boolean, Column, DateTime, ForeignKey, Integer, Interval, String
 from sqlalchemy.dialects.postgresql import JSONB
@@ -24,6 +24,7 @@ from qililab.result.result_management import load_results
 
 if TYPE_CHECKING:
     from qililab.platform.platform import Platform
+    from qililab.result.database.database_manager import DatabaseManager
 
 base = declarative_base()
 
@@ -80,7 +81,8 @@ class AutocalMeasurement(base):  # type: ignore
     experiment_completed: Column = Column("experiment_completed", Boolean, nullable=False)
     calibration_id: Column = Column("calibration_id", ForeignKey(CalibrationRun.calibration_id), nullable=False)
     result_path: Column = Column("result_path", String, unique=True, nullable=False)
-    fitting_path: Column = Column("fitting_path", String, unique=True, nullable=True)
+    fitting_path: Column = Column("fitting_path", String)
+    fitting_parameters: Column = Column("fitting_parameters", JSONB)
     qbit_idx: Column = Column("qbit_idx", String)
     platform_after: Column = Column("platform_after", JSONB)
     platform_before: Column = Column("platform_before", JSONB)
@@ -98,6 +100,7 @@ class AutocalMeasurement(base):  # type: ignore
         start_time,
         qbit_idx,
         fitting_path=None,
+        fitting_parameters=None,
         end_time=None,
         run_length=None,
         platform_after=None,
@@ -117,6 +120,7 @@ class AutocalMeasurement(base):  # type: ignore
 
         # Optional fields
         self.fitting_path = fitting_path
+        self.fitting_parameters = fitting_parameters
         self.end_time = end_time
         self.run_length = run_length
         self.platform_after = platform_after
@@ -164,6 +168,37 @@ class AutocalMeasurement(base):  # type: ignore
             self.platform_after = platform.to_dict()
             persistent_instance.platform_after = platform.to_dict()
 
+            try:
+                running_session.commit()
+                return persistent_instance
+            except Exception as e:
+                running_session.rollback()
+                raise e
+
+    def add_fitting(self, database_manager: "DatabaseManager", path: str, parameters: dict[str, Any] | None = None):
+        """Add fitting_path and fitting_parameters into the autocalibration Measurements database table.
+
+        The row is re-loaded from the database by its ``measurement_id`` inside the session and only the
+        fitting columns are updated, instead of merging ``self``. This avoids a stale in-memory instance
+        overwriting columns that were changed elsewhere (e.g. by ``update_platform`` or ``end_experiment``).
+
+        Args:
+            database_manager (DatabaseManager): Database manager holding the session.
+            path (str): Fitting plots or data path.
+            parameters (dict[str, Any] | None, optional): Fitting parameters in dictionary form. Defaults to None.
+        """
+        session = database_manager.session
+        with session() as running_session:
+            persistent_instance = (
+                running_session.query(AutocalMeasurement)
+                .where(AutocalMeasurement.measurement_id == self.measurement_id)
+                .one_or_none()
+            )
+            if persistent_instance is None:
+                raise IndexError(f"Autocalibration measurement entry '{self.measurement_id}' does not exist.")
+            persistent_instance.fitting_path = path  # type: ignore[assignment]
+            if parameters:
+                persistent_instance.fitting_parameters = parameters  # type: ignore[assignment]
             try:
                 running_session.commit()
                 return persistent_instance

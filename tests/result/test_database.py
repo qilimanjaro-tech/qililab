@@ -270,6 +270,65 @@ class TestMeasurement:
 
         mock_session.rollback.assert_called_once()
 
+    def test_autocalibration_add_fitting(self, autocalibration_measurement):
+        mock_session_context = MagicMock()
+        mock_session = MagicMock()
+        mock_session_context.__enter__.return_value = mock_session
+        mock_session.query.return_value.where.return_value.one_or_none.return_value = autocalibration_measurement
+
+        mock_db_manager = MagicMock()
+        mock_db_manager.session = lambda: mock_session_context
+
+        result = autocalibration_measurement.add_fitting(mock_db_manager, path="/test/fit.h5", parameters={"a": 1.0})
+
+        assert result.fitting_path == "/test/fit.h5"
+        assert result.fitting_parameters == {"a": 1.0}
+        mock_session.commit.assert_called_once()
+
+    def test_autocalibration_add_fitting_without_parameters(self, autocalibration_measurement):
+        mock_session_context = MagicMock()
+        mock_session = MagicMock()
+        mock_session_context.__enter__.return_value = mock_session
+        mock_session.query.return_value.where.return_value.one_or_none.return_value = autocalibration_measurement
+
+        mock_db_manager = MagicMock()
+        mock_db_manager.session = lambda: mock_session_context
+
+        result = autocalibration_measurement.add_fitting(mock_db_manager, path="/test/fit.h5")
+
+        assert result.fitting_path == "/test/fit.h5"
+        assert result.fitting_parameters is None
+        mock_session.commit.assert_called_once()
+
+    def test_autocalibration_add_fitting_raises_index_error_measurement_not_found(self, autocalibration_measurement):
+        mock_session_context = MagicMock()
+        mock_session = MagicMock()
+        mock_session_context.__enter__.return_value = mock_session
+        mock_session.query.return_value.where.return_value.one_or_none.return_value = None
+
+        mock_db_manager = MagicMock()
+        mock_db_manager.session = lambda: mock_session_context
+
+        with pytest.raises(IndexError, match="Autocalibration measurement entry"):
+            autocalibration_measurement.add_fitting(mock_db_manager, path="/test/fit.h5")
+
+        mock_session.commit.assert_not_called()
+
+    def test_autocalibration_add_fitting_raises_exception(self, autocalibration_measurement):
+        mock_session_context = MagicMock()
+        mock_session = MagicMock()
+        mock_session_context.__enter__.return_value = mock_session
+        mock_session.query.return_value.where.return_value.one_or_none.return_value = autocalibration_measurement
+        mock_session.commit.side_effect = Exception("Measurement error")
+
+        mock_db_manager = MagicMock()
+        mock_db_manager.session = lambda: mock_session_context
+
+        with pytest.raises(Exception, match="Measurement error"):
+            autocalibration_measurement.add_fitting(mock_db_manager, path="/test/fit.h5")
+
+        mock_session.rollback.assert_called_once()
+
     @patch("qililab.result.database.database_autocal.datetime")
     def test_autocalibration_end_calibration(self, mock_datetime, calibration_tree):
         fixed_now = datetime.datetime(2023, 1, 1, 12, 0, 0)
@@ -846,6 +905,22 @@ class Testdatabase:
         # Patch os.path.isfile to return False to simulate missing file
         with patch("os.path.isfile", return_value=False):
             db_manager.load_calibration_by_id(123)
+
+    def test_add_calibration_fitting(self, db_manager: DatabaseManager):
+        mock_measurement = MagicMock(spec=AutocalMeasurement)
+        mock_measurement.add_fitting.return_value = mock_measurement
+
+        with patch.object(db_manager, "load_calibration_by_id", return_value=mock_measurement) as mock_load:
+            result = db_manager.add_calibration_fitting(123, path="/test/fit.h5", parameters={"a": 1.0})
+
+        mock_load.assert_called_once_with(123)
+        mock_measurement.add_fitting.assert_called_once_with(db_manager, "/test/fit.h5", {"a": 1.0})
+        assert result == mock_measurement
+
+    def test_add_calibration_fitting_raises_exception_measurement_not_found(self, db_manager: DatabaseManager):
+        with patch.object(db_manager, "load_calibration_by_id", return_value=None):
+            with pytest.raises(IndexError, match="Autocalibration measurement entry '123' does not exist."):
+                db_manager.add_calibration_fitting(123, path="/test/fit.h5")
 
     def test_load_experiment_by_id(self, db_manager: DatabaseManager):
         mock_measurement = MagicMock(spec=AutocalMeasurement)
