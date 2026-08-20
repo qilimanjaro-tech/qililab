@@ -23,7 +23,7 @@ import re
 from contextlib import contextmanager
 from copy import deepcopy
 from dataclasses import asdict
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any, Callable, cast
 
 import numpy as np
 from ruamel.yaml import YAML
@@ -1093,6 +1093,49 @@ class Platform:
         )
         return executor.execute()
 
+    def _validate_bus_instruments_overlap(self, buses: set):
+        """Validation step for buses being executed.
+        It validates that instruments don't overlap. currently only rf-switch overlap is validated
+        """
+
+        def validate_rswu_sp16tr(
+            match_1: tuple[Instrument, ChannelID | None], match_2: tuple[Instrument, ChannelID | None]
+        ) -> bool:
+            return match_1[0].alias == match_2[0].alias and match_1[1] != match_2[1]
+
+        _instrument_handlers: dict[InstrumentName, Callable] = {InstrumentName.RSWU_SP16TR: validate_rswu_sp16tr}
+
+        def shared_instruments(bus_1: Bus, bus_2: Bus) -> frozenset[str]:
+            """Aliases of the instruments that ``bus_1`` and ``bus_2`` cannot use at the same time.
+
+            An instrument of ``bus_1`` overlaps when it has a handler registered and that handler
+            matches it against any instrument of ``bus_2``.
+            """
+            return frozenset(
+                instrument_1.alias
+                for instrument_1, channel_1 in zip(bus_1.instruments, bus_1.channels)
+                if instrument_1.name in _instrument_handlers
+                for instrument_2, channel_2 in zip(bus_2.instruments, bus_2.channels)
+                if _instrument_handlers[instrument_1.name]((instrument_1, channel_1), (instrument_2, channel_2))
+            )
+
+        buses_obj: list[Bus] = [self.get_element(bus) for bus in buses]
+        overlap = [
+            (bus_1, bus_2, shared)
+            for ii, bus_1 in enumerate(buses_obj)
+            for bus_2 in buses_obj[ii + 1 :]
+            if (shared := shared_instruments(bus_1, bus_2))
+        ]
+        if overlap:
+            conflicts = "\n".join(
+                f"  - buses '{bus_1.alias}' and '{bus_2.alias}' share instrument(s): {', '.join(sorted(shared))}"
+                for bus_1, bus_2, shared in overlap
+            )
+            raise ValueError(
+                "Buses cannot be executed together because they share instruments/channels incompatible with simultaneous execution:"
+                f"\n{conflicts}"
+            )
+
     def compile_qprogram(
         self,
         qprogram: QProgram,
@@ -1483,6 +1526,10 @@ class Platform:
         if calibration is None:
             calibration = self.calibration
 
+        self._validate_bus_instruments_overlap(
+            buses={bus_mapping[bus] if bus_mapping and bus in bus_mapping else bus for bus in qprogram.buses}
+        )
+
         output = self.compile_qprogram(
             qprogram=qprogram, bus_mapping=bus_mapping, calibration=calibration, crosstalk=crosstalk
         )
@@ -1600,6 +1647,7 @@ class Platform:
                     )
                 all_physical |= phys
 
+            self._validate_bus_instruments_overlap(buses=all_physical)
             outputs = [
                 self.compile_qprogram(
                     qprogram=qp, bus_mapping=bus_mapping, calibration=calibration, crosstalk=crosstalk

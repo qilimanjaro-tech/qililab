@@ -68,9 +68,9 @@ class RSWUSP16TR(Instrument):
             )
         if self.settings.active_channel == channel:
             return
-        self.settings.active_channel = channel
         if self.is_device_active():
             self.device.active_channel(channel)
+        self.settings.active_channel = channel
 
     def query_active(self) -> str:
         """Query active channel from the device and update settings.
