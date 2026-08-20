@@ -20,10 +20,10 @@ from __future__ import annotations
 import ast
 import io
 import re
-from builtins import ExceptionGroup
+from builtins import BaseExceptionGroup
 from contextlib import contextmanager
 from copy import deepcopy
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 from time import perf_counter
 from typing import TYPE_CHECKING, Any, cast
 
@@ -83,11 +83,16 @@ if TYPE_CHECKING:
 
 @dataclass
 class Session:
-    """Runtime information about a `Platform.session()` context, populated as the session progresses."""
+    """Runtime information about a `Platform.session()` context, populated as the session progresses.
+
+    ``errors`` holds every exception the session ran into, in the order they happened: the one raised by the code
+    inside the ``with`` block first (if any), followed by the ones raised while cleaning up. It is empty if and only
+    if the session was successful.
+    """
 
     execution_time: float | None = None
     success: bool | None = None
-    error: Exception | None = None
+    errors: list[BaseException] = field(default_factory=list)
 
 
 class Platform:
@@ -945,9 +950,8 @@ class Platform:
         errors raised during cleanup (e.g. ``disconnect()`` failing after a successful execution).
         """
         cleanup_methods = []
-        cleanup_errors = []
-        execution_error: Exception | None = None
         running_session = Session()
+        start_time: float | None = None
         try:
             # Track successfully called setup methods and their cleanup counterparts
             self.connect()
@@ -961,44 +965,36 @@ class Platform:
             # Store turn_off_instruments for cleanup
             cleanup_methods.append(self.turn_off_instruments)
 
-            # Experiment logic goes here
+            # Experiment logic goes here, timed on its own so that setup and cleanup are left out
             start_time = perf_counter()
-            try:
-                yield running_session
-            finally:
+            yield running_session
+        except BaseException as error:  # noqa: BLE001
+            # BaseException so that a KeyboardInterrupt is reported as a failure too. Never swallowed: every
+            # recorded error is re-raised below, once the cleanup methods have had their chance to run.
+            logger.error(f"An error occurred: {error!r}")
+            running_session.errors.append(error)
+        finally:
+            # start_time is None when the session failed before reaching the `with` block
+            if start_time is not None:
                 running_session.execution_time = perf_counter() - start_time
                 logger.info(f"Platform session took {running_session.execution_time:.2f} seconds")
-        except Exception as e:  # noqa: BLE001
-            logger.error(f"An error occurred: {e}")
-            execution_error = e
-        finally:
+
             # Call the cleanup methods in reverse order
             for cleanup_method in reversed(cleanup_methods):
                 try:
                     cleanup_method()
-                except Exception as cleanup_exception:  # noqa: BLE001
-                    logger.error(f"Error during cleanup: {cleanup_exception}")
-                    cleanup_errors.append(cleanup_exception)
+                except Exception as cleanup_error:  # noqa: BLE001
+                    logger.error(f"Error during cleanup: {cleanup_error}")
+                    running_session.errors.append(cleanup_error)
 
-            running_session.success = execution_error is None and not cleanup_errors
+            running_session.success = not running_session.errors
 
             # Raise any exception that might have happened during execution and/or cleanup
-            if cleanup_errors:
-                if execution_error is not None:
-                    running_session.error = ExceptionGroup(
-                        "Exceptions occurred during execution and cleanup",
-                        [execution_error, *cleanup_errors],
-                    )
-                    raise running_session.error
-                if len(cleanup_errors) == 1:
-                    running_session.error = cleanup_errors[0]
-                    raise cleanup_errors[0]
-                running_session.error = ExceptionGroup("Exceptions occurred during cleanup", cleanup_errors)
-                raise running_session.error
-
-            if execution_error is not None:
-                running_session.error = execution_error
-                raise execution_error
+            if len(running_session.errors) == 1:
+                raise running_session.errors[0]
+            if running_session.errors:
+                # BaseExceptionGroup narrows itself to an ExceptionGroup when every error is an Exception
+                raise BaseExceptionGroup("Exceptions occurred during the platform session", running_session.errors)
 
     def execute_experiment(
         self,

@@ -747,7 +747,7 @@ class TestMethods:
 
         assert isinstance(running_session, Session)
         assert running_session.success is True
-        assert running_session.error is None
+        assert running_session.errors == []
         assert running_session.execution_time is not None
         assert running_session.execution_time >= 0
 
@@ -810,8 +810,9 @@ class TestMethods:
 
         assert isinstance(running_session, Session)
         assert running_session.success is False
-        assert isinstance(running_session.error, AttributeError)
-        assert str(running_session.error) == "Test Error"
+        assert len(running_session.errors) == 1
+        assert isinstance(running_session.errors[0], AttributeError)
+        assert str(running_session.errors[0]) == "Test Error"
         assert running_session.execution_time is not None
         assert running_session.execution_time >= 0
 
@@ -834,8 +835,9 @@ class TestMethods:
 
         assert isinstance(running_session, Session)
         assert running_session.success is False
-        assert isinstance(running_session.error, Exception)
-        assert str(running_session.error) == "Disconnect error"
+        assert len(running_session.errors) == 1
+        assert isinstance(running_session.errors[0], Exception)
+        assert str(running_session.errors[0]) == "Disconnect error"
 
     def test_session_yields_session_object_on_multiple_cleanup_exceptions(self):
         """Test that the Session object records an ExceptionGroup when multiple cleanup calls raise."""
@@ -857,10 +859,7 @@ class TestMethods:
 
         assert isinstance(running_session, Session)
         assert running_session.success is False
-        assert isinstance(running_session.error, ExceptionGroup)
-        assert len(running_session.error.exceptions) == 2
-        assert str(running_session.error.exceptions[0]) == "Turn off instruments error"
-        assert str(running_session.error.exceptions[1]) == "Disconnect error"
+        assert [str(error) for error in running_session.errors] == ["Turn off instruments error", "Disconnect error"]
 
     def test_session_yields_session_object_on_execution_and_cleanup_exceptions(self):
         """Test that the Session object records an ExceptionGroup when execution and cleanup both raise."""
@@ -883,11 +882,34 @@ class TestMethods:
 
         assert isinstance(running_session, Session)
         assert running_session.success is False
-        assert isinstance(running_session.error, ExceptionGroup)
-        assert len(running_session.error.exceptions) == 3
-        assert str(running_session.error.exceptions[0]) == "Execution error"
-        assert str(running_session.error.exceptions[1]) == "Turn off instruments error"
-        assert str(running_session.error.exceptions[2]) == "Disconnect error"
+        assert [str(error) for error in running_session.errors] == [
+            "Execution error",
+            "Turn off instruments error",
+            "Disconnect error",
+        ]
+
+    def test_session_yields_session_object_on_keyboard_interrupt(self):
+        """Test that an interrupted session is reported as a failure and still cleans up."""
+        platform = create_autospec(Platform, instance=True)
+        platform.session = Platform.session.__get__(platform, Platform)
+
+        running_session = None
+
+        def run_session_interrupted():
+            nonlocal running_session
+            with platform.session() as session:
+                running_session = session
+                raise KeyboardInterrupt
+
+        with pytest.raises(KeyboardInterrupt):
+            run_session_interrupted()
+
+        assert running_session.success is False
+        assert len(running_session.errors) == 1
+        assert isinstance(running_session.errors[0], KeyboardInterrupt)
+
+        platform.turn_off_instruments.assert_called_once()
+        platform.disconnect.assert_called_once()
 
     def test_session_with_exception_in_setup(self):
         """Test the session method when an error occurs before turning on instruments."""
