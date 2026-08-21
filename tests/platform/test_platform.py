@@ -911,6 +911,32 @@ class TestMethods:
         platform.turn_off_instruments.assert_called_once()
         platform.disconnect.assert_called_once()
 
+    def test_session_runs_remaining_cleanup_after_interrupt_in_cleanup(self):
+        """Test that an interrupt in a cleanup method does not stop the remaining cleanup methods."""
+        platform = create_autospec(Platform, instance=True)
+        platform.session = Platform.session.__get__(platform, Platform)
+
+        # turn_off_instruments is the first cleanup method to run, disconnect the second
+        platform.turn_off_instruments.side_effect = KeyboardInterrupt
+        platform.disconnect.side_effect = Exception("Disconnect error")
+
+        running_session = None
+
+        def run_session_interrupted_during_cleanup():
+            nonlocal running_session
+            with platform.session() as session:
+                running_session = session
+
+        with pytest.raises(BaseExceptionGroup) as exc_info:
+            run_session_interrupted_during_cleanup()
+
+        # The interrupt did not prevent disconnect from running, and both errors are reported
+        platform.turn_off_instruments.assert_called_once()
+        platform.disconnect.assert_called_once()
+        assert [type(error) for error in exc_info.value.exceptions] == [KeyboardInterrupt, Exception]
+        assert running_session.success is False
+        assert [type(error) for error in running_session.errors] == [KeyboardInterrupt, Exception]
+
     def test_session_with_exception_in_setup(self):
         """Test the session method when an error occurs before turning on instruments."""
         # Create an autospec of the Platform class

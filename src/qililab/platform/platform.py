@@ -947,7 +947,9 @@ class Platform:
         """Context manager to manage platform session, ensuring that resources are always released.
 
         A session is only considered successful if it runs start to finish without any error, including
-        errors raised during cleanup (e.g. ``disconnect()`` failing after a successful execution).
+        errors raised during cleanup (e.g. ``disconnect()`` failing after a successful execution). The cleanup
+        methods always all run, whatever the code inside the ``with`` block or an earlier cleanup method did,
+        so that the instruments are released even when the session is interrupted.
         """
         cleanup_methods = []
         running_session = Session()
@@ -969,8 +971,7 @@ class Platform:
             start_time = perf_counter()
             yield running_session
         except BaseException as error:  # noqa: BLE001
-            # BaseException so that a KeyboardInterrupt is reported as a failure too. Never swallowed: every
-            # recorded error is re-raised below, once the cleanup methods have had their chance to run.
+            # BaseException so that an interrupt is reported as a failure and still goes through the cleanup below
             logger.error(f"An error occurred: {error!r}")
             running_session.errors.append(error)
         finally:
@@ -979,12 +980,13 @@ class Platform:
                 running_session.execution_time = perf_counter() - start_time
                 logger.info(f"Platform session took {running_session.execution_time:.2f} seconds")
 
-            # Call the cleanup methods in reverse order
+            # Call the cleanup methods in reverse order. BaseException so that an interrupt in one of them does
+            # not leave the remaining ones unrun. No error is swallowed: they are all re-raised right below.
             for cleanup_method in reversed(cleanup_methods):
                 try:
                     cleanup_method()
-                except Exception as cleanup_error:  # noqa: BLE001
-                    logger.error(f"Error during cleanup: {cleanup_error}")
+                except BaseException as cleanup_error:  # noqa: BLE001
+                    logger.error(f"Error during cleanup: {cleanup_error!r}")
                     running_session.errors.append(cleanup_error)
 
             running_session.success = not running_session.errors
