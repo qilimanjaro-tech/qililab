@@ -157,6 +157,8 @@ class QbloxQRM(QbloxModule):
                     sequencer=sequencer.identifier,
                     timeout=cast("QbloxADCSequencer", sequencer).acquisition_timeout,
                 )
+                from time import perf_counter
+                print("end_time = ", perf_counter())
                 if acquisition_data.save_adc:
                     self.device.store_scope_acquisition(sequencer=sequencer.identifier, name=acquisition)
                 raw_measurement_data = self.device.get_acquisitions(sequencer=sequencer.identifier)[acquisition][

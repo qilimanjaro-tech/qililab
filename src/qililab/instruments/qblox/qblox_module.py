@@ -204,6 +204,8 @@ class QbloxModule(Instrument):
     def run(self, channel_id: ChannelID):
         """Run the uploaded program"""
         sequencer = next((sequencer for sequencer in self.awg_sequencers if sequencer.identifier == channel_id), None)
+        from time import perf_counter
+        print("start_time = ", perf_counter())
         if sequencer is not None and sequencer.identifier in self.sequences:
             self.device.arm_sequencer(sequencer=sequencer.identifier)
             self.device.start_sequencer(sequencer=sequencer.identifier)

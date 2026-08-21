@@ -838,6 +838,7 @@ class QbloxCompiler:
                 iterations=iterations,
                 loops=[(start, step, qpysequence_operation)],
             )
+            self._buses[bus].qpy_block_stack[-1].add(component=QPyInstructions.WaitTrigger(15, 4))
             self._buses[bus].qpy_block_stack[-1].add(qpy_loop)
             self._buses[bus].qpy_block_stack.append(qpy_loop)
             self._buses[bus].variable_to_register[element.variable] = qpy_loop.loop_registers[0]
@@ -1876,6 +1877,8 @@ class QbloxCompiler:
         bus = self._conditional_bus[element.uuid]
         trigger_network_wait = Wait(bus=bus, duration=WAIT_TRIGGER_NETWORK_EXT_TRIGGER)
         self._handle_wait(trigger_network_wait)
+
+
         self._set_ext_trigger_cond(bus=bus, enable=ENABLE_CONDITIONAL, operator=AND_OR_MASK_CONDITIONAL, else_duration=INST_MIN_WAIT)
         # Wrap the body in its own block so the epilogue can read its real duration and real-time
         # instruction count straight from qpysequence (correctly scaled for any nested Average/ForLoop's
@@ -1960,7 +1963,7 @@ class QbloxCompiler:
                 f"{chunk_count * INST_MIN_WAIT} ns greater than the elapsed duration {elapsed} to absorb "
                 f"the padding wait's {chunk_count} chunk(s), otherwise syncing cannot be maintained."
             )
-        self._handle_wait(Wait(bus=bus, duration=common_duration))
+        
 
         if difference > 0:
             gated_duration = difference + chunk_count * INST_MIN_WAIT
@@ -1969,6 +1972,7 @@ class QbloxCompiler:
             self._set_ext_trigger_cond(bus=bus, enable=DISABLE_CONDITIONAL, operator=AND_NOR_MASK_CONDITIONAL, else_duration=INST_MIN_WAIT)
 
         self._handle_latch_rst(bus=bus, duration=INST_MIN_WAIT)
+        self._handle_wait(Wait(bus=bus, duration=common_duration))
         # self._handle_wait_sync()
 
     # def _handle_wait_sync(self) -> None:
