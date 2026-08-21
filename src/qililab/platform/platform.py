@@ -20,9 +20,11 @@ from __future__ import annotations
 import ast
 import io
 import re
+from builtins import BaseExceptionGroup
 from contextlib import contextmanager
 from copy import deepcopy
-from dataclasses import asdict
+from dataclasses import asdict, dataclass, field
+from time import perf_counter
 from typing import TYPE_CHECKING, Any, cast
 
 import numpy as np
@@ -30,7 +32,6 @@ from ruamel.yaml import YAML
 
 from qililab.config import logger
 from qililab.constants import FLUX_CONTROL_REGEX, GATE_ALIAS_REGEX, RUNCARD
-from qililab.exceptions import ExceptionGroup
 from qililab.extra.quantum_machines import (
     QuantumMachinesCluster,
     QuantumMachinesCompilationOutput,
@@ -78,6 +79,20 @@ if TYPE_CHECKING:
     from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
     from qililab.result.database import DatabaseManager
     from qililab.settings import Runcard
+
+
+@dataclass
+class Session:
+    """Runtime information about a `Platform.session()` context, populated as the session progresses.
+
+    ``errors`` holds every exception the session ran into, in the order they happened: the one raised by the code
+    inside the ``with`` block first (if any), followed by the ones raised while cleaning up. It is empty if and only
+    if the session was successful.
+    """
+
+    execution_time: float | None = None
+    success: bool | None = None
+    errors: list[BaseException] = field(default_factory=list)
 
 
 class Platform:
@@ -929,10 +944,16 @@ class Platform:
 
     @contextmanager
     def session(self):
-        """Context manager to manage platform session, ensuring that resources are always released."""
+        """Context manager to manage platform session, ensuring that resources are always released.
+
+        A session is only considered successful if it runs start to finish without any error, including
+        errors raised during cleanup (e.g. ``disconnect()`` failing after a successful execution). The cleanup
+        methods always all run, whatever the code inside the ``with`` block or an earlier cleanup method did,
+        so that the instruments are released even when the session is interrupted.
+        """
         cleanup_methods = []
-        cleanup_errors = []
-        execution_error: Exception | None = None
+        running_session = Session()
+        start_time: float | None = None
         try:
             # Track successfully called setup methods and their cleanup counterparts
             self.connect()
@@ -946,34 +967,36 @@ class Platform:
             # Store turn_off_instruments for cleanup
             cleanup_methods.append(self.turn_off_instruments)
 
-            # Experiment logic goes here
-            yield
-
-        except Exception as e:  # noqa: BLE001
-            logger.error(f"An error occurred: {e}")
-            execution_error = e
+            # Experiment logic goes here, timed on its own so that setup and cleanup are left out
+            start_time = perf_counter()
+            yield running_session
+        except BaseException as error:  # noqa: BLE001
+            # BaseException so that an interrupt is reported as a failure and still goes through the cleanup below
+            logger.error(f"An error occurred: {error!r}")
+            running_session.errors.append(error)
         finally:
-            # Call the cleanup methods in reverse order
+            # start_time is None when the session failed before reaching the `with` block
+            if start_time is not None:
+                running_session.execution_time = perf_counter() - start_time
+                logger.info(f"Platform session took {running_session.execution_time:.2f} seconds")
+
+            # Call the cleanup methods in reverse order. BaseException so that an interrupt in one of them does
+            # not leave the remaining ones unrun. No error is swallowed: they are all re-raised right below.
             for cleanup_method in reversed(cleanup_methods):
                 try:
                     cleanup_method()
-                except Exception as cleanup_exception:  # noqa: BLE001
-                    logger.error(f"Error during cleanup: {cleanup_exception}")
-                    cleanup_errors.append(cleanup_exception)
+                except BaseException as cleanup_error:  # noqa: BLE001
+                    logger.error(f"Error during cleanup: {cleanup_error!r}")
+                    running_session.errors.append(cleanup_error)
 
-            # Raise any exception that might have happened during cleanup
-            if cleanup_errors:
-                if execution_error is not None:
-                    raise ExceptionGroup(
-                        "Exceptions occurred during execution and cleanup",
-                        [execution_error, *cleanup_errors],
-                    )
-                if len(cleanup_errors) == 1:
-                    raise cleanup_errors[0]
-                raise ExceptionGroup("Exceptions occurred during cleanup", cleanup_errors)
+            running_session.success = not running_session.errors
 
-            if execution_error is not None:
-                raise execution_error
+            # Raise any exception that might have happened during execution and/or cleanup
+            if len(running_session.errors) == 1:
+                raise running_session.errors[0]
+            if running_session.errors:
+                # BaseExceptionGroup narrows itself to an ExceptionGroup when every error is an Exception
+                raise BaseExceptionGroup("Exceptions occurred during the platform session", running_session.errors)
 
     def execute_experiment(
         self,
@@ -1079,6 +1102,10 @@ class Platform:
         self.qdac_buses = [
             bus for bus in self.buses if any(isinstance(instrument, QDevilQDac2) for instrument in bus.instruments)
         ]
+        # Known target fluxes (set via set_parameter(FLUX)).
+        flux_vector = getattr(self, "flux_vector", None)
+        target_fluxes = dict(flux_vector.flux_vector) if flux_vector is not None else None
+        # Voltage bias offset defined in the runcard.
         qdac_offsets = [float(bus.get_parameter(Parameter.VOLTAGE)) for bus in self.qdac_buses]
 
         compiled_qdac = None
@@ -1109,6 +1136,7 @@ class Platform:
                 calibration=calibration,
                 crosstalk=self.crosstalk if crosstalk else None,
                 out_instrument=out_trigger_qdac,
+                target_fluxes=target_fluxes,
             )
 
         if all(isinstance(instrument, QbloxModule) for instrument in instruments):
