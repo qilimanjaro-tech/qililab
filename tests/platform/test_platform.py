@@ -4,6 +4,7 @@ import copy
 import io
 import re
 import warnings
+from builtins import ExceptionGroup
 from pathlib import Path
 from queue import Queue
 from types import MethodType, SimpleNamespace
@@ -31,7 +32,6 @@ from tests.test_utils import build_platform
 
 from qililab import save_platform
 from qililab.constants import DEFAULT_PLATFORM_NAME
-from qililab.exceptions import ExceptionGroup
 from qililab.extra.quantum_machines import QuantumMachinesCluster, QuantumMachinesMeasurementResult
 from qililab.instrument_controllers import InstrumentControllers
 from qililab.instrument_controllers.qblox import QbloxClusterController
@@ -40,7 +40,7 @@ from qililab.instruments.instruments import Instruments
 from qililab.instruments.qblox import QbloxModule
 from qililab.instruments.qblox.qblox_qrm import QbloxQRM
 from qililab.instruments.qdevil import QDevilQDac2
-from qililab.platform import Bus, Buses, Platform
+from qililab.platform import Bus, Buses, Platform, Session
 from qililab.qprogram import Calibration, Experiment, QProgram, QbloxCompilationOutput
 from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
 from qililab.result.database import get_db_manager
@@ -722,6 +722,35 @@ class TestMethods:
         platform.turn_off_instruments.assert_called_once()
         platform.disconnect.assert_called_once()
 
+    def test_session_logs_duration_on_success(self):
+        """Test that the session method logs how long the session took when it succeeds."""
+        platform = create_autospec(Platform, instance=True)
+        platform.session = Platform.session.__get__(platform, Platform)
+
+        with patch("qililab.platform.platform.logger", autospec=True) as mock_logger:
+            with platform.session():
+                pass
+
+        duration_messages = [
+            call.args[0] for call in mock_logger.info.call_args_list if re.match(r"^Platform session took .* seconds$", call.args[0])
+        ]
+        assert len(duration_messages) == 1
+        assert re.match(r"^Platform session took \d+\.\d{2} seconds$", duration_messages[0])
+
+    def test_session_yields_session_object_on_success(self):
+        """Test that the session method yields a Session object populated after a successful run."""
+        platform = create_autospec(Platform, instance=True)
+        platform.session = Platform.session.__get__(platform, Platform)
+
+        with platform.session() as running_session:
+            pass
+
+        assert isinstance(running_session, Session)
+        assert running_session.success is True
+        assert running_session.errors == []
+        assert running_session.execution_time is not None
+        assert running_session.execution_time >= 0
+
     def test_session_with_exception(self):
         """Test the session method when an exception occurs during execution."""
         # Create an autospec of the Platform class
@@ -743,6 +772,170 @@ class TestMethods:
         # Ensure cleanup is still called in reverse order even after the exception
         platform.turn_off_instruments.assert_called_once()
         platform.disconnect.assert_called_once()
+
+    def test_session_logs_duration_on_exception(self):
+        """Test that the session method still logs the duration when the experiment code raises."""
+        platform = create_autospec(Platform, instance=True)
+        platform.session = Platform.session.__get__(platform, Platform)
+
+        def run_session_raising_error():
+            with platform.session():
+                raise AttributeError("Test Error")
+
+        with patch("qililab.platform.platform.logger", autospec=True) as mock_logger:
+            with pytest.raises(AttributeError, match="Test Error"):
+                run_session_raising_error()
+
+        duration_messages = [
+            call.args[0] for call in mock_logger.info.call_args_list if re.match(r"^Platform session took .* seconds$", call.args[0])
+        ]
+        assert len(duration_messages) == 1
+        assert re.match(r"^Platform session took \d+\.\d{2} seconds$", duration_messages[0])
+
+    def test_session_yields_session_object_on_exception(self):
+        """Test that the session method's Session object records failure when the experiment code raises."""
+        platform = create_autospec(Platform, instance=True)
+        platform.session = Platform.session.__get__(platform, Platform)
+
+        running_session = None
+
+        def run_session_raising_error():
+            nonlocal running_session
+            with platform.session() as session:
+                running_session = session
+                raise AttributeError("Test Error")
+
+        with pytest.raises(AttributeError, match="Test Error"):
+            run_session_raising_error()
+
+        assert isinstance(running_session, Session)
+        assert running_session.success is False
+        assert len(running_session.errors) == 1
+        assert isinstance(running_session.errors[0], AttributeError)
+        assert str(running_session.errors[0]) == "Test Error"
+        assert running_session.execution_time is not None
+        assert running_session.execution_time >= 0
+
+    def test_session_yields_session_object_on_cleanup_exception(self):
+        """Test that the Session object records failure when execution succeeds but cleanup raises."""
+        platform = create_autospec(Platform, instance=True)
+        platform.session = Platform.session.__get__(platform, Platform)
+
+        platform.disconnect.side_effect = Exception("Disconnect error")
+
+        running_session = None
+
+        def run_session_with_cleanup_error():
+            nonlocal running_session
+            with platform.session() as session:
+                running_session = session
+
+        with pytest.raises(Exception, match="Disconnect error"):
+            run_session_with_cleanup_error()
+
+        assert isinstance(running_session, Session)
+        assert running_session.success is False
+        assert len(running_session.errors) == 1
+        assert isinstance(running_session.errors[0], Exception)
+        assert str(running_session.errors[0]) == "Disconnect error"
+
+    def test_session_yields_session_object_on_multiple_cleanup_exceptions(self):
+        """Test that the Session object records an ExceptionGroup when multiple cleanup calls raise."""
+        platform = create_autospec(Platform, instance=True)
+        platform.session = Platform.session.__get__(platform, Platform)
+
+        platform.turn_off_instruments.side_effect = Exception("Turn off instruments error")
+        platform.disconnect.side_effect = Exception("Disconnect error")
+
+        running_session = None
+
+        def run_session_with_cleanup_errors():
+            nonlocal running_session
+            with platform.session() as session:
+                running_session = session
+
+        with pytest.raises(ExceptionGroup):
+            run_session_with_cleanup_errors()
+
+        assert isinstance(running_session, Session)
+        assert running_session.success is False
+        assert [str(error) for error in running_session.errors] == ["Turn off instruments error", "Disconnect error"]
+
+    def test_session_yields_session_object_on_execution_and_cleanup_exceptions(self):
+        """Test that the Session object records an ExceptionGroup when execution and cleanup both raise."""
+        platform = create_autospec(Platform, instance=True)
+        platform.session = Platform.session.__get__(platform, Platform)
+
+        platform.turn_off_instruments.side_effect = Exception("Turn off instruments error")
+        platform.disconnect.side_effect = Exception("Disconnect error")
+
+        running_session = None
+
+        def run_session_raising_execution_error():
+            nonlocal running_session
+            with platform.session() as session:
+                running_session = session
+                raise AttributeError("Execution error")
+
+        with pytest.raises(ExceptionGroup):
+            run_session_raising_execution_error()
+
+        assert isinstance(running_session, Session)
+        assert running_session.success is False
+        assert [str(error) for error in running_session.errors] == [
+            "Execution error",
+            "Turn off instruments error",
+            "Disconnect error",
+        ]
+
+    def test_session_yields_session_object_on_keyboard_interrupt(self):
+        """Test that an interrupted session is reported as a failure and still cleans up."""
+        platform = create_autospec(Platform, instance=True)
+        platform.session = Platform.session.__get__(platform, Platform)
+
+        running_session = None
+
+        def run_session_interrupted():
+            nonlocal running_session
+            with platform.session() as session:
+                running_session = session
+                raise KeyboardInterrupt
+
+        with pytest.raises(KeyboardInterrupt):
+            run_session_interrupted()
+
+        assert running_session.success is False
+        assert len(running_session.errors) == 1
+        assert isinstance(running_session.errors[0], KeyboardInterrupt)
+
+        platform.turn_off_instruments.assert_called_once()
+        platform.disconnect.assert_called_once()
+
+    def test_session_runs_remaining_cleanup_after_interrupt_in_cleanup(self):
+        """Test that an interrupt in a cleanup method does not stop the remaining cleanup methods."""
+        platform = create_autospec(Platform, instance=True)
+        platform.session = Platform.session.__get__(platform, Platform)
+
+        # turn_off_instruments is the first cleanup method to run, disconnect the second
+        platform.turn_off_instruments.side_effect = KeyboardInterrupt
+        platform.disconnect.side_effect = Exception("Disconnect error")
+
+        running_session = None
+
+        def run_session_interrupted_during_cleanup():
+            nonlocal running_session
+            with platform.session() as session:
+                running_session = session
+
+        with pytest.raises(BaseExceptionGroup) as exc_info:
+            run_session_interrupted_during_cleanup()
+
+        # The interrupt did not prevent disconnect from running, and both errors are reported
+        platform.turn_off_instruments.assert_called_once()
+        platform.disconnect.assert_called_once()
+        assert [type(error) for error in exc_info.value.exceptions] == [KeyboardInterrupt, Exception]
+        assert running_session.success is False
+        assert [type(error) for error in running_session.errors] == [KeyboardInterrupt, Exception]
 
     def test_session_with_exception_in_setup(self):
         """Test the session method when an error occurs before turning on instruments."""
