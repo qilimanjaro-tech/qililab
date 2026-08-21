@@ -27,7 +27,8 @@ from qililab.utils.factory import Factory
 
 @Factory.register
 @dataclass
-class VNAResult(Result):  # TODO: Remove this class (it is useless)
+# TODO: Remove this class (it is useless)
+class VNAResult(Result):
     """VNAResult class."""
 
     data: npt.NDArray[np.float32]

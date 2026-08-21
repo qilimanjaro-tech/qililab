@@ -281,7 +281,8 @@ class TestQdacCompiler:
         assert compiler._trigger_position == None
 
         assert qdac_bus.set_end_marker_internal_trigger.call_count == 1
-        assert qdac_bus.upload_voltage_list.call_count == 12  # accumulative with last calls
+        # accumulative with last calls
+        assert qdac_bus.upload_voltage_list.call_count == 12
 
         # Setting internal trigger at the beginning of each step
         qp = QProgram()
@@ -327,7 +328,8 @@ class TestQdacCompiler:
 
         # Simulate that flux1 (channel 1) already has a cached DC list on the instrument
         qdac.device.name = "qdac"
-        qdac._cache_dc = {"qdac_1": MagicMock()}  # "qdac_1" = device.name + "_" + channel of flux1
+        # "qdac_1" = device.name + "_" + channel of flux1
+        qdac._cache_dc = {"qdac_1": MagicMock()}
 
         qp = QProgram()
         qp.qdac.play(bus="flux1", waveform=pulse_wf, dwell=dwell_us)

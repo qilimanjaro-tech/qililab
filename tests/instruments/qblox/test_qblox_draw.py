@@ -70,7 +70,8 @@ def fixture_qp_draw_with_time_window_nested_loop() -> QProgram:
         with qp.for_loop(frequency, 0, 100e6, 100e6):
             with qp.for_loop(ampl, 0, 1, 0.3):
                 qp.set_gain("drive", ampl)
-                qp.set_frequency("drive", frequency)  # will do nothing for the plotting via the platform as HM is disabled
+                # will do nothing for the plotting via the platform as HM is disabled
+                qp.set_frequency("drive", frequency)
                 qp.play(bus="drive", waveform=Square(amplitude=1, duration=10))
                 qp.wait("drive", 5)
     return qp
@@ -543,7 +544,8 @@ class TestQBloxDraw:
         draw = QbloxDraw()
 
         # Simulate minimal valid input for internal method
-        program_line = ("badcmd", "")  # unknown Q1ASM instruction
+        # unknown Q1ASM instruction
+        program_line = ("badcmd", "")
         param = {
             "classical_time_counter": 0,
             "real_time_counter": 0,

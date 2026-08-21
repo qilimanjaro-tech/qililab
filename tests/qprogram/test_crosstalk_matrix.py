@@ -6,10 +6,14 @@ from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix, NonLinearCrosstal
 # Insertion orders that diverge from the canonical sort order once names are multi-digit
 # (alphabetical q0, q1, q10, q2 vs sorted q0, q1, q2, q10). Used by the bus-ordering regression tests.
 _INSERTION_ORDERS = [
-    ["flux q0", "flux q1", "flux q2", "flux q10"],  # natural
-    ["flux q0", "flux q1", "flux q10", "flux q2"],  # alphabetical
-    ["flux q2", "flux q10", "flux q0", "flux q1"],  # scrambled
-    ["drive q1", "flux q0", "readout q0", "flux q1"],  # mixed types
+    # natural
+    ["flux q0", "flux q1", "flux q2", "flux q10"],
+    # alphabetical
+    ["flux q0", "flux q1", "flux q10", "flux q2"],
+    # scrambled
+    ["flux q2", "flux q10", "flux q0", "flux q1"],
+    # mixed types
+    ["drive q1", "flux q0", "readout q0", "flux q1"],
 ]
 
 
@@ -93,8 +97,10 @@ class TestCrosstalkMatrix:
         crosstalk_q1 = np.array([[1.0, 0.5], [0.1, 1.0]])
         crosstalk_q2 = np.array([[1.0, 0.3], [0.4, 1.0]])
         full_crosstalk = np.eye(4)
-        full_crosstalk[0:2, 0:2] = crosstalk_q1  # first component is qubit 1
-        full_crosstalk[2:4, 2:4] = crosstalk_q2  # second component is qubit 2
+        # first component is qubit 1
+        full_crosstalk[0:2, 0:2] = crosstalk_q1
+        # second component is qubit 2
+        full_crosstalk[2:4, 2:4] = crosstalk_q2
         # Elements outside the diagonal should be empty
 
         # Get and compare the crosstalk matrix as an array

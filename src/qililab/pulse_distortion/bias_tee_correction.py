@@ -60,8 +60,10 @@ class BiasTeeCorrection(PulseDistortion):
     """
 
     name = PulseDistortionName.BIAS_TEE_CORRECTION
-    tau_bias_tee: float  #: Time constant.
-    sampling_rate: float = 1.0  #: Sampling rate. Defaults to 1.
+    #: Time constant.
+    tau_bias_tee: float
+    #: Sampling rate. Defaults to 1.
+    sampling_rate: float = 1.0
 
     def _filter(self, envelope: np.ndarray) -> np.ndarray:
         """Distorts envelopes (originally created to distort square envelopes).
