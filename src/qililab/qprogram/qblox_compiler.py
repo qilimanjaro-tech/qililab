@@ -1409,7 +1409,7 @@ class QbloxCompiler:
 
         # Sync all other buses with WaitSync
         for sync_bus in self._buses:
-            self._buses[sync_bus].qpy_block_stack[-1].add(component=QPyInstructions.WaitSync(duration=4))
+            # self._buses[sync_bus].qpy_block_stack[-1].add(component=QPyInstructions.WaitSync(duration=4))
 
             # After wait sync reset static duration
             self._buses[sync_bus].marked_for_sync = False
