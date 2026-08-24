@@ -26,7 +26,8 @@ def _stateful_qdac_device() -> MagicMock:
     def _segments(header: str) -> tuple[str, ...]:
         parts = header.upper().rstrip("?").split(":")
         if parts[0].startswith("SOUR"):
-            parts[0] = "SOUR"  # SOUR{0} and SOUR<n> address the same shared channel mock
+            # SOUR{0} and SOUR<n> address the same shared channel mock
+            parts[0] = "SOUR"
         return tuple(parts)
 
     def _find(segments):
@@ -69,7 +70,8 @@ def _shared_physical_qdac(n_connections: int = 2):
 
     def _segments(header: str) -> tuple[str, ...]:
         parts = header.upper().rstrip("?").split(":")
-        parts[0] = "SOUR"  # channel number is carried separately, as the key's first element
+        # channel number is carried separately, as the key's first element
+        parts[0] = "SOUR"
         return tuple(parts)
 
     def _find(cid: int, segments: tuple[str, ...]):
@@ -109,7 +111,8 @@ def _shared_physical_qdac(n_connections: int = 2):
     devices = []
     for _ in range(n_connections):
         device = MagicMock()
-        device.name = "qdac_shared"  # one physical instrument, one name
+        # one physical instrument, one name
+        device.name = "qdac_shared"
         device.channel.side_effect = _get_channel
         device.ask.side_effect = _ask
         devices.append(device)
@@ -241,7 +244,8 @@ class TestQDevilQDac2:
         qdac.reset()
 
         qdac.device.reset.assert_called_once()
-        assert qdac._triggers == {}          # trigger was actually freed
+        # trigger was actually freed
+        assert qdac._triggers == {}
         assert qdac._cache_awg == {}
         assert qdac._cache_dc == {}
         # reset released the marker on the instrument
@@ -547,7 +551,8 @@ class TestQDevilQDac2:
         channel_id = 4
         trigger = "trigger_test"
         qdac._cache_dc = {}
-        qdac._triggers = {"trigger_test": MagicMock()}  # exists, so we reach the cache check
+        # exists, so we reach the cache check
+        qdac._triggers = {"trigger_test": MagicMock()}
 
         with pytest.raises(
             ValueError,

@@ -74,7 +74,8 @@ class Arbitrary(Waveform):
         downsampled = reshaped_samples.mean(axis=1)
 
         # Normalize the downsampled waveform
-        if downsampled.max() != downsampled.min():  # Avoid division by zero
+        # Avoid division by zero
+        if downsampled.max() != downsampled.min():
             normalized = (downsampled - downsampled.min()) / (downsampled.max() - downsampled.min())
             normalized = normalized * (self.samples.max() - self.samples.min()) + self.samples.min()
         else:

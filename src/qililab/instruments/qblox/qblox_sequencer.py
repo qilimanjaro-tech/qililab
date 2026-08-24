@@ -20,7 +20,8 @@ from qililab.utils.asdict_factory import dict_factory
 @dataclass
 class QbloxSequencer:
     identifier: int
-    outputs: list[int]  # [3, 2] means I path is connected to output 3 and Q path is connected to output 2
+    # [3, 2] means I path is connected to output 3 and Q path is connected to output 2
+    outputs: list[int]
     intermediate_frequency: float
     gain_imbalance: float | None
     phase_imbalance: float | None

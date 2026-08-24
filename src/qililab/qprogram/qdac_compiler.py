@@ -97,7 +97,6 @@ class QdacCompiler:
         self._qdac_buses: list["Bus"]
         self._qdac_buses_by_alias: dict[str, "Bus"]
         self._qdac_buses_alias: list[str]
-        self._qdac_buses_offset: dict[str, float]
         self._channels: dict[str, int]
         self._qdacs: list[QDevilQDac2]
         self._out_instrument: QDevilQDac2 | None
@@ -124,6 +123,7 @@ class QdacCompiler:
         calibration: Calibration | None = None,
         crosstalk: CrosstalkMatrix | None = None,
         out_instrument: QDevilQDac2 | None = None,
+        target_fluxes: dict[str, float | list[float] | np.ndarray] | None = None,
     ) -> QdacCompilationOutput:
         """Compile QProgram to qdac execution schedule.
 
@@ -136,6 +136,8 @@ class QdacCompiler:
             calibration (Calibration, optional): Optional calibration file. Defaults to None.
             crosstalk (CrosstalkMatrix, optional): Optional Crosstalk matrix. Defaults to None.
             out_instrument (QDevilQDac2, optional): Output trigger in case there is more than one qdac instruments. Defaults to None.
+            target_fluxes (dict[str, float], optional): Known target flux per bus for the parked
+                operating point, used to seed crosstalk compensation. Defaults to None.
         """
 
         def traverse(block: Block):
@@ -158,7 +160,8 @@ class QdacCompiler:
         self._qdac_buses = qdac_buses
         self._qdac_buses_by_alias = {bus.alias: bus for bus in self._qdac_buses}
         self._qdac_buses_alias = [bus.alias for bus in self._qdac_buses]
-        self._qdac_buses_offset = dict(zip(self._qdac_buses_alias, qdac_offsets))
+        # Hardware bias voltages, used as a fallback if no flux is given
+        qdac_buses_offset = dict(zip(self._qdac_buses_alias, qdac_offsets))
         if bus_mapping is not None:
             self._qprogram = self._qprogram.with_bus_mapping(bus_mapping=bus_mapping)
         if calibration is not None:
@@ -167,7 +170,7 @@ class QdacCompiler:
                 crosstalk = calibration.crosstalk_matrix
         if crosstalk is not None:
             self._qprogram = self._qprogram.with_crosstalk_qdac(
-                crosstalk=crosstalk, qdac_buses_offset=self._qdac_buses_offset
+                crosstalk=crosstalk, target_fluxes=target_fluxes, qdac_buses_offset=qdac_buses_offset
             )
 
         if self._qprogram.has_calibrated_waveforms_or_weights():

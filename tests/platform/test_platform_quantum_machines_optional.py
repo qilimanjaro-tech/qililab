@@ -9,7 +9,8 @@ from qililab.typings import Parameter
 
 
 class _DummyBuses(dict):
-    def get(self, alias):  # matches keyword usage
+    # matches keyword usage
+    def get(self, alias):
         return super().__getitem__(alias)
 
     def __iter__(self):
