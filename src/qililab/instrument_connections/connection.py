@@ -46,7 +46,8 @@ class Connection(ABC, FactoryElement):
         address: str
 
     name: ConnectionName
-    settings: ConnectionSettings  # a subtype of settings must be specified by the subclass
+    # a subtype of settings must be specified by the subclass
+    settings: ConnectionSettings
 
     class CheckConnected:
         """Property used to check if the connection has established with an instrument."""

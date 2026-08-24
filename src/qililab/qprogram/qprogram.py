@@ -1008,13 +1008,22 @@ class QProgram(StructuredProgram):
             copied_qprogram.body.elements = corrected_elements
         return copied_qprogram
 
-    def with_crosstalk_qdac(self, crosstalk: CrosstalkMatrix, qdac_buses_offset: dict[str, float]):
+    def with_crosstalk_qdac(
+        self,
+        crosstalk: CrosstalkMatrix,
+        qdac_buses_offset: dict[str, float],
+        target_fluxes: dict[str, float | list[float] | np.ndarray] | None = None,
+    ):
         """Apply crosstalk compensation to the qprogram flux buses.
         This method traverses the elements of the QProgram, replacing any
         Play or Offset instances by the compensated envelope or offset for
         all flux buses.
+
         Args:
             crosstalk (CrosstalkMatrix): Crosstalk matrix class.
+            qdac_buses_offset (dict[str, float]): Hardware bias voltage per bus, used to recover the parked flux only when ``target_fluxes`` is not provided.
+            target_fluxes (dict[str, float] | None, optional): Target flux per bus for the parked operating point. Defaults to None.
+
         Returns:
             QProgram: A new instance of QProgram with calibrated crosstalk.
         """
@@ -1024,7 +1033,14 @@ class QProgram(StructuredProgram):
 
             if flux_vector is None:
                 flux_vector = FluxVector()
-                flux_vector.set_crosstalk_from_bias(crosstalk, qdac_buses_offset)  # type: ignore
+                if target_fluxes:
+                    flux_vector.set_crosstalk(crosstalk)
+                    flux_vector.flux_vector.update(
+                        {bus: target_fluxes[bus] for bus in crosstalk.matrix if bus in target_fluxes}
+                    )
+                else:
+                    # Fallback: no tracked target flux -> recover it from the hardware bias voltage.
+                    flux_vector.set_crosstalk_from_bias(crosstalk, qdac_buses_offset)  # type: ignore[arg-type]
 
             for i, element in enumerate(block.elements):
                 if isinstance(element, (Play, SetOffset)) and element.bus in crosstalk.matrix.keys():

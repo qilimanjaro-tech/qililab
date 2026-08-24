@@ -212,7 +212,8 @@ class TestQbloxQCMRF:
             # Test PHASE_IMBALANCE setting
             (Parameter.PHASE_IMBALANCE, 0.02),
             # QCM-RF specific
-            (Parameter.LO_FREQUENCY, 3e9),  # Same as OUT0_LO_FREQ since we test for channel=0
+            # Same as OUT0_LO_FREQ since we test for channel=0
+            (Parameter.LO_FREQUENCY, 3e9),
             (Parameter.OUT0_LO_FREQ, 3e9),
             (Parameter.OUT0_LO_EN, True),
             (Parameter.OUT0_ATT, 10),
@@ -241,8 +242,10 @@ class TestQbloxQCMRF:
     @pytest.mark.parametrize(
         "channel_id, expected_error",
         [
-            (0, None),  # Valid channel ID
-            (5, Exception),  # Invalid channel ID
+            # Valid channel ID
+            (0, None),
+            # Invalid channel ID
+            (5, Exception),
         ],
     )
     def test_invalid_channel(self, qcm_rf: QbloxQCMRF, channel_id, expected_error):

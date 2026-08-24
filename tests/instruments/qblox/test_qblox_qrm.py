@@ -100,7 +100,8 @@ class TestQbloxQRM:
         assert qrm.is_awg()
         assert qrm.is_adc()
         assert qrm.alias == "qrm"
-        assert len(qrm.awg_sequencers) == 2  # As per the YAML config
+        # As per the YAML config
+        assert len(qrm.awg_sequencers) == 2
         assert qrm.out_offsets == [0.0, 0.1, 0.2, 0.3]
         sequencer = qrm.get_sequencer(0)
         assert sequencer.identifier == 0
@@ -152,7 +153,6 @@ class TestQbloxQRM:
             (Parameter.HARDWARE_DEMODULATION, False),
 
             (Parameter.INTEGRATION_MODE, "ssb"),
-            (Parameter.SEQUENCE_TIMEOUT, 2),
             (Parameter.ACQUISITION_TIMEOUT, 2),
             (Parameter.TIMEOUT_REPETITIONS, 2),
             (Parameter.TIME_OF_FLIGHT, 80),
@@ -193,8 +193,6 @@ class TestQbloxQRM:
             assert sequencer.sampling_rate == value  # type: ignore[attr-defined]
         elif parameter == Parameter.INTEGRATION_MODE:
             assert sequencer.integration_mode == IntegrationMode(value)  # type: ignore[attr-defined]
-        elif parameter == Parameter.SEQUENCE_TIMEOUT:
-            assert sequencer.sequence_timeout == value  # type: ignore[attr-defined]
         elif parameter == Parameter.ACQUISITION_TIMEOUT:
             assert sequencer.acquisition_timeout == value  # type: ignore[attr-defined]
         elif parameter == Parameter.TIMEOUT_REPETITIONS:
@@ -268,7 +266,6 @@ class TestQbloxQRM:
             (Parameter.HARDWARE_DEMODULATION, True),
 
             (Parameter.INTEGRATION_MODE, "ssb"),
-            (Parameter.SEQUENCE_TIMEOUT, 5.0),
             (Parameter.ACQUISITION_TIMEOUT, 1.0),
             (Parameter.TIMEOUT_REPETITIONS, 3),
             (Parameter.TIME_OF_FLIGHT, 120),
@@ -296,8 +293,10 @@ class TestQbloxQRM:
     @pytest.mark.parametrize(
         "channel_id, expected_error",
         [
-            (0, None),  # Valid channel ID
-            (5, Exception),  # Invalid channel ID
+            # Valid channel ID
+            (0, None),
+            # Invalid channel ID
+            (5, Exception),
         ],
     )
     def test_invalid_channel(self, qrm: QbloxQRM, channel_id, expected_error):
@@ -345,7 +344,8 @@ class TestQbloxQRM:
 
         sequence = Sequence(program=Program(), waveforms=Waveforms(), acquisitions=acquisitions, weights=Weights())
         qrm.upload_qpysequence(qpysequence=sequence, channel_id=0)
-        assert qrm.device.sequencers[0].sequence.call_count == 1 # uploading the desired sequence
+        # uploading the desired sequence
+        assert qrm.device.sequencers[0].sequence.call_count == 1
 
         qp_acqusitions = {
             "acquisition_0": AcquisitionData(bus="readout_q0", save_adc=False, shape=(-1,), intertwined=1),
@@ -358,7 +358,8 @@ class TestQbloxQRM:
         assert qrm.device.store_scope_acquisition.call_count == 1
         assert qrm.device.get_acquisitions.call_count == 2
         assert qrm.device.delete_acquisition_data.call_count == 2
-        assert qrm.device.sequencers[0].sequence.call_count == 2 # after uploading the empty sequence
+        # after uploading the empty sequence
+        assert qrm.device.sequencers[0].sequence.call_count == 2
 
 
     def test_acquire_qprogram_results_multiple_acquisitions_does_not_wipe_sequence_mid_loop(self, qrm: QbloxQRM):
@@ -490,3 +491,18 @@ class TestQbloxQRM:
     def test_parameter_integration_length_not_in_enum(self):
         """Parameter.INTEGRATION_LENGTH must not exist — it was removed to prevent silent no-ops."""
         assert not hasattr(Parameter, "INTEGRATION_LENGTH")
+
+    def test_platform_load_warns_on_sequence_timeout_in_runcard(self):
+        """Loading a runcard that contains sequence_timeout must emit a FutureWarning."""
+        with pytest.warns(
+            FutureWarning,
+            match=re.escape(
+                "sequence_timeout in the runcard is deprecated and will be removed in a future release. "
+                "It has no effect on the instrument's behavior."
+            ),
+        ):
+            build_platform(runcard="tests/instruments/qblox/qblox_runcard.yaml")
+
+    def test_parameter_sequence_timeout_not_in_enum(self):
+        """Parameter.SEQUENCE_TIMEOUT must not exist — it was removed to prevent silent no-ops."""
+        assert not hasattr(Parameter, "SEQUENCE_TIMEOUT")

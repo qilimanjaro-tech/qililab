@@ -282,9 +282,6 @@ class QbloxQRM(QbloxModule):
         if parameter == Parameter.INTEGRATION_MODE:
             self._set_integration_mode(value=value, sequencer_id=channel_id)
             return
-        if parameter == Parameter.SEQUENCE_TIMEOUT:
-            self._set_sequence_timeout(value=int(value), sequencer_id=channel_id)
-            return
         if parameter == Parameter.ACQUISITION_TIMEOUT:
             self._set_acquisition_timeout(value=int(value), sequencer_id=channel_id)
             return
@@ -389,18 +386,6 @@ class QbloxQRM(QbloxModule):
             ValueError: when value type is not string
         """
         cast("QbloxADCSequencer", self.get_sequencer(sequencer_id)).integration_mode = IntegrationMode(value)
-
-    def _set_sequence_timeout(self, value: int | float | str | bool, sequencer_id: int):
-        """set sequence_timeout for the specific channel
-
-        Args:
-            value (float | str | bool): value to update
-            sequencer_id (int): sequencer to update the value
-
-        Raises:
-            ValueError: when value type is not float or int
-        """
-        cast("QbloxADCSequencer", self.get_sequencer(sequencer_id)).sequence_timeout = int(value)
 
     def _set_acquisition_timeout(self, value: int | float | str | bool, sequencer_id: int):
         """set acquisition_timeout for the specific channel
