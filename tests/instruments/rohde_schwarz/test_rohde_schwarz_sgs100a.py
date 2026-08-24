@@ -316,7 +316,8 @@ class TestSGS100A:
     @patch("qililab.instruments.rohde_schwarz.SGS100A.get_rs_options")
     def test_initial_setup_method_b112_raises_error(self, mock_get_rs_options, sdg100a: SGS100A):
         """Test initial setup method"""
-        mock_get_rs_options.return_value = "Some,other,SGS-B112"  # module without IQ-band
+        # module without IQ-band
+        mock_get_rs_options.return_value = "Some,other,SGS-B112"
         error_string = "iq_modulation set as True for R&S SGS1000A device SGS-B112 without IQ modulation"
         with pytest.raises(ValueError, match=re.escape(error_string)):
             sdg100a.initial_setup()

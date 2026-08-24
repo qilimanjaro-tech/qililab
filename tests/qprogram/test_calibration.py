@@ -234,7 +234,8 @@ class TestCalibration:
         # Simulate an "old" file that predates the field by removing the key entirely.
         with open("old_calibration.yml") as f:
             content = f.read()
-        assert "crosstalk_matrix_ac" in content  # the fresh dump contains it
+        # the fresh dump contains it
+        assert "crosstalk_matrix_ac" in content
         content = "\n".join(line for line in content.splitlines() if "crosstalk_matrix_ac" not in line) + "\n"
         with open("old_calibration.yml", "w") as f:
             f.write(content)

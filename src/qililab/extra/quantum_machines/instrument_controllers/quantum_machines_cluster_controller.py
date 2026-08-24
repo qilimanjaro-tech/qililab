@@ -34,7 +34,7 @@ class QuantumMachinesClusterController(SingleInstrumentController):
     Args:
         name (InstrumentControllerName): Name of the Instrument Controller.
         device (QMMDriver): Instance of the Quantum Machines Manager Driver class.
-        settings (QMMControllerSettings): Settings of the instrument.
+        settings (QuantumMachinesClusterControllerSettings): Settings of the instrument.
     """
 
     name = InstrumentControllerName.QUANTUM_MACHINES_CLUSTER

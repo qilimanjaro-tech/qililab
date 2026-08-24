@@ -52,7 +52,8 @@ class ExperimentResults:
             slurm_execution (bool): Flag that defines if the liveplot will be held through Dash or a notebook cell. Defaults to True.
         """
         self.path = path
-        self.data: dict[tuple[str, str], Any] = {}  # To hold links to the data of the results for in-memory access
+        # To hold links to the data of the results for in-memory access
+        self.data: dict[tuple[str, str], Any] = {}
         # To hold links to dimensions of the results for in-memory access
         self.dimensions: dict[tuple[str, str], Any] = {}
         self._file: h5py.File

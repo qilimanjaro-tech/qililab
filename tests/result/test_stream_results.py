@@ -303,7 +303,8 @@ class TestStreamArray:
                 assert stream_array.loops == {"test_amp_loop": np.arange(0, 1, 2)}
                 assert stream_array._get_debug() == debug_q1asm
 
-                stream_array.platform.buses.elements = []  # Testing no qblox machines in buses
+                # Testing no qblox machines in buses
+                stream_array.platform.buses.elements = []
                 assert stream_array._get_debug() == "Non Qblox machine."
 
     def test_stream_array_instantiation_bus_map(self, stream_array_bus_map: StreamArray):

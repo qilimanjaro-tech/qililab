@@ -81,8 +81,10 @@ class LFilterCorrection(PulseDistortion):
     """
 
     name = PulseDistortionName.LFILTER
-    a: list[float]  #: The denominator coefficient vector in a 1-D sequence.
-    b: list[float]  #: The numerator coefficient vector in a 1-D sequence.
+    #: The denominator coefficient vector in a 1-D sequence.
+    a: list[float]
+    #: The numerator coefficient vector in a 1-D sequence.
+    b: list[float]
 
     def _filter(self, envelope: np.ndarray) -> np.ndarray:
         """Distorts envelopes (which normally get calibrated with square envelopes).

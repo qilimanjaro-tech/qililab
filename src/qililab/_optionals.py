@@ -53,7 +53,7 @@ class ImportedFeature:
 
     Attributes:
         name (str):
-            A label for the feature (e.g. 'qibo-backend').
+            A label for the feature (e.g. 'quantum-machines').
         symbols (dict[str, Union[Any, Callable]]):
             A mapping from symbol name to the real or stubbed object.
             If the required dependency is missing, the symbol is a stub

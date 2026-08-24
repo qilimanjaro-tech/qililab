@@ -14,9 +14,11 @@
 
 """Qblox pulsar QRM class"""
 
+from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Sequence, cast
+from typing import cast
 
+from qililab.config import logger
 from qililab.instruments.decorators import check_device_initialized
 from qililab.instruments.qblox.qblox_adc_sequencer import QbloxADCSequencer
 from qililab.instruments.qblox.qblox_module import QbloxModule
@@ -77,7 +79,9 @@ class QbloxQRM(QbloxModule):
 
     @check_device_initialized
     def initial_setup(self):
-        """Initial setup"""
+        """Initial setup
+        Device threshold is not set here: the integration_length is only known
+        once a QProgram is compiled. It is applied in the platform execution flow."""
         super().initial_setup()
         self._obtain_scope_sequencer()
         for sequencer in self.awg_sequencers:
@@ -91,9 +95,6 @@ class QbloxQRM(QbloxModule):
                 "program": "",
             }
             self.device.sequencers[sequencer_id].sequence(empty_sequence)
-            self._set_integration_length(
-                value=cast("QbloxADCSequencer", sequencer).integration_length, sequencer_id=sequencer_id
-            )
             self._set_acquisition_mode(
                 value=cast("QbloxADCSequencer", sequencer).scope_acquire_trigger_mode, sequencer_id=sequencer_id
             )
@@ -103,7 +104,6 @@ class QbloxQRM(QbloxModule):
             self._set_hardware_demodulation(
                 value=cast("QbloxADCSequencer", sequencer).hardware_demodulation, sequencer_id=sequencer_id
             )
-            self._set_threshold(value=cast("QbloxADCSequencer", sequencer).threshold, sequencer_id=sequencer_id)
             self._set_threshold_rotation(
                 value=cast("QbloxADCSequencer", sequencer).threshold_rotation, sequencer_id=sequencer_id
             )
@@ -206,18 +206,6 @@ class QbloxQRM(QbloxModule):
         self.device.scope_acq_trigger_mode_path0(mode.value)
         self.device.scope_acq_trigger_mode_path1(mode.value)
 
-    def _set_device_integration_length(self, value: int, sequencer_id: int):
-        """set integration_length for the specific channel
-
-        Args:
-            value (int): value to update
-            sequencer_id (int): sequencer to update the value
-
-        Raises:
-            ValueError: when value type is not float
-        """
-        self.device.sequencers[sequencer_id].integration_length_acq(value)
-
     def _set_device_scope_hardware_averaging(self, value: bool, sequencer_id: int):
         """set scope_hardware_averaging for the specific channel
 
@@ -234,14 +222,15 @@ class QbloxQRM(QbloxModule):
         self.device.scope_acq_avg_mode_en_path0(value)
         self.device.scope_acq_avg_mode_en_path1(value)
 
-    def _set_device_threshold(self, value: float, sequencer_id: int):
+    def _set_device_threshold(self, value: float, sequencer_id: int, integration_length: int):
         """Sets the threshold for classification at the specific channel.
 
         Args:
             value (float): integrated value of the threshold
             sequencer_id (int): sequencer to update the value
+            integration_length (int): weight duration in nanoseconds used to scale the threshold
         """
-        integrated_value = value * self.device.sequencers[sequencer_id].integration_length_acq()
+        integrated_value = value * integration_length
         self.device.sequencers[sequencer_id].thresholded_acq_threshold(integrated_value)
 
     def _set_device_threshold_rotation(self, value: float, sequencer_id: int):
@@ -286,17 +275,12 @@ class QbloxQRM(QbloxModule):
         if parameter == Parameter.SCOPE_ACQUIRE_TRIGGER_MODE:
             self._set_acquisition_mode(value=value, sequencer_id=channel_id)
             return
-        if parameter == Parameter.INTEGRATION_LENGTH:
-            self._set_integration_length(value=int(value), sequencer_id=channel_id)
-            return
+
         if parameter == Parameter.SAMPLING_RATE:
             self._set_sampling_rate(value=float(value), sequencer_id=channel_id)
             return
         if parameter == Parameter.INTEGRATION_MODE:
             self._set_integration_mode(value=value, sequencer_id=channel_id)
-            return
-        if parameter == Parameter.SEQUENCE_TIMEOUT:
-            self._set_sequence_timeout(value=int(value), sequencer_id=channel_id)
             return
         if parameter == Parameter.ACQUISITION_TIMEOUT:
             self._set_acquisition_timeout(value=int(value), sequencer_id=channel_id)
@@ -308,7 +292,12 @@ class QbloxQRM(QbloxModule):
             self._set_scope_store_enabled(value=value, sequencer_id=channel_id)
             return
         if parameter == Parameter.THRESHOLD:
-            self._set_threshold(value=float(value), sequencer_id=channel_id)
+            sequencer = cast("QbloxADCSequencer", self.get_sequencer(channel_id))
+            logger.debug(
+                "Threshold stored in software but not set on the device. "
+                "The threshold will be set on the device when a QProgram is executed."
+            )
+            sequencer.threshold = float(value)
             return
         if parameter == Parameter.THRESHOLD_ROTATION:
             self._set_threshold_rotation(value=float(value), sequencer_id=channel_id)
@@ -332,18 +321,6 @@ class QbloxQRM(QbloxModule):
 
         if self.is_device_active():
             self._set_device_scope_hardware_averaging(value=bool(value), sequencer_id=sequencer_id)
-
-    def _set_threshold(self, value: float | str | bool, sequencer_id: int):
-        """Set threshold value for the specific channel.
-
-        Args:
-            value (float | str | bool): value to update
-            sequencer_id (int): sequencer to update the value
-        """
-        cast("QbloxADCSequencer", self.get_sequencer(sequencer_id)).threshold = float(value)
-
-        if self.is_device_active():
-            self._set_device_threshold(value=float(value), sequencer_id=sequencer_id)
 
     def _set_threshold_rotation(self, value: float | str | bool, sequencer_id: int):
         """Set threshold rotation value for the specific channel.
@@ -386,20 +363,6 @@ class QbloxQRM(QbloxModule):
         if self.is_device_active():
             self._set_device_acquisition_mode(mode=AcquireTriggerMode(value), sequencer_id=sequencer_id)
 
-    def _set_integration_length(self, value: int | float | str | bool, sequencer_id: int):
-        """set integration_length for the specific channel
-
-        Args:
-            value (float | str | bool): value to update
-            sequencer_id (int): sequencer to update the value
-
-        Raises:
-            ValueError: when value type is not float
-        """
-        cast("QbloxADCSequencer", self.get_sequencer(sequencer_id)).integration_length = int(value)
-        if self.is_device_active():
-            self._set_device_integration_length(value=int(value), sequencer_id=sequencer_id)
-
     def _set_sampling_rate(self, value: int | float | str | bool, sequencer_id: int):
         """set sampling_rate for the specific channel
 
@@ -423,18 +386,6 @@ class QbloxQRM(QbloxModule):
             ValueError: when value type is not string
         """
         cast("QbloxADCSequencer", self.get_sequencer(sequencer_id)).integration_mode = IntegrationMode(value)
-
-    def _set_sequence_timeout(self, value: int | float | str | bool, sequencer_id: int):
-        """set sequence_timeout for the specific channel
-
-        Args:
-            value (float | str | bool): value to update
-            sequencer_id (int): sequencer to update the value
-
-        Raises:
-            ValueError: when value type is not float or int
-        """
-        cast("QbloxADCSequencer", self.get_sequencer(sequencer_id)).sequence_timeout = int(value)
 
     def _set_acquisition_timeout(self, value: int | float | str | bool, sequencer_id: int):
         """set acquisition_timeout for the specific channel
