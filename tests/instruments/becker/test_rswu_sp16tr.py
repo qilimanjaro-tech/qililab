@@ -90,7 +90,8 @@ def test_get_parameter_active_channel_reads_device(switch: RSWUSP16TR):
     switch.device.active_channel.get.return_value = "RF8"
     val = switch.get_parameter(Parameter.RF_ACTIVE_CHANNEL)
     assert val == "RF8"
-    assert switch.active_channel == "RF8"  # settings synced
+    # settings synced
+    assert switch.active_channel == "RF8"
     switch.device.active_channel.get.assert_called_once()
 
 

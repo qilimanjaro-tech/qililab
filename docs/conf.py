@@ -25,8 +25,10 @@ release = qililab.__version__
 
 extensions = [
     "sphinx.ext.autodoc",
-    "sphinx_mdinclude",  # allows the mdinclude directive to add Markdown files
-    "sphinx.ext.napoleon",  # converts Google docstrings into rst
+    # allows the mdinclude directive to add Markdown files
+    "sphinx_mdinclude",
+    # converts Google docstrings into rst
+    "sphinx.ext.napoleon",
     "sphinx_automodapi.automodapi",
     "sphinx_design",
     # "sphinxawesome_theme.docsearch",  # TODO: Uncomment this when access to DocSearch!
@@ -43,9 +45,11 @@ napoleon_google_docstring = True
 napoleon_numpy_docstring = False
 napoleon_preprocess_types = True
 
-automodapi_toctreedirnm = "code/api"  # location where the automodapi rst files are built
+# location where the automodapi rst files are built
+automodapi_toctreedirnm = "code/api"
 
-autoclass_content = "class"  # only show class docstrings (hide init docstrings)
+# only show class docstrings (hide init docstrings)
+autoclass_content = "class"
 
 autodoc_typehints = "none"
 autodoc_member_order = "bysource"
@@ -66,7 +70,6 @@ html_theme_options = {
     "awesome_external_links": True,
     "main_nav_links": {
         "QaaS": "https://qaas.readthedocs.io/en/latest/",
-        "Qiboconnection": "https://qaas.readthedocs.io/projects/qiboconnection/en/latest/",
         "Qililab": "index",
     },
     "extra_header_link_icons": {

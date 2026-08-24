@@ -573,10 +573,13 @@ class E5080B(Instrument):
     def _get_trace(self):
         """Get the data of the current trace."""
         self.device.format_data("REAL,32")
-        self.device.format_border("SWAP")  # SWAPPED is for IBM Compatible computers
+        # SWAPPED is for IBM Compatible computers
+        self.device.format_border("SWAP")
         data = self.get_data()
-        datareal = np.array(data[::2])  # Elements from data starting from 0 iterating by 2
-        dataimag = np.array(data[1::2])  # Elements from data starting from 1 iterating by 2
+        # Elements from data starting from 0 iterating by 2
+        datareal = np.array(data[::2])
+        # Elements from data starting from 1 iterating by 2
+        dataimag = np.array(data[1::2])
 
         return datareal + 1j * dataimag
 

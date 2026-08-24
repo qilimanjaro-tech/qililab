@@ -105,8 +105,10 @@ class PulseDistortion(FactoryElement):
         True
     """
 
-    norm_factor: float = 1.0  #: Normalization factor.
-    auto_norm: bool = False  #: Auto-normalization flag. Defaults to False.
+    #: Normalization factor.
+    norm_factor: float = 1.0
+    #: Auto-normalization flag. Defaults to False.
+    auto_norm: bool = False
 
     @abstractmethod
     def _filter(self, envelope: np.ndarray) -> np.ndarray:
