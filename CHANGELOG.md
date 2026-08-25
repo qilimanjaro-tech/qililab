@@ -15,7 +15,7 @@
 
   Given a runcard like:
 
-  ```yml
+  ```yaml
   name: connect_to_switch
 
   buses:
