@@ -6,7 +6,7 @@
 
   - `QProgram.qblox.weight_duration` tracks each acquisition's real weight duration, per bus.
   - Value sent to hardware = `threshold * weight_duration`, computed fresh on every execution.
-  - Resolves on a copy of the QProgram, so reusing the same QProgram across different `Calibration`s is safe.
+  - Resolves on a copy of the QProgram, so reusing the same QProgram across different ``Calibration`` objects is safe.
   - `bus_mapping` merges durations onto the same physical bus and resolves calibration against it.
   - Multiple durations on one bus -> a warning is logged and the first one (in order) is used.
   ([PR #1151](https://github.com/qilimanjaro-tech/qililab/pull/1151))
