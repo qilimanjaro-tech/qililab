@@ -175,7 +175,9 @@ class AutocalMeasurement(base):  # type: ignore
                 running_session.rollback()
                 raise e
 
-    def add_fitting(self, database_manager: "DatabaseManager", path: str, parameters: dict[str, Any] | None = None):
+    def add_fitting(
+        self, database_manager: "DatabaseManager", path: str | None = None, parameters: dict[str, Any] | None = None
+    ):
         """Add fitting_path and fitting_parameters into the autocalibration Measurements database table.
 
         The row is re-loaded from the database by its ``measurement_id`` inside the session and only the
@@ -184,7 +186,7 @@ class AutocalMeasurement(base):  # type: ignore
 
         Args:
             database_manager (DatabaseManager): Database manager holding the session.
-            path (str): Fitting plots or data path.
+            path (str | None, optional): Fitting plots or data path. Defaults to None.
             parameters (dict[str, Any] | None, optional): Fitting parameters in dictionary form. Defaults to None.
         """
         session = database_manager.session
@@ -196,7 +198,8 @@ class AutocalMeasurement(base):  # type: ignore
             )
             if persistent_instance is None:
                 raise IndexError(f"Autocalibration measurement entry '{self.measurement_id}' does not exist.")
-            persistent_instance.fitting_path = path  # type: ignore[assignment]
+            if path:
+                persistent_instance.fitting_path = path  # type: ignore[assignment]
             if parameters:
                 persistent_instance.fitting_parameters = parameters  # type: ignore[assignment]
             try:
