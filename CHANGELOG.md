@@ -1,3 +1,113 @@
+# qililab 0.35.1 (2026-08-25)
+
+## Features
+
+- Scaled the Qblox threshold value (`Parameter.THRESHOLD`, still set via the runcard/`set_parameter` exactly as before) by the QProgram's actual weight duration instead of the runcard's `integration_length` field; the weight's duration is the integration length. `integration_length` in the runcard was designed for Qblox's non-weighted `acquire`, which Qililab hasn't used since the old pulse/qibo compiler was removed; now, Qililab only ever does weighted acquisitions, so scaling by the runcard field was the wrong source of truth.
+
+  - `QProgram.qblox.weight_duration` tracks each acquisition's real weight duration, per bus.
+  - Value sent to hardware = `threshold * weight_duration`, computed fresh on every execution.
+  - Resolves on a copy of the QProgram, so reusing the same QProgram across different `Calibration`s is safe.
+  - `bus_mapping` merges durations onto the same physical bus and resolves calibration against it.
+  - Multiple durations on one bus -> a warning is logged and the first one (in order) is used.
+  ([PR #1151](https://github.com/qilimanjaro-tech/qililab/pull/1151))
+
+- When changing the LO frequency of a `Bus` that includes an `RSWU-SP16-TR` instrument, the switch channel is now automatically changed to the channel configured for that bus.
+
+  Given a runcard like:
+
+  ```yml
+  name: connect_to_switch
+
+  buses:
+  - alias: drive_q1
+    instruments: [rs_0, rf_switch]
+    channels: [0, 1]
+  - alias: drive_q2
+    instruments: [rs_0, rf_switch]
+    channels: [0, 2]
+
+  instruments:
+  - name: rswu_sp16tr
+    alias: rf_switch
+
+  - name: rohde_schwarz
+    alias: rs_0
+    power: -80
+    frequency: 6.5e+09
+    rf_on: False
+
+  instrument_controllers:
+  - name: rswu_sp16tr
+    alias: rf_switch_controller
+    connection:
+      name: tcp_ip
+      address: 192.168.4.218
+    modules:
+    - alias: rf_switch
+      slot_id: 0
+
+  - name: rohde_schwarz
+    alias: rohde_schwarz_controller_0
+    connection:
+      name: tcp_ip
+      address: 192.168.2.148
+    modules:
+    - alias: rs_0
+      slot_id: 0
+    reference_clock: ext
+  ```
+
+  Setting the LO frequency of a bus:
+
+  ```python
+  from qililab import build_platform, Parameter
+
+  platform = build_platform("<path_to_runcard>")
+  platform.set_parameter(
+      alias="drive_q2",
+      parameter=Parameter.LO_FREQUENCY,
+      value=6.5e9,
+  )
+  ```
+
+  changes the `Rohde Schwarz` LO to 6.5 GHz **and** changes the `rf_switch` channel to 2, as declared for `drive_q2`.
+
+  Since this feature can only be used when multiple buses use the same *rf_switch*, a validation step has been added to `Platform.execute_qprogram` and `Platform.execute_qprograms_parallel`.
+  If the qprogram uses multiple buses linked to the same *rf_switch* on multiple channels, due to the incapability of the *rf_switch* to have multiple channels activated at the same time, the execution will error.
+
+  ([PR #1192](https://github.com/qilimanjaro-tech/qililab/pull/1192))
+
+## Bugfixes
+
+- Fixed a spurious offset appearing on the non-swept flux buses when sweeping a flux with QDAC ramps under a `NonLinearCrosstalkMatrix`, so QDAC-ramp sweeps no longer disagree with the equivalent software-loop sweeps. `Platform.compile_qprogram`, `QdacCompiler.compile` and `QProgram.with_crosstalk_qdac` now seed the crosstalk parked point from the target fluxes (set via `set_parameter(FLUX)`) instead of reconstructing them from the hardware bias voltage.
+([PR #1191](https://github.com/qilimanjaro-tech/qililab/pull/1191))
+
+## Improved Documentation
+
+- Removed documentation for already-removed features (`qibo`-based circuit execution, `platform.chip`) and rewrote the `Platform` tutorial to use `QProgram` instead. Also fixed the dev install guide, removed a dead docs nav link, and updated the list of pending deprecations.
+([PR #1197](https://github.com/qilimanjaro-tech/qililab/pull/1197))
+
+## Deprecations and Removals
+
+- The runcard's `integration_length` field (on `QbloxADCSequencer`) is deprecated and will be removed in a future release; setting it now emits a `FutureWarning`. The integration length is derived from the QProgram's weight duration instead.
+([PR #1151](https://github.com/qilimanjaro-tech/qililab/pull/1151))
+
+- The runcard's `sequence_timeout` field (on `QbloxADCSequencer`) is deprecated and will be removed in a future release; setting it now emits a `FutureWarning`. It has no effect on the instrument's behavior. `Parameter.SEQUENCE_TIMEOUT` has also been removed, so it can no longer be set via `set_parameter` either.
+([PR #1193](https://github.com/qilimanjaro-tech/qililab/pull/1193))
+
+- `qililab.exceptions.ExceptionGroup` has been removed. It only existed as a fallback for Python \<3.11, where the built-in `ExceptionGroup` wasn't available yet; qililab now requires Python 3.11+, so the fallback was dead code.
+([PR #1195](https://github.com/qilimanjaro-tech/qililab/pull/1195))
+
+## Misc
+
+- `Platform.session()` now yields a `Session` object (`with platform.session() as session: ...`) exposing `execution_time`, `success`, and `errors` for the code run inside the `with` block, populated whether it completes successfully or raises. `errors` is always a list, holding every exception the session ran into (the one raised inside the `with` block first, then the ones raised while cleaning up) and empty if and only if the session succeeded. A session is only considered successful if it runs start to finish without any error, including errors raised while cleaning up (e.g. `disconnect()` failing after a successful execution) and interruptions such as `KeyboardInterrupt`. All cleanup methods always run, so the instruments are released even when the session is interrupted. `execution_time` is also logged via `logger.info`. ([PR #1195](https://github.com/qilimanjaro-tech/qililab/pull/1195))
+- Cleaned up small leftover references to already-removed features: an unused `NODE` constants class, a stale `.gitignore` entry, and a couple of outdated docstrings.
+([PR #1197](https://github.com/qilimanjaro-tech/qililab/pull/1197))
+
+- Trimmed the CI matrices so each check runs once per PR instead of once per Python version, and made the mdformat step fail on unformatted markdown instead of rewriting it.
+([PR #1199](https://github.com/qilimanjaro-tech/qililab/pull/1199))
+
+
 # qililab 0.35.0 (2026-08-12)
 
 ## Improved Documentation
@@ -6,12 +116,16 @@
 
 ## Deprecations and Removals
 
-- Removed `qilisdk` as a dependency of `qililab`. The `qililab.digital` module (`CircuitTranspiler`, `CircuitToQProgramCompiler`, native gates, transpiler passes, `Rmw`, `qprogram_results_to_samples`) and `Platform.execute_circuit`/`Platform.compile_circuit` have been removed. ([PR #1116](https://github.com/qilimanjaro-tech/qililab/pull/1116))
+- Removed `qilisdk` as a dependency of `qililab`. The `qililab.digital` module (`CircuitTranspiler`, `CircuitToQProgramCompiler`, native gates, transpiler passes, `Rmw`, `qprogram_results_to_samples`) and `Platform.execute_circuit`/`Platform.compile_circuit` have been removed.
+([PR #1116](https://github.com/qilimanjaro-tech/qililab/pull/1116))
 
 ## Misc
 
-- `qililab.yaml` no longer imports its shared YAML instance from `qilisdk.yaml`. It now defines its own `ruamel.yaml.YAML` instance with the same custom representers/constructors for `numpy.ndarray`, `deque`, lambdas, and `UUID`. YAML-registered enums (`Parameter`, `Domain`) now register with `yaml.register_class` instead of the shared `yaml.register_class(shared=True)`, and use a hardcoded YAML tag instead of the shared registry's `cls.yaml_tag`. ([PR #1116](https://github.com/qilimanjaro-tech/qililab/pull/1116))
-- Replaced the manual `changelog-dev.md` with towncrier. Each PR now adds a news fragment under `changes/` instead of editing a shared file, and `towncrier build` compiles them into `CHANGELOG.md` at release time. The GitHub Action reminding authors to update `changelog-dev.md` has been removed. ([PR #1185](https://github.com/qilimanjaro-tech/qililab/pull/1185))
+- `qililab.yaml` no longer imports its shared YAML instance from `qilisdk.yaml`. It now defines its own `ruamel.yaml.YAML` instance with the same custom representers/constructors for `numpy.ndarray`, `deque`, lambdas, and `UUID`. YAML-registered enums (`Parameter`, `Domain`) now register with `yaml.register_class` instead of the shared `yaml.register_class(shared=True)`, and use a hardcoded YAML tag instead of the shared registry's `cls.yaml_tag`.
+([PR #1116](https://github.com/qilimanjaro-tech/qililab/pull/1116))
+
+- Replaced the manual `changelog-dev.md` with towncrier. Each PR now adds a news fragment under `changes/` instead of editing a shared file, and `towncrier build` compiles them into `CHANGELOG.md` at release time. The GitHub Action reminding authors to update `changelog-dev.md` has been removed.
+([PR #1185](https://github.com/qilimanjaro-tech/qililab/pull/1185))
 
 
 ## 0.34.0
