@@ -1401,14 +1401,15 @@ class QProgram(StructuredProgram):
         internal: bool = False,
     ):
         """Set the trigger output for a given instrument.
+
         Args:
             bus (str): Unique identifier of the bus.
             duration (int): Duration of the trigger pulse. Minimum of 4 ns.
-            outputs(optional, list[int] | int | None): Port channel/s of the trigger output. Defaults to None.
-            position(optional, str): Trigger position in respective to the pulse location,
-                                        it can `start`, `end`, `step` or `end_step`. Defaults to start.
-            internal(optional, bool): defines if the trigger is created within the internal trigger network (True) or
-                                        if it is also an external trigger (False). Defaults to False.
+            outputs (optional, list[int] | int | None): Port channel/s of the trigger output. Defaults to None.
+            position (optional, str): Trigger position in respect to the pulse location,
+                it can be `start`, `end`, `step` or `end_step`. Defaults to start.
+            internal (optional, bool): defines if the trigger is created within the internal trigger network (True) or
+                if it is also an external trigger (False). Defaults to False.
         """
         operation = SetTrigger(
             bus=bus, outputs=outputs, duration=_to_scalar(duration), position=position, internal=internal
