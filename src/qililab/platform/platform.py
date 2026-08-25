@@ -1051,6 +1051,9 @@ class Platform:
     def _validate_bus_instruments_overlap(self, buses: set):
         """Validation step for buses being executed.
         It validates that instruments don't overlap. currently only rf-switch overlap is validated
+
+        Raises:
+            ValueError: If two buses use incompatible instrument/channels.
         """
 
         def validate_rswu_sp16tr(
@@ -1074,7 +1077,7 @@ class Platform:
                 if _instrument_handlers[instrument_1.name]((instrument_1, channel_1), (instrument_2, channel_2))
             )
 
-        buses_obj: list[Bus] = [self.get_element(bus) for bus in buses]
+        buses_obj: list[Bus] = [self._get_bus_by_alias(bus) for bus in buses]
         overlap = [
             (bus_1, bus_2, shared)
             for ii, bus_1 in enumerate(buses_obj)
