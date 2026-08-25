@@ -1243,7 +1243,8 @@ class QProgram(StructuredProgram):
             duration (int): Duration of the delay after the trigger is received. Minimum of 4 ns.
             port (optional, int | None): Port channel of the trigger input. Defaults to None.
         """
-        self.qblox.external_trigger.append(bus)  # qblox-only external_trigger bus
+        # qblox-only external_trigger bus
+        self.qblox.external_trigger.append(bus)
         operation = WaitTrigger(bus=bus, duration=_to_scalar(duration), port=port)
         self._active_block.append(operation)
         self._buses.add(bus)
