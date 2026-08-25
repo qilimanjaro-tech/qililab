@@ -1100,7 +1100,7 @@ class Platform:
                 if _instrument_handlers[instrument_1.name]((instrument_1, channel_1), (instrument_2, channel_2))
             )
 
-        buses_obj: list[Bus] = [self._get_bus_by_alias(bus) for bus in buses]
+        buses_obj: list[Bus] = [self._get_bus_by_alias(bus) for bus in buses if bus is not None]
         overlap = [
             (bus_1, bus_2, shared)
             for ii, bus_1 in enumerate(buses_obj)
