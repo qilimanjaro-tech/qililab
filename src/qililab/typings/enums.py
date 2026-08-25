@@ -154,7 +154,8 @@ class InstrumentName(str, Enum):
     QBLOX_QRM = "QRM"
     QRMRF = "QRM-RF"
     ROHDE_SCHWARZ = "rohde_schwarz"
-    MINI_CIRCUITS = "mini_circuits"  # step attenuator
+    # step attenuator
+    MINI_CIRCUITS = "mini_circuits"
     KEITHLEY2600 = "keithley_2600"
     QBLOX_D5A = "D5a"
     QBLOX_S4G = "S4g"
@@ -296,7 +297,8 @@ class InstrumentControllerName(str, Enum):
 
     QBLOX_CLUSTER = "qblox_cluster"
     ROHDE_SCHWARZ = "rohde_schwarz"
-    MINI_CIRCUITS = "mini_circuits"  # step attenuator
+    # step attenuator
+    MINI_CIRCUITS = "mini_circuits"
     KEITHLEY2600 = "keithley_2600"
     QBLOX_SPIRACK = "qblox_spi_rack"
     KEYSIGHT_E5080B = "keysight_e5080b"
@@ -306,7 +308,7 @@ class InstrumentControllerName(str, Enum):
     RSWU_SP16TR = "rswu_sp16tr"
 
 
-@yaml.register_class(shared=True)
+@yaml.register_class
 class Parameter(str, Enum):
     """Parameter names."""
 
@@ -332,11 +334,10 @@ class Parameter(str, Enum):
     PHASE_IMBALANCE = "phase_imbalance"
     SAMPLING_RATE = "sampling_rate"
     INTEGRATION = "integration"
-    INTEGRATION_LENGTH = "integration_length"
+
     ATTENUATION = "attenuation"
     REPETITION_DURATION = "repetition_duration"
     SOFTWARE_AVERAGE = "software_average"
-    SEQUENCE_TIMEOUT = "sequence_timeout"
     EXTERNAL = "external"
     RESET = "reset"
     HARDWARE_MODULATION = "hardware_modulation"
@@ -458,7 +459,7 @@ class Parameter(str, Enum):
     @classmethod
     def to_yaml(cls, representer, node):
         """Method to be called automatically during YAML serialization."""
-        return representer.represent_scalar(cls.yaml_tag, f"{node.name}-{node.value}")
+        return representer.represent_scalar("!Parameter", f"{node.name}-{node.value}")
 
     @classmethod
     def from_yaml(cls, _, node):

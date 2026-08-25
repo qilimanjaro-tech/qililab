@@ -12,12 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Mapping
+from typing import Final, Mapping
 
 import numpy as np
 from scipy.special import jv
 
+from qililab.utils import Sentinel, Unset, sort_buses
 from qililab.yaml import yaml
+
+_UNSET: Final = Sentinel.UNSET
 
 
 @yaml.register_class
@@ -30,17 +33,29 @@ class CrosstalkMatrix:
         self.flux_offsets: dict[str, float] = {}
         self.resistances: dict[str, float | None] = {}
 
+    def _sorted_buses(self) -> list[str]:
+        """Canonical bus ordering shared by to_array/inverse/from_array.
+
+        Every method that turns the matrix into an array (or back) must agree on the
+        row/column order, otherwise the array and its bus labels drift apart and the
+        inverse — and every bias derived from it — is silently mislabeled. Includes
+        every bus that appears as a row or as a column of the matrix.
+
+        Returns:
+            list[str]: The matrix's buses in canonical (see :func:`sort_buses`) order.
+        """
+        buses: set[str] = set(self.matrix.keys())
+        for values in self.matrix.values():
+            buses.update(values.keys())
+        return sort_buses(buses)
+
     def to_array(self) -> np.ndarray:
         """Returns the np.array representation of the crosstalk matrix.
 
         Returns:
             np.ndarray: crosstalk matrix as a numpy array.
         """
-        buses: set[str] = set(self.matrix.keys())
-        for values in self.matrix.values():
-            buses.update(values.keys())
-
-        sorted_buses = sorted(buses)
+        sorted_buses = self._sorted_buses()
 
         xtalk_matrix = np.eye(len(self.matrix))
         for i, bus1 in enumerate(sorted_buses):
@@ -56,7 +71,7 @@ class CrosstalkMatrix:
             CrosstalkMatrix: inverse crosstalk matrix
         """
         inverse_xtalk_array = np.linalg.inv(self.to_array())
-        return self.from_array(list(self.matrix.keys()), inverse_xtalk_array)
+        return self.from_array(self._sorted_buses(), inverse_xtalk_array)
 
     def __getitem__(self, bus: str) -> dict[str, float]:
         """Returns the dictionary of crosstalk values for the given bus.
@@ -105,12 +120,9 @@ class CrosstalkMatrix:
         Returns:
             str: A string representation of the crosstalk matrix.
         """
-        buses: set[str] = set(self.matrix.keys())
-        for values in self.matrix.values():
-            buses.update(values.keys())
-
-        sorted_buses = sorted(buses)
-        col_width = max(len(bus) for bus in sorted_buses) + 4  # Determine column width
+        sorted_buses = self._sorted_buses()
+        # Determine column width
+        col_width = max(len(bus) for bus in sorted_buses) + 4
         header = " " * col_width + " ".join(f"{bus:>{col_width}}" for bus in sorted_buses) + "\n"
         rows = []
         for bus1 in sorted_buses:
@@ -154,7 +166,7 @@ class CrosstalkMatrix:
         Returns:
             dict[str, float | np.ndarray]: Hardware bias values keyed by bus name.
         """
-        sorted_buses = sorted(self.matrix.keys())
+        sorted_buses = sort_buses(self.matrix.keys())
         inverse = self.inverse()
         inverse.flux_offsets = self.flux_offsets
 
@@ -276,33 +288,39 @@ class NonLinearCrosstalkMatrix(CrosstalkMatrix):
         self,
         bus_i: str,
         bus_j: str,
-        beta_c: float | None = None,
-        amplitude: float | None = None,
-        junction_asym: float | None = None,
+        beta_c: float | Unset | None = _UNSET,
+        amplitude: float | Unset | None = _UNSET,
+        junction_asym: float | Unset | None = _UNSET,
     ) -> None:
         """Sets the nonlinear coupling parameters between bus_i (target) and bus_j (source).
+            None eliminates the value stored.
 
         Args:
             bus_i (str): The bus that receives the nonlinear flux correction.
             bus_j (str): The bus whose flux drives the nonlinear term.
-            beta_c (float): Bessel modulation parameter beta_c. Must be non-zero.
-            amplitude (float): Amplitude of the nonlinear correction in flux units.
-            junction_asym (float): Junction asymmetry, d ∈ [-1, 1].
+            beta_c (float | None): Bessel modulation parameter beta_c. Must be non-zero.
+            amplitude (float | None): Amplitude of the nonlinear correction in flux units.
+            junction_asym (float | None): Junction asymmetry, d ∈ [-1, 1].
 
         Raises:
             ValueError: If either bus is not present in the matrix.
             ValueError: If beta_c is zero, which would cause a division by zero in the
                 Bessel expansion.
+            ValueError: If both "amplitude" and "beta_c" aren't set to the same type of value.
+                i.e. amplitude set to a float and beta to none or unset.
         """
         for bus in (bus_i, bus_j):
             if bus not in self.matrix:
                 raise ValueError(f"Bus '{bus}' not present in the crosstalk matrix.")
 
-        if beta_c is not None or amplitude is not None:
-            if not (beta_c is not None and amplitude is not None):
+        if beta_c is not _UNSET or amplitude is not _UNSET:
+            if beta_c is _UNSET or amplitude is _UNSET:
                 raise ValueError(
                     "Both 'amplitude' and 'beta_c' must be provided together — you cannot specify one without the other."
                 )
+            if (beta_c is None) != (amplitude is None):
+                # Errors if you are setting only one of the two parameters to None.
+                raise ValueError("You can only set to None 'amplitude' and 'beta_c' together.")
 
             if beta_c == 0:
                 raise ValueError("beta_c cannot be zero: it appears as a divisor in the Bessel expansion ")
@@ -315,7 +333,7 @@ class NonLinearCrosstalkMatrix(CrosstalkMatrix):
             self.beta_c_matrix[bus_i][bus_j] = beta_c
             self.non_lin_amp_matrix[bus_i][bus_j] = amplitude
 
-        if junction_asym is not None:
+        if junction_asym is not _UNSET:
             if bus_i not in self.junction_asym_matrix:
                 self.junction_asym_matrix[bus_i] = {}
             self.junction_asym_matrix[bus_i][bus_j] = junction_asym
@@ -434,7 +452,7 @@ class NonLinearCrosstalkMatrix(CrosstalkMatrix):
             dict[str, float | np.ndarray]: Hardware bias values keyed by bus name,
                 including nonlinear corrections.
         """
-        sorted_buses = sorted(self.matrix.keys())
+        sorted_buses = sort_buses(self.matrix.keys())
 
         corrections = self.get_non_linear_flux_terms(flux)
         if all(isinstance(f, (float, int)) for f in flux.values()):

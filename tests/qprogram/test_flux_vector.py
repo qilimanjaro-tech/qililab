@@ -103,7 +103,8 @@ class TestNonLinearFluxVector:
         with pytest.raises(ValueError):
             nlfv.set_element(SetGain(bus="flux_0", gain=var_1))
         with pytest.raises(ValueError):
-            nlfv.set_element(SetGain(bus="flux_0", gain=VariableExpression(2.0, "+", var_1)))  # If I don't set it this way, the variable is automaticaly on the left
+            # If I don't set it this way, the variable is automaticaly on the left
+            nlfv.set_element(SetGain(bus="flux_0", gain=VariableExpression(2.0, "+", var_1)))
         with pytest.raises(ValueError):
             nlfv.set_element(SetOffset(bus="flux_0", offset_path0=var_1 + 2.0))
 
@@ -227,12 +228,17 @@ class TestNonLinearFluxVector:
         nlfv.offset["flux_1"] = gamma
         nlfv.offset["flux_2"] = theta
         parallel = Parallel(loops=[
-            ForLoop(variable=phi, start=0.0, stop=2.0, step=1.0),    # 2 steps
-            ForLoop(variable=gamma, start=0.0, stop=2.0, step=1.0),  # 2 steps
+            # 2 steps
+            ForLoop(variable=phi, start=0.0, stop=2.0, step=1.0),
+            # 2 steps
+            ForLoop(variable=gamma, start=0.0, stop=2.0, step=1.0),
         ])
-        outer = ForLoop(variable=theta, start=0.0, stop=4.0, step=1.0)  # 4 steps
-        nlfv.set_loop(parallel)  # loop_1: 2 steps
-        nlfv.set_loop(outer)     # loop_2: 4 steps
+        # 4 steps
+        outer = ForLoop(variable=theta, start=0.0, stop=4.0, step=1.0)
+        # loop_1: 2 steps
+        nlfv.set_loop(parallel)
+        # loop_2: 4 steps
+        nlfv.set_loop(outer)
         result = nlfv.get_corrected_offsets()
         for bus in nlfv.crosstalk.matrix:
             assert result[bus].shape == (5, 3)
@@ -278,12 +284,17 @@ class TestNonLinearFluxVector:
         nlfv.offset["flux_1"] = 2 - gamma
         nlfv.offset["flux_2"] = theta + 3
         parallel = Parallel(loops=[
-            ForLoop(variable=phi, start=0.0, stop=2.0, step=1.0),    # 2 steps
-            ForLoop(variable=gamma, start=0.0, stop=2.0, step=1.0),  # 2 steps
+            # 2 steps
+            ForLoop(variable=phi, start=0.0, stop=2.0, step=1.0),
+            # 2 steps
+            ForLoop(variable=gamma, start=0.0, stop=2.0, step=1.0),
         ])
-        outer = ForLoop(variable=theta, start=0.0, stop=4.0, step=1.0)  # 4 steps
-        nlfv.set_loop(parallel)  # loop_1: 2 steps
-        nlfv.set_loop(outer)     # loop_2: 4 steps
+        # 4 steps
+        outer = ForLoop(variable=theta, start=0.0, stop=4.0, step=1.0)
+        # loop_1: 2 steps
+        nlfv.set_loop(parallel)
+        # loop_2: 4 steps
+        nlfv.set_loop(outer)
         result = nlfv.get_corrected_play({
             "flux_0": Square(0.1, 100),
             "flux_1": Square(0.1, 100),

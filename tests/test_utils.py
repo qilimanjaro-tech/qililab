@@ -150,12 +150,12 @@ def build_platform(runcard: dict) -> Platform:
 
 def is_q1asm_equal(a: str | QPySequence | QPyProgram, b: str | QPySequence | QPyProgram) -> bool:
     if isinstance(a, QPySequence):
-        a = repr(a._program)
-    if isinstance(a, QPyProgram):
-        a = repr(a)
+        a = str(a._program)
+    elif isinstance(a, QPyProgram):
+        a = str(a)
 
     if isinstance(b, QPySequence):
-        b = repr(b._program)
-    if isinstance(b, QPyProgram):
-        b = repr(b)
+        b = str(b._program)
+    elif isinstance(b, QPyProgram):
+        b = str(b)
     return "".join(a.strip().split()) == "".join(b.strip().split())

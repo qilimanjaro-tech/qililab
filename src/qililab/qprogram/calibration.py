@@ -18,6 +18,7 @@ import numpy as np
 
 from qililab.qprogram.blocks import Block
 from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
+from qililab.utils import sort_buses
 from qililab.waveforms import IQWaveform, Waveform
 from qililab.yaml import yaml
 
@@ -32,8 +33,22 @@ class Calibration:
         self.weights: dict[str, dict[str, IQWaveform]] = {}
         self.blocks: dict[str, Block] = {}
         self.crosstalk_matrix: CrosstalkMatrix | None = None
+        self.crosstalk_matrix_ac: CrosstalkMatrix | None = None
         self.parameters: dict[str, Any] = {}
         self.crosstalk_history: list[dict[str, Any]] = []
+
+    def __setstate__(self, state: dict[str, Any]) -> None:
+        """Restore a Calibration during deserialization.
+
+        ``ruamel`` (and pickle) build the object with ``cls.__new__`` and never call
+        ``__init__``. Running ``__init__`` first seeds every
+        default, then the persisted values are overlaid on top.
+
+        Args:
+            state (dict[str, Any]): The attribute mapping reconstructed from the document.
+        """
+        self.__init__()  # type: ignore[misc]
+        self.__dict__.update(state)
 
     def add_waveform(self, bus: str, name: str, waveform: Waveform | IQWaveform):
         """Add a waveform or IQPair for the specified bus.
@@ -204,7 +219,11 @@ class Calibration:
             ValueError: If no crosstalk has been given to calibration file.
         """
         if not self.crosstalk_matrix:
-            raise ValueError("No crosstalk has been given to the Calibration file")
+            if self.crosstalk_matrix_ac:
+                raise NotImplementedError(
+                    "crosstalk_matrix_ac is not valid for crosstalk history, use crosstalk_matrix."
+                )
+            raise ValueError("No crosstalk has been given to the Calibration file.")
 
         bus_list = list(self.crosstalk_matrix.matrix.keys())
         if set(bus_list) != set(block_diag_xt_matrix.keys()):
@@ -215,15 +234,16 @@ class Calibration:
         self.crosstalk_history[-1]["flux_offsets"] = flux_offsets
         self.crosstalk_history[-1]["block_diag_matrix"] = block_diag_xt_matrix
 
+        sorted_buses = sort_buses(bus_list)
         diag_crosstalk = CrosstalkMatrix().from_buses(block_diag_xt_matrix)
-        old_offsets = np.array([self.crosstalk_matrix.flux_offsets[bus] for bus in bus_list])
-        result_offsets = np.array([flux_offsets[bus] for bus in bus_list])
+        old_offsets = np.array([self.crosstalk_matrix.flux_offsets[bus] for bus in sorted_buses])
+        result_offsets = np.array([flux_offsets[bus] for bus in sorted_buses])
 
         new_matrix = diag_crosstalk.to_array() @ self.crosstalk_matrix.to_array()
         new_offsets = diag_crosstalk.to_array() @ old_offsets + result_offsets
 
-        self.crosstalk_matrix.matrix = CrosstalkMatrix().from_array(bus_list, new_matrix).matrix
-        self.crosstalk_matrix.flux_offsets = dict(zip(bus_list, new_offsets))
+        self.crosstalk_matrix.matrix = CrosstalkMatrix().from_array(sorted_buses, new_matrix).matrix
+        self.crosstalk_matrix.flux_offsets = dict(zip(sorted_buses, new_offsets))
 
         self.crosstalk_history[-1]["result_intra"] = self.crosstalk_matrix.matrix
 
@@ -245,7 +265,11 @@ class Calibration:
             ValueError: If no crosstalk has been given to calibration file.
         """
         if not self.crosstalk_matrix:
-            raise ValueError("No crosstalk has been given to the Calibration file")
+            if self.crosstalk_matrix_ac:
+                raise NotImplementedError(
+                    "crosstalk_matrix_ac is not valid for crosstalk history, use crosstalk_matrix."
+                )
+            raise ValueError("No crosstalk has been given to the Calibration file.")
 
         bus_list = list(self.crosstalk_matrix.matrix.keys())
         if set(bus_list) != set(full_crosstalk_matrix.keys()):
@@ -258,7 +282,7 @@ class Calibration:
             full_crosstalk = CrosstalkMatrix().from_buses(self.crosstalk_history[i]["full_matrix"])
             new_matrix = full_crosstalk.to_array() @ new_matrix
 
-        self.crosstalk_matrix.matrix = CrosstalkMatrix().from_array(bus_list, new_matrix).matrix
+        self.crosstalk_matrix.matrix = CrosstalkMatrix().from_array(sort_buses(bus_list), new_matrix).matrix
         self.crosstalk_history[-1]["result_inter"] = self.crosstalk_matrix.matrix
 
     def remove_history_step(self, idx: int = -1):

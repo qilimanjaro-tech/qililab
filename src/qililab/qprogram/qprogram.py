@@ -11,8 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from collections.abc import Sequence
 from copy import deepcopy
-from typing import TYPE_CHECKING, Sequence, overload
+from typing import TYPE_CHECKING, overload
 
 import numpy as np
 
@@ -44,13 +45,14 @@ from qililab.qprogram.operations import (
     Wait,
     WaitTrigger,
 )
-from qililab.qprogram.structured_program import StructuredProgram, VariableInfo
+from qililab.qprogram.structured_program import StructuredProgram, VariableInfo, _to_scalar
 from qililab.qprogram.utils_crosstalk import CrosstalkElements, NonLinearFlagState
 from qililab.waveforms import Arbitrary, FlatTop, IQPair, IQWaveform, Square, Waveform
 from qililab.yaml import yaml
 
 if TYPE_CHECKING:
     from qililab.extra.quantum_machines.qprogram.quantum_machines_compiler import QuantumMachinesCompilationOutput
+    from qililab.pulse_distortion.pulse_distortion import PulseDistortion
     from qililab.qprogram.qblox_compiler import QbloxCompilationOutput
     from qililab.qprogram.qdac_compiler import QdacCompilationOutput
 
@@ -137,7 +139,8 @@ class QProgram(StructuredProgram):
                     if "UUID" not in str(attr_value):
                         string_elements.append(f"\t{attr_name}: {attr_value}\n")
                     else:
-                        string_elements.append(f"\t{attr_name}: None\n")  # pragma: no cover
+                        # pragma: no cover
+                        string_elements.append(f"\t{attr_name}: None\n")
 
                 if isinstance(element, Block):
                     # handle blocks
@@ -266,6 +269,13 @@ class QProgram(StructuredProgram):
                 copied_qprogram.buses.remove(bus)
                 copied_qprogram.buses.add(bus_mapping[bus])
 
+        # Apply the mapping to weight_duration keys, merging entries when multiple source buses map onto
+        # the same target bus (e.g. multiplexed readout) instead of one overwriting the other
+        remapped_weight_duration: dict[str, list[int | str]] = {}
+        for bus, durations in copied_qprogram.qblox._weight_duration.items():
+            remapped_weight_duration.setdefault(bus_mapping.get(bus, bus), []).extend(durations)
+        copied_qprogram.qblox._weight_duration = remapped_weight_duration
+
         return copied_qprogram
 
     def with_calibration(self, calibration: Calibration):
@@ -379,6 +389,45 @@ class QProgram(StructuredProgram):
         if trigger_network_to_add:
             copied_qprogram.qblox.trigger_network_required.update(trigger_network_to_add)
 
+        return copied_qprogram
+
+    def with_resolved_weight_duration(
+        self, calibration: Calibration | None, bus_mapping: dict[str, str] | None = None
+    ) -> "QProgram":
+        """Return a copy of the QProgram with calibrated weight names in ``qblox.weight_duration``
+        resolved to integer durations.
+
+        Calibration lookups use each bus's mapped (physical) alias when ``bus_mapping`` is given,
+        matching how ``with_bus_mapping``/``with_calibration`` resolve calibration after applying the
+        mapping.
+
+        Args:
+            calibration (Calibration | None): Calibration instance used to resolve calibrated weight
+                names. Required if any acquisition uses a calibrated weight name.
+            bus_mapping (dict[str, str] | None): Optional bus mapping; calibration lookups use the
+                mapped bus alias when provided.
+
+        Returns:
+            QProgram: A new instance of QProgram with ``qblox.weight_duration`` resolved.
+        """
+        copied_qprogram = deepcopy(self)
+        resolved: dict[str, list[int | str]] = {}
+        for bus, entries in copied_qprogram.qblox.weight_duration.items():
+            mapped_bus = bus_mapping.get(bus, bus) if bus_mapping else bus
+            resolved_entries: list[int | str] = []
+            for entry in entries:
+                if isinstance(entry, int):
+                    resolved_entries.append(entry)
+                else:
+                    if calibration is None:
+                        raise ValueError(
+                            f"Calibrated weight {entry!r} requires a calibration object, but none was provided."
+                        )
+                    if not calibration.has_weights(mapped_bus, entry):
+                        raise ValueError(f"Calibrated weight {entry!r} not found in calibration.")
+                    resolved_entries.append(calibration.get_weights(mapped_bus, entry).get_duration())
+            resolved[bus] = resolved_entries
+        copied_qprogram.qblox._weight_duration = resolved
         return copied_qprogram
 
     def with_crosstalk_qblox(self, crosstalk: CrosstalkMatrix):
@@ -959,13 +1008,22 @@ class QProgram(StructuredProgram):
             copied_qprogram.body.elements = corrected_elements
         return copied_qprogram
 
-    def with_crosstalk_qdac(self, crosstalk: CrosstalkMatrix, qdac_buses_offset: dict[str, float]):
+    def with_crosstalk_qdac(
+        self,
+        crosstalk: CrosstalkMatrix,
+        qdac_buses_offset: dict[str, float],
+        target_fluxes: dict[str, float | list[float] | np.ndarray] | None = None,
+    ):
         """Apply crosstalk compensation to the qprogram flux buses.
         This method traverses the elements of the QProgram, replacing any
         Play or Offset instances by the compensated envelope or offset for
         all flux buses.
+
         Args:
             crosstalk (CrosstalkMatrix): Crosstalk matrix class.
+            qdac_buses_offset (dict[str, float]): Hardware bias voltage per bus, used to recover the parked flux only when ``target_fluxes`` is not provided.
+            target_fluxes (dict[str, float] | None, optional): Target flux per bus for the parked operating point. Defaults to None.
+
         Returns:
             QProgram: A new instance of QProgram with calibrated crosstalk.
         """
@@ -975,7 +1033,14 @@ class QProgram(StructuredProgram):
 
             if flux_vector is None:
                 flux_vector = FluxVector()
-                flux_vector.set_crosstalk_from_bias(crosstalk, qdac_buses_offset)  # type: ignore
+                if target_fluxes:
+                    flux_vector.set_crosstalk(crosstalk)
+                    flux_vector.flux_vector.update(
+                        {bus: target_fluxes[bus] for bus in crosstalk.matrix if bus in target_fluxes}
+                    )
+                else:
+                    # Fallback: no tracked target flux -> recover it from the hardware bias voltage.
+                    flux_vector.set_crosstalk_from_bias(crosstalk, qdac_buses_offset)  # type: ignore[arg-type]
 
             for i, element in enumerate(block.elements):
                 if isinstance(element, (Play, SetOffset)) and element.bus in crosstalk.matrix.keys():
@@ -993,7 +1058,8 @@ class QProgram(StructuredProgram):
                     envelope = element.waveform.envelope()
                 elif isinstance(element.waveform, IQWaveform):
                     envelope = element.waveform.get_I().envelope()
-            elif isinstance(element, SetOffset):  # square with same dimension as play
+            # square with same dimension as play
+            elif isinstance(element, SetOffset):
                 envelope = element.offset_path0  # type: ignore
 
             if isinstance(envelope, np.ndarray):
@@ -1040,6 +1106,72 @@ class QProgram(StructuredProgram):
 
         copied_qprogram = deepcopy(self)
         traverse(copied_qprogram.body)
+        return copied_qprogram
+
+    def with_distortions(self, bus_distortions: dict[str, list["PulseDistortion"]]) -> "QProgram":
+        """Returns a copy of the QProgram with pulse distortions applied to the played waveforms.
+
+        For every ``Play``, ``Measure`` and ``MeasureReset`` operation whose bus is present in
+        ``bus_distortions``, the corresponding distortions are applied in order to the operation's
+        waveform. Each distortion is evaluated on the waveform's envelope and the result is stored as
+        an ``Arbitrary`` waveform (an ``IQPair`` of ``Arbitrary`` waveforms for I/Q waveforms), so the
+        applied distortions are baked into the samples that will later be compiled and uploaded.
+
+        Note:
+            The ``reset_pulse`` of a ``MeasureReset`` operation is played on ``control_bus`` at
+            compile time (not part of the QProgram tree this method traverses), so it cannot be
+            distorted here. Configuring distortions on a bus used as ``control_bus`` in a
+            ``MeasureReset`` is not supported and raises ``NotImplementedError``.
+
+        Args:
+            bus_distortions (dict[str, list[PulseDistortion]]): A dictionary mapping each bus alias to
+                the list of distortions to apply, in the order they should be applied, to the
+                waveforms played on that bus.
+
+        Returns:
+            QProgram: A new instance of QProgram with the distortions applied to the affected
+            waveforms. The original QProgram is left unchanged.
+
+        Raises:
+            NotImplementedError: If a ``MeasureReset`` operation uses, as its ``control_bus``, a bus
+                that has distortions configured.
+        """
+
+        def traverse(block: Block):
+            for index, element in enumerate(block.elements):
+                if isinstance(element, Block):
+                    traverse(element)
+                elif isinstance(element, (Play, Measure, MeasureReset)):
+                    if isinstance(element, MeasureReset) and element.control_bus in bus_distortions:
+                        raise NotImplementedError(
+                            "Applying pulse distortions to the control bus of a `MeasureReset` (active "
+                            f"reset) operation is not supported, but bus '{element.control_bus}' has "
+                            "distortions configured."
+                        )
+                    if element.bus in bus_distortions:
+                        waveform = element.waveform
+                        for distortion in bus_distortions[element.bus]:
+                            if isinstance(waveform, IQWaveform):
+                                distorted_waveform_I = Arbitrary(distortion.apply(waveform.get_I().envelope()))
+                                distorted_waveform_Q = Arbitrary(distortion.apply(waveform.get_Q().envelope()))
+                                distorted_waveform: IQPair | Arbitrary = IQPair(
+                                    I=distorted_waveform_I, Q=distorted_waveform_Q
+                                )
+                            elif isinstance(waveform, Waveform):
+                                distorted_waveform = Arbitrary(distortion.apply(waveform.envelope()))
+                            else:
+                                raise NotImplementedError(
+                                    f"Cannot apply distortions to waveform of type {type(waveform)}."
+                                )
+                            waveform = distorted_waveform
+                        block.elements[index].waveform = waveform  # type: ignore [union-attr]
+
+        # Copy qprogram so the original remain unaffected
+        copied_qprogram = deepcopy(self)
+
+        # Recursively traverse qprogram applying the distortions to all waveforms
+        traverse(copied_qprogram.body)
+
         return copied_qprogram
 
     @overload
@@ -1090,7 +1222,7 @@ class QProgram(StructuredProgram):
             bus (str): Unique identifier of the bus.
             time (int): Duration of the delay.
         """
-        operation = Wait(bus=bus, duration=duration)
+        operation = Wait(bus=bus, duration=_to_scalar(duration))
         self._active_block.append(operation)
         self._buses.add(bus)
 
@@ -1103,7 +1235,7 @@ class QProgram(StructuredProgram):
             duration (int): Duration of the delay after the trigger is received. Minimum of 4 ns.
             port (optional, int | None): Port channel of the trigger input. Defaults to None.
         """
-        operation = WaitTrigger(bus=bus, duration=duration, port=port)
+        operation = WaitTrigger(bus=bus, duration=_to_scalar(duration), port=port)
         self._active_block.append(operation)
         self._buses.add(bus)
 
@@ -1178,6 +1310,9 @@ class QProgram(StructuredProgram):
             )
         self._active_block.append(operation)
         self._buses.add(bus)
+        self.qblox._weight_duration.setdefault(bus, []).append(
+            weights.get_duration() if isinstance(weights, IQWaveform) else weights
+        )
 
     def sync(self, buses: list[str] | None = None):
         """Synchronize operations between buses, so the operations following will start at the same time.
@@ -1210,7 +1345,7 @@ class QProgram(StructuredProgram):
             bus (str): Unique identifier of the bus.
             phase (float): The new absolute phase of the NCO.
         """
-        operation = SetPhase(bus=bus, phase=phase)
+        operation = SetPhase(bus=bus, phase=_to_scalar(phase))
         self._active_block.append(operation)
         self._buses.add(bus)
 
@@ -1222,7 +1357,7 @@ class QProgram(StructuredProgram):
             bus (str): Unique identifier of the bus.
             frequency (float): The new frequency of the NCO.
         """
-        operation = SetFrequency(bus=bus, frequency=frequency)
+        operation = SetFrequency(bus=bus, frequency=_to_scalar(frequency))
         self._active_block.append(operation)
         self._buses.add(bus)
 
@@ -1234,7 +1369,7 @@ class QProgram(StructuredProgram):
             bus (str): Unique identifier of the bus.
             gain (float): The new gain of the AWG.
         """
-        operation = SetGain(bus=bus, gain=gain)
+        operation = SetGain(bus=bus, gain=_to_scalar(gain))
         self._active_block.append(operation)
         self._buses.add(bus)
 
@@ -1248,7 +1383,11 @@ class QProgram(StructuredProgram):
             offset_path0 (float): The new offset of the AWG for path0.
             offset_path1 (float): The new offset of the AWG for path1.
         """
-        operation = SetOffset(bus=bus, offset_path0=offset_path0, offset_path1=offset_path1)
+        operation = SetOffset(
+            bus=bus,
+            offset_path0=_to_scalar(offset_path0),
+            offset_path1=_to_scalar(offset_path1) if offset_path1 is not None else None,
+        )
         self._active_block.append(operation)
         self._buses.add(bus)
 
@@ -1271,7 +1410,9 @@ class QProgram(StructuredProgram):
             internal(optional, bool): defines if the trigger is created within the internal trigger network (True) or
                                         if it is also an external trigger (False). Defaults to False.
         """
-        operation = SetTrigger(bus=bus, outputs=outputs, duration=duration, position=position, internal=internal)
+        operation = SetTrigger(
+            bus=bus, outputs=outputs, duration=_to_scalar(duration), position=position, internal=internal
+        )
         self._active_block.append(operation)
         self._buses.add(bus)
 
@@ -1282,6 +1423,12 @@ class QProgram(StructuredProgram):
             self.disable_autosync: bool = False
             self.latch_enabled: list[str] = []
             self.trigger_network_required: dict[str, int] = {}
+            self._weight_duration: dict[str, list[int | str]] = {}
+
+        @property
+        def weight_duration(self) -> dict[str, list[int | str]]:
+            """Weight durations per bus: list of durations (int ns or calibrated weight name str) in acquisition order."""
+            return self._weight_duration
 
         @overload
         def acquire(self, bus: str, weights: IQWaveform, save_adc: bool = False):
@@ -1315,6 +1462,9 @@ class QProgram(StructuredProgram):
             )
             self.qprogram._active_block.append(operation)
             self.qprogram._buses.add(bus)
+            self._weight_duration.setdefault(bus, []).append(
+                weights.get_duration() if isinstance(weights, IQWaveform) else weights
+            )
 
         @overload
         def play(self, bus: str, waveform: Waveform | IQWaveform, wait_time: int) -> None:
@@ -1466,6 +1616,9 @@ class QProgram(StructuredProgram):
             self.qprogram._buses.add(control_bus)
             self.latch_enabled.append(control_bus)
             self.trigger_network_required[bus] = trigger_address
+            self._weight_duration.setdefault(bus, []).append(
+                weights.get_duration() if isinstance(weights, IQWaveform) else weights
+            )
 
         def set_markers(self, bus: str, mask: str):
             """Set the markers based on a 4-bit binary mask.

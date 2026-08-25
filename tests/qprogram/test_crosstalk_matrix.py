@@ -3,6 +3,33 @@ import pytest
 
 from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix, NonLinearCrosstalkMatrix
 
+# Insertion orders that diverge from the canonical sort order once names are multi-digit
+# (alphabetical q0, q1, q10, q2 vs sorted q0, q1, q2, q10). Used by the bus-ordering regression tests.
+_INSERTION_ORDERS = [
+    # natural
+    ["flux q0", "flux q1", "flux q2", "flux q10"],
+    # alphabetical
+    ["flux q0", "flux q1", "flux q10", "flux q2"],
+    # scrambled
+    ["flux q2", "flux q10", "flux q0", "flux q1"],
+    # mixed types
+    ["drive q1", "flux q0", "readout q0", "flux q1"],
+]
+
+
+def _random_crosstalk(buses):
+    """Diagonally-dominant crosstalk dict and the matrix built from it, keyed in `buses` order."""
+    rng = np.random.default_rng(0)
+    xt = {b1: {b2: (1.0 if b1 == b2 else round(float(rng.uniform(-0.15, 0.15)), 4)) for b2 in buses} for b1 in buses}
+    return xt, CrosstalkMatrix.from_buses(xt)
+
+
+def _independent_bias(buses, xt, flux):
+    """bias = inv(M) @ flux built in one fixed order, independent of CrosstalkMatrix internals."""
+    matrix = np.array([[xt[b1][b2] for b2 in buses] for b1 in buses])
+    bias = np.linalg.inv(matrix) @ np.array([flux[b] for b in buses])
+    return {bus: bias[i] for i, bus in enumerate(buses)}
+
 
 @pytest.fixture(name="crosstalk_array_buses")
 def get_xtalk_array():
@@ -21,6 +48,7 @@ def get_xtalk_matrix(crosstalk_array_buses):
     flux_2  0       1       0
     """
     return CrosstalkMatrix.from_array(buses=crosstalk_array_buses[1], matrix_array=crosstalk_array_buses[0])
+
 
 @pytest.fixture(name="non_linear_crosstalk_matrix")
 def get_nl_xtalk_matrix(crosstalk_matrix):
@@ -52,25 +80,27 @@ class TestCrosstalkMatrix:
 
     def test_to_array(self, crosstalk_matrix, crosstalk_array_buses):
         assert np.allclose(crosstalk_matrix.to_array(), crosstalk_array_buses[0])
-        
+
     def test_to_array_two_independent_qubits(self):
         """Test to_array method when two independent qubits added
         The matrix has missing elements of the dictionary.
         """
         # Create the CrosstalkMatrix for qubit 1, only flux1_z and flux1_x
         crosstalk_matrix = CrosstalkMatrix.from_buses(
-            buses={"flux1_z": {"flux1_x": 0.1, "flux1_z": 1.0}, "flux1_x": {"flux1_x": 1.0, "flux1_z": 0.5}}
+            buses={"flux1_x": {"flux1_z": 0.1, "flux1_x": 1.0}, "flux1_z": {"flux1_z": 1.0, "flux1_x": 0.5}}
         )
 
         # Add the elements for qubit 2, only flux2_z and flux2_x
-        crosstalk_matrix["flux2_x"] = {"flux2_z": 0.3, "flux2_x": 1}
-        crosstalk_matrix["flux2_z"] = {"flux2_z": 1, "flux2_x": 0.4}
+        crosstalk_matrix["flux2_z"] = {"flux2_x": 0.3, "flux2_z": 1}
+        crosstalk_matrix["flux2_x"] = {"flux2_x": 1, "flux2_z": 0.4}
 
         crosstalk_q1 = np.array([[1.0, 0.5], [0.1, 1.0]])
         crosstalk_q2 = np.array([[1.0, 0.3], [0.4, 1.0]])
         full_crosstalk = np.eye(4)
-        full_crosstalk[0:2, 0:2] = crosstalk_q1  # first component is qubit 1
-        full_crosstalk[2:4, 2:4] = crosstalk_q2  # second component is qubit 2
+        # first component is qubit 1
+        full_crosstalk[0:2, 0:2] = crosstalk_q1
+        # second component is qubit 2
+        full_crosstalk[2:4, 2:4] = crosstalk_q2
         # Elements outside the diagonal should be empty
 
         # Get and compare the crosstalk matrix as an array
@@ -264,6 +294,21 @@ bus3          0.0      0.0      0.2"""
             for bus in flux_dict:
                 assert float(bias[bus][i]) == pytest.approx(scalar_bias[bus], rel=1e-6)
 
+    #### bus-ordering regression: array and labels must stay consistent for any key insertion order ####
+    @pytest.mark.parametrize("buses", _INSERTION_ORDERS)
+    def test_inverse_is_a_true_inverse(self, buses):
+        _, matrix = _random_crosstalk(buses)
+        assert np.allclose(matrix.to_array() @ matrix.inverse().to_array(), np.eye(len(buses)))
+
+    @pytest.mark.parametrize("buses", _INSERTION_ORDERS)
+    def test_flux_to_bias_matches_independent_inversion(self, buses):
+        xt, matrix = _random_crosstalk(buses)
+        flux = {bus: float(i + 1) for i, bus in enumerate(buses)}
+        expected = _independent_bias(buses, xt, flux)
+        bias = matrix.flux_to_bias(flux)
+        for bus in buses:
+            assert bias[bus] == pytest.approx(expected[bus], rel=1e-6)
+
 
 class TestNonLinearCrosstalkMatrix:
     def test_from_linear_preserves_matrix(self, non_linear_crosstalk_matrix, crosstalk_matrix):
@@ -285,6 +330,18 @@ class TestNonLinearCrosstalkMatrix:
             non_linear_crosstalk_matrix.set_non_linear_params("flux_0", "flux_1", beta_c=-0.3)
         with pytest.raises(ValueError, match="Both 'amplitude' and 'beta_c' must be provided together"):
             non_linear_crosstalk_matrix.set_non_linear_params("flux_0", "flux_1", amplitude=-0.08)
+
+    def test_set_non_linear_params_with_none(self, non_linear_crosstalk_matrix):
+        non_linear_crosstalk_matrix.set_non_linear_params("flux_0", "flux_1", beta_c=-0.3, amplitude=-0.08)
+        non_linear_crosstalk_matrix.set_non_linear_params("flux_0", "flux_1", junction_asym=0.3)    
+        non_linear_crosstalk_matrix.set_non_linear_params("flux_0", "flux_1", beta_c=None, amplitude=None, junction_asym=None)
+        assert non_linear_crosstalk_matrix.beta_c_matrix["flux_0"]["flux_1"] == pytest.approx(None)
+        assert non_linear_crosstalk_matrix.non_lin_amp_matrix["flux_0"]["flux_1"] == pytest.approx(None)
+        assert non_linear_crosstalk_matrix.junction_asym_matrix["flux_0"]["flux_1"] == pytest.approx(None)
+        # Raises on only one of the beta-sin parameters being set to None
+        with pytest.raises(ValueError, match="You can only set to None 'amplitude' and 'beta_c' together."):
+            non_linear_crosstalk_matrix.set_non_linear_params("flux_0", "flux_1", beta_c=None, amplitude=-0.08)
+
 
     def test_set_non_linear_params_raises_on_zero_beta_c(self, non_linear_crosstalk_matrix):
         with pytest.raises(ValueError, match="beta_c cannot be zero"):
@@ -355,3 +412,12 @@ class TestNonLinearCrosstalkMatrix:
 
         assert any(bias_nonlinear[bus] != pytest.approx(bias_linear[bus], rel=1e-6) for bus in flux)
 
+    # bus-ordering regression: nonlinear path (no params) must match linear inversion for any order
+    @pytest.mark.parametrize("buses", _INSERTION_ORDERS)
+    def test_flux_to_bias_without_params_matches_inversion_any_order(self, buses):
+        xt, matrix = _random_crosstalk(buses)
+        flux = {bus: float(i + 1) for i, bus in enumerate(buses)}
+        expected = _independent_bias(buses, xt, flux)
+        bias = NonLinearCrosstalkMatrix.from_linear(matrix).flux_to_bias(flux)
+        for bus in buses:
+            assert bias[bus] == pytest.approx(expected[bus], rel=1e-6)

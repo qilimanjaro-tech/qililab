@@ -64,7 +64,6 @@ Qililab Documentation
    fundamentals/platform
    fundamentals/runcard
    fundamentals/qprogram
-   fundamentals/transpilation
 
 .. toctree::
    :caption: Contributor's Guide
@@ -81,12 +80,10 @@ Qililab Documentation
    :hidden:
 
    code/ql
-   code/calibration
    code/platform
    code/pulse
    code/qprogram
    code/result
-   code/digital
    code/waveforms
    extras/quantum_machines
 

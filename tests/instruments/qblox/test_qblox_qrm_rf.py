@@ -171,7 +171,8 @@ class TestQbloxQRMRF:
         "parameter, value",
         [
             # Invalid parameter (should raise ParameterNotFound)
-            (Parameter.BUS_FREQUENCY, 42),  # Invalid parameter
+            # Invalid parameter
+            (Parameter.BUS_FREQUENCY, 42),
         ],
     )
     def test_set_parameter_raises_error(self, qrm_rf: QbloxQRMRF, parameter, value):
@@ -222,8 +223,10 @@ class TestQbloxQRMRF:
     @pytest.mark.parametrize(
         "channel_id, expected_error",
         [
-            (0, None),  # Valid channel ID
-            (5, Exception),  # Invalid channel ID
+            # Valid channel ID
+            (0, None),
+            # Invalid channel ID
+            (5, Exception),
         ],
     )
     def test_invalid_channel(self, qrm_rf: QbloxQRMRF, channel_id, expected_error):
@@ -265,7 +268,7 @@ class TestQbloxQRMRF:
         sequence = Sequence(program=Program(), waveforms=Waveforms(), acquisitions=Acquisitions(), weights=Weights())
         qrm_rf.upload_qpysequence(qpysequence=sequence, channel_id=0)
 
-        qrm_rf.device.sequencers[0].sequence.assert_called_once_with(sequence.todict())
+        qrm_rf.device.sequencers[0].sequence.assert_called_once_with(sequence.to_dict())
 
     def test_clear_cache(self, qrm_rf: QbloxQRMRF):
         """Test clearing the cache of the QCM module."""

@@ -212,7 +212,8 @@ class TestQbloxQCMRF:
             # Test PHASE_IMBALANCE setting
             (Parameter.PHASE_IMBALANCE, 0.02),
             # QCM-RF specific
-            (Parameter.LO_FREQUENCY, 3e9),  # Same as OUT0_LO_FREQ since we test for channel=0
+            # Same as OUT0_LO_FREQ since we test for channel=0
+            (Parameter.LO_FREQUENCY, 3e9),
             (Parameter.OUT0_LO_FREQ, 3e9),
             (Parameter.OUT0_LO_EN, True),
             (Parameter.OUT0_ATT, 10),
@@ -241,8 +242,10 @@ class TestQbloxQCMRF:
     @pytest.mark.parametrize(
         "channel_id, expected_error",
         [
-            (0, None),  # Valid channel ID
-            (5, Exception),  # Invalid channel ID
+            # Valid channel ID
+            (0, None),
+            # Invalid channel ID
+            (5, Exception),
         ],
     )
     def test_invalid_channel(self, qcm_rf: QbloxQCMRF, channel_id, expected_error):
@@ -281,7 +284,7 @@ class TestQbloxQCMRF:
         sequence = Sequence(program=Program(), waveforms=Waveforms(), acquisitions=Acquisitions(), weights=Weights())
         qcm_rf.upload_qpysequence(qpysequence=sequence, channel_id=0)
 
-        qcm_rf.device.sequencers[0].sequence.assert_called_once_with(sequence.todict())
+        qcm_rf.device.sequencers[0].sequence.assert_called_once_with(sequence.to_dict())
 
     def test_clear_cache(self, qcm_rf: QbloxQCMRF):
         """Test clearing the cache of the QCM module."""

@@ -39,7 +39,8 @@ class QbloxModule(Instrument):
     _MAX_BINS: int = 131072
     _NUM_MAX_SEQUENCERS: int = 6
     _NUM_MAX_AWG_OUT_CHANNELS: int = 4
-    _MIN_WAIT_TIME: int = 4  # in ns
+    # in ns
+    _MIN_WAIT_TIME: int = 4
 
     @dataclass
     class QbloxModuleSettings(Instrument.InstrumentSettings):
@@ -80,7 +81,8 @@ class QbloxModule(Instrument):
 
     def __init__(self, settings: dict):
         # The sequences dictionary contains all the compiled sequences for each sequencer. Sequences are saved and handled at the compiler
-        self.sequences: dict[int, QpySequence] = {}  # {sequencer_idx: (program), ...}
+        # {sequencer_idx: (program), ...}
+        self.sequences: dict[int, QpySequence] = {}
         self.num_bins: int = 1
         super().__init__(settings=settings)
 
@@ -513,7 +515,8 @@ class QbloxModule(Instrument):
             # update value in qililab
             try:
                 self.get_filter(output_id).fir_state = value
-            except IndexError:  # create the filter if it does not exist yet
+            # create the filter if it does not exist yet
+            except IndexError:
                 self.filters.extend([QbloxFilter(output_id=output_id, fir_state=value)])
 
             # update value in the instrument
@@ -572,7 +575,8 @@ class QbloxModule(Instrument):
                 filter_exp_state = cast("list[str]", filter_exp_state)
                 filter_exp_state[exponential_idx] = value
 
-            except (IndexError, AssertionError):  # create the filter if needed
+            # create the filter if needed
+            except (IndexError, AssertionError):
                 self.filters.extend([QbloxFilter(output_id=output_id, exponential_state=[value])])
 
             if self.is_device_active():
@@ -657,7 +661,7 @@ class QbloxModule(Instrument):
         sequencer = next((sequencer for sequencer in self.awg_sequencers if sequencer.identifier == channel_id), None)
         if sequencer is not None:
             logger.info("Sequence program: \n %s", repr(qpysequence._program))
-            self.device.sequencers[sequencer.identifier].sequence(qpysequence.todict())
+            self.device.sequencers[sequencer.identifier].sequence(qpysequence.to_dict())
             self.sequences[sequencer.identifier] = qpysequence
 
     def upload(self, channel_id: ChannelID):
@@ -671,7 +675,7 @@ class QbloxModule(Instrument):
         if sequencer is not None and sequencer.identifier in self.sequences:
             sequence = self.sequences[sequencer.identifier]
             logger.info("Uploaded sequence program: \n %s", repr(sequence._program))  # pylint: disable=protected-access
-            self.device.sequencers[sequencer.identifier].sequence(sequence.todict())
+            self.device.sequencers[sequencer.identifier].sequence(sequence.to_dict())
             self.device.sequencers[sequencer.identifier].sync_en(True)
 
     def _set_nco(self, sequencer_id: int):

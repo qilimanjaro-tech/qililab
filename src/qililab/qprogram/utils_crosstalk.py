@@ -104,32 +104,46 @@ class NonLinearFlagState:
     def on_offset(self):
         """Modify offset flags after set_offset is called."""
         if self.wait_defined or self.plays_defined or self.block_defined:
-            self.offsets_index += 1  # A new offset index is used every time the offset is modified
-        self.last_appended_offset = self.offsets_index  # This prevents repeating offsets when no time has passed
-        self.offset_defined = True  # Flag for on_wait and on_block
+            # A new offset index is used every time the offset is modified
+            self.offsets_index += 1
+        # This prevents repeating offsets when no time has passed
+        self.last_appended_offset = self.offsets_index
+        # Flag for on_wait and on_block
+        self.offset_defined = True
 
     def on_play(self, bus: str):
         """Modify play and offset flags after play is called."""
-        self.play_bus_list.append(bus)  # bus explicitly used for play
-        self.plays_index += 1  # A new play index is used every time there is a new play for used buses
-        self.plays_defined = True  # Flag for on_block (wait is not relevant for a play)
-        self.offset_defined = True  # Flag for on_wait and on_block
+        # bus explicitly used for play
+        self.play_bus_list.append(bus)
+        # A new play index is used every time there is a new play for used buses
+        self.plays_index += 1
+        # Flag for on_block (wait is not relevant for a play)
+        self.plays_defined = True
+        # Flag for on_wait and on_block
+        self.offset_defined = True
 
     def on_wait(self):
         """Modify wait flags after wait is called."""
         if self.offset_defined and not self.wait_defined:
-            self.wait_defined = True  # Used to modify the offset index after a wait
-            self.last_appended_offset = -1  # Reset last_appended_offset after every wait
+            # Used to modify the offset index after a wait
+            self.wait_defined = True
+            # Reset last_appended_offset after every wait
+            self.last_appended_offset = -1
 
     def on_block(self):
         """Modify offset and wait flags after a loo block is created."""
         if self.offset_defined and (self.wait_defined or self.plays_defined or self.block_defined):
-            self.block_defined = False  # Every block has its own block state
-            self.wait_defined = False  # Every block has its own wait state
-            self.offsets_index += 1  # A new block implies a new offset index
-            self.last_appended_offset = -1  # Reset last_appended_offset after every loop
+            # Every block has its own block state
+            self.block_defined = False
+            # Every block has its own wait state
+            self.wait_defined = False
+            # A new block implies a new offset index
+            self.offsets_index += 1
+            # Reset last_appended_offset after every loop
+            self.last_appended_offset = -1
 
     def after_block(self):
         """Modify block defined flag after a block is traversed."""
         self.block_defined = True
-        self.last_appended_offset = -1  # Reset last_appended_offset after every loop
+        # Reset last_appended_offset after every loop
+        self.last_appended_offset = -1

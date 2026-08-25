@@ -25,10 +25,11 @@ Platform Class
     :toctree: api
 
     ~Platform
+    ~Session
 
 """
 
 from .components import Bus, BusElement, Buses
-from .platform import Platform
+from .platform import Platform, Session
 
-__all__ = ["Bus", "BusElement", "Buses", "Platform"]
+__all__ = ["Bus", "BusElement", "Buses", "Platform", "Session"]

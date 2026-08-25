@@ -1,4 +1,4 @@
-ql.pulse
-===============
+ql.pulse_distortion
+===================
 
-.. automodule:: qililab.pulse
+.. automodule:: qililab.pulse_distortion

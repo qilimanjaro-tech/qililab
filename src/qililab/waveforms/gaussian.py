@@ -98,7 +98,8 @@ class Gaussian(Waveform):
         gaussian = self.amplitude * np.exp(-0.5 * (x - mu) ** 2 / sigma**2)
         norm = np.amax(np.real(gaussian))
 
-        gaussian = gaussian - gaussian[0]  # Shift to avoid introducing noise at time 0
+        # Shift to avoid introducing noise at time 0
+        gaussian = gaussian - gaussian[0]
         corr_norm = np.amax(np.real(gaussian))
 
         return gaussian * norm / corr_norm if corr_norm != 0 else gaussian

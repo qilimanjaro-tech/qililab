@@ -131,7 +131,8 @@ class TestQbloxQCM:
         assert qcm.alias == "qcm"
         assert qcm.is_awg()
         assert not qcm.is_adc()
-        assert len(qcm.awg_sequencers) == 2  # As per the YAML config
+        # As per the YAML config
+        assert len(qcm.awg_sequencers) == 2
         assert qcm.out_offsets == [0.0, 0.1, 0.2, 0.3]
         filter = qcm.get_filter(0)
         assert filter.exponential_amplitude[0] == 0.31
@@ -368,7 +369,7 @@ class TestQbloxQCM:
         qcm.sequences[0] = Sequence(program=Program(), waveforms=Waveforms(), acquisitions=Acquisitions(), weights=Weights())
         qcm.upload(channel_id=0)
 
-        qcm.device.sequencers[0].sequence.assert_called_once_with(qcm.sequences[0].todict())
+        qcm.device.sequencers[0].sequence.assert_called_once_with(qcm.sequences[0].to_dict())
         qcm.device.sequencers[0].sync_en.assert_called_once_with(True)
 
     def test_upload_qpysequence(self, qcm: QbloxQCM):
@@ -376,7 +377,7 @@ class TestQbloxQCM:
         sequence = Sequence(program=Program(), waveforms=Waveforms(), acquisitions=Acquisitions(), weights=Weights())
         qcm.upload_qpysequence(qpysequence=sequence, channel_id=0)
 
-        qcm.device.sequencers[0].sequence.assert_called_once_with(sequence.todict())
+        qcm.device.sequencers[0].sequence.assert_called_once_with(sequence.to_dict())
 
     def test_clear_cache(self, qcm: QbloxQCM):
         """Test clearing the cache of the QCM module."""

@@ -1,0 +1,21 @@
+# CODEOWNERS - qililab
+# Docs: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+# Rules: LAST matching pattern wins; several owners on a path = ANY ONE approves (OR);
+#        a single owner = SOLE required approver. Enforced only with branch protection
+#        on `main`: "Require review from Code Owners" (otherwise advisory).
+#
+# Scope: only the specific subdirectories listed below are owned. Files directly
+#        under src/qililab/ with no more specific rule, tests/, docs/, changes/
+#        (towncrier news fragments), pyproject.toml / uv.lock and .github/ are
+#        intentionally left UNOWNED, so a PR touching them (even alongside an owned
+#        source file) does not auto-request the whole QHC squad.
+
+# Jordi Valls: owner of results + DB.
+/src/qililab/result/                    @jordivallsq
+
+# Flavie Le Bars: sole required approver / veto.
+/src/qililab/instruments/               @flavie-lebars
+/src/qililab/instrument_controllers/    @flavie-lebars
+/src/qililab/instrument_connections/    @flavie-lebars
+/src/qililab/platform/                  @flavie-lebars
+/src/qililab/qprogram/                  @flavie-lebars
