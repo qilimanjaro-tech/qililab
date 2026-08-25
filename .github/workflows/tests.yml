@@ -11,6 +11,10 @@ on:
       - "synchronize"
       - "ready_for_review"
 
+concurrency:
+  group: tests-${{ github.head_ref || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   tests:
     if: github.event.pull_request.draft == false
@@ -18,21 +22,22 @@ jobs:
     timeout-minutes: 10
 
     env:
-      HOME_REPO: /home/repo
       CA_DOMAIN: qilimanjaro
       CA_DOMAIN_OWNER: "723412851021"
       CA_REGION: eu-west-1
-    
+      COVERAGE_PYTHON: "3.13"
+
     permissions:
       contents: read
       id-token: write  # OIDC: needed to read the private CodeArtifact indexes during the build
 
     strategy:
+      fail-fast: false
       matrix:
-        python-version:
-          - "3.11"
-          - "3.12"
-          - "3.13"
+        # A PR runs the oldest and the newest version we support and main fills in
+        # the middle. COVERAGE_PYTHON is the one that measures and uploads coverage;
+        # the env context is not available here, so it has to be spelled out.
+        python-version: ${{ github.event_name == 'push' && fromJSON('["3.11", "3.12", "3.13"]') || fromJSON('["3.11", "3.13"]') }}
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
@@ -54,7 +59,7 @@ jobs:
           role-to-assume: arn:aws:iam::723412851021:role/GitHub_actions_role
           aws-region: eu-west-1
           role-session-name: GitHubActions-DevOps
-      
+
       - name: Assume deploy role in target account
         id: chained
         uses: aws-actions/configure-aws-credentials@e6de054238d6b7531b4efff3b6587d9aade6a06c  # v6.2.3
@@ -64,7 +69,7 @@ jobs:
           role-session-name: GitHubActions-Deploy
           role-chaining: true
           role-skip-session-tagging: true
-      
+
       - name: Authenticate uv to CodeArtifact
         shell: bash
         run: |
@@ -91,13 +96,37 @@ jobs:
       - name: Install dependencies
         run: uv sync --locked --group dev --all-extras
 
+      - name: Put the synced environment on PATH
+        run: |
+          echo "VIRTUAL_ENV=$PWD/.venv" >> "$GITHUB_ENV"
+          echo "$PWD/.venv/bin" >> "$GITHUB_PATH"
+
       - name: Run tests
-        run: uv run pytest -n auto --dist loadfile --cov=qililab --cov-report=xml tests
+        if: matrix.python-version != env.COVERAGE_PYTHON
+        run: pytest -n auto --dist loadfile tests
+
+      - name: Run tests with coverage
+        if: matrix.python-version == env.COVERAGE_PYTHON
+        run: pytest -n auto --dist loadfile --cov=qililab --cov-report=xml tests
 
       - name: Upload Coverage
+        if: matrix.python-version == env.COVERAGE_PYTHON
         uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f  # v7.0.0
         with:
           use_pypi: true
           fail_ci_if_error: true
           token: ${{ secrets.CODECOV_TOKEN }}
           flags: "unittests"
+
+  all-tests:
+    name: Tests
+    needs: [tests]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: {}
+
+    steps:
+      - name: Check the results
+        if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled')
+        run: exit 1

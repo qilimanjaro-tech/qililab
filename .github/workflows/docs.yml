@@ -8,26 +8,26 @@ on:
       - "synchronize"
       - "ready_for_review"
 
+concurrency:
+  group: docs-${{ github.head_ref || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  # Sphinx produces the same output whichever interpreter builds it, so this runs
+  # once rather than once per supported version.
   docs:
+    if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
+    timeout-minutes: 10
 
     env:
       CA_DOMAIN: qilimanjaro
       CA_DOMAIN_OWNER: "723412851021"
       CA_REGION: eu-west-1
-    
+
     permissions:
       contents: read
       id-token: write  # OIDC: needed to read the private CodeArtifact indexes during the build
-
-    strategy:
-      matrix:
-        python-version:
-          - "3.11"
-          - "3.12"
-          - "3.13"
 
     steps:
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
@@ -37,7 +37,7 @@ jobs:
     - name: Install uv
       uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d  # v10.0.1
       with:
-        python-version: ${{ matrix.python-version }}
+        python-version: "3.13"
         cache-dependency-glob: |
           **/pyproject.toml
           **/uv.lock
@@ -86,5 +86,10 @@ jobs:
     - name: Install dependencies
       run: uv sync --locked --group docs --all-extras
 
+    - name: Put the synced environment on PATH
+      run: |
+        echo "VIRTUAL_ENV=$PWD/.venv" >> "$GITHUB_ENV"
+        echo "$PWD/.venv/bin" >> "$GITHUB_PATH"
+
     - name: Build docs
-      run: uv run sphinx-build -W -b html docs docs/_build --keep-going
+      run: sphinx-build -W -b html docs docs/_build --keep-going
