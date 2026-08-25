@@ -64,7 +64,6 @@ instrument_controllers:
       slot_id: 6
     reset: true
     reference_clock: internal
-    ext_trigger: True
 
   - name: rohde_schwarz
     alias: rs_controller_1
