@@ -1,9 +1,11 @@
 import pytest
 from unittest.mock import MagicMock, patch
 from qililab.instruments import Instrument, Instruments
+from qililab.instruments.becker import RSWUSP16TR
+from qililab.instruments.rohde_schwarz import SGS100A
 from qililab.instruments.qblox import QbloxQCM, QbloxQRM
 from qililab.qprogram.qblox_compiler import AcquisitionData
-from qililab.typings import Parameter
+from qililab.typings import Parameter, InstrumentName
 from qililab.result.qprogram import MeasurementResult
 from qililab.platform import Bus
 from qililab.pulse_distortion.lfilter_correction import LFilterCorrection
@@ -44,6 +46,22 @@ def bus_no_qrm(mock_instruments):
         "channels": [0],
     }
     return Bus(settings=settings, platform_instruments=Instruments(elements=mock_instruments))
+
+@pytest.fixture
+def bus_rf_switch(mock_instruments):
+    rf_switch = MagicMock(spec=RSWUSP16TR)
+    rohde_schwartz = MagicMock(spec=SGS100A)
+    type(rf_switch).alias = property(lambda self: "rf_switch")
+    type(rf_switch).name = property(lambda self: InstrumentName.RSWU_SP16TR)
+    type(rohde_schwartz).alias = property(lambda self: "rohde_schwartz")
+
+    settings = {
+        "alias": "bus_rf",
+        "instruments": ["rohde_schwartz", "qcm", "rf_switch"],
+        "channels": [0, 0, 2],
+        "distortions": []
+    }
+    return Bus(settings=settings, platform_instruments=Instruments(elements=[*mock_instruments, rf_switch, rohde_schwartz]))
 
 class TestBus:
 
@@ -117,6 +135,11 @@ class TestBus:
         bus.settings.channels = []
         with pytest.raises(Exception):
             bus.set_parameter(MagicMock(), 5)
+
+    def test_bus_set_parameter_changes_rf_active_channel(self, bus_rf_switch):
+        bus_rf_switch.set_parameter(parameter=Parameter.LO_FREQUENCY, value=6.5e+09)
+        bus_rf_switch.settings.instruments[2].set_parameter.assert_called_with(parameter=Parameter.RF_ACTIVE_CHANNEL, value="RF2")
+        bus_rf_switch.settings.instruments[0].set_parameter.assert_called_once()
 
     def test_bus_get_parameter(self, bus):
         parameter = MagicMock()
