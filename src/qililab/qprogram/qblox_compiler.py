@@ -1210,6 +1210,7 @@ class QbloxCompiler:
             if duration <= INST_MAX_WAIT:
                 waittrig_upd = QPyInstructions.WaitTriggerUpdParam(trig_addr=port, duration=duration)
                 self._buses[bus].qpy_block_stack[-1].add(component=waittrig_upd)
+                # this is needed because if 4 <= duration < 8 the duration requested will be different from the duration emitted
                 self._buses[bus].static_duration += waittrig_upd.q1asm_duration
                 self._buses[bus].duration_since_sync += waittrig_upd.q1asm_duration
 
@@ -1228,14 +1229,12 @@ class QbloxCompiler:
                 self._buses[bus].qpy_block_stack[-1].add(
                     component=QPyInstructions.WaitTrigger(trigger=port, duration=duration)
                 )
-                self._buses[bus].static_duration += duration
-                self._buses[bus].duration_since_sync += duration
             else:
                 self._buses[bus].qpy_block_stack[-1].add(
                     component=QPyInstructions.LongWaitTrigger(trig_addr=port, duration=duration)
                 )
-                self._buses[bus].static_duration += duration
-                self._buses[bus].duration_since_sync += duration
+            self._buses[bus].static_duration += duration
+            self._buses[bus].duration_since_sync += duration
 
         # Sync all other buses with WaitSync
         if len(self._buses) > 1:
