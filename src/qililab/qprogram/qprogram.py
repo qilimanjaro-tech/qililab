@@ -1260,8 +1260,8 @@ class QProgram(StructuredProgram):
         Args:
             expected_wait_time_ns (int | None, optional): How long to wait for the trigger, in ns. If not
                 given, it is derived from the QDAC bus driving the trigger in this QProgram (its ``dwell``,
-                when ``qp.set_trigger(..., position="step"|"end_step")`` is used). Compiling raises if
-                neither an explicit value nor a derivable QDAC dwell is available.
+                when ``qp.set_trigger(..., position="step")`` is used). Compiling raises if neither an
+                explicit value nor a derivable QDAC dwell is available.
 
         Returns:
             Conditional: The conditional block.
