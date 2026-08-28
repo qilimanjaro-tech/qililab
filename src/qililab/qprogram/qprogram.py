@@ -120,9 +120,8 @@ class QProgram(StructuredProgram):
 
     def __init__(self) -> None:
         super().__init__()
-        self._uses_wait_trigger: bool = False
-        self._uses_conditional_trigger: bool = False
-        self._uses_measure_reset: bool = False
+        # if_trigger() is mutually exclusive with wait_trigger() and measure_reset() (checked both ways below).
+        self._trigger_mode: str | None = None
         self.qblox = self._QbloxInterface(self)
         self.quantum_machines = self._QuantumMachinesInterface(self)
         self.qdac = self._QdacInterface(self)
@@ -1241,9 +1240,9 @@ class QProgram(StructuredProgram):
         Raises:
             NotImplementedError: If ``qp.if_trigger()`` is also used in this QProgram.
         """
-        if self._uses_conditional_trigger:
+        if self._trigger_mode == "if_trigger":
             raise NotImplementedError("wait_trigger cannot be used together with if_trigger() in the same QProgram.")
-        self._uses_wait_trigger = True
+        self._trigger_mode = "wait_trigger"
         operation = WaitTrigger(bus=bus, duration=_to_scalar(duration), port=port)
         self._active_block.append(operation)
         self._buses.add(bus)
@@ -1275,13 +1274,13 @@ class QProgram(StructuredProgram):
             >>> with qp.if_trigger():
             >>> # operations that shall be executed if the trigger was received
         """
-        if self._uses_wait_trigger:
+        if self._trigger_mode == "wait_trigger":
             raise NotImplementedError("if_trigger() cannot be used together with wait_trigger in the same QProgram.")
-        if self._uses_measure_reset:
+        if self._trigger_mode == "measure_reset":
             raise NotImplementedError(
                 "if_trigger() cannot be used together with qp.qblox.measure_reset() in the same QProgram."
             )
-        self._uses_conditional_trigger = True
+        self._trigger_mode = "if_trigger"
         return QProgram._ConditionalContext(program=self, expected_wait_time_ns=expected_wait_time_ns)
 
     class _ConditionalContext(StructuredProgram._BlockContext):
@@ -1442,11 +1441,12 @@ class QProgram(StructuredProgram):
         self._buses.add(bus)
 
     @requires_domain("duration", Domain.Time)
-    def set_trigger(self, bus: str, duration: int, outputs: list[int] | int | None = None, position: str = "start"):
+    def set_trigger(self, bus: str, duration: float, outputs: list[int] | int | None = None, position: str = "start"):
         """Set the trigger output for a given instrument.
         Args:
             bus (str): Unique identifier of the bus.
-            duration (int): Duration of the trigger pulse. Minimum of 4 ns.
+            duration (float): Duration of the trigger pulse, in seconds (passed straight through to the
+                QDAC-II driver's ``width_s``). Minimum of 4e-9 s.
             outputs(optional, list[int] | int | None): Port channel/s of the trigger output. Defaults to None.
             outputs(optional, str): Trigger position in respective to the pulse location, it can be either `start` or `end. Defaults to start.
         """
@@ -1621,11 +1621,11 @@ class QProgram(StructuredProgram):
             Raises:
                 NotImplementedError: If ``qp.if_trigger()`` is also used in this QProgram.
             """
-            if self.qprogram._uses_conditional_trigger:
+            if self.qprogram._trigger_mode == "if_trigger":
                 raise NotImplementedError(
                     "qp.qblox.measure_reset() cannot be used together with if_trigger() in the same QProgram."
                 )
-            self.qprogram._uses_measure_reset = True
+            self.qprogram._trigger_mode = "measure_reset"
             operation: MeasureReset | MeasureResetCalibrated
             if (
                 isinstance(waveform, IQWaveform)

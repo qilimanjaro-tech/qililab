@@ -279,6 +279,12 @@ class QBLOXCONSTANTS:
     FILTER_FIR_COEFF_LENGTH = 32
 
 
+class QDACCONSTANTS:
+    """Qdac Constants"""
+
+    DEFAULT_DWELL_US = 2
+
+
 class AWGTypes:
     """Typings from AWG Types"""
 

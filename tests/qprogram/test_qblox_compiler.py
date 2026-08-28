@@ -1742,7 +1742,7 @@ class TestQBloxCompiler:
 
         compiler = QbloxCompiler()
         with pytest.raises(
-            NotImplementedError, match="Conditional instructions baased on a trigger can only be associated with one bus for now."
+            NotImplementedError, match="Conditional instructions based on a trigger can only be associated with one bus for now."
         ):
             compiler.compile(qprogram=qp, qblox_buses=["readout", "readout2"])
 

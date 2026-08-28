@@ -1394,8 +1394,7 @@ class TestQProgram(TestStructuredProgram):
         with pytest.raises(
             NotImplementedError, match="if_trigger\\(\\) cannot be used together with wait_trigger in the same QProgram."
         ):
-            with qp.if_trigger():
-                qp.wait(bus="readout", duration=100)
+            qp.if_trigger()
 
     def test_if_trigger_then_wait_trigger_raises_error(self):
         qp = QProgram()
@@ -1419,23 +1418,25 @@ class TestQProgram(TestStructuredProgram):
             NotImplementedError,
             match="if_trigger\\(\\) cannot be used together with qp.qblox.measure_reset\\(\\) in the same QProgram.",
         ):
-            with qp.if_trigger():
-                qp.wait(bus="readout", duration=100)
+            qp.if_trigger()
 
     def test_if_trigger_then_measure_reset_raises_error(self):
         qp = QProgram()
         with qp.if_trigger():
             qp.wait(bus="readout", duration=100)
+        waveform = IQPair(I=Square(1.0, 1000), Q=Square(0.0, 1000))
+        weights = IQPair(I=Square(1.0, 2000), Q=Square(0.0, 2000))
+        reset_pulse = IQDrag(amplitude=1.0, duration=100, num_sigmas=5, drag_coefficient=1.5)
         with pytest.raises(
             NotImplementedError,
             match="qp.qblox.measure_reset\\(\\) cannot be used together with if_trigger\\(\\) in the same QProgram.",
         ):
             qp.qblox.measure_reset(
                 bus="readout2",
-                waveform=IQPair(I=Square(1.0, 1000), Q=Square(0.0, 1000)),
-                weights=IQPair(I=Square(1.0, 2000), Q=Square(0.0, 2000)),
+                waveform=waveform,
+                weights=weights,
                 control_bus="drive",
-                reset_pulse=IQDrag(amplitude=1.0, duration=100, num_sigmas=5, drag_coefficient=1.5),
+                reset_pulse=reset_pulse,
             )
 
     def test_set_offset_with_numpy_float_stores_python_float(self):

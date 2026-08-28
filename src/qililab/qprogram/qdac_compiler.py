@@ -19,6 +19,7 @@ from typing import TYPE_CHECKING, Any, Callable
 import numpy as np
 
 from qililab.config import logger
+from qililab.constants import QDACCONSTANTS
 from qililab.instruments.qdevil import QDevilQDac2
 from qililab.qprogram.blocks import Average, Block, Conditional, ForLoop, InfiniteLoop, Loop, Parallel
 from qililab.qprogram.calibration import Calibration
@@ -101,7 +102,7 @@ class QdacCompiler:
         self._qdacs: list[QDevilQDac2]
         self._out_instrument: QDevilQDac2 | None
 
-        self._dc_dwell: int = 2
+        self._dc_dwell: int = QDACCONSTANTS.DEFAULT_DWELL_US
         self._dc_delay: int = 0
         self._dc_stepped: bool = False
         self._loop_repetitions: dict[str, int] = {}

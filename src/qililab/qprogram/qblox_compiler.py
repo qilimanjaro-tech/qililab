@@ -30,6 +30,7 @@ from qpysequence.constants import INST_MAX_WAIT, INST_MIN_WAIT
 from qpysequence.enums import TriggerCondition as QPyTriggerCondition
 
 from qililab.config import logger
+from qililab.constants import QDACCONSTANTS
 from qililab.core.variables import Domain, Variable, VariableExpression
 from qililab.qprogram.blocks import Average, Block, Conditional, ForLoop, InfiniteLoop, Loop, Parallel
 from qililab.qprogram.calibration import Calibration
@@ -76,9 +77,17 @@ MAX_ACQUISITION_INDEX = 31
 ENABLE_CONDITIONAL = 1
 DISABLE_CONDITIONAL = 0
 
-AND_OR_MASK_CONDITIONAL = 0  # Return true if any of the selected counters crossed their thresholds
-WAIT_TRIGGER_NETWORK_INTERMODULES = 400 # time required by qblox trigger network to send a trigger; 400ns is conservative - the official guideline is 388ns between 2 modules
+# Return true if any of the selected counters crossed their thresholds
+AND_OR_MASK_CONDITIONAL = 0
+# time required by qblox trigger network to send a trigger; 400ns is conservative - the official guideline is 388ns between 2 modules
+WAIT_TRIGGER_NETWORK_INTERMODULES = 400
 WAIT_TRIGGER_NETWORK_EXT_TRIGGER = 252
+
+
+def _trigger_address_mask(address: int) -> int:
+    """``SetCond``/``Conditional`` mask bit for a trigger address (address=0 is a don't-care, no bit)."""
+    return 0 if address == 0 else 2 ** (address - 1)
+
 
 CONDITIONAL_REAL_TIME_INSTRUCTIONS = (
     Wait,
@@ -91,6 +100,7 @@ CONDITIONAL_REAL_TIME_INSTRUCTIONS = (
     MeasureWithCalibratedWeights,
     MeasureWithCalibratedWaveformWeights,
 )
+
 
 @dataclass
 class AcquisitionData:
@@ -278,7 +288,7 @@ class QbloxCompiler:
         self._crosstalk: CrosstalkMatrix | None = None
         self._acquisition_metadata: dict[str, dict[UUID, tuple[int, int]]] = {}
         self._conditional_bus: dict[UUID, str] = {}
-        self._conditional_leaves: list = []
+        self._conditional_leaf_range: tuple[int, int] = (0, 0)
         self._single_channel: list[str] = []
 
     def _prepass_qprogram_tree(
@@ -313,10 +323,13 @@ class QbloxCompiler:
                     )
                 start = len(leaves)
                 self._prepass_qprogram_tree(
-                    element, depth + 1, inside_conditional=inside_conditional or isinstance(element, Conditional), leaves=leaves
+                    element,
+                    depth + 1,
+                    inside_conditional=inside_conditional or isinstance(element, Conditional),
+                    leaves=leaves,
                 )
                 if isinstance(element, Conditional):
-                    self._validate_conditional_trigger(element, leaves[start:])
+                    self._validate_conditional_trigger(element, leaves[start:], leaf_range=(start, len(leaves)))
             else:
                 leaves.append(element)
                 if isinstance(element, (Acquire, Measure, MeasureReset)):
@@ -328,33 +341,37 @@ class QbloxCompiler:
     def _derive_expected_wait_time_from_qdac(self) -> int | None:
         """Derive the external-trigger wait time (ns) from a QDAC trigger set up in this same QProgram.
 
-        ``qp.set_trigger(bus, ..., position="step")`` fires the trigger once per sweep step, so the
-        inter-trigger period equals that step's ``dwell`` (set via ``qp.qdac.play(bus, ..., dwell=...)``,
-        in microseconds). Returns ``None`` if no such trigger is found, e.g. the trigger source isn't a QDAC
-        modeled in this QProgram.
+        ``qp.set_trigger(bus, ..., position="step")`` fires the trigger once per sweep step, so the inter-trigger
+        period equals that step's ``dwell`` (set via ``qp.qdac.play(bus, ..., dwell=...)``, in microseconds).
+        Returns ``None`` if no such trigger is found, e.g. the trigger source isn't a QDAC modeled in this QProgram.
 
         Raises:
             NotImplementedError: If a ``qp.set_trigger()`` on a QDAC-driven bus is found with a
-                ``position`` other than ``"step"``: only per-step triggering has a well-defined
-                inter-trigger period to derive the wait time from.
+                ``position`` other than ``"step"``/``"end_step"``: only per-step triggering has a
+                well-defined inter-trigger period to derive the wait time from. Also raised if more than
+                one bus has a ``qp.set_trigger(position="step"/"end_step")``: which one is physically
+                wired to the trigger address ``qp.if_trigger()`` gates on cannot be inferred from the
+                QProgram alone, so ``expected_wait_time_ns`` must be passed explicitly instead.
             ValueError: If a matching ``qp.set_trigger()`` is found but no ``qp.qdac.play(bus, dwell=...)``
                 for that same bus precedes it, so there is no dwell to derive the wait time from.
         """
         dwell_us_by_bus: dict[str, int] = {}
+        step_trigger_wait_time_by_bus: dict[str, int] = {}
 
-        def traverse_qdac_play(block: Block) -> int | None:
+        def traverse_qdac_play(block: Block) -> None:
             for element in block.elements:
                 if isinstance(element, Block):
-                    found = traverse_qdac_play(element)
-                    if found is not None:
-                        return found
-                elif isinstance(element, (Play, PlayWithCalibratedWaveform)) and element.dwell is not None:
-                    dwell_us_by_bus[element.bus] = element.dwell
+                    traverse_qdac_play(element)
+                elif isinstance(element, (Play, PlayWithCalibratedWaveform)):
+                    # A falsy (unset or 0) dwell here mirrors QdacCompiler._handle_play's own default-filling
+                    # (`if not element.dwell: element.dwell = self._dc_dwell`), so this doesn't depend on
+                    # QdacCompiler having already mutated this same QProgram's Play elements in place.
+                    dwell_us_by_bus[element.bus] = element.dwell or QDACCONSTANTS.DEFAULT_DWELL_US
                 elif isinstance(element, SetTrigger):
-                    if element.position != "step":
+                    if element.position not in ("step", "end_step"):
                         raise NotImplementedError(
-                            f"qp.if_trigger() requires qp.set_trigger(bus='{element.bus}', position='step'); "
-                            f"got position='{element.position}'."
+                            f"qp.if_trigger() requires qp.set_trigger(bus='{element.bus}', "
+                            f"position='step'/'end_step'); got position='{element.position}'."
                         )
                     if element.bus not in dwell_us_by_bus:
                         raise ValueError(
@@ -362,12 +379,19 @@ class QbloxCompiler:
                             f"preceding qp.qdac.play(bus='{element.bus}', dwell=...) in this QProgram to "
                             "derive its wait time from."
                         )
-                    return dwell_us_by_bus[element.bus] * 1000
-            return None
+                    step_trigger_wait_time_by_bus[element.bus] = dwell_us_by_bus[element.bus] * 1000
 
-        return traverse_qdac_play(self._qprogram._body)
+        traverse_qdac_play(self._qprogram._body)
+        if len(step_trigger_wait_time_by_bus) > 1:
+            raise NotImplementedError(
+                "Cannot derive qp.if_trigger()'s expected_wait_time_ns automatically: found "
+                f"qp.set_trigger(position='step'/'end_step') on more than one bus "
+                f"({sorted(step_trigger_wait_time_by_bus)}); pass expected_wait_time_ns explicitly to "
+                "disambiguate which one gates the trigger."
+            )
+        return next(iter(step_trigger_wait_time_by_bus.values()), None)
 
-    def _validate_conditional_trigger(self, element: Conditional, leaves: list) -> None:
+    def _validate_conditional_trigger(self, element: Conditional, leaves: list, leaf_range: tuple[int, int]) -> None:
         """Validate a ``qp.if_trigger()`` block and record the bus it gates plus its resolved wait time.
 
         Args:
@@ -376,6 +400,9 @@ class QbloxCompiler:
                 ``_prepass_qprogram_tree`` regardless of how many blocks they're nested under. Nesting
                 itself (only ``qp.average(...)``/``qp.for_loop(...)`` is allowed inside ``qp.if_trigger()``)
                 is already validated by ``_prepass_qprogram_tree`` before this is called.
+            leaf_range (tuple[int, int]): ``(start, end)`` indices delimiting ``leaves`` within the
+                full flat leaf list ``_prepass_qprogram_tree`` is building, used by
+                ``_validate_conditional_bus_isolation`` to tell which leaves fall inside this block.
         """
         dynamic_wait = next((x for x in leaves if isinstance(x, Wait) and isinstance(x.duration, Variable)), None)
         if dynamic_wait is not None:
@@ -387,7 +414,9 @@ class QbloxCompiler:
 
         conditional_bus = {x.bus for x in leaves if hasattr(x, "bus") and x.bus in self._qblox_buses}
         if len(conditional_bus) > 1:
-            raise NotImplementedError("Conditional instructions baased on a trigger can only be associated with one bus for now.")
+            raise NotImplementedError(
+                "Conditional instructions based on a trigger can only be associated with one bus for now."
+            )
 
         if not conditional_bus or not any(isinstance(x, CONDITIONAL_REAL_TIME_INSTRUCTIONS) for x in leaves):
             raise ValueError("A conditional trigger need to have real time operations on a bus.")
@@ -402,11 +431,11 @@ class QbloxCompiler:
         if expected_wait_time_ns is None:
             raise ValueError(
                 f"qp.if_trigger() on bus '{bus}' has no expected_wait_time_ns and no QDAC "
-                "set_trigger(position='step') + play(dwell=...) in this QProgram to derive it from."
+                "set_trigger(position='step'/'end_step') + play(dwell=...) in this QProgram to derive it from."
             )
 
         self._conditional_bus[element.uuid] = bus
-        self._conditional_leaves = leaves
+        self._conditional_leaf_range = leaf_range
         self._buses[bus].expected_trigger_wait_time = expected_wait_time_ns
 
     def _validate_conditional_bus_isolation(self, all_leaves: list) -> None:
@@ -424,8 +453,8 @@ class QbloxCompiler:
             return
 
         bus = next(iter(self._conditional_bus.values()))
-        conditional_leaf_ids = {id(x) for x in self._conditional_leaves}
-        outside = [x for x in all_leaves if getattr(x, "bus", None) == bus and id(x) not in conditional_leaf_ids]
+        start, end = self._conditional_leaf_range
+        outside = [x for i, x in enumerate(all_leaves) if getattr(x, "bus", None) == bus and not start <= i < end]
         if outside:
             raise NotImplementedError(
                 f"Bus '{bus}' cannot have instructions outside its qp.if_trigger() block: found "
@@ -492,11 +521,24 @@ class QbloxCompiler:
                 if isinstance(element, Block):
                     if isinstance(element, Conditional):
                         self._handle_conditional_trigger_prologue(element)
-                    traverse(element)
-                    if isinstance(element, Conditional):
+                        cond_bus = self._conditional_bus[element.uuid]
+                        try:
+                            traverse(element)
+                        except BaseException:
+                            # Balance the prologue's push even if a child element failed to compile, so
+                            # this bus's qpy_block_stack isn't left corrupted for the rest of this compile().
+                            self._buses[cond_bus].qpy_block_stack.pop()
+                            raise
                         self._handle_conditional_trigger_epilogue(element)
+                    else:
+                        traverse(element)
+                    # Conditional is deliberately excluded here: _handle_conditional_trigger_epilogue already
+                    # pads the conditional bus to the exact expected_trigger_wait_time cadence, and
+                    # _validate_conditional_bus_isolation guarantees no other instruction touches that bus
+                    # outside the block -- an autosync here would stretch it to match unrelated buses and
+                    # drift it out of phase with the QDAC's fixed trigger cadence on every iteration.
                     if not self._qprogram.qblox.disable_autosync and isinstance(
-                        element, (ForLoop, Parallel, Loop, Average, Conditional)
+                        element, (ForLoop, Parallel, Loop, Average)
                     ):
                         self._handle_sync(element=Sync(buses=None), delay=True)
                     if appended:
@@ -535,7 +577,7 @@ class QbloxCompiler:
         self._single_channel = single_channel if single_channel is not None else []
         self._acquisition_metadata = {}
         self._conditional_bus = {}
-        self._conditional_leaves = []
+        self._conditional_leaf_range = (0, 0)
 
         # Pre-processing: Update time of flight
         if times_of_flight is not None:
@@ -559,10 +601,17 @@ class QbloxCompiler:
             self._buses[bus].qpy_sequence._program.blocks[0].add(QPyInstructions.WaitSync(4))
             if bus in self._qprogram.qblox.latch_enabled or bus in self._conditional_bus.values():
                 self._buses[bus].qpy_sequence._program.blocks[0].add(QPyInstructions.SetLatchEn(1, 4), insert_idx=0)
-
-
             self._buses[bus].qpy_sequence._program.blocks[0].add(QPyInstructions.SetMrk(int(mask, 2)))
             self._buses[bus].qpy_sequence._program.blocks[0].add(QPyInstructions.UpdParam(4))
+            if bus in self._conditional_bus.values():
+                # Block once, here at the very end of setup (never inside main's loop), for the first
+                # trigger pulse -- this is what phase-locks the sequencer to the QDAC's periodic cadence.
+                # Every later check (once per if_trigger loop iteration) then only needs the non-blocking
+                # SetCond/latch check in _handle_conditional_trigger_prologue/epilogue, relying on that
+                # established cadence.
+                self._buses[bus].qpy_sequence._program.blocks[0].add(
+                    QPyInstructions.WaitTrigger(EXT_TRIGGER_ADDRESS, INST_MIN_WAIT)
+                )
             self._buses[bus].static_duration += 4
 
         # Handle the cases where the number of acquisitions exceeds MAX_ACQUISITION_INDEX whilst having more than one depth.
@@ -853,7 +902,6 @@ class QbloxCompiler:
                 iterations=iterations,
                 loops=[(start, step, qpysequence_operation)],
             )
-            self._buses[bus].qpy_block_stack[-1].add(component=QPyInstructions.WaitTrigger(15, 4))
             self._buses[bus].qpy_block_stack[-1].add(qpy_loop)
             self._buses[bus].qpy_block_stack.append(qpy_loop)
             self._buses[bus].variable_to_register[element.variable] = qpy_loop.loop_registers[0]
@@ -1906,7 +1954,7 @@ class QbloxCompiler:
         trigger_network_wait = Wait(bus=bus, duration=WAIT_TRIGGER_NETWORK_EXT_TRIGGER)
         self._handle_wait(trigger_network_wait)
 
-        mask = 2 ** (EXT_TRIGGER_ADDRESS - 1)
+        mask = _trigger_address_mask(EXT_TRIGGER_ADDRESS)
         cond_block = QPyProgram.Conditional(QPyTriggerCondition.OR, mask)
         self._buses[bus].qpy_block_stack[-1].add(cond_block)
         self._buses[bus].qpy_block_stack.append(cond_block)
@@ -1932,11 +1980,11 @@ class QbloxCompiler:
                 "expected_trigger_wait_time was not populated by _validate_conditional_trigger before traverse() ran."
             )
 
-        # cond_block.lowered_duration is the block's guaranteed total real-time duration once lowered,
+        # cond_block.duration is the block's guaranteed total real-time duration once lowered,
         # identical on both branches, straight from qpysequence (already correctly scaled for any
         # nested Average/ForLoop's iterations, and already accounting for the multi-instruction
         # expansion's own gated-padding and trailing latch_rst overhead).
-        elapsed = WAIT_TRIGGER_NETWORK_EXT_TRIGGER + cond_block.lowered_duration
+        elapsed = WAIT_TRIGGER_NETWORK_EXT_TRIGGER + cond_block.duration
         padding = expected_trigger_wait_time - elapsed
         if padding < INST_MIN_WAIT:
             raise ValueError(
@@ -1946,22 +1994,10 @@ class QbloxCompiler:
 
         self._handle_wait(Wait(bus=bus, duration=padding))
 
-    # def _handle_wait_sync(self) -> None:
-    #     for sync_bus in self._buses:
-    #         self._buses[sync_bus].qpy_block_stack[-1].add(component=QPyInstructions.WaitSync(duration=4))
-    #         self._buses[sync_bus].static_duration += INST_MIN_WAIT
-    #         self._buses[sync_bus].duration_since_sync += INST_MIN_WAIT
-    #         self._buses[sync_bus].marked_for_sync = False
-    #         self._buses[sync_bus].upd_param_instruction_pending = False
-
     def _handle_conditional(self, bus: str, enable: int, address: int, operator: int, else_duration: int) -> None:
         # The conditional does not add any static duration as it is assumed that the operations contained within are the same as the else_duration of the conditional
 
-        # address=0 is a don't-care (no corresponding bit); real trigger addresses are 1-15.
-        if address == 0:
-            mask = 0
-        else:
-            mask = 2 ** (address - 1)
+        mask = _trigger_address_mask(address)
         self._buses[bus].qpy_block_stack[-1].add(
             component=QPyInstructions.SetCond(enable, mask, operator, else_duration)
         )
