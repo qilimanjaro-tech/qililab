@@ -1240,6 +1240,7 @@ class Platform:
                     single_channel=single_channel,
                     bus_distortions=bus_distortions,
                     crosstalk=self.crosstalk if crosstalk else None,
+                    qdac_dwell_us_by_bus=compiled_qdac.dwell_us_by_bus if compiled_qdac else None,
                 ),
                 qdac=compiled_qdac,
             )

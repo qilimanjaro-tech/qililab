@@ -1518,21 +1518,21 @@ class TestQBloxCompiler:
                             wait_sync        4
                             set_mrk          0
                             upd_param        4
+                            wait_trigger     15, 4
 
             main:
                             wait             252
-                            set_cond         1, 16384, 0, 4
-            conditional_body:
+                            set_cond         1, 16384, 0, 4 # trigger condition met
                             move             10, R0
             avg_0:
                             acquire_weighed  0, 0, 0, 1, 100
                             loop             R0, @avg_0
-                            set_cond         0, 16384, 0, 4
-                            wait             992
-                            set_cond         1, 16384, 1, 4
+                            set_cond         0, 0, 0, 4
+                            set_cond         1, 16384, 1, 4 # trigger condition not met
                             wait             964
-                            set_cond         0, 16384, 1, 4
+                            set_cond         0, 0, 1, 4
                             latch_rst        4
+                            wait             992
                             set_mrk          0
                             upd_param        4
                             stop
@@ -1561,21 +1561,21 @@ class TestQBloxCompiler:
                             wait_sync        4
                             set_mrk          0
                             upd_param        4
+                            wait_trigger     15, 4
 
             main:
                             wait             252
-                            set_cond         1, 16384, 0, 4
-            conditional_body:
+                            set_cond         1, 16384, 0, 4 # trigger condition met
                             move             10, R0
             avg_0:
                             acquire_weighed  0, 0, 0, 1, 100
                             loop             R0, @avg_0
-                            set_cond         0, 16384, 0, 4
-                            wait             1740
-                            set_cond         1, 16384, 1, 4
+                            set_cond         0, 0, 0, 4
+                            set_cond         1, 16384, 1, 4 # trigger condition not met
                             wait             964
-                            set_cond         0, 16384, 1, 4
+                            set_cond         0, 0, 1, 4
                             latch_rst        4
+                            wait             1740
                             set_mrk          0
                             upd_param        4
                             stop
@@ -1604,13 +1604,13 @@ class TestQBloxCompiler:
                             wait_sync        4
                             set_mrk          0
                             upd_param        4
+                            wait_trigger     15, 4
 
             main:
                             wait             252
-                            set_cond         1, 16384, 0, 4
+                            set_cond         1, 16384, 0, 4 # trigger condition met
                             move             1, R0
                             move             0, R1
-            conditional_body:
                             move             0, R2
                             move             4, R3
                             move             3, R4
@@ -1620,12 +1620,12 @@ class TestQBloxCompiler:
                             add              R2, 1, R2
                             add              R3, 4, R3
                             loop             R4, @loop_0
-                            set_cond         0, 16384, 0, 4
-                            wait             2140
-                            set_cond         1, 16384, 1, 4
+                            set_cond         0, 0, 0, 4
+                            set_cond         1, 16384, 1, 4 # trigger condition not met
                             wait             580
-                            set_cond         0, 16384, 1, 4
+                            set_cond         0, 0, 1, 4
                             latch_rst        4
+                            wait             2140
                             set_mrk          0
                             upd_param        4
                             stop
@@ -1653,11 +1653,11 @@ class TestQBloxCompiler:
                             wait_sync        4
                             set_mrk          0
                             upd_param        4
+                            wait_trigger     15, 4
 
             main:
                             wait             252
-                            set_cond         1, 16384, 0, 4
-            conditional_body:
+                            set_cond         1, 16384, 0, 4 # trigger condition met
                             move             1, R0
             avg_0:
                             move             2, R1
@@ -1665,12 +1665,12 @@ class TestQBloxCompiler:
                             play             0, 1, 125
                             loop             R1, @square_0
                             loop             R0, @avg_0
-                            set_cond         0, 16384, 0, 4
-                            wait             4490
-                            set_cond         1, 16384, 1, 4
+                            set_cond         0, 0, 0, 4
+                            set_cond         1, 16384, 1, 4 # trigger condition not met
                             wait             246
-                            set_cond         0, 16384, 1, 4
+                            set_cond         0, 0, 1, 4
                             latch_rst        4
+                            wait             4490
                             set_mrk          0
                             upd_param        4
                             stop
@@ -1718,11 +1718,11 @@ class TestQBloxCompiler:
                 qp.qblox.acquire(bus="readout", weights=IQPair(I=Square(1, 100), Q=Square(0, 100)))
         with qp.if_trigger(expected_wait_time_ns=2252):
             with qp.average(shots=10):
-                qp.qblox.acquire(bus="readout2", weights=IQPair(I=Square(1, 100), Q=Square(0, 100)))
+                qp.qblox.acquire(bus="readout", weights=IQPair(I=Square(1, 100), Q=Square(0, 100)))
 
         compiler = QbloxCompiler()
         with pytest.raises(NotImplementedError, match="Only one qp.if_trigger\\(\\) block is supported per QProgram."):
-            compiler.compile(qprogram=qp, qblox_buses=["readout", "readout2"])
+            compiler.compile(qprogram=qp, qblox_buses=["readout"])
 
     def test_if_trigger_without_real_time_instructions_raises_error(self):
         qp = QProgram()
@@ -1823,7 +1823,7 @@ class TestQBloxCompiler:
         with pytest.raises(
             ValueError,
             match=re.escape(
-                "The expected trigger wait time 10 must be at least 4 ns greater than the elapsed duration 1256, "
+                "The expected trigger wait time 10 must be at least 4 ns greater than the elapsed duration 1260, "
                 "otherwise syncing cannot be maintained."
             ),
         ):

@@ -13,7 +13,7 @@
 # limitations under the License.
 from collections.abc import Sequence
 from copy import deepcopy
-from typing import TYPE_CHECKING, overload
+from typing import TYPE_CHECKING, ClassVar, overload
 
 import numpy as np
 
@@ -118,6 +118,12 @@ class QProgram(StructuredProgram):
 
     """
 
+    _TRIGGER_MODE_DISPLAY_NAMES: ClassVar[dict[str, str]] = {
+        "wait_trigger": "wait_trigger",
+        "if_trigger": "if_trigger()",
+        "measure_reset": "qp.qblox.measure_reset()",
+    }
+
     def __init__(self) -> None:
         super().__init__()
         # if_trigger() is mutually exclusive with wait_trigger() and measure_reset() (checked both ways below).
@@ -125,6 +131,19 @@ class QProgram(StructuredProgram):
         self.qblox = self._QbloxInterface(self)
         self.quantum_machines = self._QuantumMachinesInterface(self)
         self.qdac = self._QdacInterface(self)
+
+    def _reject_conflicting_trigger_mode(self, this_op: str, conflicting_modes: tuple[str, ...]) -> None:
+        """Raise if ``_trigger_mode`` is already set to one of ``conflicting_modes``.
+
+        Only one hardware-trigger mechanism (``wait_trigger()``, ``if_trigger()``,
+        ``qp.qblox.measure_reset()``) can gate real-time execution per QProgram; ``if_trigger()`` is
+        mutually exclusive with the other two, which aren't mutually exclusive with each other.
+        """
+        if self._trigger_mode in conflicting_modes:
+            raise NotImplementedError(
+                f"{this_op} cannot be used together with {self._TRIGGER_MODE_DISPLAY_NAMES[self._trigger_mode]} "
+                "in the same QProgram."
+            )
 
     def __str__(self) -> str:
         def traverse(block: Block):
@@ -1240,8 +1259,7 @@ class QProgram(StructuredProgram):
         Raises:
             NotImplementedError: If ``qp.if_trigger()`` is also used in this QProgram.
         """
-        if self._trigger_mode == "if_trigger":
-            raise NotImplementedError("wait_trigger cannot be used together with if_trigger() in the same QProgram.")
+        self._reject_conflicting_trigger_mode("wait_trigger", ("if_trigger",))
         self._trigger_mode = "wait_trigger"
         operation = WaitTrigger(bus=bus, duration=_to_scalar(duration), port=port)
         self._active_block.append(operation)
@@ -1274,15 +1292,12 @@ class QProgram(StructuredProgram):
             >>> with qp.if_trigger():
             >>> # operations that shall be executed if the trigger was received
         """
-        if self._trigger_mode == "wait_trigger":
-            raise NotImplementedError("if_trigger() cannot be used together with wait_trigger in the same QProgram.")
-        if self._trigger_mode == "measure_reset":
-            raise NotImplementedError(
-                "if_trigger() cannot be used together with qp.qblox.measure_reset() in the same QProgram."
-            )
+        self._reject_conflicting_trigger_mode("if_trigger()", ("wait_trigger", "measure_reset"))
         return QProgram._ConditionalContext(program=self, expected_wait_time_ns=expected_wait_time_ns)
 
     class _ConditionalContext(StructuredProgram._BlockContext):
+        program: "QProgram"
+
         def __init__(self, program: "QProgram", expected_wait_time_ns: int | None):
             self.program = program
             self.block: Conditional = Conditional(expected_wait_time_ns=expected_wait_time_ns)
@@ -1502,8 +1517,7 @@ class QProgram(StructuredProgram):
                 if isinstance(weights, IQWaveform)
                 else AcquireWithCalibratedWeights(bus=bus, weights=weights, save_adc=save_adc)
             )
-            active_block = self.qprogram._active_block
-            active_block.append(operation)
+            self.qprogram._active_block.append(operation)
             self.qprogram._buses.add(bus)
             self._weight_duration.setdefault(bus, []).append(
                 weights.get_duration() if isinstance(weights, IQWaveform) else weights
@@ -1625,10 +1639,7 @@ class QProgram(StructuredProgram):
             Raises:
                 NotImplementedError: If ``qp.if_trigger()`` is also used in this QProgram.
             """
-            if self.qprogram._trigger_mode == "if_trigger":
-                raise NotImplementedError(
-                    "qp.qblox.measure_reset() cannot be used together with if_trigger() in the same QProgram."
-                )
+            self.qprogram._reject_conflicting_trigger_mode("qp.qblox.measure_reset()", ("if_trigger",))
             self.qprogram._trigger_mode = "measure_reset"
             operation: MeasureReset | MeasureResetCalibrated
             if (
