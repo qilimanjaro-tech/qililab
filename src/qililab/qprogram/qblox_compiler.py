@@ -77,6 +77,12 @@ DISABLE_CONDITIONAL = 0
 WAIT_TRIGGER_NETWORK_INTERMODULES = 400
 WAIT_TRIGGER_NETWORK_EXT_TRIGGER = 252
 
+# Config-only operations: their handlers only set `upd_param_instruction_pending`, never `marked_for_sync`
+# or `static_duration`/`duration_since_sync` (see e.g. `_handle_set_frequency`, `_handle_set_offset`) -- they
+# carry no real-time duration in the compiler's own bookkeeping, so qp.if_trigger()'s bus-isolation check
+# (`_validate_conditional_bus_isolation`) doesn't count them as breaking the trigger cadence.
+NON_REALTIME_OPERATIONS = (SetFrequency, SetPhase, ResetPhase, SetGain, SetOffset, SetMarkers)
+
 def _trigger_address_mask(address: int) -> int:
     """``SetCond``/``Conditional`` mask bit for a trigger address (address=0 is a don't-care, no bit)."""
     return 0 if address == 0 else 2 ** (address - 1)
@@ -459,8 +465,10 @@ class QbloxCompiler:
         neither can ever reach this point alongside a populated ``self._conditional_bus``.
 
         The epilogue's padding only balances time spent inside the ``Conditional`` block itself; any
-        instruction on the same bus outside of it would add unaccounted-for time to the hardware loop
-        iteration, drifting the sequencer out of phase with the QDAC's trigger cadence.
+        real-time instruction on the same bus outside of it would add unaccounted-for time to the hardware
+        loop iteration, drifting the sequencer out of phase with the QDAC's trigger cadence. ``NON_REALTIME_OPERATIONS``
+        (``qp.set_frequency()``, ``qp.set_offset()``, etc.) are exempt: they add no duration for the epilogue
+        to have missed.
         """
         if not self._conditional_bus:
             return
@@ -469,6 +477,8 @@ class QbloxCompiler:
         start, end = self._conditional_leaf_range
 
         def touches_bus(x) -> bool:
+            if isinstance(x, NON_REALTIME_OPERATIONS):
+                return False
             if isinstance(x, Sync):
                 return bus in (x.buses or self._buses)
             return getattr(x, "bus", None) == bus

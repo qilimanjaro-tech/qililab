@@ -1801,17 +1801,29 @@ class TestQBloxCompiler:
         with qp.if_trigger(expected_wait_time_ns=2252):
             with qp.average(shots=10):
                 qp.qblox.acquire(bus="readout", weights=IQPair(I=Square(1, 100), Q=Square(0, 100)))
-        qp.set_frequency(bus="readout", frequency=1e6)
+        qp.wait(bus="readout", duration=100)
 
         compiler = QbloxCompiler()
         with pytest.raises(
             NotImplementedError,
             match=re.escape(
-                "Bus 'readout' cannot have instructions outside its qp.if_trigger() block: found SetFrequency "
+                "Bus 'readout' cannot have instructions outside its qp.if_trigger() block: found Wait "
                 "outside the conditional, which would break the syncronisation."
             ),
         ):
             compiler.compile(qprogram=qp, qblox_buses=["readout"])
+
+    def test_if_trigger_non_realtime_instruction_outside_block_on_same_bus_is_allowed(self):
+        """qp.set_frequency() (and set_phase/set_gain/set_offset/set_markers) carry no real-time duration,
+        so they can appear on the gated bus outside its qp.if_trigger() block."""
+        qp = QProgram()
+        with qp.if_trigger(expected_wait_time_ns=2252):
+            with qp.average(shots=10):
+                qp.qblox.acquire(bus="readout", weights=IQPair(I=Square(1, 100), Q=Square(0, 100)))
+        qp.set_frequency(bus="readout", frequency=1e6)
+
+        compiler = QbloxCompiler()
+        compiler.compile(qprogram=qp, qblox_buses=["readout"])
 
     def test_if_trigger_expected_wait_time_too_small_raises_error(self):
         qp = QProgram()
@@ -3296,20 +3308,21 @@ class TestQBloxCompiler:
 
         drive_str = """
             setup:
-                            set_latch_en     1, 4           
-                            wait_sync        4              
-                            set_mrk          0              
-                            upd_param        4              
+                            set_latch_en     1, 4
+                            wait_sync        4
+                            set_mrk          0
+                            upd_param        4
 
             main:
-                            latch_rst        4              
-                            wait             2400          
-                            set_cond         1, 1, 0, 100   
-                            play             0, 1, 100      
-                            set_cond         0, 0, 0, 4     
-                            set_mrk          0              
-                            upd_param        4              
-                            stop                            
+                            latch_rst        4
+                            wait             2000
+                            wait             400
+                            set_cond         1, 1, 0, 100
+                            play             0, 1, 100
+                            set_cond         0, 0, 0, 4
+                            set_mrk          0
+                            upd_param        4
+                            stop
         """
 
         readout_str = """
@@ -4746,30 +4759,31 @@ class TestQBloxCompiler:
 
         drive_str = """
             setup:
-                            set_latch_en     1, 4           
-                            wait_sync        4              
-                            set_mrk          0              
-                            upd_param        4              
+                            set_latch_en     1, 4
+                            wait_sync        4
+                            set_mrk          0
+                            upd_param        4
 
             main:
-                            latch_rst        4              
-                            wait             2400          
-                            set_cond         1, 1, 0, 100   
-                            play             0, 1, 100      
-                            set_cond         0, 0, 0, 4     
-                            set_mrk          0              
-                            upd_param        4              
-                            stop                            
+                            latch_rst        4
+                            wait             2000
+                            wait             400
+                            set_cond         1, 1, 0, 100
+                            play             0, 1, 100
+                            set_cond         0, 0, 0, 4
+                            set_mrk          0
+                            upd_param        4
+                            stop
         """
 
         readout_str = """
             setup:
-                wait_sync        4              
-                set_mrk          0              
-                upd_param        4              
+                wait_sync        4
+                set_mrk          0
+                upd_param        4
 
             main:
-                play             0, 1, 4        
+                play             0, 1, 4
                 acquire_weighed  0, 0, 0, 1, 2000
                 set_mrk          0              
                 upd_param        4              
