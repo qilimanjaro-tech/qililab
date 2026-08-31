@@ -1688,7 +1688,7 @@ class TestQBloxCompiler:
             ValueError,
             match=re.escape(
                 "qp.if_trigger() on bus 'readout' has no expected_wait_time_ns and no QDAC "
-                "set_trigger(position='step'/'end_step') + play(dwell=...) in this QProgram to derive it from."
+                "set_trigger(position='step') + play(dwell=...) in this QProgram to derive it from."
             ),
         ):
             compiler.compile(qprogram=qp, qblox_buses=["readout"])
@@ -1730,7 +1730,7 @@ class TestQBloxCompiler:
             qp.set_frequency(bus="readout", frequency=1e6)
 
         compiler = QbloxCompiler()
-        with pytest.raises(ValueError, match="A conditional trigger need to have real time operations on a bus."):
+        with pytest.raises(ValueError, match="Conditional block must contain at least one real-time instruction."):
             compiler.compile(qprogram=qp, qblox_buses=["readout"])
 
     def test_if_trigger_multiple_buses_raises_error(self):
