@@ -201,12 +201,18 @@ class QdacCompiler:
         """
         for element in block.elements:
             currently_conditional = inside_conditional or isinstance(element, Conditional)
-            bus = getattr(element, "bus", None)
-            if currently_conditional and bus in self._qdac_buses_alias:
-                raise NotImplementedError(
-                    f"{type(element).__name__} on QDAC bus '{bus}' cannot be used inside "
-                    "qp.if_trigger(): QDAC has no way to conditionally gate on the external trigger it generates."
+            if currently_conditional:
+                buses = (
+                    (element.buses or self._qdac_buses_alias)
+                    if isinstance(element, Sync)
+                    else [getattr(element, "bus", None)]
                 )
+                offending_bus = next((bus for bus in buses if bus in self._qdac_buses_alias), None)
+                if offending_bus is not None:
+                    raise NotImplementedError(
+                        f"{type(element).__name__} on QDAC bus '{offending_bus}' cannot be used inside "
+                        "qp.if_trigger(): QDAC has no way to conditionally gate on the external trigger it generates."
+                    )
             if isinstance(element, Block):
                 self._validate_no_conditional_qdac_ops(element, inside_conditional=currently_conditional)
 

@@ -348,18 +348,22 @@ class QbloxCompiler:
                     # QdacCompiler having already mutated this same QProgram's Play elements in place.
                     dwell_us_by_bus[element.bus] = element.dwell or QDACCONSTANTS.DEFAULT_DWELL_US
                 elif isinstance(element, SetTrigger):
-                    if element.position != "step":
+                    if element.position == "step":
+                        if element.bus not in dwell_us_by_bus:
+                            raise ValueError(
+                                f"qp.set_trigger(bus='{element.bus}', position='{element.position}') has no "
+                                f"preceding qp.qdac.play(bus='{element.bus}', dwell=...) in this QProgram to "
+                                "derive its wait time from."
+                            )
+                        step_trigger_wait_time_by_bus[element.bus] = dwell_us_by_bus[element.bus] * 1000
+                    elif element.bus in dwell_us_by_bus:
+                        # Only enforce position="step" for buses already known to be QDAC-driven (i.e. preceded
+                        # by a qp.qdac.play(dwell=...)); an ordinary qp.set_trigger() on an unrelated bus (e.g.
+                        # a Qblox marker trigger) isn't part of this derivation and shouldn't block it.
                         raise NotImplementedError(
                             f"qp.if_trigger() requires qp.set_trigger(bus='{element.bus}', position='step'); "
                             f"got position='{element.position}'."
                         )
-                    if element.bus not in dwell_us_by_bus:
-                        raise ValueError(
-                            f"qp.set_trigger(bus='{element.bus}', position='{element.position}') has no "
-                            f"preceding qp.qdac.play(bus='{element.bus}', dwell=...) in this QProgram to "
-                            "derive its wait time from."
-                        )
-                    step_trigger_wait_time_by_bus[element.bus] = dwell_us_by_bus[element.bus] * 1000
 
         traverse_qdac_play(self._qprogram._body)
         if len(step_trigger_wait_time_by_bus) > 1:
@@ -387,8 +391,10 @@ class QbloxCompiler:
             NotImplementedError: If ``leaves`` contains a ``qp.wait(duration=<variable>)``: its duration
                 must be a compile-time constant for the trigger-cadence padding to account for it. Also
                 raised if ``leaves`` touch more than one qblox bus (only one bus can be gated per
-                ``qp.if_trigger()`` block for now), or if this is not the first ``qp.if_trigger()`` block
-                found in the QProgram (only one is supported per QProgram).
+                ``qp.if_trigger()`` block for now), if more than one qblox bus is being compiled at all
+                (the epilogue's padding is only accounted for on the gated bus, so any other qblox bus
+                would run unconditionally and out of the trigger's cadence), or if this is not the first
+                ``qp.if_trigger()`` block found in the QProgram (only one is supported per QProgram).
             ValueError: If no leaf touches a qblox bus at all (there is nothing to gate), or if
                 ``expected_wait_time_ns`` wasn't given explicitly and couldn't be derived from a QDAC
                 ``set_trigger(position='step')`` + ``play(dwell=...)`` in this QProgram.
@@ -412,6 +418,11 @@ class QbloxCompiler:
 
         if self._conditional_bus:
             raise NotImplementedError("Only one qp.if_trigger() block is supported per QProgram.")
+
+        if len(self._qblox_buses) > 1:
+            raise NotImplementedError(
+                f"qp.if_trigger() only supports compiling a single qblox bus for now; got {sorted(self._qblox_buses)}."
+            )
 
         bus = next(iter(conditional_bus))
         expected_wait_time_ns = element.expected_wait_time_ns
@@ -443,7 +454,13 @@ class QbloxCompiler:
 
         bus = next(iter(self._conditional_bus.values()))
         start, end = self._conditional_leaf_range
-        outside = [x for i, x in enumerate(all_leaves) if getattr(x, "bus", None) == bus and not start <= i < end]
+
+        def touches_bus(x) -> bool:
+            if isinstance(x, Sync):
+                return bus in (x.buses or self._buses)
+            return getattr(x, "bus", None) == bus
+
+        outside = [x for i, x in enumerate(all_leaves) if touches_bus(x) and not start <= i < end]
         if outside:
             raise NotImplementedError(
                 f"Bus '{bus}' cannot have instructions outside its qp.if_trigger() block: found "
@@ -1453,12 +1470,15 @@ class QbloxCompiler:
                 self._buses[bus].qpy_block_stack[-1].add(component=QPyInstructions.LongWait(duration=duration))
 
         # Sync all other buses with WaitSync
-        for sync_bus in self._buses:
-            # self._buses[sync_bus].qpy_block_stack[-1].add(component=QPyInstructions.WaitSync(duration=4))
+        if len(self._buses) > 1:
+            for sync_bus in self._buses:
+                self._buses[sync_bus].qpy_block_stack[-1].add(component=QPyInstructions.WaitSync(duration=4))
+                # After wait sync reset static duration
+                self._buses[sync_bus].marked_for_sync = False
+                self._buses[sync_bus].static_duration = 0
 
-            # After wait sync reset static duration
-            self._buses[sync_bus].marked_for_sync = False
-            self._buses[sync_bus].static_duration = 0
+        else:
+            self._buses[bus].marked_for_sync = True
 
     def _handle_sync(self, element: Sync, delay: bool = False) -> None:
         if element.buses and any(bus not in self._qblox_buses for bus in element.buses):

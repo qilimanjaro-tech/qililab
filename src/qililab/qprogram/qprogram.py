@@ -1280,13 +1280,16 @@ class QProgram(StructuredProgram):
             raise NotImplementedError(
                 "if_trigger() cannot be used together with qp.qblox.measure_reset() in the same QProgram."
             )
-        self._trigger_mode = "if_trigger"
         return QProgram._ConditionalContext(program=self, expected_wait_time_ns=expected_wait_time_ns)
 
     class _ConditionalContext(StructuredProgram._BlockContext):
         def __init__(self, program: "QProgram", expected_wait_time_ns: int | None):
             self.program = program
             self.block: Conditional = Conditional(expected_wait_time_ns=expected_wait_time_ns)
+
+        def __enter__(self) -> "Conditional":
+            self.program._trigger_mode = "if_trigger"
+            return super().__enter__()
 
     @overload
     def measure(self, bus: str, waveform: IQWaveform, weights: IQWaveform, save_adc: bool = False):
@@ -1445,8 +1448,9 @@ class QProgram(StructuredProgram):
         """Set the trigger output for a given instrument.
         Args:
             bus (str): Unique identifier of the bus.
-            duration (float): Duration of the trigger pulse, in seconds (passed straight through to the
-                QDAC-II driver's ``width_s``). Minimum of 4e-9 s.
+            duration (float): Duration of the trigger pulse. Unit depends on which instrument the bus maps
+                to: for a QDAC-driven bus, in seconds (passed straight through to the QDAC-II driver's
+                ``width_s``, minimum 4e-9 s); for a Qblox-driven bus, in nanoseconds (minimum 4 ns).
             outputs(optional, list[int] | int | None): Port channel/s of the trigger output. Defaults to None.
             outputs(optional, str): Trigger position in respective to the pulse location, it can be either `start` or `end. Defaults to start.
         """
