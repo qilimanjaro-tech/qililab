@@ -898,6 +898,14 @@ class QProgram(StructuredProgram):
 
             return ForLoop(variable=self._bus_variable_map[variable, bus], start=start, stop=stop, step=step)
 
+        def ends_in_conditional(element: Block | Operation) -> bool:
+            """Whether `element` is a Conditional, or a Block whose own last element does (recursively)."""
+            if isinstance(element, Conditional):
+                return True
+            if isinstance(element, Block) and element.elements:
+                return ends_in_conditional(element.elements[-1])
+            return False
+
         def handle_non_linear(
             elements: list[Block | Operation],
             flux_vector: NonLinearFluxVector,
@@ -1012,8 +1020,17 @@ class QProgram(StructuredProgram):
                 else:
                     corrected_elements.append(element)
 
-            # Needs to sync at the end of every loop for the unpack to work with non-flux buses
-            if corrected_elements and not isinstance(corrected_elements[-1], Sync):
+            # Needs to sync at the end of every loop for the unpack to work with non-flux buses.
+            # Skipped when the tail ends in a Conditional (possibly wrapped in ForLoop/Parallel/etc.):
+            # a qp.if_trigger() block already self-times its own exit (see
+            # QbloxCompiler._handle_conditional_trigger_epilogue), and appending a Sync right after it
+            # would touch the conditional's gated bus outside the block, which
+            # QbloxCompiler._validate_conditional_bus_isolation forbids.
+            if (
+                corrected_elements
+                and not isinstance(corrected_elements[-1], Sync)
+                and not ends_in_conditional(corrected_elements[-1])
+            ):
                 corrected_elements.append(Sync())
             return corrected_elements, state
 
