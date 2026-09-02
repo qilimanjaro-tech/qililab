@@ -566,6 +566,17 @@ def fixture_wait_trigger() -> QProgram:
     return qp
 
 
+@pytest.fixture(name="wait_trigger_upd_param_extension")
+def fixture_wait_trigger_upd_param_extension() -> QProgram:
+    qp = QProgram()
+    qp.wait(bus="drive", duration=100)
+    qp.wait(bus="readout", duration=100)
+    # With update parameter pending, on drive only
+    qp.set_frequency(bus="drive", frequency=1e6)
+    qp.wait_trigger(bus="drive", duration=4)
+    return qp
+
+
 @pytest.fixture(name="multiple_play_operations_with_no_Q_waveform")
 def fixture_multiple_play_operations_with_no_Q_waveform() -> QProgram:
     qp = QProgram()
@@ -1404,21 +1415,16 @@ class TestQBloxCompiler:
                             set_freq         4000000
                             upd_param        4
                             wait_trigger     15, 4
-                            wait_sync        4
                             set_freq         4000000
                             upd_param        4
                             wait_trigger     1, 996
-                            wait_sync        4
                             set_freq         4000000
                             upd_param        4
                             wait_trigger     1, 65535
                             wait             4461
-                            wait_sync        4
                             wait_trigger     1, 1000
-                            wait_sync        4
                             wait_trigger     1, 65535
                             wait             4465
-                            wait_sync        4
                             set_mrk          0
                             upd_param        4
                             stop
@@ -1432,11 +1438,14 @@ class TestQBloxCompiler:
 
             main:
                             set_freq         4000000
-                            wait_sync        4
-                            wait_sync        4
-                            wait_sync        4
-                            wait_sync        4
-                            wait_sync        4
+                            upd_param        4
+                            wait_trigger     15, 4
+                            wait_trigger     1, 1000
+                            wait_trigger     1, 65535       
+                            wait             4465  
+                            wait_trigger     1, 1000
+                            wait_trigger     1, 65535       
+                            wait             4465  
                             set_mrk          0
                             upd_param        4
                             stop
@@ -1451,6 +1460,47 @@ class TestQBloxCompiler:
             AttributeError, match="External trigger has not been set as True inside runcard's instrument controllers."
         ):
             compiler.compile(qprogram=wait_trigger, ext_trigger=False)
+
+    def test_wait_trigger_pads_bus_without_pending_upd_param_to_match_extended_duration(
+        self, wait_trigger_upd_param_extension: QProgram
+    ):
+        """A bus with a pending upd_param merges it into the wait_trigger, extending its real
+        duration beyond the requested one (qpysequence's WaitTriggerUpdParam lowering); a bus with
+        no pending upd_param must be padded afterwards so both stay in sync."""
+        compiler = QbloxCompiler()
+        sequences, _ = compiler.compile(qprogram=wait_trigger_upd_param_extension, ext_trigger=True)
+
+        drive_str = """
+            setup:
+                            wait_sync        4
+                            set_mrk          0
+                            upd_param        4
+
+            main:
+                            wait             100
+                            set_freq         4000000
+                            upd_param        4
+                            wait_trigger     15, 4
+                            set_mrk          0
+                            upd_param        4
+                            stop
+        """
+        readout_str = """
+            setup:
+                            wait_sync        4
+                            set_mrk          0
+                            upd_param        4
+
+            main:
+                            wait             100
+                            wait_trigger     15, 4
+                            wait             4
+                            set_mrk          0
+                            upd_param        4
+                            stop
+        """
+        assert is_q1asm_equal(sequences["drive"], drive_str)
+        assert is_q1asm_equal(sequences["readout"], readout_str)
 
     def test_wait_trigger_duration_above_max_wait_is_not_overshot(self):
         """A wait_trigger longer than INST_MAX_WAIT must be split by LongWait without dropping the remainder."""

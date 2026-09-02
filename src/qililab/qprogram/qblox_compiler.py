@@ -325,10 +325,20 @@ class QbloxCompiler:
                     self._buses[element.bus].counter_acquire = self._acquisition_metadata[element.bus][block.uuid][0]
                     self._buses[element.bus].first_acquire_of_block = False
 
+                elif isinstance(element, WaitTrigger) and element.bus in self._buses:
+                    self._handle_sync(element=Sync(buses=None), delay=True)
+                    for bus in self._buses:
+                        if bus != element.bus:
+                            self._handle_add_trigger_waits(bus=bus, duration=element.duration, port=element.port)
+
                 handler = self._handlers.get(type(element))
                 if not handler:
                     raise NotImplementedError(f"{element.__class__} is currently not supported in QBlox.")
                 appended = handler(element)
+                # the buses need to be synced after a wait_trigger since there are edge cases where qpysequence will add an extra 4ns
+                # to accomodate for an upd_param
+                if isinstance(element, WaitTrigger) and element.bus in self._buses:
+                    self._handle_sync(element=Sync(buses=None), delay=True)
                 if isinstance(element, Block):
                     traverse(element)
                     if not self._qprogram.qblox.disable_autosync and isinstance(
@@ -1236,17 +1246,7 @@ class QbloxCompiler:
             self._buses[bus].static_duration += duration
             self._buses[bus].duration_since_sync += duration
 
-        # Sync all other buses with WaitSync
-        if len(self._buses) > 1:
-            for sync_bus in self._buses:
-                self._buses[sync_bus].qpy_block_stack[-1].add(component=QPyInstructions.WaitSync(duration=4))
-
-                # After wait sync reset static duration
-                self._buses[sync_bus].marked_for_sync = False
-                self._buses[sync_bus].static_duration = 0
-
-        else:
-            self._buses[bus].marked_for_sync = True
+        self._buses[bus].marked_for_sync = True
 
     def _handle_sync(self, element: Sync, delay: bool = False) -> None:
         if element.buses and any(bus not in self._qblox_buses for bus in element.buses):
