@@ -1461,12 +1461,12 @@ class TestQBloxCompiler:
         ):
             compiler.compile(qprogram=wait_trigger, ext_trigger=False)
 
-    def test_wait_trigger_pads_bus_without_pending_upd_param_to_match_extended_duration(
+    def test_wait_trigger_extends_bus_without_pending_upd_param_to_match_upd_param_floor(
         self, wait_trigger_upd_param_extension: QProgram
     ):
         """A bus with a pending upd_param merges it into the wait_trigger, extending its real
-        duration beyond the requested one (qpysequence's WaitTriggerUpdParam lowering); a bus with
-        no pending upd_param must be padded afterwards so both stay in sync."""
+        duration beyond the requested one (qpysequence's WaitTriggerUpdParam lowering); every other
+        bus in the same wait_trigger must be extended to that same floor so all buses stay in sync."""
         compiler = QbloxCompiler()
         sequences, _ = compiler.compile(qprogram=wait_trigger_upd_param_extension, ext_trigger=True)
 
@@ -1493,8 +1493,7 @@ class TestQBloxCompiler:
 
             main:
                             wait             100
-                            wait_trigger     15, 4
-                            wait             4
+                            wait_trigger     15, 8
                             set_mrk          0
                             upd_param        4
                             stop

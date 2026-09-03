@@ -325,20 +325,10 @@ class QbloxCompiler:
                     self._buses[element.bus].counter_acquire = self._acquisition_metadata[element.bus][block.uuid][0]
                     self._buses[element.bus].first_acquire_of_block = False
 
-                elif isinstance(element, WaitTrigger) and element.bus in self._buses:
-                    self._handle_sync(element=Sync(buses=None), delay=True)
-                    for bus in self._buses:
-                        if bus != element.bus:
-                            self._handle_add_trigger_waits(bus=bus, duration=element.duration, port=element.port)
-
                 handler = self._handlers.get(type(element))
                 if not handler:
                     raise NotImplementedError(f"{element.__class__} is currently not supported in QBlox.")
                 appended = handler(element)
-                # the buses need to be synced after a wait_trigger since there are edge cases where qpysequence will add an extra 4ns
-                # to accomodate for an upd_param
-                if isinstance(element, WaitTrigger) and element.bus in self._buses:
-                    self._handle_sync(element=Sync(buses=None), delay=True)
                 if isinstance(element, Block):
                     traverse(element)
                     if not self._qprogram.qblox.disable_autosync and isinstance(
@@ -1201,8 +1191,35 @@ class QbloxCompiler:
         if not self._ext_trigger:
             raise AttributeError("External trigger has not been set as True inside runcard's instrument controllers.")
 
+        self._handle_sync(element=Sync(buses=None), delay=True)
+
+        duration = self._wait_trigger_duration_with_upd_param_bump(element.duration, element.port)
         # loop over wait instructions if static duration is longer than allowed qblox max wait time of 2**16 -4
-        self._handle_add_trigger_waits(bus=element.bus, duration=element.duration, port=element.port)
+        for bus in self._buses:
+            self._handle_add_trigger_waits(bus=bus, duration=duration, port=element.port)
+
+        # Re-sync all buses after the trigger wait.
+        self._handle_sync(element=Sync(buses=None), delay=True)
+
+    def _wait_trigger_duration_with_upd_param_bump(self, duration: int, port: int | None) -> int:
+        """Bump a wait_trigger duration to match qpysequence's own upd_param-merge extension.
+
+        qpysequence's WaitTriggerUpdParam silently extends its emitted duration when a pending
+        upd_param forces the requested duration below its own floor. Requesting that same extended
+        duration for every bus keeps them all emitting an identical duration, whether or not a
+        given bus has a pending upd_param.
+
+        Args:
+            duration (int): The requested wait_trigger duration in ns.
+            port (int | None): Trigger port; defaults to EXT_TRIGGER_ADDRESS when None.
+
+        Returns:
+            int: `duration`, bumped to qpysequence's actual WaitTriggerUpdParam lowering if needed.
+        """
+        if duration > INST_MAX_WAIT or not any(bus.upd_param_instruction_pending for bus in self._buses.values()):
+            return duration
+        trig_addr = port if port else EXT_TRIGGER_ADDRESS
+        return QPyInstructions.WaitTriggerUpdParam(trig_addr=trig_addr, duration=duration).q1asm_duration
 
     def _handle_add_trigger_waits(self, bus: str, duration: int, port: int | None) -> None:
         """Emit wait-trigger instructions for the given bus, handling durations longer than
