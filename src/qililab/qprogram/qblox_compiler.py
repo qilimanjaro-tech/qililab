@@ -1208,9 +1208,20 @@ class QbloxCompiler:
         self._handle_sync(element=Sync(buses=None), delay=True)
 
         port = element.port if element.port else EXT_TRIGGER_ADDRESS
-        duration = self._wait_trigger_duration_with_upd_param_bump(element.duration, port)
+        buses = list(self._buses)
 
-        for bus in self._buses:
+        # A bus with a pending upd_param may have its requested duration extended by qpysequence's
+        # own WaitTriggerUpdParam floor. Emit that bus first and reuse the
+        # actual duration it really emitted for every other bus, so they all stay synced on however
+        # long qpysequence ends up waiting .
+        pending_bus = next((bus for bus in buses if self._buses[bus].upd_param_instruction_pending), None)
+        if pending_bus is not None:
+            duration = self._handle_add_trigger_waits(bus=pending_bus, duration=element.duration, port=port)
+            buses.remove(pending_bus)
+        else:
+            duration = element.duration
+
+        for bus in buses:
             self._handle_add_trigger_waits(bus=bus, duration=duration, port=port)
 
         # All buses received an identical duration above, so they remain balanced; just clear sync bookkeeping.
@@ -1218,26 +1229,7 @@ class QbloxCompiler:
             self._buses[bus].marked_for_sync = False
             self._buses[bus].duration_since_sync = 0
 
-    def _wait_trigger_duration_with_upd_param_bump(self, duration: int, port: int) -> int:
-        """Bump a wait_trigger duration to match qpysequence's own upd_param-merge extension.
-
-        qpysequence's WaitTriggerUpdParam extends its emitted duration when a pending
-        upd_param forces the requested duration below its own floor. Requesting that same extended
-        duration for every bus keeps them all emitting an identical duration, whether or not a
-        given bus has a pending upd_param.
-
-        Args:
-            duration (int): The requested wait_trigger duration in ns.
-            port (int): Trigger network address to wait on.
-
-        Returns:
-            int: `duration`, bumped to qpysequence's actual WaitTriggerUpdParam lowering if needed.
-        """
-        if duration > INST_MAX_WAIT or not any(bus.upd_param_instruction_pending for bus in self._buses.values()):
-            return duration
-        return QPyInstructions.WaitTriggerUpdParam(trig_addr=port, duration=duration).q1asm_duration
-
-    def _handle_add_trigger_waits(self, bus: str, duration: int, port: int) -> None:
+    def _handle_add_trigger_waits(self, bus: str, duration: int, port: int) -> int:
         """Emit wait-trigger instructions for the given bus, handling durations longer than
         INST_MAX_WAIT and flushing any pending ``upd_param`` before the wait.
 
@@ -1245,14 +1237,19 @@ class QbloxCompiler:
             bus (str): Bus identifier.
             duration (int): Duration to wait in ns.
             port (int): Trigger network address to wait on.
+
+        Returns:
+            int: The duration actually emitted for this bus. Equal to `duration`, except when a
+                pending upd_param forces qpysequence's WaitTriggerUpdParam floor to extend it.
         """
         if self._buses[bus].upd_param_instruction_pending:
             if duration <= INST_MAX_WAIT:
                 wait_trig_upd = QPyInstructions.WaitTriggerUpdParam(trig_addr=port, duration=duration)
                 self._buses[bus].qpy_block_stack[-1].add(component=wait_trig_upd)
                 # this is needed because if 4 <= duration < 8 the duration requested will be different from the duration emitted
-                self._buses[bus].static_duration += wait_trig_upd.q1asm_duration
-                self._buses[bus].duration_since_sync += wait_trig_upd.q1asm_duration
+                duration = wait_trig_upd.q1asm_duration
+                self._buses[bus].static_duration += duration
+                self._buses[bus].duration_since_sync += duration
 
             else:
                 self._buses[bus].qpy_block_stack[-1].add(
@@ -1277,6 +1274,7 @@ class QbloxCompiler:
             self._buses[bus].duration_since_sync += duration
 
         self._buses[bus].marked_for_sync = True
+        return duration
 
     def _handle_sync(self, element: Sync, delay: bool = False) -> None:
         if element.buses and any(bus not in self._qblox_buses for bus in element.buses):
