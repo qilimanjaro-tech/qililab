@@ -1180,6 +1180,20 @@ class QbloxCompiler:
                 self._buses[bus].qpy_block_stack[-1].add(component=QPyInstructions.LongWait(duration=duration))
 
     def _handle_wait_trigger(self, element: WaitTrigger) -> None:
+        """Emit a wait for an external trigger on every Qblox bus in the QProgram.
+
+        Buses are synced (including delay compensation) before the trigger wait, then each bus
+        receives its own wait_trigger instruction for the same duration, keeping them synchronized
+        without a separate wait_sync.
+
+        Args:
+            element (WaitTrigger): The wait_trigger element to compile.
+
+        Raises:
+            ValueError: If `element.duration` is a Variable.
+            AttributeError: If external trigger has not been enabled in the runcard's instrument
+                controllers.
+        """
         if element.bus not in self._qblox_buses:
             return
 
@@ -1193,53 +1207,52 @@ class QbloxCompiler:
 
         self._handle_sync(element=Sync(buses=None), delay=True)
 
-        duration = self._wait_trigger_duration_with_upd_param_bump(element.duration, element.port)
-        # loop over wait instructions if static duration is longer than allowed qblox max wait time of 2**16 -4
+        port = element.port if element.port else EXT_TRIGGER_ADDRESS
+        duration = self._wait_trigger_duration_with_upd_param_bump(element.duration, port)
+
         for bus in self._buses:
-            self._handle_add_trigger_waits(bus=bus, duration=duration, port=element.port)
+            self._handle_add_trigger_waits(bus=bus, duration=duration, port=port)
 
-        # Re-sync all buses after the trigger wait.
-        self._handle_sync(element=Sync(buses=None), delay=True)
+        # All buses received an identical duration above, so they remain balanced; just clear sync bookkeeping.
+        for bus in self._buses:
+            self._buses[bus].marked_for_sync = False
+            self._buses[bus].duration_since_sync = 0
 
-    def _wait_trigger_duration_with_upd_param_bump(self, duration: int, port: int | None) -> int:
+    def _wait_trigger_duration_with_upd_param_bump(self, duration: int, port: int) -> int:
         """Bump a wait_trigger duration to match qpysequence's own upd_param-merge extension.
 
-        qpysequence's WaitTriggerUpdParam silently extends its emitted duration when a pending
+        qpysequence's WaitTriggerUpdParam extends its emitted duration when a pending
         upd_param forces the requested duration below its own floor. Requesting that same extended
         duration for every bus keeps them all emitting an identical duration, whether or not a
         given bus has a pending upd_param.
 
         Args:
             duration (int): The requested wait_trigger duration in ns.
-            port (int | None): Trigger port; defaults to EXT_TRIGGER_ADDRESS when None.
+            port (int): Trigger network address to wait on.
 
         Returns:
             int: `duration`, bumped to qpysequence's actual WaitTriggerUpdParam lowering if needed.
         """
         if duration > INST_MAX_WAIT or not any(bus.upd_param_instruction_pending for bus in self._buses.values()):
             return duration
-        trig_addr = port if port else EXT_TRIGGER_ADDRESS
-        return QPyInstructions.WaitTriggerUpdParam(trig_addr=trig_addr, duration=duration).q1asm_duration
+        return QPyInstructions.WaitTriggerUpdParam(trig_addr=port, duration=duration).q1asm_duration
 
-    def _handle_add_trigger_waits(self, bus: str, duration: int, port: int | None) -> None:
+    def _handle_add_trigger_waits(self, bus: str, duration: int, port: int) -> None:
         """Emit wait-trigger instructions for the given bus, handling durations longer than
         INST_MAX_WAIT and flushing any pending ``upd_param`` before the wait.
 
         Args:
             bus (str): Bus identifier.
             duration (int): Duration to wait in ns.
-            port (int | None): Trigger port; defaults to ``EXT_TRIGGER_ADDRESS`` when ``None``.
+            port (int): Trigger network address to wait on.
         """
-        if not port:
-            port = EXT_TRIGGER_ADDRESS
-
         if self._buses[bus].upd_param_instruction_pending:
             if duration <= INST_MAX_WAIT:
-                waittrig_upd = QPyInstructions.WaitTriggerUpdParam(trig_addr=port, duration=duration)
-                self._buses[bus].qpy_block_stack[-1].add(component=waittrig_upd)
+                wait_trig_upd = QPyInstructions.WaitTriggerUpdParam(trig_addr=port, duration=duration)
+                self._buses[bus].qpy_block_stack[-1].add(component=wait_trig_upd)
                 # this is needed because if 4 <= duration < 8 the duration requested will be different from the duration emitted
-                self._buses[bus].static_duration += waittrig_upd.q1asm_duration
-                self._buses[bus].duration_since_sync += waittrig_upd.q1asm_duration
+                self._buses[bus].static_duration += wait_trig_upd.q1asm_duration
+                self._buses[bus].duration_since_sync += wait_trig_upd.q1asm_duration
 
             else:
                 self._buses[bus].qpy_block_stack[-1].add(
