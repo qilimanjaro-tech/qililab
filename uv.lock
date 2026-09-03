@@ -42,14 +42,14 @@ name = "aiohttp"
 version = "3.14.3"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "aiohappyeyeballs" },
-    { name = "aiosignal" },
-    { name = "attrs" },
-    { name = "frozenlist" },
-    { name = "multidict" },
-    { name = "propcache" },
-    { name = "typing-extensions" },
-    { name = "yarl" },
+    { name = "aiohappyeyeballs", marker = "python_full_version >= '3.12' and python_full_version < '3.15'" },
+    { name = "aiosignal", marker = "python_full_version >= '3.12' and python_full_version < '3.15'" },
+    { name = "attrs", marker = "python_full_version >= '3.12' and python_full_version < '3.15'" },
+    { name = "frozenlist", marker = "python_full_version >= '3.12' and python_full_version < '3.15'" },
+    { name = "multidict", marker = "python_full_version >= '3.12' and python_full_version < '3.15'" },
+    { name = "propcache", marker = "python_full_version >= '3.12' and python_full_version < '3.15'" },
+    { name = "typing-extensions", marker = "python_full_version == '3.12.*'" },
+    { name = "yarl", marker = "python_full_version >= '3.12' and python_full_version < '3.15'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/58/d9/22ce5786ac0c1653ae8b6c23bded02c1686d11f0dbb45b31ce128e0df985/aiohttp-3.14.3.tar.gz", hash = "sha256:9491196535a88924a60afd5b5f434b5b203b6cc616250878dbdb223a8f7844bc", size = 7971213, upload-time = "2026-07-23T01:57:27.037Z" }
 wheels = [
@@ -160,8 +160,8 @@ name = "aiosignal"
 version = "1.4.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "frozenlist" },
-    { name = "typing-extensions" },
+    { name = "frozenlist", marker = "python_full_version >= '3.12' and python_full_version < '3.15'" },
+    { name = "typing-extensions", marker = "python_full_version == '3.12.*'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/61/62/06741b579156360248d1ec624842ad0edf697050bbaf7c3e46394e106ad1/aiosignal-1.4.0.tar.gz", hash = "sha256:f47eecd9468083c2029cc99945502cb7708b082c232f9aca65da147157b251c7", size = 25007, upload-time = "2025-07-03T22:54:43.528Z" }
 wheels = [
@@ -404,10 +404,10 @@ resolution-markers = [
     "(python_full_version < '3.12' and platform_python_implementation != 'PyPy') or (python_full_version < '3.12' and sys_platform != 'win32')",
 ]
 dependencies = [
-    { name = "matplotlib" },
-    { name = "numpy", version = "2.4.6", source = { registry = "https://pypi.org/simple" } },
-    { name = "schema" },
-    { name = "versioningit" },
+    { name = "matplotlib", marker = "python_full_version < '3.12'" },
+    { name = "numpy", version = "2.4.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
+    { name = "schema", marker = "python_full_version < '3.12'" },
+    { name = "versioningit", marker = "python_full_version < '3.12'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/38/c9/c64ec69941544561f503fe092f2f32b9117252b2dd22b90368787d2316a2/broadbean-0.14.0.tar.gz", hash = "sha256:bfe3afea69529da246f7ca2803d0213c625f96b15a7ca4283b9c22f8fc5c655c", size = 44803, upload-time = "2024-03-06T22:15:44.076Z" }
 wheels = [
@@ -425,10 +425,10 @@ resolution-markers = [
     "(python_full_version >= '3.12' and python_full_version < '3.15' and platform_python_implementation != 'PyPy') or (python_full_version >= '3.12' and python_full_version < '3.15' and sys_platform != 'win32')",
 ]
 dependencies = [
-    { name = "matplotlib" },
-    { name = "numpy", version = "2.5.2", source = { registry = "https://pypi.org/simple" } },
-    { name = "schema" },
-    { name = "versioningit" },
+    { name = "matplotlib", marker = "python_full_version >= '3.12'" },
+    { name = "numpy", version = "2.5.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
+    { name = "schema", marker = "python_full_version >= '3.12'" },
+    { name = "versioningit", marker = "python_full_version >= '3.12'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/ba/b8/3539153af65156590aea11885a52b742fcba982d8fa21ffe67ad8b60d6b0/broadbean-0.15.0.tar.gz", hash = "sha256:1931bb570d24a1ec832244e5a5183cb51334112389f7fde5a0b2d1c37742b68d", size = 44377, upload-time = "2026-05-11T09:22:57.655Z" }
 wheels = [
@@ -2888,7 +2888,7 @@ name = "pexpect"
 version = "4.9.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "ptyprocess" },
+    { name = "ptyprocess", marker = "platform_python_implementation != 'PyPy' or sys_platform != 'win32'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/42/92/cc564bf6381ff43ce1f4d06852fc19a2f11d180f23dc32d9588bee2f149d/pexpect-4.9.0.tar.gz", hash = "sha256:ee7d41123f3c9911050ea2c2dac107568dc43b2d3b0c7557a33212c398ead30f", size = 166450, upload-time = "2023-11-25T09:07:26.339Z" }
 wheels = [
@@ -3809,13 +3809,13 @@ resolution-markers = [
     "(python_full_version < '3.12' and platform_python_implementation != 'PyPy') or (python_full_version < '3.12' and sys_platform != 'win32')",
 ]
 dependencies = [
-    { name = "autobahn" },
-    { name = "cffi" },
-    { name = "packaging" },
-    { name = "pandas" },
-    { name = "python-dotenv" },
-    { name = "qcodes" },
-    { name = "versioningit" },
+    { name = "autobahn", marker = "python_full_version < '3.12'" },
+    { name = "cffi", marker = "python_full_version < '3.12'" },
+    { name = "packaging", marker = "python_full_version < '3.12'" },
+    { name = "pandas", marker = "python_full_version < '3.12'" },
+    { name = "python-dotenv", marker = "python_full_version < '3.12'" },
+    { name = "qcodes", marker = "python_full_version < '3.12'" },
+    { name = "versioningit", marker = "python_full_version < '3.12'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/3d/b5/6bb7d8fa4bbb0c40b397f72180876542114b9097acf14b4a01cb4f3b6f60/qcodes_contrib_drivers-0.24.1.tar.gz", hash = "sha256:45e4c02037e28888f9bd629d7ca00bb5a2479a8a3ca7ac116a0bbcc536b9ebf4", size = 454089, upload-time = "2026-03-02T15:09:11.647Z" }
 wheels = [
@@ -3833,13 +3833,13 @@ resolution-markers = [
     "(python_full_version >= '3.12' and python_full_version < '3.15' and platform_python_implementation != 'PyPy') or (python_full_version >= '3.12' and python_full_version < '3.15' and sys_platform != 'win32')",
 ]
 dependencies = [
-    { name = "autobahn" },
-    { name = "cffi" },
-    { name = "packaging" },
-    { name = "pandas" },
-    { name = "python-dotenv" },
-    { name = "qcodes" },
-    { name = "versioningit" },
+    { name = "autobahn", marker = "python_full_version >= '3.12'" },
+    { name = "cffi", marker = "python_full_version >= '3.12'" },
+    { name = "packaging", marker = "python_full_version >= '3.12'" },
+    { name = "pandas", marker = "python_full_version >= '3.12'" },
+    { name = "python-dotenv", marker = "python_full_version >= '3.12'" },
+    { name = "qcodes", marker = "python_full_version >= '3.12'" },
+    { name = "versioningit", marker = "python_full_version >= '3.12'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/b8/e1/559811ce77916f7974a6fe58af5a76867046e4c4d2a37c2bd9338169a095/qcodes_contrib_drivers-0.25.0.tar.gz", hash = "sha256:f597185ea7148fac0640bfbc3af8e37e39c6942e9f897d8875f6cd5eebe106e9", size = 469563, upload-time = "2026-05-11T09:24:28.626Z" }
 wheels = [
@@ -3848,7 +3848,7 @@ wheels = [
 
 [[package]]
 name = "qililab"
-version = "0.35.0"
+version = "0.35.1"
 source = { editable = "." }
 dependencies = [
     { name = "dash" },
@@ -4273,7 +4273,7 @@ resolution-markers = [
     "(python_full_version < '3.12' and platform_python_implementation != 'PyPy') or (python_full_version < '3.12' and sys_platform != 'win32')",
 ]
 dependencies = [
-    { name = "numpy", version = "2.4.6", source = { registry = "https://pypi.org/simple" } },
+    { name = "numpy", version = "2.4.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/7a/97/5a3609c4f8d58b039179648e62dd220f89864f56f7357f5d4f45c29eb2cc/scipy-1.17.1.tar.gz", hash = "sha256:95d8e012d8cb8816c226aef832200b1d45109ed4464303e997c5b13122b297c0", size = 30573822, upload-time = "2026-02-23T00:26:24.851Z" }
 wheels = [
@@ -4350,7 +4350,7 @@ resolution-markers = [
     "(python_full_version >= '3.12' and python_full_version < '3.15' and platform_python_implementation != 'PyPy') or (python_full_version >= '3.12' and python_full_version < '3.15' and sys_platform != 'win32')",
 ]
 dependencies = [
-    { name = "numpy", version = "2.5.2", source = { registry = "https://pypi.org/simple" } },
+    { name = "numpy", version = "2.5.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/a7/25/c2700dfaf6442b4effaa91af24ebce5dc9d31bb4a69706313aae70d72cd0/scipy-1.18.0.tar.gz", hash = "sha256:67b2ad2ad54c72ca6d04975a9b2df8c3638c34ddd5b28738e94fc2b57929d378", size = 30774447, upload-time = "2026-06-19T15:01:43.456Z" }
 wheels = [
@@ -4441,23 +4441,23 @@ resolution-markers = [
     "(python_full_version < '3.12' and platform_python_implementation != 'PyPy') or (python_full_version < '3.12' and sys_platform != 'win32')",
 ]
 dependencies = [
-    { name = "alabaster" },
-    { name = "babel" },
-    { name = "colorama", marker = "sys_platform == 'win32'" },
-    { name = "docutils" },
-    { name = "imagesize" },
-    { name = "jinja2" },
-    { name = "packaging" },
-    { name = "pygments" },
-    { name = "requests" },
-    { name = "roman-numerals" },
-    { name = "snowballstemmer" },
-    { name = "sphinxcontrib-applehelp" },
-    { name = "sphinxcontrib-devhelp" },
-    { name = "sphinxcontrib-htmlhelp" },
-    { name = "sphinxcontrib-jsmath" },
-    { name = "sphinxcontrib-qthelp" },
-    { name = "sphinxcontrib-serializinghtml" },
+    { name = "alabaster", marker = "python_full_version < '3.12'" },
+    { name = "babel", marker = "python_full_version < '3.12'" },
+    { name = "colorama", marker = "python_full_version < '3.12' and sys_platform == 'win32'" },
+    { name = "docutils", marker = "python_full_version < '3.12'" },
+    { name = "imagesize", marker = "python_full_version < '3.12'" },
+    { name = "jinja2", marker = "python_full_version < '3.12'" },
+    { name = "packaging", marker = "python_full_version < '3.12'" },
+    { name = "pygments", marker = "python_full_version < '3.12'" },
+    { name = "requests", marker = "python_full_version < '3.12'" },
+    { name = "roman-numerals", marker = "python_full_version < '3.12'" },
+    { name = "snowballstemmer", marker = "python_full_version < '3.12'" },
+    { name = "sphinxcontrib-applehelp", marker = "python_full_version < '3.12'" },
+    { name = "sphinxcontrib-devhelp", marker = "python_full_version < '3.12'" },
+    { name = "sphinxcontrib-htmlhelp", marker = "python_full_version < '3.12'" },
+    { name = "sphinxcontrib-jsmath", marker = "python_full_version < '3.12'" },
+    { name = "sphinxcontrib-qthelp", marker = "python_full_version < '3.12'" },
+    { name = "sphinxcontrib-serializinghtml", marker = "python_full_version < '3.12'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/42/50/a8c6ccc36d5eacdfd7913ddccd15a9cee03ecafc5ee2bc40e1f168d85022/sphinx-9.0.4.tar.gz", hash = "sha256:594ef59d042972abbc581d8baa577404abe4e6c3b04ef61bd7fc2acbd51f3fa3", size = 8710502, upload-time = "2025-12-04T07:45:27.343Z" }
 wheels = [
@@ -4475,23 +4475,23 @@ resolution-markers = [
     "(python_full_version >= '3.12' and python_full_version < '3.15' and platform_python_implementation != 'PyPy') or (python_full_version >= '3.12' and python_full_version < '3.15' and sys_platform != 'win32')",
 ]
 dependencies = [
-    { name = "alabaster" },
-    { name = "babel" },
-    { name = "colorama", marker = "sys_platform == 'win32'" },
-    { name = "docutils" },
-    { name = "imagesize" },
-    { name = "jinja2" },
-    { name = "packaging" },
-    { name = "pygments" },
-    { name = "requests" },
-    { name = "roman-numerals" },
-    { name = "snowballstemmer" },
-    { name = "sphinxcontrib-applehelp" },
-    { name = "sphinxcontrib-devhelp" },
-    { name = "sphinxcontrib-htmlhelp" },
-    { name = "sphinxcontrib-jsmath" },
-    { name = "sphinxcontrib-qthelp" },
-    { name = "sphinxcontrib-serializinghtml" },
+    { name = "alabaster", marker = "python_full_version >= '3.12'" },
+    { name = "babel", marker = "python_full_version >= '3.12'" },
+    { name = "colorama", marker = "python_full_version >= '3.12' and sys_platform == 'win32'" },
+    { name = "docutils", marker = "python_full_version >= '3.12'" },
+    { name = "imagesize", marker = "python_full_version >= '3.12'" },
+    { name = "jinja2", marker = "python_full_version >= '3.12'" },
+    { name = "packaging", marker = "python_full_version >= '3.12'" },
+    { name = "pygments", marker = "python_full_version >= '3.12'" },
+    { name = "requests", marker = "python_full_version >= '3.12'" },
+    { name = "roman-numerals", marker = "python_full_version >= '3.12'" },
+    { name = "snowballstemmer", marker = "python_full_version >= '3.12'" },
+    { name = "sphinxcontrib-applehelp", marker = "python_full_version >= '3.12'" },
+    { name = "sphinxcontrib-devhelp", marker = "python_full_version >= '3.12'" },
+    { name = "sphinxcontrib-htmlhelp", marker = "python_full_version >= '3.12'" },
+    { name = "sphinxcontrib-jsmath", marker = "python_full_version >= '3.12'" },
+    { name = "sphinxcontrib-qthelp", marker = "python_full_version >= '3.12'" },
+    { name = "sphinxcontrib-serializinghtml", marker = "python_full_version >= '3.12'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/cd/bd/f08eb0f4eed5c83f1ba2a3bd18f7745a2b1525fad70660a1c00224ec468a/sphinx-9.1.0.tar.gz", hash = "sha256:7741722357dd75f8190766926071fed3bdc211c74dd2d7d4df5404da95930ddb", size = 8718324, upload-time = "2025-12-31T15:09:27.646Z" }
 wheels = [
@@ -5199,9 +5199,9 @@ name = "yarl"
 version = "1.24.5"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "idna" },
-    { name = "multidict" },
-    { name = "propcache" },
+    { name = "idna", marker = "python_full_version >= '3.12' and python_full_version < '3.15'" },
+    { name = "multidict", marker = "python_full_version >= '3.12' and python_full_version < '3.15'" },
+    { name = "propcache", marker = "python_full_version >= '3.12' and python_full_version < '3.15'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/31/33/ebe9e3d1f86c7a0b51094c0a146392045ca1631d2664889539dec8088a33/yarl-1.24.5.tar.gz", hash = "sha256:e81b83143bee16329c23db3c1b2d82b29892fcbcb849186d2f6e98a5abe9a57f", size = 228679, upload-time = "2026-07-20T02:07:45.435Z" }
 wheels = [
