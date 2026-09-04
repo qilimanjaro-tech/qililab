@@ -1417,11 +1417,11 @@ class TestQBloxCompiler:
                             wait_trigger     15, 4
                             set_freq         4000000
                             upd_param        4
-                            wait_trigger     1, 996
+                            wait_trigger     1, 1000
                             set_freq         4000000
                             upd_param        4
                             wait_trigger     1, 65535
-                            wait             4461
+                            wait             4465
                             wait_trigger     1, 1000
                             wait_trigger     1, 65535
                             wait             4465
@@ -1440,12 +1440,14 @@ class TestQBloxCompiler:
                             set_freq         4000000
                             upd_param        4
                             wait_trigger     15, 4
+                            wait             4
                             wait_trigger     1, 1000
-                            wait_trigger     1, 65535       
-                            wait             4465  
+                            wait             4
+                            wait_trigger     1, 65535
+                            wait             4465
                             wait_trigger     1, 1000
-                            wait_trigger     1, 65535       
-                            wait             4465  
+                            wait_trigger     1, 65535
+                            wait             4465
                             set_mrk          0
                             upd_param        4
                             stop
@@ -1464,9 +1466,9 @@ class TestQBloxCompiler:
     def test_wait_trigger_extends_bus_without_pending_upd_param_to_match_upd_param_floor(
         self, wait_trigger_upd_param_extension: QProgram
     ):
-        """A bus with a pending upd_param merges it into the wait_trigger, extending its real
-        duration beyond the requested one (qpysequence's WaitTriggerUpdParam lowering); every other
-        bus in the same wait_trigger must be extended to that same floor so all buses stay in sync."""
+        """A bus with a pending upd_param flushes it with its own upd_param instruction before the
+        wait_trigger; every other bus in the same wait_trigger gets an extra 4 ns wait so all buses
+        stay in sync."""
         compiler = QbloxCompiler()
         sequences, _ = compiler.compile(qprogram=wait_trigger_upd_param_extension, ext_trigger=True)
 
@@ -1492,8 +1494,8 @@ class TestQBloxCompiler:
                             upd_param        4
 
             main:
-                            wait             100
-                            wait_trigger     15, 8
+                            wait             104
+                            wait_trigger     15, 4
                             set_mrk          0
                             upd_param        4
                             stop
@@ -4752,7 +4754,7 @@ class TestQBloxCompiler:
             main:
                 set_freq         4000000
                 upd_param        4
-                wait_trigger     1, 4
+                wait_trigger     1, 6
                 set_mrk          0
                 upd_param        4
                 stop
@@ -4775,7 +4777,7 @@ class TestQBloxCompiler:
                 set_freq         4000000
                 upd_param        4
                 wait_trigger     1, 65535
-                wait             4461
+                wait             4465
                 set_mrk          0
                 upd_param        4
                 stop
