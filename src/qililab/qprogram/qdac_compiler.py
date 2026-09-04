@@ -60,7 +60,11 @@ class QdacCompilationOutput:
     """
 
     def __init__(
-        self, qprogram: QProgram, qdacs: list[QDevilQDac2], trigger_position: str | None, dwell_us_by_bus: dict[str, int]
+        self,
+        qprogram: QProgram,
+        qdacs: list[QDevilQDac2],
+        trigger_position: str | None,
+        dwell_us_by_bus: dict[str, int],
     ):
         self.qprogram = qprogram
         self.qdacs = qdacs
@@ -425,7 +429,8 @@ class QdacCompiler:
                 return
             if not element.dwell:
                 element.dwell = self._dc_dwell
-            self._dwell_us_by_bus[element.bus] = element.dwell
+            if element.bus not in self._dwell_us_by_bus:
+                self._dwell_us_by_bus[element.bus] = element.dwell
             if not element.delay:
                 element.delay = self._dc_delay
             if not element.stepped:

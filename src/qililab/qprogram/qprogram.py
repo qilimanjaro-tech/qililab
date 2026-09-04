@@ -1316,21 +1316,21 @@ class QProgram(StructuredProgram):
             >>> # operations that shall be executed if the trigger was received
         """
         self._reject_conflicting_trigger_mode("if_trigger()", ("wait_trigger", "measure_reset"))
+        self._trigger_mode = "if_trigger"
         return QProgram._ConditionalContext(
-            program=self, expected_wait_time_ns=expected_wait_time_ns, trigger_padding_ns=trigger_padding_ns
+            program=self, trigger_padding_ns=trigger_padding_ns, expected_wait_time_ns=expected_wait_time_ns
         )
 
     class _ConditionalContext(StructuredProgram._BlockContext):
         program: "QProgram"
 
-        def __init__(self, program: "QProgram", expected_wait_time_ns: int | None, trigger_padding_ns: int | None):
+        def __init__(self, program: "QProgram", trigger_padding_ns: int | None, expected_wait_time_ns: int | None):
             self.program = program
             self.block: Conditional = Conditional(
-                expected_wait_time_ns=expected_wait_time_ns, trigger_padding_ns=trigger_padding_ns
+                trigger_padding_ns=trigger_padding_ns, expected_wait_time_ns=expected_wait_time_ns
             )
 
         def __enter__(self) -> "Conditional":
-            self.program._trigger_mode = "if_trigger"
             return super().__enter__()
 
     @overload

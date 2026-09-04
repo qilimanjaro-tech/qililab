@@ -1796,6 +1796,22 @@ class TestQBloxCompiler:
         ):
             compiler.compile(qprogram=qp, qblox_buses=["readout"])
 
+    def test_if_trigger_nested_inside_if_trigger_raises_error(self):
+        """A qp.if_trigger() block cannot nest directly inside another one either."""
+        qp = QProgram()
+        with qp.if_trigger(expected_wait_time_ns=2252):
+            with qp.if_trigger(expected_wait_time_ns=2252):
+                qp.qblox.acquire(bus="readout", weights=IQPair(I=Square(1, 100), Q=Square(0, 100)))
+
+        compiler = QbloxCompiler()
+        with pytest.raises(
+            NotImplementedError,
+            match=re.escape(
+                "Conditional block cannot be nested inside qp.if_trigger() (only qp.average(...)/qp.for_loop(...) can be)."
+            ),
+        ):
+            compiler.compile(qprogram=qp, qblox_buses=["readout"])
+
     def test_if_trigger_instruction_outside_block_on_same_bus_raises_error(self):
         qp = QProgram()
         with qp.if_trigger(expected_wait_time_ns=2252):

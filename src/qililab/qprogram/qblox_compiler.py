@@ -81,6 +81,7 @@ WAIT_TRIGGER_NETWORK_EXT_TRIGGER = 252
 # Operations carrying no duration
 NON_REALTIME_OPERATIONS = (SetFrequency, SetPhase, ResetPhase, SetGain, SetOffset, SetMarkers)
 
+
 def _trigger_address_mask(address: int) -> int:
     """``SetCond``/``Conditional`` mask bit for a trigger address (address=0 is a don't-care, no bit)."""
     return 0 if address == 0 else 2 ** (address - 1)
@@ -363,9 +364,11 @@ class QbloxCompiler:
 
         for element in leaves:
             if isinstance(element, (Play, PlayWithCalibratedWaveform)):
-                if element.bus not in dwell_us_by_bus:
+                if element.bus not in self._qblox_buses and element.bus not in dwell_us_by_bus:
                     # A falsy (unset or 0) dwell here mirrors QdacCompiler._handle_play's own default-filling
-                    # (`if not element.dwell: element.dwell = self._dc_dwell`).
+                    # (`if not element.dwell: element.dwell = self._dc_dwell`). Qblox buses are excluded here
+                    # so a plain qp.play() on the if_trigger()-gated bus itself never gets mistaken for a
+                    # QDAC-driven bus below.
                     dwell_us_by_bus[element.bus] = element.dwell or QDACCONSTANTS.DEFAULT_DWELL_US
             elif isinstance(element, SetTrigger):
                 if element.position == "step":
@@ -654,7 +657,9 @@ class QbloxCompiler:
         all_leaves = self._prepass_qprogram_tree(self._qprogram._body)
         if self._pending_conditional is not None:
             element, start, end = self._pending_conditional
-            self._validate_conditional_trigger(element, all_leaves[start:end], leaf_range=(start, end), all_leaves=all_leaves)
+            self._validate_conditional_trigger(
+                element, all_leaves[start:end], leaf_range=(start, end), all_leaves=all_leaves
+            )
         self._validate_conditional_bus_isolation(all_leaves)
 
         # Pre-processing: Set markers ON/OFF
@@ -2007,8 +2012,6 @@ class QbloxCompiler:
             )
             self._buses[element.bus].single_bin_counter += 1
 
-
-
     def _handle_conditional_trigger_prologue(self) -> None:
         """Push a qpysequence ``Conditional`` block for the bus validated by the
         ``_prepass_qprogram_tree`` pre-pass, ahead of this ``qp.if_trigger()`` block's children
@@ -2057,6 +2060,12 @@ class QbloxCompiler:
             )
 
         self._handle_wait(Wait(bus=bus, duration=padding))
+
+        # The Conditional's own set_cond costs no duration, but its trailing latch_rst -- emitted later by
+        # qpysequence's own lowering, never directly by qililab -- does (INST_MIN_WAIT); account for it here
+        # so static_duration/duration_since_sync match the bus's real elapsed time.
+        self._buses[bus].static_duration += INST_MIN_WAIT
+        self._buses[bus].duration_since_sync += INST_MIN_WAIT
 
     def _handle_conditional(self, bus: str, enable: int, address: int, operator: int, else_duration: int) -> None:
         # The conditional does not add any static duration as it is assumed that the operations contained within are the same as the else_duration of the conditional

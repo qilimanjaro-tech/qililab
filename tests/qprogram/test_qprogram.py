@@ -1161,6 +1161,38 @@ class TestQProgram(TestStructuredProgram):
         # ... second iteration of the loop
         assert isinstance(new_qp.body.elements[26], Sync)
 
+    def test_with_crosstalk_non_linear_skips_sync_after_conditional(self):
+        """Test with_crosstalk_qblox does not append the usual trailing loop Sync when a flux loop
+        iteration's last element is a qp.if_trigger() block: that Conditional already self-times its
+        own exit, and a Sync placed right after it would touch the gated bus outside the block, which
+        QbloxCompiler._validate_conditional_bus_isolation forbids."""
+        inverse_xtalk_array = np.linalg.inv([[1, 0.5], [0.5, 1]])
+        crosstalk = CrosstalkMatrix().from_array(["flux1", "flux2"], inverse_xtalk_array)
+        non_linear_crosstalk = NonLinearCrosstalkMatrix.from_linear(crosstalk)
+        non_linear_crosstalk.set_non_linear_params("flux2", "flux1", beta_c=0.8, amplitude=0.5)
+
+        square_wf = Square(amplitude=0.1, duration=50)
+        qp = QProgram()
+        offset = qp.variable(label="offset", domain=Domain.Voltage)
+        with qp.for_loop(variable=offset, start=0, stop=0.08, step=0.08):
+            qp.set_offset(bus="flux1", offset_path0=offset)
+            qp.set_gain(bus="flux2", gain=0.05)
+            qp.play(bus="flux1", waveform=square_wf)
+            qp.play(bus="flux2", waveform=square_wf)
+            with qp.if_trigger(expected_wait_time_ns=2252):
+                qp.wait(bus="readout", duration=100)
+
+        new_qp = qp.with_crosstalk_qblox(non_linear_crosstalk)
+
+        # Two iterations of 7 elements each (no Sync inserted between them): SetOffset(flux1),
+        # SetOffset(flux2), SetGain(flux1), Play(flux1), SetGain(flux2), Play(flux2), then each
+        # iteration's own Conditional.
+        assert len(new_qp.body.elements) == 14
+        assert isinstance(new_qp.body.elements[6], Conditional)
+        assert isinstance(new_qp.body.elements[7], SetOffset)
+        assert isinstance(new_qp.body.elements[13], Conditional)
+        assert new_qp.body.elements[13].expected_wait_time_ns == 2252
+
     def test_set_markers(self):
         qp = QProgram()
         qp.qblox.set_markers(bus="drive", mask="0111")
