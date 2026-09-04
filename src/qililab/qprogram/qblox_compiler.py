@@ -1226,52 +1226,26 @@ class QbloxCompiler:
             self._buses[bus].marked_for_sync = False
             self._buses[bus].duration_since_sync = 0
 
-    def _handle_add_trigger_waits(self, bus: str, duration: int, port: int) -> int:
-        """Emit wait-trigger instructions for the given bus, handling durations longer than
-        INST_MAX_WAIT and flushing any pending ``upd_param`` before the wait.
+    def _handle_add_trigger_waits(self, bus: str, duration: int, port: int) -> None:
+        """Emit a wait-trigger instruction for the given bus, handling durations longer than
+        INST_MAX_WAIT.
 
         Args:
             bus (str): Bus identifier.
             duration (int): Duration to wait in ns.
             port (int): Trigger network address to wait on.
-
-        Returns:
-            int: The duration actually emitted for this bus. Equal to `duration`, except when a
-                pending upd_param forces qpysequence's WaitTriggerUpdParam floor to extend it.
         """
-        if self._buses[bus].upd_param_instruction_pending:
-            if duration <= INST_MAX_WAIT:
-                wait_trig_upd = QPyInstructions.WaitTriggerUpdParam(trig_addr=port, duration=duration)
-                self._buses[bus].qpy_block_stack[-1].add(component=wait_trig_upd)
-                # this is needed because if 4 <= duration < 8 the duration requested will be different from the duration emitted
-                duration = wait_trig_upd.q1asm_duration
-                self._buses[bus].static_duration += duration
-                self._buses[bus].duration_since_sync += duration
-
-            else:
-                self._buses[bus].qpy_block_stack[-1].add(
-                    component=QPyInstructions.LongWaitTrigger(trig_addr=port, duration=duration, upd_param=True)
-                )
-                self._buses[bus].static_duration += duration
-                self._buses[bus].duration_since_sync += duration
-
-            self._buses[bus].upd_param_instruction_pending = False
-
-        # no instructions pending
+        if duration <= INST_MAX_WAIT:
+            self._buses[bus].qpy_block_stack[-1].add(
+                component=QPyInstructions.WaitTrigger(trigger=port, duration=duration)
+            )
         else:
-            if duration <= INST_MAX_WAIT:
-                self._buses[bus].qpy_block_stack[-1].add(
-                    component=QPyInstructions.WaitTrigger(trigger=port, duration=duration)
-                )
-            else:
-                self._buses[bus].qpy_block_stack[-1].add(
-                    component=QPyInstructions.LongWaitTrigger(trig_addr=port, duration=duration)
-                )
-            self._buses[bus].static_duration += duration
-            self._buses[bus].duration_since_sync += duration
-
+            self._buses[bus].qpy_block_stack[-1].add(
+                component=QPyInstructions.LongWaitTrigger(trig_addr=port, duration=duration)
+            )
+        self._buses[bus].static_duration += duration
+        self._buses[bus].duration_since_sync += duration
         self._buses[bus].marked_for_sync = True
-        return duration
 
     def _handle_sync(self, element: Sync, delay: bool = False) -> None:
         if element.buses and any(bus not in self._qblox_buses for bus in element.buses):
