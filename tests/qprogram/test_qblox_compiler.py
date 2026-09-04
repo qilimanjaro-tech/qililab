@@ -1841,6 +1841,68 @@ class TestQBloxCompiler:
         ):
             compiler.compile(qprogram=qp, qblox_buses=["readout"])
 
+    def test_if_trigger_qdac_settrigger_wrong_position_raises_error(self):
+        qp = QProgram()
+        qp.qdac.play(bus="qdac_flux", waveform=Square(1, 100), dwell=3)
+        qp.set_trigger(bus="qdac_flux", duration=100, position="start")
+        with qp.if_trigger():
+            with qp.average(shots=10):
+                qp.qblox.acquire(bus="readout", weights=IQPair(I=Square(1, 100), Q=Square(0, 100)))
+
+        compiler = QbloxCompiler()
+        with pytest.raises(
+            NotImplementedError,
+            match=re.escape(
+                "qp.if_trigger() requires qp.set_trigger(bus='qdac_flux', position='step'); got position='start'."
+            ),
+        ):
+            compiler.compile(qprogram=qp, qblox_buses=["readout"])
+
+    def test_if_trigger_no_qblox_bus_raises_error(self):
+        qp = QProgram()
+        with qp.if_trigger(expected_wait_time_ns=2252):
+            qp.qdac.play(bus="qdac_flux", waveform=Square(1, 100), dwell=3)
+
+        compiler = QbloxCompiler()
+        with pytest.raises(
+            ValueError,
+            match=re.escape("qp.if_trigger()'s body must contain at least one instruction on a qblox bus to gate."),
+        ):
+            compiler.compile(qprogram=qp, qblox_buses=["readout"])
+
+    def test_if_trigger_padding_too_small_raises_error(self):
+        qp = QProgram()
+        with qp.if_trigger(trigger_padding_ns=100, expected_wait_time_ns=2252):
+            with qp.average(shots=10):
+                qp.qblox.acquire(bus="readout", weights=IQPair(I=Square(1, 100), Q=Square(0, 100)))
+
+        compiler = QbloxCompiler()
+        with pytest.raises(
+            ValueError,
+            match=re.escape(
+                "qp.if_trigger()'s trigger_padding_ns (100) cannot be lower than 252 ns, the trigger "
+                "network's propagation delay."
+            ),
+        ):
+            compiler.compile(qprogram=qp, qblox_buses=["readout"])
+
+    def test_if_trigger_sync_outside_block_on_same_bus_raises_error(self):
+        qp = QProgram()
+        with qp.if_trigger(expected_wait_time_ns=2252):
+            with qp.average(shots=10):
+                qp.qblox.acquire(bus="readout", weights=IQPair(I=Square(1, 100), Q=Square(0, 100)))
+        qp.sync(["readout"])
+
+        compiler = QbloxCompiler()
+        with pytest.raises(
+            NotImplementedError,
+            match=re.escape(
+                "Bus 'readout' cannot have instructions outside its qp.if_trigger() block: found Sync "
+                "outside the conditional, which would break the syncronisation."
+            ),
+        ):
+            compiler.compile(qprogram=qp, qblox_buses=["readout"])
+
     def test_block_handlers(self, measurement_blocked_operation: QProgram, calibration: Calibration):
         drag_wf = IQDrag(amplitude=1.0, duration=100, num_sigmas=5, drag_coefficient=1.5)
         readout_pair = IQPair(I=Square(amplitude=1.0, duration=1000), Q=Square(amplitude=0.0, duration=1000))

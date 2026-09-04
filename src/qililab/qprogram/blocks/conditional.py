@@ -20,6 +20,7 @@ from qililab.yaml import yaml
 class Conditional(Block):
     """Block whose elements only execute if the external trigger was received in time, e.g. ``qp.if_trigger()``."""
 
-    def __init__(self, expected_wait_time_ns: int | None = None) -> None:
+    def __init__(self, expected_wait_time_ns: int | None = None, trigger_padding_ns: int | None = None) -> None:
         super().__init__()
         self.expected_wait_time_ns = expected_wait_time_ns
+        self.trigger_padding_ns = trigger_padding_ns

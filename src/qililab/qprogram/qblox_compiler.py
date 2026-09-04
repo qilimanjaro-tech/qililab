@@ -16,7 +16,7 @@ import math
 from collections import deque
 from copy import deepcopy
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Callable, cast
+from typing import TYPE_CHECKING, Callable
 
 if TYPE_CHECKING:
     from uuid import UUID
@@ -75,12 +75,10 @@ DISABLE_CONDITIONAL = 0
 
 # time required by qblox trigger network to send a trigger; 400ns is conservative - the official guideline is 388ns between 2 modules
 WAIT_TRIGGER_NETWORK_INTERMODULES = 400
+# Default and minimum for qp.if_trigger()'s trigger_padding_ns.
 WAIT_TRIGGER_NETWORK_EXT_TRIGGER = 252
 
-# Config-only operations: their handlers only set `upd_param_instruction_pending`, never `marked_for_sync`
-# or `static_duration`/`duration_since_sync` (see e.g. `_handle_set_frequency`, `_handle_set_offset`) -- they
-# carry no real-time duration in the compiler's own bookkeeping, so qp.if_trigger()'s bus-isolation check
-# (`_validate_conditional_bus_isolation`) doesn't count them as breaking the trigger cadence.
+# Operations carrying no duration
 NON_REALTIME_OPERATIONS = (SetFrequency, SetPhase, ResetPhase, SetGain, SetOffset, SetMarkers)
 
 def _trigger_address_mask(address: int) -> int:
@@ -173,6 +171,11 @@ class BusCompilationInfo:
         # Expected time (ns) for an external trigger to arrive, used by `qp.if_trigger()`. Populated by
         # _validate_conditional_trigger() during the pre-pass, before traverse() compiles the block's body.
         self.expected_trigger_wait_time: int | None = None
+
+        # Padding (ns) inserted before checking the trigger used by `qp.if_trigger()`. Populated by _validate_conditional_trigger()
+        # during the pre-pass, before traverse() compiles the block's body -- defaults to the safe minimum so a
+        # read before that pass runs, on a bus that never uses qp.if_trigger(), still gets a valid duration.
+        self.trigger_padding_ns: int = WAIT_TRIGGER_NETWORK_EXT_TRIGGER
 
         # Delay. Defaults 0 delay and is updated if delays parameter is provided within the runcard.
         self.delay = 0
@@ -274,7 +277,7 @@ class QbloxCompiler:
         self._qdac_dwell_us_by_bus: dict[str, int]
         self._crosstalk: CrosstalkMatrix | None = None
         self._acquisition_metadata: dict[str, dict[UUID, tuple[int, int]]] = {}
-        self._conditional_bus: str | None = None
+        self._conditional_bus: str = ""
         self._conditional_leaf_range: tuple[int, int] = (0, 0)
         self._pending_conditional: tuple[Conditional, int, int] | None = None
         self._single_channel: list[str] = []
@@ -453,9 +456,18 @@ class QbloxCompiler:
                 "set_trigger(position='step') + play(dwell=...) in this QProgram to derive it from."
             )
 
+        if element.trigger_padding_ns is not None and element.trigger_padding_ns < WAIT_TRIGGER_NETWORK_EXT_TRIGGER:
+            raise ValueError(
+                f"qp.if_trigger()'s trigger_padding_ns ({element.trigger_padding_ns}) cannot be lower than "
+                f"{WAIT_TRIGGER_NETWORK_EXT_TRIGGER} ns, the trigger network's propagation delay."
+            )
+
         self._conditional_bus = bus
         self._conditional_leaf_range = leaf_range
         self._buses[bus].expected_trigger_wait_time = expected_wait_time_ns
+        self._buses[bus].trigger_padding_ns = (
+            element.trigger_padding_ns if element.trigger_padding_ns is not None else WAIT_TRIGGER_NETWORK_EXT_TRIGGER
+        )
 
     def _validate_conditional_bus_isolation(self, all_leaves: list) -> None:
         """Ensure the conditional bus has no real-time instructions outside its ``qp.if_trigger()`` block.
@@ -561,7 +573,7 @@ class QbloxCompiler:
                     # Parallel, Loop) push onto every bus via `appended`.
                     if isinstance(element, Conditional):
                         self._handle_conditional_trigger_prologue()
-                        pushed_buses = [cast("str", self._conditional_bus)]
+                        pushed_buses = [self._conditional_bus]
                     else:
                         pushed_buses = list(self._buses) if appended else []
 
@@ -623,7 +635,7 @@ class QbloxCompiler:
         self._ext_trigger = ext_trigger
         self._single_channel = single_channel if single_channel is not None else []
         self._acquisition_metadata = {}
-        self._conditional_bus = None
+        self._conditional_bus = ""
         self._conditional_leaf_range = (0, 0)
 
         # Pre-processing: Update time of flight
@@ -1516,15 +1528,12 @@ class QbloxCompiler:
                 self._buses[bus].qpy_block_stack[-1].add(component=QPyInstructions.LongWait(duration=duration))
 
         # Sync all other buses with WaitSync
-        if len(self._buses) > 1:
-            for sync_bus in self._buses:
-                self._buses[sync_bus].qpy_block_stack[-1].add(component=QPyInstructions.WaitSync(duration=4))
-                # After wait sync reset static duration
-                self._buses[sync_bus].marked_for_sync = False
-                self._buses[sync_bus].static_duration = 0
+        for sync_bus in self._buses:
+            self._buses[sync_bus].qpy_block_stack[-1].add(component=QPyInstructions.WaitSync(duration=4))
 
-        else:
-            self._buses[bus].marked_for_sync = True
+            # After wait sync reset static duration
+            self._buses[sync_bus].marked_for_sync = False
+            self._buses[sync_bus].static_duration = 0
 
     def _handle_sync(self, element: Sync, delay: bool = False) -> None:
         if element.buses and any(bus not in self._qblox_buses for bus in element.buses):
@@ -2007,8 +2016,9 @@ class QbloxCompiler:
         sequence at qpysequence-compile time, self-timed so the "trigger missed" branch takes exactly
         as long as the "trigger received" branch -- see ``qpysequence.program.Conditional``.
         """
-        bus = cast("str", self._conditional_bus)
-        trigger_network_wait = Wait(bus=bus, duration=WAIT_TRIGGER_NETWORK_EXT_TRIGGER)
+        bus = self._conditional_bus
+        trigger_padding_ns = self._buses[bus].trigger_padding_ns
+        trigger_network_wait = Wait(bus=bus, duration=trigger_padding_ns)
         self._handle_wait(trigger_network_wait)
 
         mask = _trigger_address_mask(EXT_TRIGGER_ADDRESS)
@@ -2026,22 +2036,19 @@ class QbloxCompiler:
         -- the padding below only needs to account for the (deterministic) total duration of the
         ``Conditional`` block itself, not for which branch actually ran.
         """
-        bus = cast("str", self._conditional_bus)
+        bus = self._conditional_bus
         # cond_block was already added to its parent in the prologue, while still empty, and has been
         # populated in place by reference during traversal since -- it must not be added again here.
         cond_block = self._buses[bus].qpy_block_stack.pop()
 
         expected_trigger_wait_time = self._buses[bus].expected_trigger_wait_time
-        if expected_trigger_wait_time is None:
-            raise RuntimeError(
-                "expected_trigger_wait_time was not populated by _validate_conditional_trigger before traverse() ran."
-            )
+        trigger_padding_ns = self._buses[bus].trigger_padding_ns
 
         # cond_block.q1asm_duration is the block's guaranteed total real-time duration once lowered,
         # identical on both branches, straight from qpysequence (already correctly scaled for any
         # nested Average/ForLoop's iterations, and already accounting for the multi-instruction
         # expansion's own gated-padding and trailing latch_rst overhead).
-        elapsed = WAIT_TRIGGER_NETWORK_EXT_TRIGGER + cond_block.q1asm_duration
+        elapsed = trigger_padding_ns + cond_block.q1asm_duration
         padding = expected_trigger_wait_time - elapsed
         if padding < INST_MIN_WAIT:
             raise ValueError(

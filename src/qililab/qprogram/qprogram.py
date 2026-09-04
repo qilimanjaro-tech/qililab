@@ -1282,7 +1282,7 @@ class QProgram(StructuredProgram):
         self._active_block.append(operation)
         self._buses.add(bus)
 
-    def if_trigger(self, expected_wait_time_ns: int | None = None):
+    def if_trigger(self, trigger_padding_ns: int | None = None, expected_wait_time_ns: int | None = None):
         """Define a block that only executes if the external trigger was received in time.
 
         Guards a block so it only runs if the external trigger the bus is waiting on arrived in time;
@@ -1292,6 +1292,10 @@ class QProgram(StructuredProgram):
         Blocks need to open a scope.
 
         Args:
+            trigger_padding_ns (int | None, optional): Extra wait, in ns, inserted before checking the
+                trigger, to cover the propagation delay of the trigger network between the module sending
+                it and the module gated by ``qp.if_trigger()``. Defaults to, and cannot be set lower than,
+                the trigger network's own propagation delay.
             expected_wait_time_ns (int | None, optional): How long to wait for the trigger, in ns. If not
                 given, it is derived from the QDAC bus driving the trigger in this QProgram (its ``dwell``,
                 when ``qp.set_trigger(..., position="step")`` is used). Compiling raises if neither an
@@ -1303,6 +1307,8 @@ class QProgram(StructuredProgram):
         Raises:
             NotImplementedError: If ``qp.wait_trigger`` or ``qp.qblox.measure_reset`` is also used in this
                 QProgram.
+            ValueError: If ``trigger_padding_ns`` is given and is lower than the trigger network's own
+                propagation delay.
 
         Examples:
 
@@ -1310,14 +1316,18 @@ class QProgram(StructuredProgram):
             >>> # operations that shall be executed if the trigger was received
         """
         self._reject_conflicting_trigger_mode("if_trigger()", ("wait_trigger", "measure_reset"))
-        return QProgram._ConditionalContext(program=self, expected_wait_time_ns=expected_wait_time_ns)
+        return QProgram._ConditionalContext(
+            program=self, expected_wait_time_ns=expected_wait_time_ns, trigger_padding_ns=trigger_padding_ns
+        )
 
     class _ConditionalContext(StructuredProgram._BlockContext):
         program: "QProgram"
 
-        def __init__(self, program: "QProgram", expected_wait_time_ns: int | None):
+        def __init__(self, program: "QProgram", expected_wait_time_ns: int | None, trigger_padding_ns: int | None):
             self.program = program
-            self.block: Conditional = Conditional(expected_wait_time_ns=expected_wait_time_ns)
+            self.block: Conditional = Conditional(
+                expected_wait_time_ns=expected_wait_time_ns, trigger_padding_ns=trigger_padding_ns
+            )
 
         def __enter__(self) -> "Conditional":
             self.program._trigger_mode = "if_trigger"
