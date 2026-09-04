@@ -1205,24 +1205,21 @@ class QbloxCompiler:
         if not self._ext_trigger:
             raise AttributeError("External trigger has not been set as True inside runcard's instrument controllers.")
 
+        # Flush any pending upd_param before the sync, so every bus reaches the trigger aligned and
+        # waits on it with the same plain wait_trigger.
+        for bus in self._buses:
+            if self._buses[bus].upd_param_instruction_pending:
+                self._buses[bus].qpy_block_stack[-1].add(component=QPyInstructions.UpdParam(duration=INST_MIN_WAIT))
+                self._buses[bus].static_duration += INST_MIN_WAIT
+                self._buses[bus].duration_since_sync += INST_MIN_WAIT
+                self._buses[bus].upd_param_instruction_pending = False
+                self._buses[bus].marked_for_sync = True
+
         self._handle_sync(element=Sync(buses=None), delay=True)
 
         port = element.port if element.port else EXT_TRIGGER_ADDRESS
-        buses = list(self._buses)
-
-        # A bus with a pending upd_param may have its requested duration extended by qpysequence's
-        # own WaitTriggerUpdParam floor. Emit that bus first and reuse the
-        # actual duration it really emitted for every other bus, so they all stay synced on however
-        # long qpysequence ends up waiting .
-        pending_bus = next((bus for bus in buses if self._buses[bus].upd_param_instruction_pending), None)
-        if pending_bus is not None:
-            duration = self._handle_add_trigger_waits(bus=pending_bus, duration=element.duration, port=port)
-            buses.remove(pending_bus)
-        else:
-            duration = element.duration
-
-        for bus in buses:
-            self._handle_add_trigger_waits(bus=bus, duration=duration, port=port)
+        for bus in self._buses:
+            self._handle_add_trigger_waits(bus=bus, duration=element.duration, port=port)
 
         # All buses received an identical duration above, so they remain balanced; just clear sync bookkeeping.
         for bus in self._buses:
