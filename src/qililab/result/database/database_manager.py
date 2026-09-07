@@ -300,6 +300,21 @@ class DatabaseManager:
 
             return measurement_by_id
 
+    def add_calibration_fitting(
+        self, id: int, path: str, parameters: dict[str, Any] | None = None
+    ) -> AutocalMeasurement:
+        """Store fitting information into the autocalibration measurements database, loaded by its measurement_id.
+
+        Args:
+            id (int): measurement_id value given by the database.
+            path (str): Path to the fitting results file.
+            parameters (dict[str, Any] | None, optional): Fitting parameters. Defaults to None.
+        """
+        measurement = self.load_calibration_by_id(id)
+        if measurement is None:
+            raise IndexError(f"Autocalibration measurement entry '{id}' does not exist.")
+        return measurement.add_fitting(self, path, parameters)
+
     def load_experiment_by_id(self, id: int) -> QaaS_Experiment | None:
         """Load QaaS measurement by its measurement_id.
 
