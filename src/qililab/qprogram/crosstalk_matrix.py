@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Final, Mapping
+from typing import Final, Mapping, cast
 
 import numpy as np
 from scipy.special import jv
@@ -21,6 +21,60 @@ from qililab.utils import Sentinel, Unset, sort_buses
 from qililab.yaml import yaml
 
 _UNSET: Final = Sentinel.UNSET
+
+# Magnetic flux quantum, Φ₀ = h / (2e), in webers.
+PHI_0_WB: Final = 2.067833848e-15
+
+
+def _rescale_by_resistance(
+    matrix: dict[str, dict[str, float]], flux_line_resistances_ohms: dict[str, float], *, invert: bool
+) -> dict[str, dict[str, float]]:
+    converted_matrix: dict[str, dict[str, float]] = {}
+    for row_label, cols in matrix.items():
+        converted_matrix[row_label] = {}
+        for col_label, value in cols.items():
+            resistance = flux_line_resistances_ohms.get(col_label)
+            if resistance is None:
+                raise ValueError(f"Missing resistance for line '{col_label}'")
+            factor = PHI_0_WB * resistance * 1e12
+            converted_matrix[row_label][col_label] = value / factor if invert else value * factor
+    return converted_matrix
+
+
+def convert_phi0_per_volt_to_pH(
+    matrix: dict[str, dict[str, float]], flux_line_resistances_ohms: dict[str, float]
+) -> dict[str, dict[str, float]]:
+    """Convert a crosstalk matrix from units of Φ₀/V to pH, using the provided line resistances.
+
+    Args:
+        matrix (dict): Nested dict ``{row_label: {col_label: value_in_phi0_per_volt}}``.
+        flux_line_resistances_ohms (dict): Line resistances in ohms ``{line_label: resistance}``.
+
+    Returns:
+        dict: Nested dict with the same structure as ``matrix``, values converted to pH.
+
+    Raises:
+        ValueError: If a drive line involved lacks a resistance.
+    """
+    return _rescale_by_resistance(matrix, flux_line_resistances_ohms, invert=False)
+
+
+def convert_pH_to_phi0_per_volt(
+    matrix: dict[str, dict[str, float]], flux_line_resistances_ohms: dict[str, float]
+) -> dict[str, dict[str, float]]:
+    """Convert a crosstalk matrix from units of pH to Φ₀/V, using the provided line resistances.
+
+    Args:
+        matrix (dict): Nested dict ``{row_label: {col_label: value_in_pH}}``.
+        flux_line_resistances_ohms (dict): Line resistances in ohms ``{line_label: resistance}``.
+
+    Returns:
+        dict: Nested dict with the same structure as ``matrix``, values converted to Φ₀/V.
+
+    Raises:
+        ValueError: If a drive line involved lacks a resistance.
+    """
+    return _rescale_by_resistance(matrix, flux_line_resistances_ohms, invert=True)
 
 
 @yaml.register_class
@@ -152,12 +206,31 @@ class CrosstalkMatrix:
         for bus in resistances:
             self.resistances[bus] = resistances[bus]
 
+    def in_phi0_per_volt(self) -> "CrosstalkMatrix":
+        """Return an equivalent crosstalk matrix with values expressed in Φ₀/V.
+        The matrix is stored in pH (mutual inductance, resistance-independent), but the
+        linear inversion that turns target fluxes into hardware bias *voltages* operates
+        in Φ₀/V (the slope of flux vs. applied voltage).
+
+        Returns:
+            CrosstalkMatrix: Equivalent matrix expressed in Φ₀/V.
+
+        Raises:
+            ValueError: If any drive line involved lacks a resistance.
+        """
+        instance = CrosstalkMatrix()
+        instance.matrix = convert_pH_to_phi0_per_volt(self.matrix, cast("dict[str, float]", self.resistances))
+        instance.flux_offsets = dict(self.flux_offsets)
+        instance.resistances = dict(self.resistances)
+        return instance
+
     def flux_to_bias(self, flux: Mapping[str, float | np.ndarray]) -> dict[str, float | np.ndarray]:
         """Converts target flux values to hardware bias values using linear inversion.
 
-        Applies the inverse of the crosstalk matrix to the flux vector, accounting for
-        flux offsets. Both scalar and array inputs are supported — array inputs are
-        processed element-wise, enabling sweep-based use cases.
+        The matrix is stored in pH, so it is first converted to Φ₀/V using the per-line
+        resistances (see :meth:`in_phi0_per_volt`) and the inverse of that is applied to the
+        flux vector, accounting for flux offsets. Both scalar and array inputs are supported,
+        array inputs are processed element-wise, enabling sweep-based use cases.
 
         Args:
             flux (dict[str, float | np.ndarray]): Target flux values keyed by bus name.
@@ -165,9 +238,12 @@ class CrosstalkMatrix:
 
         Returns:
             dict[str, float | np.ndarray]: Hardware bias values keyed by bus name.
+
+        Raises:
+            ValueError: If any drive line involved lacks a resistance.
         """
         sorted_buses = sort_buses(self.matrix.keys())
-        inverse = self.inverse()
+        inverse = self.in_phi0_per_volt().inverse()
         inverse.flux_offsets = self.flux_offsets
 
         bias = {}
@@ -441,7 +517,8 @@ class NonLinearCrosstalkMatrix(CrosstalkMatrix):
         """Converts target flux values to hardware bias values, including nonlinear corrections.
 
         First computes the nonlinear flux corrections via the Bessel-series expansion and
-        adds them to the target flux values, then applies the linear matrix inversion to
+        adds them to the target flux values, then inverts the linear matrix — converted from
+        the stored pH to Φ₀/V with the per-line resistances (see :meth:`in_phi0_per_volt`) — to
         obtain the final hardware bias values. Both scalar and array inputs are supported.
 
         Args:
@@ -451,6 +528,9 @@ class NonLinearCrosstalkMatrix(CrosstalkMatrix):
         Returns:
             dict[str, float | np.ndarray]: Hardware bias values keyed by bus name,
                 including nonlinear corrections.
+
+        Raises:
+            ValueError: If any drive line involved lacks a resistance.
         """
         sorted_buses = sort_buses(self.matrix.keys())
 
@@ -473,7 +553,7 @@ class NonLinearCrosstalkMatrix(CrosstalkMatrix):
             )
         offsets = np.array([self.flux_offsets.get(bus, 0.0) for bus in sorted_buses])
 
-        inverse_matrix = self.inverse().to_array()
+        inverse_matrix = self.in_phi0_per_volt().inverse().to_array()
         corr_m_off = corrected_flux.T - offsets
         bias_array = inverse_matrix @ corr_m_off.T
 

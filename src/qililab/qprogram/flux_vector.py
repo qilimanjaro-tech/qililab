@@ -132,11 +132,13 @@ class FluxVector:
         if not self.bias_vector:
             self.bias_vector = self.flux_vector.copy()
 
-        for bus_1 in self.crosstalk.matrix.keys():
+        # The matrix is stored in pH, so convert with the per-line resistances before applying it.
+        phi0 = self.crosstalk.in_phi0_per_volt()
+        for bus_1 in phi0.matrix.keys():
             self.flux_vector[bus_1] = (
                 sum(
-                    (self.bias_vector[bus_2] * self.crosstalk.matrix[bus_1][bus_2])  # type: ignore
-                    for bus_2 in self.crosstalk.matrix[bus_1].keys()
+                    (self.bias_vector[bus_2] * phi0.matrix[bus_1][bus_2])  # type: ignore
+                    for bus_2 in phi0.matrix[bus_1].keys()
                 )
                 + self.crosstalk.flux_offsets[bus_1]
             )
@@ -574,11 +576,13 @@ class NonLinearFluxVector:
         """
         self.set_crosstalk(crosstalk)
         crosstalk = cast("CrosstalkMatrix", self.crosstalk)
-        for bus_1 in crosstalk.matrix.keys():
+        # The matrix is stored in pH, so convert with the per-line resistances before applying it.
+        phi0 = crosstalk.in_phi0_per_volt()
+        for bus_1 in phi0.matrix.keys():
             self.offset[bus_1] = (
                 sum(
-                    (bias_vector[bus_2] * crosstalk.matrix[bus_1][bus_2])  # type: ignore
-                    for bus_2 in crosstalk.matrix[bus_1].keys()
+                    (bias_vector[bus_2] * phi0.matrix[bus_1][bus_2])  # type: ignore
+                    for bus_2 in phi0.matrix[bus_1].keys()
                 )
                 + crosstalk.flux_offsets[bus_1]
             )
