@@ -11,7 +11,10 @@ from qililab.qprogram import Calibration, QdacCompiler, QProgram
 from qililab.qprogram.blocks import Block
 from qililab.qprogram.blocks.for_loop import ForLoop
 from qililab.qprogram.blocks.loop import Loop
-from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix, NonLinearCrosstalkMatrix
+from qililab.qprogram.crosstalk_matrix import PHI_0_WB, CrosstalkMatrix, NonLinearCrosstalkMatrix
+
+# Resistance for which the pH → Φ₀/V conversion factor (Φ₀ · R · 1e12) is exactly 1.0.
+_UNIT_RESISTANCE = 1.0 / (PHI_0_WB * 1e12)
 from qililab.qprogram.operations import Play
 from qililab.qprogram.qdac_compiler import QdacCompilationOutput
 from qililab.core.variables import Domain
@@ -423,6 +426,7 @@ class TestQdacCompiler:
         crosstalk = CrosstalkMatrix.from_buses(
             buses={"flux1": {"flux1": 1.0, "flux2": 0.5}, "flux2": {"flux1": 0.1, "flux2": 1.0}}
         )
+        crosstalk.set_resistances({"flux1": _UNIT_RESISTANCE, "flux2": _UNIT_RESISTANCE})
         flux_wf = Arbitrary(samples=np.array([0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.4, 0.3, 0.2, 0.1, 0]))
         qp = QProgram()
 
@@ -453,6 +457,7 @@ class TestQdacCompiler:
         crosstalk = CrosstalkMatrix.from_buses(
             buses={"flux1": {"flux1": 1.0, "flux2": 0.5}, "flux2": {"flux1": 0.1, "flux2": 1.0}}
         )
+        crosstalk.set_resistances({"flux1": _UNIT_RESISTANCE, "flux2": _UNIT_RESISTANCE})
         qp = QProgram()
 
         freq = qp.variable(label="frequency", domain=Domain.Frequency)
@@ -480,6 +485,7 @@ class TestQdacCompiler:
         crosstalk = CrosstalkMatrix.from_buses(
             buses={"flux1": {"flux1": 1.0, "flux2": 0.5}, "flux2": {"flux1": 0.1, "flux2": 1.0}}
         )
+        crosstalk.set_resistances({"flux1": _UNIT_RESISTANCE, "flux2": _UNIT_RESISTANCE})
         calibration = Calibration()
         calibration.crosstalk_matrix = crosstalk
 
@@ -537,6 +543,7 @@ class TestQdacCompiler:
         crosstalk = CrosstalkMatrix.from_buses(
             buses={"flux1": {"flux1": 1.0, "flux2": 0.5}, "flux2": {"flux1": 0.1, "flux2": 1.0}}
         )
+        crosstalk.set_resistances({"flux1": _UNIT_RESISTANCE, "flux2": _UNIT_RESISTANCE})
         flux_wf = IQPair(
             Arbitrary(samples=np.array([0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.4, 0.3, 0.2, 0.1, 0])),
             Arbitrary(samples=np.array([0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.4, 0.3, 0.2, 0.1, 0])),
@@ -569,6 +576,7 @@ class TestQdacCompiler:
         play equals the forward flux_to_bias of its true target — the nonlinear correction applied
         exactly once. ``flux2`` is parked ONLY via target_fluxes (no operation in the program)."""
         crosstalk = CrosstalkMatrix.from_array(["flux1", "flux2"], np.linalg.inv([[1, 0.5], [0.5, 1]]))
+        crosstalk.set_resistances({"flux1": _UNIT_RESISTANCE, "flux2": _UNIT_RESISTANCE})
         nonlinear = NonLinearCrosstalkMatrix.from_linear(crosstalk)
         nonlinear.set_non_linear_params("flux2", "flux1", junction_asym=0.2)
 
@@ -601,6 +609,7 @@ class TestQdacCompiler:
         """When no target flux is given, the compiler recovers the parked flux from the hardware
         bias voltage (qdac_offsets) via the linear inversion (original behaviour)."""
         crosstalk = CrosstalkMatrix.from_array(["flux1", "flux2"], np.linalg.inv([[1, 0.5], [0.5, 1]]))
+        crosstalk.set_resistances({"flux1": _UNIT_RESISTANCE, "flux2": _UNIT_RESISTANCE})
         # flux2 parked at 0.1 -> its bias voltage; qdac_offsets is ordered like qdac_buses [flux1, flux2]
         bias = crosstalk.flux_to_bias({"flux1": 0.0, "flux2": 0.1})
         qdac_offsets = [float(bias["flux1"]), float(bias["flux2"])]
@@ -632,6 +641,7 @@ class TestQdacCompiler:
         crosstalk = CrosstalkMatrix.from_buses(
             buses={"flux1": {"flux1": 1.0, "flux2": 0.5}, "flux2": {"flux1": 0.1, "flux2": 1.0}}
         )
+        crosstalk.set_resistances({"flux1": _UNIT_RESISTANCE, "flux2": _UNIT_RESISTANCE})
         flux_wf = Arbitrary(samples=np.array([0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.4, 0.3, 0.2, 0.1, 0]))
         flux_wf_wrong = Arbitrary(samples=np.array([0.1, 0]))
         qp = QProgram()
@@ -991,6 +1001,7 @@ class TestQdacCompiler:
         crosstalk = CrosstalkMatrix.from_buses(
             buses={"flux1": {"flux1": 1.0, "flux2": 0.5}, "flux2": {"flux1": 0.1, "flux2": 1.0}}
         )
+        crosstalk.set_resistances({"flux1": _UNIT_RESISTANCE, "flux2": _UNIT_RESISTANCE})
 
         # Setting external trigger at the beginning of the iteration
         qp = QProgram()

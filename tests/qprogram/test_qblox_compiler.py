@@ -2,7 +2,7 @@ import re
 from unittest.mock import MagicMock, patch
 
 import numpy as np
-from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix, NonLinearCrosstalkMatrix
+from qililab.qprogram.crosstalk_matrix import PHI_0_WB, CrosstalkMatrix, NonLinearCrosstalkMatrix
 from qililab.pulse_distortion import ExponentialCorrection
 from qililab.waveforms.arbitrary import Arbitrary
 import pytest
@@ -14,6 +14,16 @@ from qililab.qprogram.blocks import ForLoop
 from qililab.qprogram import QbloxCompiler
 from tests.test_utils import is_q1asm_equal
 import logging
+
+# Resistance for which the pH → Φ₀/V conversion factor (Φ₀ · R · 1e12) is exactly 1.0.
+_UNIT_RESISTANCE = 1.0 / (PHI_0_WB * 1e12)
+
+
+def _crosstalk_ph(array):
+    """CrosstalkMatrix over the flux1/flux2 buses with unit resistances (see ``_UNIT_RESISTANCE``)."""
+    matrix = CrosstalkMatrix.from_array(buses=["flux1", "flux2"], matrix_array=array)
+    matrix.set_resistances({"flux1": _UNIT_RESISTANCE, "flux2": _UNIT_RESISTANCE})
+    return matrix
 
 
 def setup_q1asm(marker: str):
@@ -1017,7 +1027,7 @@ def variable_expression_two_gains() -> QProgram:
 @pytest.fixture(name="calibration_crosstalk")
 def fixture_calibration_crosstalk() -> Calibration:
     inverse_xtalk_array = np.linalg.inv([[1, 0.5], [0.5, 1]])
-    crosstalk = CrosstalkMatrix().from_array(["flux1", "flux2"], inverse_xtalk_array)
+    crosstalk = _crosstalk_ph(inverse_xtalk_array)
 
     calibration_crosstalk = Calibration()
     calibration_crosstalk.crosstalk_matrix = crosstalk
@@ -5093,7 +5103,7 @@ class TestQBloxCompiler:
     def test_crosstalk_compensation(self, crosstalk_qprogram: QProgram):
 
         inverse_xtalk_array = np.linalg.inv([[1, 0.5], [0.5, 1]])
-        crosstalk = CrosstalkMatrix().from_array(["flux1", "flux2"], inverse_xtalk_array)
+        crosstalk = _crosstalk_ph(inverse_xtalk_array)
 
         compiler = QbloxCompiler()
         sequences, _ = compiler.compile(qprogram=crosstalk_qprogram, crosstalk=crosstalk)
@@ -5201,7 +5211,7 @@ class TestQBloxCompiler:
     def test_non_linear_crosstalk_compensation(self, non_linear_crosstalk_qprogram: QProgram):
 
         inverse_xtalk_array = np.linalg.inv([[1, 0.5], [0.5, 1]])
-        crosstalk = CrosstalkMatrix().from_array(["flux1", "flux2"], inverse_xtalk_array)
+        crosstalk = _crosstalk_ph(inverse_xtalk_array)
         non_linear_crosstalk = NonLinearCrosstalkMatrix.from_linear(crosstalk)
         non_linear_crosstalk.set_non_linear_params("flux2", "flux1", beta_c=0.8, amplitude=0.5)
 
@@ -5297,7 +5307,7 @@ class TestQBloxCompiler:
     ):
 
         inverse_xtalk_array = np.linalg.inv([[1, 0.5], [0.5, 1]])
-        crosstalk = CrosstalkMatrix().from_array(["flux1", "flux2"], inverse_xtalk_array)
+        crosstalk = _crosstalk_ph(inverse_xtalk_array)
         non_linear_crosstalk = NonLinearCrosstalkMatrix.from_linear(crosstalk)
         non_linear_crosstalk.set_non_linear_params("flux2", "flux1", beta_c=0.8, amplitude=0.5)
 
@@ -5437,7 +5447,7 @@ class TestQBloxCompiler:
     def test_non_linear_crosstalk_compensation_gain(self, non_linear_crosstalk_qprogram_gain: QProgram):
 
         inverse_xtalk_array = np.linalg.inv([[1, 0.5], [0.5, 1]])
-        crosstalk = CrosstalkMatrix().from_array(["flux1", "flux2"], inverse_xtalk_array)
+        crosstalk = _crosstalk_ph(inverse_xtalk_array)
         non_linear_crosstalk = NonLinearCrosstalkMatrix.from_linear(crosstalk)
         non_linear_crosstalk.set_non_linear_params("flux2", "flux1", beta_c=0.8, amplitude=0.5)
 
@@ -5531,7 +5541,7 @@ class TestQBloxCompiler:
     def test_non_linear_crosstalk_compensation_parallel(self, non_linear_crosstalk_qprogram_parallel: QProgram):
 
         inverse_xtalk_array = np.linalg.inv([[1, 0.5], [0.5, 1]])
-        crosstalk = CrosstalkMatrix().from_array(["flux1", "flux2"], inverse_xtalk_array)
+        crosstalk = _crosstalk_ph(inverse_xtalk_array)
         non_linear_crosstalk = NonLinearCrosstalkMatrix.from_linear(crosstalk)
         non_linear_crosstalk.set_non_linear_params("flux2", "flux1", beta_c=0.8, amplitude=0.5)
 
@@ -5592,7 +5602,7 @@ class TestQBloxCompiler:
     ):
 
         inverse_xtalk_array = np.linalg.inv([[1, 0.5], [0.5, 1]])
-        crosstalk = CrosstalkMatrix().from_array(["flux1", "flux2"], inverse_xtalk_array)
+        crosstalk = _crosstalk_ph(inverse_xtalk_array)
         non_linear_crosstalk = NonLinearCrosstalkMatrix.from_linear(crosstalk)
         non_linear_crosstalk.set_non_linear_params("flux2", "flux1", beta_c=0.8, amplitude=0.5)
 
@@ -5659,7 +5669,7 @@ class TestQBloxCompiler:
     ):
 
         inverse_xtalk_array = np.linalg.inv([[1, 0.5], [0.5, 1]])
-        crosstalk = CrosstalkMatrix().from_array(["flux1", "flux2"], inverse_xtalk_array)
+        crosstalk = _crosstalk_ph(inverse_xtalk_array)
         non_linear_crosstalk = NonLinearCrosstalkMatrix.from_linear(crosstalk)
         non_linear_crosstalk.set_non_linear_params("flux2", "flux1", beta_c=0.8, amplitude=0.5)
 
@@ -5724,7 +5734,7 @@ class TestQBloxCompiler:
     def test_crosstalk_compensation_gain_loop(self, crosstalk_qprogram_gain_loop: QProgram):
 
         inverse_xtalk_array = np.linalg.inv([[1, 0.5], [0.5, 1]])
-        crosstalk = CrosstalkMatrix().from_array(["flux1", "flux2"], inverse_xtalk_array)
+        crosstalk = _crosstalk_ph(inverse_xtalk_array)
         qblox_buses = ["flux1", "flux2", "drive", "readout"]
 
         compiler = QbloxCompiler()
@@ -5833,7 +5843,7 @@ class TestQBloxCompiler:
     def test_crosstalk_compensation_plays(self, crosstalk_qprogram_plays: QProgram):
 
         inverse_xtalk_array = np.linalg.inv([[1, 0.5], [0.5, 1]])
-        crosstalk = CrosstalkMatrix().from_array(["flux1", "flux2"], inverse_xtalk_array)
+        crosstalk = _crosstalk_ph(inverse_xtalk_array)
 
         compiler = QbloxCompiler()
         compiled_qblox = compiler.compile(qprogram=crosstalk_qprogram_plays, crosstalk=crosstalk)
@@ -5904,7 +5914,7 @@ class TestQBloxCompiler:
     def test_crosstalk_compensation_parallel(self, crosstalk_qprogram_parallel: QProgram):
 
         inverse_xtalk_array = np.linalg.inv([[1, 0.5], [0.5, 1]])
-        crosstalk = CrosstalkMatrix().from_array(["flux1", "flux2"], inverse_xtalk_array)
+        crosstalk = _crosstalk_ph(inverse_xtalk_array)
 
         compiler = QbloxCompiler()
         sequences, _ = compiler.compile(qprogram=crosstalk_qprogram_parallel, crosstalk=crosstalk)
@@ -5978,7 +5988,7 @@ class TestQBloxCompiler:
         """Test to create double loop qprogram with crosstalk. 
         """
         inverse_xtalk_array = np.linalg.inv([[1, 0.5], [0.5, 1]])
-        crosstalk = CrosstalkMatrix().from_array(["flux1", "flux2"], inverse_xtalk_array)
+        crosstalk = _crosstalk_ph(inverse_xtalk_array)
 
         compiler_gain = QbloxCompiler()
         sequences, _ = compiler_gain.compile(qprogram=crosstalk_qprogram_double_gain_loop, crosstalk=crosstalk)
@@ -6052,7 +6062,7 @@ class TestQBloxCompiler:
         """Test to create double loop qprogram with crosstalk. 
         """
         inverse_xtalk_array = np.linalg.inv([[1, 0.5], [0.5, 1]])
-        crosstalk = CrosstalkMatrix().from_array(["flux1", "flux2"], inverse_xtalk_array)
+        crosstalk = _crosstalk_ph(inverse_xtalk_array)
 
         compiler_offset = QbloxCompiler()
         sequences, _ = compiler_offset.compile(qprogram=crosstalk_qprogram_double_offset_loop, crosstalk=crosstalk)
@@ -6130,9 +6140,9 @@ class TestQBloxCompiler:
     def test_crosstalk_compensation_uses_ac_matrix(self, crosstalk_qprogram: QProgram):
         """The Qblox (fast-flux / QCM) compiler must use the AC crosstalk matrix when it is set."""
         ac_array = np.linalg.inv([[1, 0.3], [0.3, 1]])
-        ac_crosstalk = CrosstalkMatrix().from_array(["flux1", "flux2"], ac_array)
+        ac_crosstalk = _crosstalk_ph(ac_array)
         # A different DC matrix that must be ignored by the Qblox compiler.
-        dc_crosstalk = CrosstalkMatrix().from_array(["flux1", "flux2"], np.linalg.inv([[1, 0.5], [0.5, 1]]))
+        dc_crosstalk = _crosstalk_ph(np.linalg.inv([[1, 0.5], [0.5, 1]]))
 
         calibration = Calibration()
         calibration.crosstalk_matrix = dc_crosstalk
@@ -6152,9 +6162,9 @@ class TestQBloxCompiler:
 
     def test_crosstalk_compensation_ac_matrix_overrides_explicit_crosstalk(self, crosstalk_qprogram: QProgram):
         """A calibration AC matrix takes precedence over an explicit `crosstalk` argument (e.g. platform-level)."""
-        ac_crosstalk = CrosstalkMatrix().from_array(["flux1", "flux2"], np.linalg.inv([[1, 0.3], [0.3, 1]]))
+        ac_crosstalk = _crosstalk_ph(np.linalg.inv([[1, 0.3], [0.3, 1]]))
         # An explicit crosstalk (as `platform.compile_qprogram` forwards `self.crosstalk`) that must NOT win.
-        explicit_crosstalk = CrosstalkMatrix().from_array(["flux1", "flux2"], np.linalg.inv([[1, 0.5], [0.5, 1]]))
+        explicit_crosstalk = _crosstalk_ph(np.linalg.inv([[1, 0.5], [0.5, 1]]))
 
         calibration = Calibration()
         calibration.crosstalk_matrix_ac = ac_crosstalk
@@ -6187,7 +6197,7 @@ class TestQBloxCompiler:
 
     def test_crosstalk_compensation_ac_no_warning(self, caplog, crosstalk_qprogram: QProgram):
         """No warning is emitted when the AC matrix is present."""
-        ac_crosstalk = CrosstalkMatrix().from_array(["flux1", "flux2"], np.linalg.inv([[1, 0.3], [0.3, 1]]))
+        ac_crosstalk = _crosstalk_ph(np.linalg.inv([[1, 0.3], [0.3, 1]]))
         calibration = Calibration()
         calibration.crosstalk_matrix_ac = ac_crosstalk
 
@@ -6201,7 +6211,7 @@ class TestQBloxCompiler:
         """Test the different errors that might rise by using incorrectly the crosstalk play structure."""
 
         inverse_xtalk_array = np.linalg.inv([[1, 0.5], [0.5, 1]])
-        crosstalk = CrosstalkMatrix().from_array(["flux1", "flux2"], inverse_xtalk_array)
+        crosstalk = _crosstalk_ph(inverse_xtalk_array)
 
         # Raise error every time there is an element mismatch in the plays (e.g. wait_time)
         qp = QProgram()
@@ -6248,7 +6258,7 @@ class TestQBloxCompiler:
         """Test the error that raises when the for loop parameter are incorrectly introduced."""
 
         inverse_xtalk_array = np.linalg.inv([[1, 0.5], [0.5, 1]])
-        crosstalk = CrosstalkMatrix().from_array(["flux1", "flux2"], inverse_xtalk_array)
+        crosstalk = _crosstalk_ph(inverse_xtalk_array)
 
         qp = QProgram()
         offset = qp.variable(label="offset", domain=Domain.Voltage)
@@ -6266,7 +6276,7 @@ class TestQBloxCompiler:
         """Test the error that raises when the for loop parameter are incorrectly introduced."""
 
         inverse_xtalk_array = np.linalg.inv([[1, 0.5], [0.5, 1]])
-        crosstalk = CrosstalkMatrix().from_array(["flux1", "flux2"], inverse_xtalk_array)
+        crosstalk = _crosstalk_ph(inverse_xtalk_array)
 
         qp = QProgram()
         square_wf = IQPair(Square(amplitude=0.1, duration=50), Square(amplitude=0.1, duration=50))

@@ -42,7 +42,18 @@ from qililab.instruments.qblox.qblox_qrm import QbloxQRM
 from qililab.instruments.qdevil import QDevilQDac2
 from qililab.platform import Bus, Buses, Platform, Session
 from qililab.qprogram import Calibration, Experiment, QProgram, QbloxCompilationOutput
-from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
+from qililab.qprogram.crosstalk_matrix import PHI_0_WB, CrosstalkMatrix
+
+# Resistance for which the pH → Φ₀/V conversion factor (Φ₀ · R · 1e12) is exactly 1.0.
+_UNIT_RESISTANCE = 1.0 / (PHI_0_WB * 1e12)
+
+
+def _crosstalk_with_resistances(buses: dict) -> CrosstalkMatrix:
+    """Build a CrosstalkMatrix and give every line a resistance."""
+    matrix = CrosstalkMatrix.from_buses(buses=buses)
+    lines = set(matrix.matrix) | {col for row in matrix.matrix.values() for col in row}
+    matrix.set_resistances({line: _UNIT_RESISTANCE for line in lines})
+    return matrix
 from qililab.result.database import get_db_manager
 from qililab.result.qprogram.qblox_measurement_result import QbloxMeasurementResult
 from qililab.settings import AnalogCompilationSettings, DigitalCompilationSettings, Runcard
@@ -375,7 +386,7 @@ class TestPlatform:
             set_parameter_mock = MagicMock()
             monkeypatch.setattr(bus, "set_parameter", set_parameter_mock)
 
-            platform.set_crosstalk(CrosstalkMatrix.from_buses(buses={alias: {alias: 0.1}}))
+            platform.set_crosstalk(_crosstalk_with_resistances({alias: {alias: 0.1}}))
             platform.set_parameter(alias=alias, parameter=Parameter.FLUX, value=0.14)
 
             set_parameter_mock.assert_called_once_with(parameter=expected_parameter, value=ANY)
@@ -386,7 +397,7 @@ class TestPlatform:
         set_parameter_mock = MagicMock()
         monkeypatch.setattr(bus, "set_parameter", set_parameter_mock)
 
-        platform_spi.set_crosstalk(CrosstalkMatrix.from_buses(buses={"spi_bus": {"spi_bus": 0.1}}))
+        platform_spi.set_crosstalk(_crosstalk_with_resistances({"spi_bus": {"spi_bus": 0.1}}))
         platform_spi.set_parameter(alias="spi_bus", parameter=Parameter.FLUX, value=0.14)
 
         set_parameter_mock.assert_called_once_with(parameter=Parameter.CURRENT, value=ANY)
@@ -397,14 +408,14 @@ class TestPlatform:
         set_parameter_mock = MagicMock()
         monkeypatch.setattr(bus, "set_parameter", set_parameter_mock)
 
-        platform_qdevil.set_crosstalk(CrosstalkMatrix.from_buses(buses={"qdac_bus": {"qdac_bus": 0.1}}))
+        platform_qdevil.set_crosstalk(_crosstalk_with_resistances({"qdac_bus": {"qdac_bus": 0.1}}))
         platform_qdevil.set_parameter(alias="qdac_bus", parameter=Parameter.FLUX, value=0.14)
 
         set_parameter_mock.assert_called_once_with(parameter=Parameter.VOLTAGE, value=ANY)
 
     def test_set_flux_parameter_with_set_crosstalk(self, platform: Platform):
         """Test platform set FLUX parameter when crosstalk is given."""
-        crosstalk_matrix = CrosstalkMatrix.from_buses(buses={"drive_line_q0_bus": {"drive_line_q0_bus": 0.1}})
+        crosstalk_matrix = _crosstalk_with_resistances({"drive_line_q0_bus": {"drive_line_q0_bus": 0.1}})
         platform.set_crosstalk(crosstalk_matrix)
         platform.set_parameter(alias="drive_line_q0_bus", parameter=Parameter.FLUX, value=0.14, channel_id=0)
         assert platform.crosstalk == crosstalk_matrix
@@ -413,7 +424,7 @@ class TestPlatform:
     def test_set_flux_parameter_with_wrong_bus_raises_error(self, platform: Platform):
         """Test error raising when platform set FLUX alias is the wrong bus."""
         alias = "drive_line_q1_bus"
-        crosstalk_matrix = CrosstalkMatrix.from_buses(buses={"drive_line_q0_bus": {"drive_line_q0_bus": 0.1}})
+        crosstalk_matrix = _crosstalk_with_resistances({"drive_line_q0_bus": {"drive_line_q0_bus": 0.1}})
         error_string = f"{alias} not inside crosstalk matrix\n{crosstalk_matrix}"
         platform.set_crosstalk(crosstalk_matrix)
         with pytest.raises(ValueError, match=error_string):
@@ -429,8 +440,8 @@ class TestPlatform:
         """Test error raised when the instruments do not match the flux parameter"""
         error_string = "Flux bus must have one of these instruments:\nQCM, QRM, QRM-RF, QCM-RF, D5a, S4g, quantum_machines_cluster, qdevil_qdac2"
         with pytest.raises(ReferenceError, match=error_string):
-            crosstalk_matrix = CrosstalkMatrix.from_buses(
-                buses={"yokogawa_gs200_current_bus": {"yokogawa_gs200_current_bus": 0.1}}
+            crosstalk_matrix = _crosstalk_with_resistances(
+                {"yokogawa_gs200_current_bus": {"yokogawa_gs200_current_bus": 0.1}}
             )
             platform_yokogawa.set_crosstalk(crosstalk=crosstalk_matrix)
             platform_yokogawa.set_parameter(
@@ -444,8 +455,8 @@ class TestPlatform:
         """Test error raised when there is more than one instrument affected by the flux"""
         error_string = "Flux bus must not have more than one of these instruments:\nQCM, QRM, QRM-RF, QCM-RF, D5a, S4g, quantum_machines_cluster, qdevil_qdac2"
         with pytest.raises(NotImplementedError, match=error_string):
-            crosstalk_matrix = CrosstalkMatrix.from_buses(
-                buses={"flux_line_too_many_instr": {"flux_line_too_many_instr": 0.1}}
+            crosstalk_matrix = _crosstalk_with_resistances(
+                {"flux_line_too_many_instr": {"flux_line_too_many_instr": 0.1}}
             )
             platform.set_crosstalk(crosstalk=crosstalk_matrix)
             platform.set_parameter(
@@ -457,7 +468,7 @@ class TestPlatform:
 
     def test_set_flux_to_zero(self, platform: Platform):
         """Test set_flux_to_zero function."""
-        crosstalk_matrix = CrosstalkMatrix.from_buses(buses={"drive_line_q0_bus": {"drive_line_q0_bus": 0.1}})
+        crosstalk_matrix = _crosstalk_with_resistances({"drive_line_q0_bus": {"drive_line_q0_bus": 0.1}})
         platform.set_crosstalk(crosstalk_matrix)
         platform.set_flux_to_zero()
         assert platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.FLUX) == 0.0
@@ -470,7 +481,7 @@ class TestPlatform:
 
     def test_set_bias_to_zero(self, platform: Platform):
         """Test set_bias_to_zero function."""
-        crosstalk_matrix = CrosstalkMatrix.from_buses(buses={"drive_line_q0_bus": {"drive_line_q0_bus": 0.1}})
+        crosstalk_matrix = _crosstalk_with_resistances({"drive_line_q0_bus": {"drive_line_q0_bus": 0.1}})
         platform.set_crosstalk(crosstalk_matrix)
         platform.set_bias_to_zero()
         assert platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.OFFSET_OUT0) == 0.0
@@ -487,7 +498,7 @@ class TestPlatform:
         platform.set_parameter(alias="drive_line_q0_bus", parameter=Parameter.IF, value=0.14e6, channel_id=0)
         assert platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.IF, channel_id=0) == 0.14e6
 
-        platform.set_crosstalk(CrosstalkMatrix.from_buses(buses={"drive_line_q0_bus": {"drive_line_q0_bus": 0.1}}))
+        platform.set_crosstalk(_crosstalk_with_resistances({"drive_line_q0_bus": {"drive_line_q0_bus": 0.1}}))
         platform.set_parameter(alias="drive_line_q0_bus", parameter=Parameter.FLUX, value=0.14, channel_id=0)
         assert platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.FLUX, channel_id=0) == 0.14
 
