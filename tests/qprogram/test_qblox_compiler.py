@@ -556,13 +556,15 @@ def fixture_wait_trigger() -> QProgram:
     qp.set_frequency(bus="readout", frequency=1e6)
     qp.wait_trigger(bus="drive", duration=4)
     qp.set_frequency(bus="drive", frequency=1e6)
-    qp.wait_trigger(bus="drive", duration=1000, port=1)
+    # A non-default port is passed, but on Qblox every wait_trigger must resolve to the external
+    # trigger address (EXT_TRIGGER_ADDRESS = 15); the port argument is ignored (see QHC-1593).
+    qp.wait_trigger(bus="drive", duration=1000, port=7)
     qp.set_frequency(bus="drive", frequency=1e6)
-    qp.wait_trigger(bus="drive", duration=70000, port=1)
+    qp.wait_trigger(bus="drive", duration=70000, port=7)
 
     # No instructions pending
-    qp.wait_trigger(bus="drive", duration=1000, port=1)
-    qp.wait_trigger(bus="drive", duration=70000, port=1)
+    qp.wait_trigger(bus="drive", duration=1000, port=7)
+    qp.wait_trigger(bus="drive", duration=70000, port=7)
     return qp
 
 
@@ -1417,13 +1419,13 @@ class TestQBloxCompiler:
                             wait_trigger     15, 4
                             set_freq         4000000
                             upd_param        4
-                            wait_trigger     1, 1000
+                            wait_trigger     15, 1000
                             set_freq         4000000
                             upd_param        4
-                            wait_trigger     1, 65535
+                            wait_trigger     15, 65535
                             wait             4465
-                            wait_trigger     1, 1000
-                            wait_trigger     1, 65535
+                            wait_trigger     15, 1000
+                            wait_trigger     15, 65535
                             wait             4465
                             set_mrk          0
                             upd_param        4
@@ -1441,12 +1443,12 @@ class TestQBloxCompiler:
                             upd_param        4
                             wait_trigger     15, 4
                             wait             4
-                            wait_trigger     1, 1000
+                            wait_trigger     15, 1000
                             wait             4
-                            wait_trigger     1, 65535
+                            wait_trigger     15, 65535
                             wait             4465
-                            wait_trigger     1, 1000
-                            wait_trigger     1, 65535
+                            wait_trigger     15, 1000
+                            wait_trigger     15, 65535
                             wait             4465
                             set_mrk          0
                             upd_param        4
@@ -1506,7 +1508,7 @@ class TestQBloxCompiler:
     def test_wait_trigger_duration_above_max_wait_is_not_overshot(self):
         """A wait_trigger longer than INST_MAX_WAIT must be split by LongWait without dropping the remainder."""
         qp = QProgram()
-        qp.wait_trigger(bus="drive", duration=70000, port=1)
+        qp.wait_trigger(bus="drive", duration=70000)
 
         compiler = QbloxCompiler()
         sequences, _ = compiler.compile(qprogram=qp, ext_trigger=True)
@@ -1527,7 +1529,7 @@ class TestQBloxCompiler:
         qp = QProgram()
         duration = qp.variable(label="duration", domain=Domain.Time)
         with qp.for_loop(variable=duration, start=4, stop=100, step=4):
-            qp.wait_trigger(bus="drive", duration=duration, port=1)
+            qp.wait_trigger(bus="drive", duration=duration)
 
         compiler = QbloxCompiler()
         with pytest.raises(ValueError, match="WaitTrigger does not support variable sweep in a loop."):
@@ -1539,7 +1541,7 @@ class TestQBloxCompiler:
         duration = qp.variable(label="duration", domain=Domain.Time)
         with qp.for_loop(variable=duration, start=4, stop=100, step=4):
             qp.wait(bus="drive", duration=duration)
-            qp.wait_trigger(bus="drive", duration=duration, port=1)
+            qp.wait_trigger(bus="drive", duration=duration)
 
         compiler = QbloxCompiler()
         with pytest.raises(ValueError, match="Wait trigger duration cannot be a Variable, it must be an int."):
@@ -4743,7 +4745,7 @@ class TestQBloxCompiler:
         """A single-bus wait_trigger flushing a pending upd_param must not emit a wait_sync."""
         qp = QProgram()
         qp.set_frequency(bus="drive", frequency=1e6)
-        qp.wait_trigger(bus="drive", duration=6, port=1)
+        qp.wait_trigger(bus="drive", duration=6)
         compiler = QbloxCompiler()
         sequences, _ = compiler.compile(qprogram=qp, ext_trigger=True)
         expected = """
@@ -4754,7 +4756,7 @@ class TestQBloxCompiler:
             main:
                 set_freq         4000000
                 upd_param        4
-                wait_trigger     1, 6
+                wait_trigger     15, 6
                 set_mrk          0
                 upd_param        4
                 stop
@@ -4765,7 +4767,7 @@ class TestQBloxCompiler:
         """A single-bus long wait_trigger flushing a pending upd_param must not emit a wait_sync."""
         qp = QProgram()
         qp.set_frequency(bus="drive", frequency=1e6)
-        qp.wait_trigger(bus="drive", duration=70000, port=1)
+        qp.wait_trigger(bus="drive", duration=70000)
         compiler = QbloxCompiler()
         sequences, _ = compiler.compile(qprogram=qp, ext_trigger=True)
         expected = """
@@ -4776,7 +4778,7 @@ class TestQBloxCompiler:
             main:
                 set_freq         4000000
                 upd_param        4
-                wait_trigger     1, 65535
+                wait_trigger     15, 65535
                 wait             4465
                 set_mrk          0
                 upd_param        4
