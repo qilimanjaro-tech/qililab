@@ -604,14 +604,19 @@ class TestStreamArray:
         ):
             stream_array.add_fitting(path="/test/fit.h5")
 
-    def test_add_fitting_raises_not_implemented_autocalibration(self, stream_array: StreamArray):
-        """Tests that add_fitting is not supported for autocalibration measurements."""
-        stream_array.measurement = MagicMock()
+    def test_add_fitting_autocalibration(self, stream_array: StreamArray):
+        """Tests that add_fitting delegates to the autocalibration measurement injecting the db session."""
+        mock_measurement = MagicMock()
+        updated_measurement = MagicMock()
+        mock_measurement.add_fitting.return_value = updated_measurement
+        stream_array.measurement = mock_measurement
         stream_array.autocalibration = True
-        with pytest.raises(
-            NotImplementedError, match="Autocalibration fitting management does not depend on StreamArray."
-        ):
-            stream_array.add_fitting(path="/test/fit.h5")
+
+        result = stream_array.add_fitting(path="/test/fit.h5", parameters={"a": 1.0})
+
+        mock_measurement.add_fitting.assert_called_once_with(stream_array.db_manager, "/test/fit.h5", {"a": 1.0})
+        assert stream_array.measurement == updated_measurement
+        assert result == updated_measurement
 
 
 class TestRawStreamArray:

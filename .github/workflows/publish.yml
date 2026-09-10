@@ -55,7 +55,7 @@ jobs:
             **/uv.lock
           python-version: "3.13"
       - name: Configure AWS Credentials (OIDC)
-        uses: aws-actions/configure-aws-credentials@e6de054238d6b7531b4efff3b6587d9aade6a06c  # v6.2.3
+        uses: aws-actions/configure-aws-credentials@cbe3b392738ccf3f987d68400dafcf4b0624a56c  # v6.2.4
         with:
           role-to-assume: arn:aws:iam::723412851021:role/GitHub_actions_role
           aws-region: eu-west-1
@@ -63,7 +63,7 @@ jobs:
       
       - name: Assume deploy role in target account
         id: chained
-        uses: aws-actions/configure-aws-credentials@e6de054238d6b7531b4efff3b6587d9aade6a06c  # v6.2.3
+        uses: aws-actions/configure-aws-credentials@cbe3b392738ccf3f987d68400dafcf4b0624a56c  # v6.2.4
         with:
           role-to-assume: arn:aws:iam::723412851021:role/Code-Artifact-Publish
           aws-region: eu-west-1
@@ -127,13 +127,13 @@ jobs:
       id-token: write  # required to request the OIDC token for AWS
     steps:
       - name: Configure AWS Credentials (OIDC)
-        uses: aws-actions/configure-aws-credentials@e6de054238d6b7531b4efff3b6587d9aade6a06c  # v6.2.3
+        uses: aws-actions/configure-aws-credentials@cbe3b392738ccf3f987d68400dafcf4b0624a56c  # v6.2.4
         with:
           role-to-assume: arn:aws:iam::723412851021:role/GitHub_actions_role
           aws-region: eu-west-1
           role-session-name: GitHubActions-DevOps
       - name: Assume deploy role in target account
-        uses: aws-actions/configure-aws-credentials@e6de054238d6b7531b4efff3b6587d9aade6a06c  # v6.2.3
+        uses: aws-actions/configure-aws-credentials@cbe3b392738ccf3f987d68400dafcf4b0624a56c  # v6.2.4
         with:
           role-to-assume: arn:aws:iam::723412851021:role/Code-Artifact-Publish
           aws-region: eu-west-1

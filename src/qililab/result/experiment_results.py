@@ -18,7 +18,6 @@ from datetime import datetime
 from typing import Any
 
 import h5py
-import matplotlib.pyplot as plt
 import numpy as np
 
 
@@ -189,6 +188,7 @@ class ExperimentResults:
         Raises:
             NotImplementedError: If the data has more than 2 dimensions.
         """
+        import matplotlib.pyplot as plt
 
         def decibels(s21: np.ndarray):
             """Convert result values from s21 into dB"""
