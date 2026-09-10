@@ -17,6 +17,7 @@
 from dataclasses import dataclass
 from typing import Sequence
 
+from qililab.constants import QBLOXCONSTANTS
 from qililab.instrument_controllers.instrument_controller import InstrumentController, InstrumentControllerSettings
 from qililab.instrument_controllers.utils.instrument_controller_factory import InstrumentControllerFactory
 from qililab.instruments.qblox.qblox_qcm import QbloxQCM
@@ -27,8 +28,6 @@ from qililab.typings.enums import (
     InstrumentTypeName,
 )
 from qililab.typings.instruments.cluster import Cluster
-
-EXT_TRIGGER_ADDRESS: int = 15
 
 
 @InstrumentControllerFactory.register
@@ -79,7 +78,7 @@ class QbloxClusterController(InstrumentController):
         """set the external trigger parameters"""
         self.device.ext_trigger_input_trigger_en(True)
         # As only one ext trigger is available the last address is selected
-        self.device.ext_trigger_input_trigger_address(EXT_TRIGGER_ADDRESS)
+        self.device.ext_trigger_input_trigger_address(QBLOXCONSTANTS.EXT_TRIGGER_ADDRESS)
         self.device.ext_trigger_input_delay(0)
 
     @property

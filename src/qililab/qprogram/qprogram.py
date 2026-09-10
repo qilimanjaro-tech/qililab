@@ -1241,7 +1241,8 @@ class QProgram(StructuredProgram):
         Args:
             bus (str): Unique identifier of the bus.
             duration (int): Duration of the delay after the trigger is received. Minimum of 4 ns.
-            port (optional, int | None): Port channel of the trigger input. Defaults to None.
+            port (optional, int | None): Trigger input port. Only used by the QDACII compiler.
+                Qblox buses always wait on the cluster's external trigger address. Defaults to None.
         """
         # qblox-only external_trigger bus
         self.qblox.external_trigger.append(bus)
