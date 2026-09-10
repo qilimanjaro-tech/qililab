@@ -1216,10 +1216,10 @@ class QbloxCompiler:
 
         self._handle_sync(element=Sync(buses=None), delay=True)
 
+        if element.port is not None:
+            logger.warning("Wait trigger port does not need to be set, it defaults to external loop.")
         for bus in self._buses:
-            self._handle_add_trigger_waits(
-                bus=bus, duration=element.duration, port=QBLOXCONSTANTS.EXT_TRIGGER_ADDRESS
-            )
+            self._handle_add_trigger_waits(bus=bus, duration=element.duration, port=QBLOXCONSTANTS.EXT_TRIGGER_ADDRESS)
 
         # All buses received an identical duration above, so they remain balanced; just clear sync bookkeeping.
         for bus in self._buses:
