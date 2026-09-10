@@ -59,6 +59,11 @@ def lambda_constructor(constructor, node):
     return loads(serialized_lambda)  # noqa: S301
 
 
+def legacy_tuple_constructor(constructor, node):
+    """Constructor for '!tuple', a tag used by qililab versions that depended on qilisdk."""
+    return tuple(constructor.construct_sequence(node, deep=True))
+
+
 yaml = YAML(typ="unsafe")
 yaml.register_class(UUID)
 yaml.representer.add_representer(np.ndarray, ndarray_representer)
@@ -67,3 +72,4 @@ yaml.representer.add_representer(deque, deque_representer)
 yaml.constructor.add_constructor("!deque", deque_constructor)
 yaml.representer.add_representer(types.LambdaType, lambda_representer)
 yaml.constructor.add_constructor("!lambda", lambda_constructor)
+yaml.constructor.add_constructor("!tuple", legacy_tuple_constructor)

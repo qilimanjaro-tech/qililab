@@ -917,6 +917,17 @@ class Testdatabase:
         mock_measurement.add_fitting.assert_called_once_with(db_manager, "/test/fit.h5", {"a": 1.0})
         assert result == mock_measurement
 
+    def test_add_calibration_fitting_without_path(self, db_manager: DatabaseManager):
+        mock_measurement = MagicMock(spec=AutocalMeasurement)
+        mock_measurement.add_fitting.return_value = mock_measurement
+
+        with patch.object(db_manager, "load_calibration_by_id", return_value=mock_measurement) as mock_load:
+            result = db_manager.add_calibration_fitting(123, parameters={"a": 1.0})
+
+        mock_load.assert_called_once_with(123)
+        mock_measurement.add_fitting.assert_called_once_with(db_manager, None, {"a": 1.0})
+        assert result == mock_measurement
+
     def test_add_calibration_fitting_raises_exception_measurement_not_found(self, db_manager: DatabaseManager):
         with patch.object(db_manager, "load_calibration_by_id", return_value=None):
             with pytest.raises(IndexError, match="Autocalibration measurement entry '123' does not exist."):
