@@ -1217,7 +1217,10 @@ class QbloxCompiler:
         self._handle_sync(element=Sync(buses=None), delay=True)
 
         if element.port is not None:
-            logger.warning("Wait trigger port does not need to be set, it defaults to external loop.")
+            logger.warning(
+                "wait_trigger port is ignored on Qblox buses: the wait always uses the cluster's external "
+                "trigger address. The port argument only applies to QDACII buses."
+            )
         for bus in self._buses:
             self._handle_add_trigger_waits(bus=bus, duration=element.duration, port=QBLOXCONSTANTS.EXT_TRIGGER_ADDRESS)
 

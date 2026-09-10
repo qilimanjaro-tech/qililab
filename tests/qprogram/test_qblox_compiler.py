@@ -4741,6 +4741,37 @@ class TestQBloxCompiler:
         """
         assert is_q1asm_equal(sequences["drive"]._program, expected)
 
+    def test_wait_trigger_port_on_qblox_warns_and_is_ignored(self, caplog):
+        """Passing a port on a Qblox bus is ignored: the wait always targets the external trigger
+        address (EXT_TRIGGER_ADDRESS = 15), and a warning is emitted (see QHC-1593)."""
+        qp = QProgram()
+        qp.wait_trigger(bus="drive", duration=100, port=7)
+        compiler = QbloxCompiler()
+        with caplog.at_level(logging.WARNING):
+            sequences, _ = compiler.compile(qprogram=qp, ext_trigger=True)
+        assert "wait_trigger port is ignored on Qblox buses" in caplog.text
+        expected = """
+            setup:
+                wait_sync        4
+                set_mrk          0
+                upd_param        4
+            main:
+                wait_trigger     15, 100
+                set_mrk          0
+                upd_param        4
+                stop
+        """
+        assert is_q1asm_equal(sequences["drive"]._program, expected)
+
+    def test_wait_trigger_without_port_on_qblox_does_not_warn(self, caplog):
+        """Omitting the port (the expected usage on Qblox) must not emit the port warning."""
+        qp = QProgram()
+        qp.wait_trigger(bus="drive", duration=100)
+        compiler = QbloxCompiler()
+        with caplog.at_level(logging.WARNING):
+            compiler.compile(qprogram=qp, ext_trigger=True)
+        assert "wait_trigger port is ignored on Qblox buses" not in caplog.text
+
     def test_wait_trigger_single_bus_with_pending_upd_param_skips_wait_sync(self):
         """A single-bus wait_trigger flushing a pending upd_param must not emit a wait_sync."""
         qp = QProgram()
