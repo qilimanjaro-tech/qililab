@@ -248,6 +248,14 @@ class QProgram(StructuredProgram):
                     bus = getattr(element, "bus")
                     if isinstance(bus, str) and bus in bus_mapping:
                         setattr(block.elements[index], "bus", bus_mapping[bus])
+                    if isinstance(element, WaitTrigger):
+                        new_external_trigger = []
+                        for bus in copied_qprogram.qblox.external_trigger:
+                            if bus in bus_mapping:
+                                new_external_trigger.append(bus_mapping[bus])
+                            else:
+                                new_external_trigger.append(bus)
+                        copied_qprogram.qblox.external_trigger = new_external_trigger
                 elif hasattr(element, "buses"):
                     buses = getattr(element, "buses")
                     if isinstance(buses, list):
@@ -1236,6 +1244,8 @@ class QProgram(StructuredProgram):
             port (optional, int | None): Trigger input port. Only used by the QDACII compiler.
                 Qblox buses always wait on the cluster's external trigger address. Defaults to None.
         """
+        # qblox-only external_trigger bus
+        self.qblox.external_trigger.append(bus)
         operation = WaitTrigger(bus=bus, duration=_to_scalar(duration), port=port)
         self._active_block.append(operation)
         self._buses.add(bus)
@@ -1412,6 +1422,7 @@ class QProgram(StructuredProgram):
             self.disable_autosync: bool = False
             self.latch_enabled: list[str] = []
             self.trigger_network_required: dict[str, int] = {}
+            self.external_trigger: list[str] = []
             self._weight_duration: dict[str, list[int | str]] = {}
 
         @property
