@@ -105,6 +105,9 @@ jobs:
       - name: Mypy
         run: mypy src --ignore-missing-imports
 
+      - name: Deptry
+        run: deptry src
+
       # CHANGELOG.md belongs to towncrier, and .venv is here because the install
       # step just created it.
       - name: Mdformat
