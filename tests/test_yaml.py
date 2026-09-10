@@ -85,3 +85,35 @@ def test_uuid_serialization():
     # Verify that the original and loaded UUIDs are equal
     assert original_uuid == loaded_uuid
     assert isinstance(loaded_uuid, UUID)
+
+
+def test_legacy_tuple_deserialization():
+    """Test deserialization of the '!tuple' tag used by qililab versions that depended on qilisdk."""
+    # Files serialized before qilisdk was removed as a dependency may still contain this tag.
+    yaml_str = "!tuple [1, 2, 3]\n"
+
+    loaded_tuple = yaml.load(yaml_str)
+
+    # Verify that the loaded object is a tuple with the expected values
+    assert loaded_tuple == (1, 2, 3)
+    assert isinstance(loaded_tuple, tuple)
+
+
+def test_tuple_serialization_does_not_use_legacy_tag():
+    """Test that tuples serialized today no longer use the legacy '!tuple' tag."""
+    original_tuple = (1, 2, 3)
+
+    # Dump the tuple to YAML
+    stream = io.StringIO()
+    yaml.dump(original_tuple, stream)
+    yaml_str = stream.getvalue()
+
+    # Verify that the legacy tag is not used
+    assert "!tuple" not in yaml_str
+
+    # Load the tuple back from YAML
+    loaded_tuple = yaml.load(yaml_str)
+
+    # Verify that the original and loaded tuples are equal
+    assert original_tuple == loaded_tuple
+    assert isinstance(loaded_tuple, tuple)
