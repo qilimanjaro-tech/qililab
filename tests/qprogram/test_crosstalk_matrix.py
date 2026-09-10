@@ -1,7 +1,12 @@
 import numpy as np
 import pytest
 
-from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix, NonLinearCrosstalkMatrix
+from qililab.qprogram.crosstalk_matrix import (
+    PHI_0_WB,
+    CrosstalkMatrix,
+    NonLinearCrosstalkMatrix,
+    convert_pH_to_phi0_per_volt,
+)
 
 # Insertion orders that diverge from the canonical sort order once names are multi-digit
 # (alphabetical q0, q1, q10, q2 vs sorted q0, q1, q2, q10). Used by the bus-ordering regression tests.
@@ -16,12 +21,22 @@ _INSERTION_ORDERS = [
     ["drive q1", "flux q0", "readout q0", "flux q1"],
 ]
 
+# Resistance for which the pH → Φ₀/V conversion factor (Φ₀ · R · 1e12) is exactly 1.0.
+_UNIT_RESISTANCE = 1.0 / (PHI_0_WB * 1e12)
+
+
+def _unit_resistances(buses):
+    """Per-line resistances making the pH → Φ₀/V factor exactly 1.0 for every line."""
+    return {bus: _UNIT_RESISTANCE for bus in buses}
+
 
 def _random_crosstalk(buses):
     """Diagonally-dominant crosstalk dict and the matrix built from it, keyed in `buses` order."""
     rng = np.random.default_rng(0)
     xt = {b1: {b2: (1.0 if b1 == b2 else round(float(rng.uniform(-0.15, 0.15)), 4)) for b2 in buses} for b1 in buses}
-    return xt, CrosstalkMatrix.from_buses(xt)
+    matrix = CrosstalkMatrix.from_buses(xt)
+    matrix.set_resistances(_unit_resistances(buses))
+    return xt, matrix
 
 
 def _independent_bias(buses, xt, flux):
@@ -46,8 +61,12 @@ def get_xtalk_matrix(crosstalk_array_buses):
     flux_0  1       0.2     0.3
     flux_1  0.1     1       0.3
     flux_2  0       1       0
+
+    Values are in pH; the matrix carries unit resistances so bias applies them directly.
     """
-    return CrosstalkMatrix.from_array(buses=crosstalk_array_buses[1], matrix_array=crosstalk_array_buses[0])
+    matrix = CrosstalkMatrix.from_array(buses=crosstalk_array_buses[1], matrix_array=crosstalk_array_buses[0])
+    matrix.set_resistances(_unit_resistances(crosstalk_array_buses[1]))
+    return matrix
 
 
 @pytest.fixture(name="non_linear_crosstalk_matrix")
@@ -308,6 +327,61 @@ bus3          0.0      0.0      0.2"""
         bias = matrix.flux_to_bias(flux)
         for bus in buses:
             assert bias[bus] == pytest.approx(expected[bus], rel=1e-6)
+
+
+class TestUnitConversion:
+    """Tests for the pH → Φ₀/V conversion helpers and the pH-aware bias path.
+
+    Crosstalk matrices are stored in pH; ``flux_to_bias`` converts them to Φ₀/V using the
+    per-line resistances, so a resistance is required for every flux line (or it raises).
+    """
+
+    def test_convert_phi0_per_volt_to_pH_known_value(self):
+        from qililab.qprogram.crosstalk_matrix import PHI_0_WB, convert_phi0_per_volt_to_pH
+
+        matrix = {"b1": {"b1": 1.0, "b2": 0.5}}
+        resistances = {"b1": 1000.0, "b2": 2000.0}
+        converted = convert_phi0_per_volt_to_pH(matrix, resistances)
+        # Per-column scaling by the *column* line's resistance.
+        assert converted["b1"]["b1"] == pytest.approx(1.0 * PHI_0_WB * 1000.0 * 1e12)
+        assert converted["b1"]["b2"] == pytest.approx(0.5 * PHI_0_WB * 2000.0 * 1e12)
+
+    def test_conversion_round_trip_is_identity(self):
+        from qililab.qprogram.crosstalk_matrix import convert_pH_to_phi0_per_volt, convert_phi0_per_volt_to_pH
+
+        matrix = {"b1": {"b1": 1.0, "b2": 0.13}, "b2": {"b1": -0.07, "b2": 1.0}}
+        resistances = {"b1": 1234.0, "b2": 987.0}
+        back = convert_pH_to_phi0_per_volt(convert_phi0_per_volt_to_pH(matrix, resistances), resistances)
+        for row in matrix:
+            for col in matrix[row]:
+                assert back[row][col] == pytest.approx(matrix[row][col])
+
+    @pytest.mark.parametrize("func", ["convert_phi0_per_volt_to_pH", "convert_pH_to_phi0_per_volt"])
+    def test_conversion_raises_on_missing_resistance(self, func):
+        import qililab.qprogram.crosstalk_matrix as cm
+
+        convert = getattr(cm, func)
+        with pytest.raises(ValueError, match="Missing resistance for line 'b2'"):
+            convert({"b1": {"b2": 0.5}}, {"b1": 1000.0})
+
+    def test_in_phi0_per_volt_matches_manual_conversion(self, crosstalk_matrix):
+        from qililab.qprogram.crosstalk_matrix import convert_pH_to_phi0_per_volt
+
+        phi0 = crosstalk_matrix.in_phi0_per_volt()
+        assert phi0.matrix == convert_pH_to_phi0_per_volt(crosstalk_matrix.matrix, crosstalk_matrix.resistances)
+        # Offsets and resistances are carried through unchanged.
+        assert phi0.flux_offsets == crosstalk_matrix.flux_offsets
+        assert phi0.resistances == crosstalk_matrix.resistances
+
+    def test_in_phi0_per_volt_raises_without_resistances(self, crosstalk_array_buses):
+        matrix = CrosstalkMatrix.from_array(buses=crosstalk_array_buses[1], matrix_array=crosstalk_array_buses[0])
+        with pytest.raises(ValueError, match="Missing resistance for line"):
+            matrix.in_phi0_per_volt()
+
+    def test_flux_to_bias_raises_without_resistances(self, crosstalk_array_buses):
+        matrix = CrosstalkMatrix.from_array(buses=crosstalk_array_buses[1], matrix_array=crosstalk_array_buses[0])
+        with pytest.raises(ValueError, match="Missing resistance for line"):
+            matrix.flux_to_bias({"flux_0": 0.1, "flux_1": 0.2, "flux_2": 0.05})
 
 
 class TestNonLinearCrosstalkMatrix:

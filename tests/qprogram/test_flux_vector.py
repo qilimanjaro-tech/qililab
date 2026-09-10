@@ -4,10 +4,17 @@ import pytest
 from qililab import Square, Arbitrary
 from qililab.core.variables import Domain, Variable, VariableExpression
 from qililab.qprogram.blocks import ForLoop, Loop, Parallel
-from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix, NonLinearCrosstalkMatrix
+from qililab.qprogram.crosstalk_matrix import PHI_0_WB, CrosstalkMatrix, NonLinearCrosstalkMatrix
 from qililab.qprogram.flux_vector import FluxVector, NonLinearFluxVector
 from qililab.qprogram.operations import SetGain, SetOffset
 
+# Resistance for which the pH → Φ₀/V conversion factor (Φ₀ · R · 1e12) is exactly 1.0.
+_UNIT_RESISTANCE = 1.0 / (PHI_0_WB * 1e12)
+
+
+def _unit_resistances(buses):
+    """Per-line resistances making the pH → Φ₀/V factor exactly 1.0 for every line."""
+    return {bus: _UNIT_RESISTANCE for bus in buses}
 
 
 @pytest.fixture(name="crosstalk_array_buses")
@@ -36,8 +43,12 @@ def get_xtalk_matrix(crosstalk_array_buses):
     flux_0  1       0.2     0.3
     flux_1  0.1     1       0.3
     flux_2  0       1       0
+
+    Values are in pH; the matrix carries unit resistances so bias applies them directly.
     """
-    return CrosstalkMatrix.from_array(buses=crosstalk_array_buses[1], matrix_array=crosstalk_array_buses[0])
+    matrix = CrosstalkMatrix.from_array(buses=crosstalk_array_buses[1], matrix_array=crosstalk_array_buses[0])
+    matrix.set_resistances(_unit_resistances(crosstalk_array_buses[1]))
+    return matrix
 
 @pytest.fixture(name="non_linear_crosstalk_matrix")
 def get_nl_xtalk_matrix(crosstalk_matrix):
@@ -356,7 +367,7 @@ class TestFluxVector:
         bias = flux_vector.set_crosstalk(crosstalk_matrix)
         bias_arr = np.array(list(bias.values()))
         supposed_arr = np.linalg.inv(crosstalk_array_buses[0]) @ np.array([0.5, 1.0, 0.0])
-        assert np.array_equal(bias_arr, supposed_arr)
+        assert np.allclose(bias_arr, supposed_arr)
             
     def test_set_crosstalk_from_bias(self, flux_vector, crosstalk_matrix):
         flux = flux_vector.set_crosstalk_from_bias(crosstalk_matrix)
