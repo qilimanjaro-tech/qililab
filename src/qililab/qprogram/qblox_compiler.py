@@ -29,6 +29,7 @@ from qpysequence.compiler import Compiler as QPyCompiler
 from qpysequence.constants import INST_MAX_WAIT, INST_MIN_WAIT
 
 from qililab.config import logger
+from qililab.constants import QBLOXCONSTANTS
 from qililab.core.variables import Domain, Variable, VariableExpression
 from qililab.qprogram.blocks import Average, Block, ForLoop, InfiniteLoop, Loop, Parallel
 from qililab.qprogram.calibration import Calibration
@@ -60,8 +61,6 @@ if TYPE_CHECKING:
 SIGN_BIT = 2**31
 # 4294967293 == -3 in 2's complement
 NEG_ONE_TO_THREE = (2**32) - 3
-
-EXT_TRIGGER_ADDRESS: int = 15
 
 # TODO: move to qpysequence.constants
 # 32 is the max number of acquisitions that can be stored
@@ -1217,9 +1216,10 @@ class QbloxCompiler:
 
         self._handle_sync(element=Sync(buses=None), delay=True)
 
-        port = element.port if element.port else EXT_TRIGGER_ADDRESS
         for bus in self._buses:
-            self._handle_add_trigger_waits(bus=bus, duration=element.duration, port=port)
+            self._handle_add_trigger_waits(
+                bus=bus, duration=element.duration, port=QBLOXCONSTANTS.EXT_TRIGGER_ADDRESS
+            )
 
         # All buses received an identical duration above, so they remain balanced; just clear sync bookkeeping.
         for bus in self._buses:
