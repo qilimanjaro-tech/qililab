@@ -3545,7 +3545,7 @@ requires-dist = [
     { name = "qcodes", specifier = "==0.54.3" },
     { name = "qcodes-contrib-drivers", specifier = ">=0.23.0" },
     { name = "qm-qua", marker = "extra == 'quantum-machines'", specifier = "==1.2.4" },
-    { name = "qpysequence", specifier = ">=0.11.0", index = "https://qilimanjaro-723412851021.d.codeartifact.eu-west-1.amazonaws.com/pypi/qilimanjaro/simple" },
+    { name = "qpysequence", specifier = ">=0.11.1", index = "https://qilimanjaro-723412851021.d.codeartifact.eu-west-1.amazonaws.com/pypi/qilimanjaro/simple" },
     { name = "rich", specifier = ">=14.0.0" },
     { name = "ruamel-yaml", specifier = ">=0.18.10" },
     { name = "scipy", specifier = ">=1.15" },
@@ -3621,16 +3621,16 @@ wheels = [
 
 [[package]]
 name = "qpysequence"
-version = "0.11.0"
+version = "0.11.1"
 source = { registry = "https://qilimanjaro-723412851021.d.codeartifact.eu-west-1.amazonaws.com/pypi/qilimanjaro/simple" }
 dependencies = [
     { name = "loguru" },
     { name = "numpy", version = "2.4.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
     { name = "numpy", version = "2.5.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
 ]
-sdist = { url = "https://qilimanjaro-723412851021.d.codeartifact.eu-west-1.amazonaws.com/pypi/qilimanjaro/simple/qpysequence/0.11.0/qpysequence-0.11.0.tar.gz", hash = "sha512:2e38e9c2bce7b8af5b72ed95186da5c1e19939a09fd6edab5979cf654167aee6a6521d3c65da7e4f78a6afe973e903c1825cf3c70a430dcbaece0e4c856bf8e0", size = 105250, upload-time = "2026-08-05T10:00:11.161Z" }
+sdist = { url = "https://qilimanjaro-723412851021.d.codeartifact.eu-west-1.amazonaws.com/pypi/qilimanjaro/simple/qpysequence/0.11.1/qpysequence-0.11.1.tar.gz", hash = "sha512:07fb2e04d5d6d67e4f1d2625b9b5a9ded78a74c0d75d726a6e670d4e1994cfa94fd5849a005aee173c3207e939d89c6ca2e719094f1e041f1de24909f4aa07d6", size = 126065, upload-time = "2026-09-02T09:54:52.208Z" }
 wheels = [
-    { url = "https://qilimanjaro-723412851021.d.codeartifact.eu-west-1.amazonaws.com/pypi/qilimanjaro/simple/qpysequence/0.11.0/qpysequence-0.11.0-py3-none-any.whl", hash = "sha512:98e95dd507152e69f57c9c755965ecbbb702432d74a5bef7a0ac25fd00599b013e59bcdcc12bf700e42495f4731f3dd4e0b584ba6d5299e271f7946ee203c585", size = 102626, upload-time = "2026-08-05T10:00:10.616Z" },
+    { url = "https://qilimanjaro-723412851021.d.codeartifact.eu-west-1.amazonaws.com/pypi/qilimanjaro/simple/qpysequence/0.11.1/qpysequence-0.11.1-py3-none-any.whl", hash = "sha512:7c87735e8fcbf09775aebca41146b72ddb24d53dc422c5c90f048053132edcd040eec6db0ef439c3d54f20c73978e3faba532461ac2aa2316a38a8601eb866e5", size = 111836, upload-time = "2026-09-02T09:54:51.828Z" },
 ]
 
 [[package]]
