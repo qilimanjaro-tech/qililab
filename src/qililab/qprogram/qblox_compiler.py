@@ -30,8 +30,7 @@ from qpysequence.constants import INST_MAX_WAIT, INST_MIN_WAIT
 from qpysequence.enums import TriggerCondition as QPyTriggerCondition
 
 from qililab.config import logger
-from qililab.constants import QDACCONSTANTS
-from qililab.constants import QBLOXCONSTANTS
+from qililab.constants import QBLOXCONSTANTS, QDACCONSTANTS
 from qililab.core.variables import Domain, Variable, VariableExpression
 from qililab.qprogram.blocks import Average, Block, Conditional, ForLoop, InfiniteLoop, Loop, Parallel
 from qililab.qprogram.calibration import Calibration
@@ -678,7 +677,7 @@ class QbloxCompiler:
                 # SetCond/latch check in _handle_conditional_trigger_prologue/epilogue, relying on that
                 # established cadence.
                 self._buses[bus].qpy_sequence._program.blocks[0].add(
-                    QPyInstructions.WaitTrigger(EXT_TRIGGER_ADDRESS, INST_MIN_WAIT)
+                    QPyInstructions.WaitTrigger(QBLOXCONSTANTS.EXT_TRIGGER_ADDRESS, INST_MIN_WAIT)
                 )
             self._buses[bus].static_duration += 4
 
@@ -2020,7 +2019,7 @@ class QbloxCompiler:
         trigger_network_wait = Wait(bus=bus, duration=trigger_padding_ns)
         self._handle_wait(trigger_network_wait)
 
-        mask = _trigger_address_mask(EXT_TRIGGER_ADDRESS)
+        mask = _trigger_address_mask(QBLOXCONSTANTS.EXT_TRIGGER_ADDRESS)
         cond_block = QPyProgram.Conditional(QPyTriggerCondition.OR, mask)
         self._buses[bus].qpy_block_stack[-1].add(cond_block)
         self._buses[bus].qpy_block_stack.append(cond_block)

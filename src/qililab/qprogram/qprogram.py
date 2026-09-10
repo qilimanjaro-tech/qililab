@@ -1273,6 +1273,9 @@ class QProgram(StructuredProgram):
             duration (int): Duration of the delay after the trigger is received. Minimum of 4 ns.
             port (optional, int | None): Trigger input port. Only used by the QDACII compiler.
                 Qblox buses always wait on the cluster's external trigger address. Defaults to None.
+
+        Raises:
+            NotImplementedError: If ``qp.if_trigger()`` is also used in this QProgram.
         """
         self._reject_conflicting_trigger_mode("wait_trigger", ("if_trigger",))
         self._trigger_mode = "wait_trigger"
