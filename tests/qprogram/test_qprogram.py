@@ -7,7 +7,7 @@ import numpy as np
 import pytest
 
 from qililab import Arbitrary, Domain, GaussianDragCorrection, Gaussian, IQPair, QProgram, Square, IQDrag
-from qililab.qprogram.blocks import Average
+from qililab.qprogram.blocks import Average, Conditional
 from qililab.qprogram.calibration import Calibration
 from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix, NonLinearCrosstalkMatrix
 from qililab.pulse_distortion import ExponentialCorrection
@@ -1161,6 +1161,38 @@ class TestQProgram(TestStructuredProgram):
         # ... second iteration of the loop
         assert isinstance(new_qp.body.elements[26], Sync)
 
+    def test_with_crosstalk_non_linear_skips_sync_after_conditional(self):
+        """Test with_crosstalk_qblox does not append the usual trailing loop Sync when a flux loop
+        iteration's last element is a qp.if_trigger() block: that Conditional already self-times its
+        own exit, and a Sync placed right after it would touch the gated bus outside the block, which
+        QbloxCompiler._validate_conditional_bus_isolation forbids."""
+        inverse_xtalk_array = np.linalg.inv([[1, 0.5], [0.5, 1]])
+        crosstalk = CrosstalkMatrix().from_array(["flux1", "flux2"], inverse_xtalk_array)
+        non_linear_crosstalk = NonLinearCrosstalkMatrix.from_linear(crosstalk)
+        non_linear_crosstalk.set_non_linear_params("flux2", "flux1", beta_c=0.8, amplitude=0.5)
+
+        square_wf = Square(amplitude=0.1, duration=50)
+        qp = QProgram()
+        offset = qp.variable(label="offset", domain=Domain.Voltage)
+        with qp.for_loop(variable=offset, start=0, stop=0.08, step=0.08):
+            qp.set_offset(bus="flux1", offset_path0=offset)
+            qp.set_gain(bus="flux2", gain=0.05)
+            qp.play(bus="flux1", waveform=square_wf)
+            qp.play(bus="flux2", waveform=square_wf)
+            with qp.if_trigger(expected_wait_time_ns=2252):
+                qp.wait(bus="readout", duration=100)
+
+        new_qp = qp.with_crosstalk_qblox(non_linear_crosstalk)
+
+        # Two iterations of 7 elements each (no Sync inserted between them): SetOffset(flux1),
+        # SetOffset(flux2), SetGain(flux1), Play(flux1), SetGain(flux2), Play(flux2), then each
+        # iteration's own Conditional.
+        assert len(new_qp.body.elements) == 14
+        assert isinstance(new_qp.body.elements[6], Conditional)
+        assert isinstance(new_qp.body.elements[7], SetOffset)
+        assert isinstance(new_qp.body.elements[13], Conditional)
+        assert new_qp.body.elements[13].expected_wait_time_ns == 2252
+
     def test_set_markers(self):
         qp = QProgram()
         qp.qblox.set_markers(bus="drive", mask="0111")
@@ -1368,6 +1400,76 @@ class TestQProgram(TestStructuredProgram):
         qp.wait_trigger(bus="drive", duration=np.int64(100))
         assert qp._body.elements[0].duration == 100
         assert type(qp._body.elements[0].duration) is int
+
+    def test_if_trigger_creates_conditional_block_with_expected_wait_time(self):
+        qp = QProgram()
+        with qp.if_trigger(expected_wait_time_ns=2252):
+            qp.wait(bus="readout", duration=100)
+
+        conditional = qp._body.elements[0]
+        assert isinstance(conditional, Conditional)
+        assert conditional.expected_wait_time_ns == 2252
+        assert len(conditional.elements) == 1
+
+    def test_if_trigger_default_expected_wait_time_is_none(self):
+        qp = QProgram()
+        with qp.if_trigger():
+            qp.wait(bus="readout", duration=100)
+
+        conditional = qp._body.elements[0]
+        assert isinstance(conditional, Conditional)
+        assert conditional.expected_wait_time_ns is None
+
+    def test_wait_trigger_then_if_trigger_raises_error(self):
+        qp = QProgram()
+        qp.wait_trigger(bus="drive", duration=100)
+        with pytest.raises(
+            NotImplementedError, match="if_trigger\\(\\) cannot be used together with wait_trigger in the same QProgram."
+        ):
+            qp.if_trigger()
+
+    def test_if_trigger_then_wait_trigger_raises_error(self):
+        qp = QProgram()
+        with qp.if_trigger():
+            qp.wait(bus="readout", duration=100)
+        with pytest.raises(
+            NotImplementedError, match="wait_trigger cannot be used together with if_trigger\\(\\) in the same QProgram."
+        ):
+            qp.wait_trigger(bus="drive", duration=100)
+
+    def test_measure_reset_then_if_trigger_raises_error(self):
+        qp = QProgram()
+        qp.qblox.measure_reset(
+            bus="readout2",
+            waveform=IQPair(I=Square(1.0, 1000), Q=Square(0.0, 1000)),
+            weights=IQPair(I=Square(1.0, 2000), Q=Square(0.0, 2000)),
+            control_bus="drive",
+            reset_pulse=IQDrag(amplitude=1.0, duration=100, num_sigmas=5, drag_coefficient=1.5),
+        )
+        with pytest.raises(
+            NotImplementedError,
+            match="if_trigger\\(\\) cannot be used together with qp.qblox.measure_reset\\(\\) in the same QProgram.",
+        ):
+            qp.if_trigger()
+
+    def test_if_trigger_then_measure_reset_raises_error(self):
+        qp = QProgram()
+        with qp.if_trigger():
+            qp.wait(bus="readout", duration=100)
+        waveform = IQPair(I=Square(1.0, 1000), Q=Square(0.0, 1000))
+        weights = IQPair(I=Square(1.0, 2000), Q=Square(0.0, 2000))
+        reset_pulse = IQDrag(amplitude=1.0, duration=100, num_sigmas=5, drag_coefficient=1.5)
+        with pytest.raises(
+            NotImplementedError,
+            match="qp.qblox.measure_reset\\(\\) cannot be used together with if_trigger\\(\\) in the same QProgram.",
+        ):
+            qp.qblox.measure_reset(
+                bus="readout2",
+                waveform=waveform,
+                weights=weights,
+                control_bus="drive",
+                reset_pulse=reset_pulse,
+            )
 
     def test_set_offset_with_numpy_float_stores_python_float(self):
         qp = QProgram()

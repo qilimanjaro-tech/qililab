@@ -109,7 +109,8 @@ url = "https://aws@qilimanjaro-723412851021.d.codeartifact.eu-west-1.amazonaws.c
 explicit = true
 
 [tool.uv.sources]
-qpysequence = { index = "qilimanjaro" }
+#TODO: bring it back to the index once qpysequence release done
+qpysequence = { path = "../qpysequence", editable = true }
 
 [tool.ruff]
 line-length = 120

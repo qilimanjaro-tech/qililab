@@ -13,12 +13,12 @@
 # limitations under the License.
 from collections.abc import Sequence
 from copy import deepcopy
-from typing import TYPE_CHECKING, overload
+from typing import TYPE_CHECKING, ClassVar, overload
 
 import numpy as np
 
 from qililab.core.variables import Domain, Variable, requires_domain
-from qililab.qprogram.blocks import Block, ForLoop, Parallel
+from qililab.qprogram.blocks import Block, Conditional, ForLoop, Parallel
 from qililab.qprogram.calibration import Calibration
 from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix, NonLinearCrosstalkMatrix
 from qililab.qprogram.flux_vector import FluxVector, NonLinearFluxVector
@@ -118,11 +118,32 @@ class QProgram(StructuredProgram):
 
     """
 
+    _TRIGGER_MODE_DISPLAY_NAMES: ClassVar[dict[str, str]] = {
+        "wait_trigger": "wait_trigger",
+        "if_trigger": "if_trigger()",
+        "measure_reset": "qp.qblox.measure_reset()",
+    }
+
     def __init__(self) -> None:
         super().__init__()
+        # if_trigger() is mutually exclusive with wait_trigger() and measure_reset() (checked both ways below).
+        self._trigger_mode: str | None = None
         self.qblox = self._QbloxInterface(self)
         self.quantum_machines = self._QuantumMachinesInterface(self)
         self.qdac = self._QdacInterface(self)
+
+    def _reject_conflicting_trigger_mode(self, this_op: str, conflicting_modes: tuple[str, ...]) -> None:
+        """Raise if ``_trigger_mode`` is already set to one of ``conflicting_modes``.
+
+        Only one hardware-trigger mechanism (``wait_trigger()``, ``if_trigger()``,
+        ``qp.qblox.measure_reset()``) can gate real-time execution per QProgram; ``if_trigger()`` is
+        mutually exclusive with the other two, which aren't mutually exclusive with each other.
+        """
+        if self._trigger_mode in conflicting_modes:
+            raise NotImplementedError(
+                f"{this_op} cannot be used together with {self._TRIGGER_MODE_DISPLAY_NAMES[self._trigger_mode]} "
+                "in the same QProgram."
+            )
 
     def __str__(self) -> str:
         def traverse(block: Block):
@@ -877,6 +898,14 @@ class QProgram(StructuredProgram):
 
             return ForLoop(variable=self._bus_variable_map[variable, bus], start=start, stop=stop, step=step)
 
+        def ends_in_conditional(element: Block | Operation) -> bool:
+            """Whether `element` is a Conditional, or a Block whose own last element does (recursively)."""
+            if isinstance(element, Conditional):
+                return True
+            if isinstance(element, Block) and element.elements:
+                return ends_in_conditional(element.elements[-1])
+            return False
+
         def handle_non_linear(
             elements: list[Block | Operation],
             flux_vector: NonLinearFluxVector,
@@ -991,8 +1020,17 @@ class QProgram(StructuredProgram):
                 else:
                     corrected_elements.append(element)
 
-            # Needs to sync at the end of every loop for the unpack to work with non-flux buses
-            if corrected_elements and not isinstance(corrected_elements[-1], Sync):
+            # Needs to sync at the end of every loop for the unpack to work with non-flux buses.
+            # Skipped when the tail ends in a Conditional (possibly wrapped in ForLoop/Parallel/etc.):
+            # a qp.if_trigger() block already self-times its own exit (see
+            # QbloxCompiler._handle_conditional_trigger_epilogue), and appending a Sync right after it
+            # would touch the conditional's gated bus outside the block, which
+            # QbloxCompiler._validate_conditional_bus_isolation forbids.
+            if (
+                corrected_elements
+                and not isinstance(corrected_elements[-1], Sync)
+                and not ends_in_conditional(corrected_elements[-1])
+            ):
                 corrected_elements.append(Sync())
             return corrected_elements, state
 
@@ -1235,10 +1273,66 @@ class QProgram(StructuredProgram):
             duration (int): Duration of the delay after the trigger is received. Minimum of 4 ns.
             port (optional, int | None): Trigger input port. Only used by the QDACII compiler.
                 Qblox buses always wait on the cluster's external trigger address. Defaults to None.
+
+        Raises:
+            NotImplementedError: If ``qp.if_trigger()`` is also used in this QProgram.
         """
+        self._reject_conflicting_trigger_mode("wait_trigger", ("if_trigger",))
+        self._trigger_mode = "wait_trigger"
         operation = WaitTrigger(bus=bus, duration=_to_scalar(duration), port=port)
         self._active_block.append(operation)
         self._buses.add(bus)
+
+    def if_trigger(self, trigger_padding_ns: int | None = None, expected_wait_time_ns: int | None = None):
+        """Define a block that only executes if the external trigger was received in time.
+
+        Guards a block so it only runs if the external trigger the bus is waiting on arrived in time;
+        otherwise the block is skipped so its bus moves on to the next bin (recorded as NaN) instead of
+        hanging on a missed trigger.
+
+        Blocks need to open a scope.
+
+        Args:
+            trigger_padding_ns (int | None, optional): Extra wait, in ns, inserted before checking the
+                trigger, to cover the propagation delay of the trigger network between the module sending
+                it and the module gated by ``qp.if_trigger()``. Defaults to, and cannot be set lower than,
+                the trigger network's own propagation delay.
+            expected_wait_time_ns (int | None, optional): How long to wait for the trigger, in ns. If not
+                given, it is derived from the QDAC bus driving the trigger in this QProgram (its ``dwell``,
+                when ``qp.set_trigger(..., position="step")`` is used). Compiling raises if neither an
+                explicit value nor a derivable QDAC dwell is available.
+
+        Returns:
+            Conditional: The conditional block.
+
+        Raises:
+            NotImplementedError: If ``qp.wait_trigger`` or ``qp.qblox.measure_reset`` is also used in this
+                QProgram.
+            ValueError: If ``trigger_padding_ns`` is given and is lower than the trigger network's own
+                propagation delay.
+
+        Examples:
+
+            >>> with qp.if_trigger():
+            >>> # operations that shall be executed if the trigger was received
+        """
+        self._reject_conflicting_trigger_mode("if_trigger()", ("wait_trigger", "measure_reset"))
+        self._trigger_mode = "if_trigger"
+        return QProgram._ConditionalContext(
+            program=self, trigger_padding_ns=trigger_padding_ns, expected_wait_time_ns=expected_wait_time_ns
+        )
+
+    class _ConditionalContext(StructuredProgram._BlockContext):
+        program: "QProgram"
+
+        def __init__(self, program: "QProgram", trigger_padding_ns: int | None, expected_wait_time_ns: int | None):
+            self.program = program
+            self.block: Conditional = Conditional(
+                trigger_padding_ns=trigger_padding_ns, expected_wait_time_ns=expected_wait_time_ns
+            )
+
+        def __enter__(self) -> "Conditional":
+            return super().__enter__()
 
     @overload
     def measure(self, bus: str, waveform: IQWaveform, weights: IQWaveform, save_adc: bool = False):
@@ -1393,11 +1487,13 @@ class QProgram(StructuredProgram):
         self._buses.add(bus)
 
     @requires_domain("duration", Domain.Time)
-    def set_trigger(self, bus: str, duration: int, outputs: list[int] | int | None = None, position: str = "start"):
+    def set_trigger(self, bus: str, duration: float, outputs: list[int] | int | None = None, position: str = "start"):
         """Set the trigger output for a given instrument.
         Args:
             bus (str): Unique identifier of the bus.
-            duration (int): Duration of the trigger pulse. Minimum of 4 ns.
+            duration (float): Duration of the trigger pulse. Unit depends on which instrument the bus maps
+                to: for a QDAC-driven bus, in seconds (passed straight through to the QDAC-II driver's
+                ``width_s``, minimum 4e-9 s); for a Qblox-driven bus, in nanoseconds (minimum 4 ns).
             outputs(optional, list[int] | int | None): Port channel/s of the trigger output. Defaults to None.
             outputs(optional, str): Trigger position in respective to the pulse location, it can be either `start` or `end. Defaults to start.
         """
@@ -1567,7 +1663,12 @@ class QProgram(StructuredProgram):
                 reset_pulse (IQWaveform | str): Pulse used for active reset.
                 trigger_address (int, optional): Trigger address for synchronization. Defaults to 1.
                 save_adc (bool, optional): Whether to save ADC data. Defaults to False.
+
+            Raises:
+                NotImplementedError: If ``qp.if_trigger()`` is also used in this QProgram.
             """
+            self.qprogram._reject_conflicting_trigger_mode("qp.qblox.measure_reset()", ("if_trigger",))
+            self.qprogram._trigger_mode = "measure_reset"
             operation: MeasureReset | MeasureResetCalibrated
             if (
                 isinstance(waveform, IQWaveform)
