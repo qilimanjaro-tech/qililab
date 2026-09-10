@@ -1455,14 +1455,6 @@ class TestQBloxCompiler:
         assert is_q1asm_equal(sequences["drive"], drive_str)
         assert is_q1asm_equal(sequences["readout"], readout_str)
 
-    def test_wait_trigger_no_ext_trigger_raises_error(self, wait_trigger: QProgram):
-
-        compiler = QbloxCompiler()
-        with pytest.raises(
-            AttributeError, match="External trigger has not been set as True inside runcard's instrument controllers."
-        ):
-            compiler.compile(qprogram=wait_trigger, ext_trigger=False)
-
     def test_wait_trigger_extends_bus_without_pending_upd_param_to_match_upd_param_floor(
         self, wait_trigger_upd_param_extension: QProgram
     ):
@@ -1470,7 +1462,7 @@ class TestQBloxCompiler:
         wait_trigger; every other bus in the same wait_trigger gets an extra 4 ns wait so all buses
         stay in sync."""
         compiler = QbloxCompiler()
-        sequences, _ = compiler.compile(qprogram=wait_trigger_upd_param_extension, ext_trigger=True)
+        sequences, _ = compiler.compile(qprogram=wait_trigger_upd_param_extension)
 
         drive_str = """
             setup:
@@ -4745,7 +4737,7 @@ class TestQBloxCompiler:
         qp.set_frequency(bus="drive", frequency=1e6)
         qp.wait_trigger(bus="drive", duration=6, port=1)
         compiler = QbloxCompiler()
-        sequences, _ = compiler.compile(qprogram=qp, ext_trigger=True)
+        sequences, _ = compiler.compile(qprogram=qp)
         expected = """
             setup:
                 wait_sync        4
@@ -4767,7 +4759,7 @@ class TestQBloxCompiler:
         qp.set_frequency(bus="drive", frequency=1e6)
         qp.wait_trigger(bus="drive", duration=70000, port=1)
         compiler = QbloxCompiler()
-        sequences, _ = compiler.compile(qprogram=qp, ext_trigger=True)
+        sequences, _ = compiler.compile(qprogram=qp)
         expected = """
             setup:
                 wait_sync        4

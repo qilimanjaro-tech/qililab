@@ -1189,8 +1189,6 @@ class QbloxCompiler:
 
         Raises:
             ValueError: If `element.duration` is a Variable.
-            AttributeError: If external trigger has not been enabled in the runcard's instrument
-                controllers.
         """
         if element.bus not in self._qblox_buses:
             return
@@ -1199,9 +1197,6 @@ class QbloxCompiler:
             raise ValueError("Wait trigger duration cannot be a Variable, it must be an int.")
 
         element.duration = QbloxCompiler._clamp_duration(element.duration, label="wait_trigger")
-
-        if not self._ext_trigger:
-            raise AttributeError("External trigger has not been set as True inside runcard's instrument controllers.")
 
         # Flush any pending upd_param before the sync, so every bus reaches the trigger aligned and
         # waits on it with the same plain wait_trigger.
