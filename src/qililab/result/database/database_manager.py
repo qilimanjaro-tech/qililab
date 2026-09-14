@@ -301,7 +301,7 @@ class DatabaseManager:
             return measurement_by_id
 
     def add_calibration_fitting(
-        self, id: int, path: str, parameters: dict[str, Any] | None = None
+        self, id: int, path: str | None = None, parameters: dict[str, Any] | None = None
     ) -> AutocalMeasurement:
         """Store fitting information into the autocalibration measurements database, loaded by its measurement_id.
 
