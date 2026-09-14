@@ -475,6 +475,35 @@ class TestPlatform:
         platform.set_bias_to_zero()
         assert platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.OFFSET_OUT0) == 0.0
 
+    def test_set_bias_to_zero_updates_tracked_flux(self, platform: Platform):
+        """set_bias_to_zero must reset the tracked Parameter.FLUX, not leave it stale."""
+        crosstalk_matrix = CrosstalkMatrix.from_buses(buses={"drive_line_q0_bus": {"drive_line_q0_bus": 0.1}})
+        platform.set_crosstalk(crosstalk_matrix)
+
+        # Set a non-zero flux so the flux_parameter cache holds a stale value.
+        platform.set_parameter(alias="drive_line_q0_bus", parameter=Parameter.FLUX, value=0.3)
+        assert platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.FLUX) == 0.3
+
+        platform.set_bias_to_zero()
+
+        # Instrument output is 0 and the tracked flux is back in sync.
+        assert platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.OFFSET_OUT0) == 0.0
+        assert platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.FLUX) == 0.0
+
+    def test_set_bias_to_zero_with_flux_offsets_keeps_voltage_zero(self, platform: Platform):
+        """With non-zero flux offsets, voltage must stay 0 and FLUX must track the zero-bias flux."""
+        crosstalk_matrix = CrosstalkMatrix.from_buses(buses={"drive_line_q0_bus": {"drive_line_q0_bus": 0.1}})
+        crosstalk_matrix.set_offset({"drive_line_q0_bus": 0.5})
+        platform.set_crosstalk(crosstalk_matrix)
+
+        platform.set_parameter(alias="drive_line_q0_bus", parameter=Parameter.FLUX, value=0.3)
+        platform.set_bias_to_zero()
+
+        # Instrument output is always driven to 0 V/A, regardless of flux offsets.
+        assert platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.OFFSET_OUT0) == 0.0
+        # The tracked flux reflects the flux that corresponds to zero bias, i.e. the flux offset.
+        assert platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.FLUX) == 0.5
+
     def test_set_bias_to_zero_without_crosstalk_raises_error(self, platform: Platform):
         """Test set_bias_to_zero function error without crosstalk."""
         error_string = "Crosstalk matrix has not been set"
