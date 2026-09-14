@@ -27,7 +27,7 @@ from tests.data import (
     SauronYokogawa,
 )
 
-from tests.test_utils import build_platform
+from tests.test_utils import build_platform, compare_objects
 
 
 from qililab import save_platform
@@ -260,71 +260,6 @@ def fixture_qp_quantum_machine() -> QProgram:
     qp.play(bus="drive_q0", waveform=Square(amplitude=1, duration=10))
     qp.wait("drive_q0", 10)
     return qp
-
-def compare_platforms(obj1, obj2, path="root", depth=0, max_depth=10):
-    """
-    Recursively compare two objects' properties up to max_depth.
-    """
-    differences = []
-
-    if depth > max_depth:
-        return True, []
-
-    # Different types: report and stop recursing this branch
-    if type(obj1) is not type(obj2):
-        differences.append(f"{path}: type mismatch ({type(obj1).__name__} vs {type(obj2).__name__})")
-        return False, differences
-
-    # Primitives and non-inspectable types
-    if isinstance(obj1, (int, float, complex, str, bool, bytes, type(None))):
-        if obj1 != obj2:
-            differences.append(f"{path}: {obj1!r} != {obj2!r}")
-        return obj1 == obj2, differences
-
-    # Lists and tuples
-    if isinstance(obj1, (list, tuple)):
-        if len(obj1) != len(obj2):
-            differences.append(f"{path}: length mismatch ({len(obj1)} vs {len(obj2)})")
-            # Still compare up to the shorter length
-        for i, (a, b) in enumerate(zip(obj1, obj2)):
-            _, diffs = compare_platforms(a, b, path=f"{path}[{i}]", depth=depth + 1, max_depth=max_depth)
-            differences.extend(diffs)
-        return len(differences) == 0, differences
-
-    # Dicts
-    if isinstance(obj1, dict):
-        keys1, keys2 = set(obj1.keys()), set(obj2.keys())
-        for k in keys1 - keys2:
-            differences.append(f"{path}[{k!r}]: key only in first object")
-        for k in keys2 - keys1:
-            differences.append(f"{path}[{k!r}]: key only in second object")
-        for k in keys1 & keys2:
-            _, diffs = compare_platforms(obj1[k], obj2[k], path=f"{path}[{k!r}]", depth=depth + 1, max_depth=max_depth)
-            differences.extend(diffs)
-        return len(differences) == 0, differences
-
-    # Objects with __dict__ (dataclasses, custom classes, etc.)
-    if hasattr(obj1, "__dict__"):
-        attrs1 = set(vars(obj1).keys())
-        attrs2 = set(vars(obj2).keys())
-        for attr in attrs1 - attrs2:
-            differences.append(f"{path}.{attr}: attribute only in first object")
-
-        for attr in attrs2 - attrs1:
-            differences.append(f"{path}.{attr}: attribute only in second object")
-
-        for attr in attrs1 & attrs2:
-            _, diffs = compare_platforms(
-                getattr(obj1, attr), getattr(obj2, attr),
-                path=f"{path}.{attr}", depth=depth + 1, max_depth=max_depth
-            )
-            differences.extend(diffs)
-        return len(differences) == 0, differences
-
-    # Fallback: direct equality
-    if obj1 != obj2:
-        differences.append(f"{path}: {obj1!r} != {obj2!r}")
-    return obj1 == obj2, differences
 
 class TestPlatformInitialization:
     """Unit tests for the Platform class initialization"""
@@ -694,7 +629,7 @@ class TestPlatform:
 
         new_platform = Platform(runcard=Runcard(**runcard_dict))
 
-        is_equal, diffs = compare_platforms(platform, new_platform)
+        is_equal, diffs = compare_objects(platform, new_platform)
         error_message = f"Platforms differ in {len(diffs)} place(s):\n"
         if not is_equal:
             for d in diffs:
