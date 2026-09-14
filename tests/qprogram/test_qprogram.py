@@ -40,6 +40,12 @@ from tests.qprogram.test_structured_program import (
 _UNIT_RESISTANCE = 1.0 / (PHI_0_WB * 1e12)
 
 
+def _crosstalk_with_resistances(crosstalk: CrosstalkMatrix) -> CrosstalkMatrix:
+    lines = set(crosstalk.matrix) | {col for row in crosstalk.matrix.values() for col in row}
+    crosstalk.set_resistances({line: _UNIT_RESISTANCE for line in lines})
+    return crosstalk
+
+
 @pytest.fixture(name="sample_qprogram_string")
 def get_sample_qprogram_string():
     """Sample qprogram and its corresponding string to tests the __str__ method"""
@@ -670,9 +676,9 @@ class TestQProgram(TestStructuredProgram):
         """Test with_crosstalk_qblox covers the multi-variable branch in handle_offset
         and handle_gain when len(variable_list) > 1."""
         # Build a 2x2 crosstalk matrix between flux_bus_0 and flux_bus_1
-        inverse_xtalk_array = np.linalg.inv([[1, 0.5], [0.5, 1]])
-        crosstalk = CrosstalkMatrix().from_array(["flux1", "flux2"], inverse_xtalk_array)
-        crosstalk.set_resistances({"flux1": _UNIT_RESISTANCE, "flux2": _UNIT_RESISTANCE})
+        crosstalk = _crosstalk_with_resistances(
+            CrosstalkMatrix.from_array(["flux1", "flux2"], np.linalg.inv([[1, 0.5], [0.5, 1]]))
+        )
 
         # Test handle_offset
         qp = QProgram()
@@ -704,9 +710,9 @@ class TestQProgram(TestStructuredProgram):
     def test_with_crosstalk_non_linear(self):
         """Test with_crosstalk_qblox covers the non-linear implementation."""
         # Build a 2x2 crosstalk matrix between flux_bus_0 and flux_bus_1
-        inverse_xtalk_array = np.linalg.inv([[1, 0.5], [0.5, 1]])
-        crosstalk = CrosstalkMatrix().from_array(["flux1", "flux2"], inverse_xtalk_array)
-        crosstalk.set_resistances({"flux1": _UNIT_RESISTANCE, "flux2": _UNIT_RESISTANCE})
+        crosstalk = _crosstalk_with_resistances(
+            CrosstalkMatrix.from_array(["flux1", "flux2"], np.linalg.inv([[1, 0.5], [0.5, 1]]))
+        )
         non_linear_crosstalk = NonLinearCrosstalkMatrix.from_linear(crosstalk)
         non_linear_crosstalk.set_non_linear_params("flux2", "flux1", beta_c=0.8, amplitude=0.5)
 
@@ -799,9 +805,9 @@ class TestQProgram(TestStructuredProgram):
     def test_with_crosstalk_non_linear_set_offset_after_loop(self):
         """Test with_crosstalk_qblox covers the non-linear implementation repeating consecutive offsets and plays."""
         # Build a 2x2 crosstalk matrix between flux_bus_0 and flux_bus_1
-        inverse_xtalk_array = np.linalg.inv([[1, 0.5], [0.5, 1]])
-        crosstalk = CrosstalkMatrix().from_array(["flux1", "flux2"], inverse_xtalk_array)
-        crosstalk.set_resistances({"flux1": _UNIT_RESISTANCE, "flux2": _UNIT_RESISTANCE})
+        crosstalk = _crosstalk_with_resistances(
+            CrosstalkMatrix.from_array(["flux1", "flux2"], np.linalg.inv([[1, 0.5], [0.5, 1]]))
+        )
         non_linear_crosstalk = NonLinearCrosstalkMatrix.from_linear(crosstalk)
         non_linear_crosstalk.set_non_linear_params("flux2", "flux1", beta_c=0.8, amplitude=0.5)
 
@@ -859,9 +865,9 @@ class TestQProgram(TestStructuredProgram):
     def test_with_crosstalk_non_linear_offset_loop_after_offset_loop(self):
         """Test with_crosstalk_qblox covers the non-linear implementation repeating consecutive offsets and plays."""
         # Build a 2x2 crosstalk matrix between flux_bus_0 and flux_bus_1
-        inverse_xtalk_array = np.linalg.inv([[1, 0.5], [0.5, 1]])
-        crosstalk = CrosstalkMatrix().from_array(["flux1", "flux2"], inverse_xtalk_array)
-        crosstalk.set_resistances({"flux1": _UNIT_RESISTANCE, "flux2": _UNIT_RESISTANCE})
+        crosstalk = _crosstalk_with_resistances(
+            CrosstalkMatrix.from_array(["flux1", "flux2"], np.linalg.inv([[1, 0.5], [0.5, 1]]))
+        )
         non_linear_crosstalk = NonLinearCrosstalkMatrix.from_linear(crosstalk)
         non_linear_crosstalk.set_non_linear_params("flux2", "flux1", beta_c=0.8, amplitude=0.5)
 
@@ -944,9 +950,9 @@ class TestQProgram(TestStructuredProgram):
     def test_with_crosstalk_non_linear_repeat_offset_play(self):
         """Test with_crosstalk_qblox covers the non-linear implementation repeating consecutive offsets and plays."""
         # Build a 2x2 crosstalk matrix between flux_bus_0 and flux_bus_1
-        inverse_xtalk_array = np.linalg.inv([[1, 0.5], [0.5, 1]])
-        crosstalk = CrosstalkMatrix().from_array(["flux1", "flux2"], inverse_xtalk_array)
-        crosstalk.set_resistances({"flux1": _UNIT_RESISTANCE, "flux2": _UNIT_RESISTANCE})
+        crosstalk = _crosstalk_with_resistances(
+            CrosstalkMatrix.from_array(["flux1", "flux2"], np.linalg.inv([[1, 0.5], [0.5, 1]]))
+        )
         non_linear_crosstalk = NonLinearCrosstalkMatrix.from_linear(crosstalk)
         non_linear_crosstalk.set_non_linear_params("flux2", "flux1", beta_c=0.8, amplitude=0.5)
 
@@ -1056,9 +1062,9 @@ class TestQProgram(TestStructuredProgram):
     def test_with_crosstalk_non_linear_convert_arbitrary_play(self):
         """Test with_crosstalk_qblox covers the non-linear implementation repeating consecutive offsets and plays."""
         # Build a 2x2 crosstalk matrix between flux_bus_0 and flux_bus_1
-        inverse_xtalk_array = np.linalg.inv([[1, 0.5], [0.5, 1]])
-        crosstalk = CrosstalkMatrix().from_array(["flux1", "flux2"], inverse_xtalk_array)
-        crosstalk.set_resistances({"flux1": _UNIT_RESISTANCE, "flux2": _UNIT_RESISTANCE})
+        crosstalk = _crosstalk_with_resistances(
+            CrosstalkMatrix.from_array(["flux1", "flux2"], np.linalg.inv([[1, 0.5], [0.5, 1]]))
+        )
         non_linear_crosstalk = NonLinearCrosstalkMatrix.from_linear(crosstalk)
         non_linear_crosstalk.set_non_linear_params("flux2", "flux1", beta_c=0.8, amplitude=0.5)
 
@@ -1102,9 +1108,9 @@ class TestQProgram(TestStructuredProgram):
     def test_with_crosstalk_non_linear_play_before_loop(self):
         """Test with_crosstalk_qblox covers the non-linear implementation playing a pulse before a loop."""
         # Build a 2x2 crosstalk matrix between flux_bus_0 and flux_bus_1
-        inverse_xtalk_array = np.linalg.inv([[1, 0.5], [0.5, 1]])
-        crosstalk = CrosstalkMatrix().from_array(["flux1", "flux2"], inverse_xtalk_array)
-        crosstalk.set_resistances({"flux1": _UNIT_RESISTANCE, "flux2": _UNIT_RESISTANCE})
+        crosstalk = _crosstalk_with_resistances(
+            CrosstalkMatrix.from_array(["flux1", "flux2"], np.linalg.inv([[1, 0.5], [0.5, 1]]))
+        )
         non_linear_crosstalk = NonLinearCrosstalkMatrix.from_linear(crosstalk)
         non_linear_crosstalk.set_non_linear_params("flux2", "flux1", beta_c=0.8, amplitude=0.5)
 

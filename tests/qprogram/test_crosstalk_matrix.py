@@ -337,14 +337,16 @@ class TestUnitConversion:
     """
 
     def test_convert_phi0_per_volt_to_pH_known_value(self):
-        from qililab.qprogram.crosstalk_matrix import PHI_0_WB, convert_phi0_per_volt_to_pH
+        from qililab.qprogram.crosstalk_matrix import convert_phi0_per_volt_to_pH
 
-        matrix = {"b1": {"b1": 1.0, "b2": 0.5}}
-        resistances = {"b1": 1000.0, "b2": 2000.0}
+        matrix = {"b1": {"b1": 2.0, "b2": 0.5}}
+        resistances = {"b1": 1000.0, "b2": 3000.0}
         converted = convert_phi0_per_volt_to_pH(matrix, resistances)
-        # Per-column scaling by the *column* line's resistance.
-        assert converted["b1"]["b1"] == pytest.approx(1.0 * PHI_0_WB * 1000.0 * 1e12)
-        assert converted["b1"]["b2"] == pytest.approx(0.5 * PHI_0_WB * 2000.0 * 1e12)
+        # Independent expected values (computed by hand from Φ₀ = 2.067833848e-15 Wb), so a wrong
+        # constant in the implementation moves only the actual side and fails the test. Per-column
+        # scaling: value · Φ₀ · R_col · 1e12, keyed by the *column* line's resistance.
+        assert converted["b1"]["b1"] == pytest.approx(4.135667696)
+        assert converted["b1"]["b2"] == pytest.approx(3.101750772)
 
     def test_conversion_round_trip_is_identity(self):
         from qililab.qprogram.crosstalk_matrix import convert_pH_to_phi0_per_volt, convert_phi0_per_volt_to_pH
@@ -361,7 +363,7 @@ class TestUnitConversion:
         import qililab.qprogram.crosstalk_matrix as cm
 
         convert = getattr(cm, func)
-        with pytest.raises(ValueError, match="Missing resistance for line 'b2'"):
+        with pytest.raises(ValueError, match=r"Missing resistance for flux line.*'b2'"):
             convert({"b1": {"b2": 0.5}}, {"b1": 1000.0})
 
     def test_in_phi0_per_volt_matches_manual_conversion(self, crosstalk_matrix):
@@ -375,12 +377,12 @@ class TestUnitConversion:
 
     def test_in_phi0_per_volt_raises_without_resistances(self, crosstalk_array_buses):
         matrix = CrosstalkMatrix.from_array(buses=crosstalk_array_buses[1], matrix_array=crosstalk_array_buses[0])
-        with pytest.raises(ValueError, match="Missing resistance for line"):
+        with pytest.raises(ValueError, match=r"Missing resistance for flux line.*'flux_0'"):
             matrix.in_phi0_per_volt()
 
     def test_flux_to_bias_raises_without_resistances(self, crosstalk_array_buses):
         matrix = CrosstalkMatrix.from_array(buses=crosstalk_array_buses[1], matrix_array=crosstalk_array_buses[0])
-        with pytest.raises(ValueError, match="Missing resistance for line"):
+        with pytest.raises(ValueError, match=r"Missing resistance for flux line.*'flux_0'"):
             matrix.flux_to_bias({"flux_0": 0.1, "flux_1": 0.2, "flux_2": 0.05})
 
 

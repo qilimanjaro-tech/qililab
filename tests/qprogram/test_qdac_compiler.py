@@ -12,15 +12,21 @@ from qililab.qprogram.blocks import Block
 from qililab.qprogram.blocks.for_loop import ForLoop
 from qililab.qprogram.blocks.loop import Loop
 from qililab.qprogram.crosstalk_matrix import PHI_0_WB, CrosstalkMatrix, NonLinearCrosstalkMatrix
-
-# Resistance for which the pH → Φ₀/V conversion factor (Φ₀ · R · 1e12) is exactly 1.0.
-_UNIT_RESISTANCE = 1.0 / (PHI_0_WB * 1e12)
 from qililab.qprogram.operations import Play
 from qililab.qprogram.qdac_compiler import QdacCompilationOutput
 from qililab.core.variables import Domain
 from qililab.waveforms import Square
 from qililab.waveforms.arbitrary import Arbitrary
 from qililab.waveforms.iq_pair import IQPair
+
+# Resistance for which the pH → Φ₀/V conversion factor (Φ₀ · R · 1e12) is exactly 1.0.
+_UNIT_RESISTANCE = 1.0 / (PHI_0_WB * 1e12)
+
+
+def _crosstalk_with_resistances(crosstalk: CrosstalkMatrix) -> CrosstalkMatrix:
+    lines = set(crosstalk.matrix) | {col for row in crosstalk.matrix.values() for col in row}
+    crosstalk.set_resistances({line: _UNIT_RESISTANCE for line in lines})
+    return crosstalk
 
 
 def _collect_plays(block: Block) -> dict:
@@ -423,10 +429,9 @@ class TestQdacCompiler:
         """Test all possible combinations of play + set_trigger on the QDACII."""
         qdac_bus = flux1.instruments[0]
 
-        crosstalk = CrosstalkMatrix.from_buses(
-            buses={"flux1": {"flux1": 1.0, "flux2": 0.5}, "flux2": {"flux1": 0.1, "flux2": 1.0}}
+        crosstalk = _crosstalk_with_resistances(
+            CrosstalkMatrix.from_buses({"flux1": {"flux1": 1.0, "flux2": 0.5}, "flux2": {"flux1": 0.1, "flux2": 1.0}})
         )
-        crosstalk.set_resistances({"flux1": _UNIT_RESISTANCE, "flux2": _UNIT_RESISTANCE})
         flux_wf = Arbitrary(samples=np.array([0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.4, 0.3, 0.2, 0.1, 0]))
         qp = QProgram()
 
@@ -454,10 +459,9 @@ class TestQdacCompiler:
         """Test all possible combinations of play + set_trigger on the QDACII."""
         qdac_bus = flux1.instruments[0]
 
-        crosstalk = CrosstalkMatrix.from_buses(
-            buses={"flux1": {"flux1": 1.0, "flux2": 0.5}, "flux2": {"flux1": 0.1, "flux2": 1.0}}
+        crosstalk = _crosstalk_with_resistances(
+            CrosstalkMatrix.from_buses({"flux1": {"flux1": 1.0, "flux2": 0.5}, "flux2": {"flux1": 0.1, "flux2": 1.0}})
         )
-        crosstalk.set_resistances({"flux1": _UNIT_RESISTANCE, "flux2": _UNIT_RESISTANCE})
         qp = QProgram()
 
         freq = qp.variable(label="frequency", domain=Domain.Frequency)
@@ -482,10 +486,9 @@ class TestQdacCompiler:
         """Test all possible combinations of play + set_trigger on the QDACII."""
         qdac_bus = flux1.instruments[0]
 
-        crosstalk = CrosstalkMatrix.from_buses(
-            buses={"flux1": {"flux1": 1.0, "flux2": 0.5}, "flux2": {"flux1": 0.1, "flux2": 1.0}}
+        crosstalk = _crosstalk_with_resistances(
+            CrosstalkMatrix.from_buses({"flux1": {"flux1": 1.0, "flux2": 0.5}, "flux2": {"flux1": 0.1, "flux2": 1.0}})
         )
-        crosstalk.set_resistances({"flux1": _UNIT_RESISTANCE, "flux2": _UNIT_RESISTANCE})
         calibration = Calibration()
         calibration.crosstalk_matrix = crosstalk
 
@@ -540,10 +543,9 @@ class TestQdacCompiler:
         """Test all possible combinations of play + set_trigger on the QDACII."""
         qdac_bus = flux1.instruments[0]
 
-        crosstalk = CrosstalkMatrix.from_buses(
-            buses={"flux1": {"flux1": 1.0, "flux2": 0.5}, "flux2": {"flux1": 0.1, "flux2": 1.0}}
+        crosstalk = _crosstalk_with_resistances(
+            CrosstalkMatrix.from_buses({"flux1": {"flux1": 1.0, "flux2": 0.5}, "flux2": {"flux1": 0.1, "flux2": 1.0}})
         )
-        crosstalk.set_resistances({"flux1": _UNIT_RESISTANCE, "flux2": _UNIT_RESISTANCE})
         flux_wf = IQPair(
             Arbitrary(samples=np.array([0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.4, 0.3, 0.2, 0.1, 0])),
             Arbitrary(samples=np.array([0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.4, 0.3, 0.2, 0.1, 0])),
@@ -571,12 +573,9 @@ class TestQdacCompiler:
         assert qdac_bus.set_parameter.call_count == 0
 
     def test_crosstalk_compensation_target_fluxes(self, qdac: QDevilQDac2, flux1: Bus, flux2: Bus):
-        """Regression (QDAC-ramp double-count): the compiler seeds the parked point from
-        ``target_fluxes`` (not by inverting the hardware bias), so a non-swept bus's compensated
-        play equals the forward flux_to_bias of its true target — the nonlinear correction applied
-        exactly once. ``flux2`` is parked ONLY via target_fluxes (no operation in the program)."""
-        crosstalk = CrosstalkMatrix.from_array(["flux1", "flux2"], np.linalg.inv([[1, 0.5], [0.5, 1]]))
-        crosstalk.set_resistances({"flux1": _UNIT_RESISTANCE, "flux2": _UNIT_RESISTANCE})
+        crosstalk = _crosstalk_with_resistances(
+            CrosstalkMatrix.from_array(["flux1", "flux2"], np.linalg.inv([[1, 0.5], [0.5, 1]]))
+        )
         nonlinear = NonLinearCrosstalkMatrix.from_linear(crosstalk)
         nonlinear.set_non_linear_params("flux2", "flux1", junction_asym=0.2)
 
@@ -608,8 +607,9 @@ class TestQdacCompiler:
     ):
         """When no target flux is given, the compiler recovers the parked flux from the hardware
         bias voltage (qdac_offsets) via the linear inversion (original behaviour)."""
-        crosstalk = CrosstalkMatrix.from_array(["flux1", "flux2"], np.linalg.inv([[1, 0.5], [0.5, 1]]))
-        crosstalk.set_resistances({"flux1": _UNIT_RESISTANCE, "flux2": _UNIT_RESISTANCE})
+        crosstalk = _crosstalk_with_resistances(
+            CrosstalkMatrix.from_array(["flux1", "flux2"], np.linalg.inv([[1, 0.5], [0.5, 1]]))
+        )
         # flux2 parked at 0.1 -> its bias voltage; qdac_offsets is ordered like qdac_buses [flux1, flux2]
         bias = crosstalk.flux_to_bias({"flux1": 0.0, "flux2": 0.1})
         qdac_offsets = [float(bias["flux1"]), float(bias["flux2"])]
@@ -638,10 +638,9 @@ class TestQdacCompiler:
     def test_different_size_plays_raises_error(self, qdac: QDevilQDac2, flux1: Bus, flux2: Bus):
         """Test all possible combinations of play + set_trigger on the QDACII."""
 
-        crosstalk = CrosstalkMatrix.from_buses(
-            buses={"flux1": {"flux1": 1.0, "flux2": 0.5}, "flux2": {"flux1": 0.1, "flux2": 1.0}}
+        crosstalk = _crosstalk_with_resistances(
+            CrosstalkMatrix.from_buses({"flux1": {"flux1": 1.0, "flux2": 0.5}, "flux2": {"flux1": 0.1, "flux2": 1.0}})
         )
-        crosstalk.set_resistances({"flux1": _UNIT_RESISTANCE, "flux2": _UNIT_RESISTANCE})
         flux_wf = Arbitrary(samples=np.array([0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.4, 0.3, 0.2, 0.1, 0]))
         flux_wf_wrong = Arbitrary(samples=np.array([0.1, 0]))
         qp = QProgram()
@@ -998,10 +997,9 @@ class TestQdacCompiler:
         """Test all possible combinations of play + set_trigger on the QDACII."""
         pulse_wf = Square(1.0, 100)
         dwell_us = 2
-        crosstalk = CrosstalkMatrix.from_buses(
-            buses={"flux1": {"flux1": 1.0, "flux2": 0.5}, "flux2": {"flux1": 0.1, "flux2": 1.0}}
+        crosstalk = _crosstalk_with_resistances(
+            CrosstalkMatrix.from_buses({"flux1": {"flux1": 1.0, "flux2": 0.5}, "flux2": {"flux1": 0.1, "flux2": 1.0}})
         )
-        crosstalk.set_resistances({"flux1": _UNIT_RESISTANCE, "flux2": _UNIT_RESISTANCE})
 
         # Setting external trigger at the beginning of the iteration
         qp = QProgram()

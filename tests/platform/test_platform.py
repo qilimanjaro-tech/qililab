@@ -43,6 +43,12 @@ from qililab.instruments.qdevil import QDevilQDac2
 from qililab.platform import Bus, Buses, Platform, Session
 from qililab.qprogram import Calibration, Experiment, QProgram, QbloxCompilationOutput
 from qililab.qprogram.crosstalk_matrix import PHI_0_WB, CrosstalkMatrix
+from qililab.result.database import get_db_manager
+from qililab.result.qprogram.qblox_measurement_result import QbloxMeasurementResult
+from qililab.settings import AnalogCompilationSettings, DigitalCompilationSettings, Runcard
+from qililab.settings.digital.gate_event import GateEvent
+from qililab.typings.enums import InstrumentName, Parameter
+from qililab.waveforms import Chained, IQPair, Ramp, Square
 
 # Resistance for which the pH → Φ₀/V conversion factor (Φ₀ · R · 1e12) is exactly 1.0.
 _UNIT_RESISTANCE = 1.0 / (PHI_0_WB * 1e12)
@@ -54,12 +60,7 @@ def _crosstalk_with_resistances(buses: dict) -> CrosstalkMatrix:
     lines = set(matrix.matrix) | {col for row in matrix.matrix.values() for col in row}
     matrix.set_resistances({line: _UNIT_RESISTANCE for line in lines})
     return matrix
-from qililab.result.database import get_db_manager
-from qililab.result.qprogram.qblox_measurement_result import QbloxMeasurementResult
-from qililab.settings import AnalogCompilationSettings, DigitalCompilationSettings, Runcard
-from qililab.settings.digital.gate_event import GateEvent
-from qililab.typings.enums import InstrumentName, Parameter
-from qililab.waveforms import Chained, IQPair, Ramp, Square
+
 
 @pytest.fixture(name="platform")
 def fixture_platform():
@@ -522,7 +523,7 @@ class TestPlatform:
         platform = build_platform(runcard=SauronQuantumMachines.runcard)
         platform._connected_to_instruments = False
 
-        platform.set_crosstalk(CrosstalkMatrix.from_buses(buses={bus: {bus: 1}}))
+        platform.set_crosstalk(_crosstalk_with_resistances({bus: {bus: 1}}))
         platform.set_parameter(alias=bus, parameter=parameter, value=value)
         assert platform.get_parameter(alias=bus, parameter=parameter) == value
 

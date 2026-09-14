@@ -92,7 +92,7 @@ class FluxVector:
                 inputs produce array bias outputs.
         """
         self.crosstalk = crosstalk
-        self.crosstalk_inverse = crosstalk.inverse()
+        self.crosstalk_inverse = crosstalk.in_phi0_per_volt().inverse()
         self.crosstalk_inverse.flux_offsets = self.crosstalk.flux_offsets
 
         for bus in self.crosstalk.matrix.keys():

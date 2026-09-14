@@ -29,15 +29,15 @@ PHI_0_WB: Final = 2.067833848e-15
 def _rescale_by_resistance(
     matrix: dict[str, dict[str, float]], flux_line_resistances_ohms: dict[str, float], *, invert: bool
 ) -> dict[str, dict[str, float]]:
+    missing = sorted({col for cols in matrix.values() for col in cols if flux_line_resistances_ohms.get(col) is None})
+    if missing:
+        raise ValueError(f"Missing resistance for flux line(s): {missing}")
     converted_matrix: dict[str, dict[str, float]] = {}
-    for row_label, cols in matrix.items():
-        converted_matrix[row_label] = {}
-        for col_label, value in cols.items():
-            resistance = flux_line_resistances_ohms.get(col_label)
-            if resistance is None:
-                raise ValueError(f"Missing resistance for line '{col_label}'")
-            factor = PHI_0_WB * resistance * 1e12
-            converted_matrix[row_label][col_label] = value / factor if invert else value * factor
+    for bus_1, dict_buses in matrix.items():
+        converted_matrix[bus_1] = {}
+        for bus_2, value in dict_buses.items():
+            factor = PHI_0_WB * flux_line_resistances_ohms[bus_2] * 1e12
+            converted_matrix[bus_1][bus_2] = value / factor if invert else value * factor
     return converted_matrix
 
 
@@ -47,7 +47,7 @@ def convert_phi0_per_volt_to_pH(
     """Convert a crosstalk matrix from units of Φ₀/V to pH, using the provided line resistances.
 
     Args:
-        matrix (dict): Nested dict ``{row_label: {col_label: value_in_phi0_per_volt}}``.
+        matrix (dict): Crosstalk matrix dict ``{row_label: {col_label: value_in_phi0_per_volt}}``.
         flux_line_resistances_ohms (dict): Line resistances in ohms ``{line_label: resistance}``.
 
     Returns:
@@ -65,7 +65,7 @@ def convert_pH_to_phi0_per_volt(
     """Convert a crosstalk matrix from units of pH to Φ₀/V, using the provided line resistances.
 
     Args:
-        matrix (dict): Nested dict ``{row_label: {col_label: value_in_pH}}``.
+        matrix (dict): Crosstalk matrix dict ``{row_label: {col_label: value_in_pH}}``.
         flux_line_resistances_ohms (dict): Line resistances in ohms ``{line_label: resistance}``.
 
     Returns:
