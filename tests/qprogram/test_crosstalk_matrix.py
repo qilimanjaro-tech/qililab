@@ -385,6 +385,19 @@ class TestUnitConversion:
         with pytest.raises(ValueError, match=r"Missing resistance for flux line.*'flux_0'"):
             matrix.flux_to_bias({"flux_0": 0.1, "flux_1": 0.2, "flux_2": 0.05})
 
+    def test_set_resistances_warns_on_still_missing_lines(self):
+        matrix = CrosstalkMatrix.from_buses({"b1": {"b1": 1.0, "b2": 0.5}, "b2": {"b1": 0.1, "b2": 1.0}})
+        with pytest.warns(UserWarning, match=r"Missing resistances for flux lines.*'b2'"):
+            matrix.set_resistances({"b1": 1000.0})  # b2 left out
+
+    def test_set_resistances_no_warning_when_complete(self):
+        import warnings as _warnings
+
+        matrix = CrosstalkMatrix.from_buses({"b1": {"b1": 1.0, "b2": 0.5}, "b2": {"b1": 0.1, "b2": 1.0}})
+        with _warnings.catch_warnings():
+            _warnings.simplefilter("error")  # any warning becomes an error
+            matrix.set_resistances({"b1": 1000.0, "b2": 2000.0})
+
 
 class TestNonLinearCrosstalkMatrix:
     def test_from_linear_preserves_matrix(self, non_linear_crosstalk_matrix, crosstalk_matrix):

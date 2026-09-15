@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import warnings
 from typing import Final, Mapping, cast
 
 import numpy as np
@@ -29,7 +30,7 @@ PHI_0_WB: Final = 2.067833848e-15
 def _rescale_by_resistance(
     matrix: dict[str, dict[str, float]], flux_line_resistances_ohms: dict[str, float], *, invert: bool
 ) -> dict[str, dict[str, float]]:
-    missing = sorted({col for cols in matrix.values() for col in cols if flux_line_resistances_ohms.get(col) is None})
+    missing = sort_buses({col for cols in matrix.values() for col in cols if flux_line_resistances_ohms.get(col) is None})
     if missing:
         raise ValueError(f"Missing resistance for flux line(s): {missing}")
     converted_matrix: dict[str, dict[str, float]] = {}
@@ -205,6 +206,12 @@ class CrosstalkMatrix:
         """
         for bus in resistances:
             self.resistances[bus] = resistances[bus]
+        missing = tuple(bus for bus in self._sorted_buses() if self.resistances.get(bus) is None)
+        if missing:
+            warnings.warn(
+                f"Missing resistances for flux lines: {missing}. Add them with set_resistances(), "
+                "or CrosstalkMatrix will fail upon any operation."
+            )
 
     def in_phi0_per_volt(self) -> "CrosstalkMatrix":
         """Return an equivalent crosstalk matrix with values expressed in Φ₀/V.
