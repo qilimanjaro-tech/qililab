@@ -28,7 +28,7 @@ class InstrumentFactory:
     handlers: ClassVar[dict[str, type[Instrument]]] = {}
 
     @classmethod
-    def register(cls, handler_cls: type[Element]) -> type[Instrument]:
+    def register(cls, handler_cls: type[Element]) -> type[Element]:
         """Register handler in the factory.
 
         Args:

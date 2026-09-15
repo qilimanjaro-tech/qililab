@@ -47,13 +47,10 @@ from .waveforms import (
     Chained,
 )
 
-# moved here because it has instruments module dependencies so circular imports can be avoided
-from .analog import AnnealingProgram
 from .result import Cooldown, DatabaseManager, Sample, get_db_manager, load_results, save_results, Measurement
 from .qililab_settings import get_settings
 
 __all__ = [
-    "AnnealingProgram",
     "Arbitrary",
     "Calibration",
     "Chained",

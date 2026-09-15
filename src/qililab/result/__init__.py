@@ -40,7 +40,6 @@ Functions
 """
 
 # isort: skip_file
-from .experiment_live_plot import ExperimentLivePlot
 from .experiment_results import ExperimentResults
 from .result import Result
 from .result_management import load_results, save_results
@@ -80,3 +79,13 @@ __all__ = [
     "save_results",
     "stream_results",
 ]
+
+
+def __getattr__(name: str):
+    # ExperimentLivePlot pulls in `dash`, which is only needed for the optional live-plotting
+    # feature, so it's imported lazily on first access instead of at package import time.
+    if name == "ExperimentLivePlot":
+        from .experiment_live_plot import ExperimentLivePlot
+
+        return ExperimentLivePlot
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

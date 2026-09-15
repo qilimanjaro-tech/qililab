@@ -59,6 +59,25 @@ def lambda_constructor(constructor, node):
     return loads(serialized_lambda)  # noqa: S301
 
 
+def legacy_tuple_constructor(constructor, node):
+    """Constructor for '!tuple', a tag used by qililab versions that depended on qilisdk."""
+    return tuple(constructor.construct_sequence(node, deep=True))
+
+
+def legacy_np_scalar_representer(representer, data: np.generic):
+    """
+    Represent any NumPy scalar (e.g. np.int64, np.float32) into python generic scalars.
+    """
+    return representer.represent_data(data.item())
+
+
+def legacy_np_scalar_constructor(constructor, node):
+    """Constructor for '!np_scalar', a tag used by qililab versions that depended on qilisdk."""
+    mapping = constructor.construct_mapping(node, deep=True)
+    dtype = np.dtype(mapping["dtype"])
+    return dtype.type(mapping["value"])
+
+
 yaml = YAML(typ="unsafe")
 yaml.register_class(UUID)
 yaml.representer.add_representer(np.ndarray, ndarray_representer)
@@ -67,3 +86,6 @@ yaml.representer.add_representer(deque, deque_representer)
 yaml.constructor.add_constructor("!deque", deque_constructor)
 yaml.representer.add_representer(types.LambdaType, lambda_representer)
 yaml.constructor.add_constructor("!lambda", lambda_constructor)
+yaml.constructor.add_constructor("!tuple", legacy_tuple_constructor)
+yaml.representer.add_multi_representer(np.generic, legacy_np_scalar_representer)
+yaml.constructor.add_constructor("!np_scalar", legacy_np_scalar_constructor)

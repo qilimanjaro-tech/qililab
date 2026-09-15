@@ -20,7 +20,6 @@ import numpy as np
 
 from qililab.qililab_settings import get_settings
 from qililab.result.database import DatabaseManager
-from qililab.result.experiment_live_plot import ExperimentLivePlot
 from qililab.result.experiment_results import ExperimentResults
 
 
@@ -213,6 +212,8 @@ class ExperimentResultsWriter(ExperimentResults):
 
             # Generate live plot figures
             if self._live_plot_true:
+                from qililab.result.experiment_live_plot import ExperimentLivePlot
+
                 self.results_liveplot = ExperimentLivePlot(self.path, self._slurm_execution, self._port_number)
                 self.results_liveplot.live_plot_figures(dims_dict)
 
