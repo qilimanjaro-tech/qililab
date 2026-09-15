@@ -30,7 +30,9 @@ PHI_0_WB: Final = 2.067833848e-15
 def _rescale_by_resistance(
     matrix: dict[str, dict[str, float]], flux_line_resistances_ohms: dict[str, float], *, invert: bool
 ) -> dict[str, dict[str, float]]:
-    missing = sort_buses({col for cols in matrix.values() for col in cols if flux_line_resistances_ohms.get(col) is None})
+    missing = sort_buses(
+        {col for cols in matrix.values() for col in cols if flux_line_resistances_ohms.get(col) is None}
+    )
     if missing:
         raise ValueError(f"Missing resistance for flux line(s): {missing}")
     converted_matrix: dict[str, dict[str, float]] = {}
