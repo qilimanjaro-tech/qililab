@@ -873,6 +873,7 @@ class Platform:
         for flux_alias in bus_list:
             element = self.get_element(alias=flux_alias)
             self._set_bias_from_element(element)
+            self.flux_parameter[flux_alias] = float(cast("float", self.flux_vector.flux_vector[flux_alias]))
 
     def _load_instruments(self, instruments_dict: list[dict]) -> list[Instrument]:
         """Instantiates all instrument classes from their respective dictionaries.
