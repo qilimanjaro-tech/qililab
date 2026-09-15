@@ -15,7 +15,6 @@
 from __future__ import annotations
 
 import math
-from copy import deepcopy
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, cast
 
@@ -41,7 +40,26 @@ class FluxVector:
         self.flux_vector: dict[str, float | list[float] | np.ndarray] = {}
         self.bias_vector: dict[str, float | list[float] | np.ndarray] = {}
         self.crosstalk: CrosstalkMatrix | None = None
-        self.crosstalk_inverse: CrosstalkMatrix | None = None
+        self._crosstalk_inverse: CrosstalkMatrix | None = None
+
+    @property
+    def crosstalk_inverse(self) -> "CrosstalkMatrix | None":
+        """Inverse of the attached crosstalk matrix, computed lazily on first access.
+
+        Kept for backward compatibility. The bias computation goes through
+        ``crosstalk.flux_to_bias`` (which uses the matrix's own cached inverse), so this
+        inverse — a full ``CrosstalkMatrix`` with its nested dict — is only materialised
+        if a caller actually reads it, instead of on every ``set_crosstalk`` call.
+        """
+        if self._crosstalk_inverse is None and self.crosstalk is not None:
+            inverse = self.crosstalk.inverse()
+            inverse.flux_offsets = self.crosstalk.flux_offsets
+            self._crosstalk_inverse = inverse
+        return self._crosstalk_inverse
+
+    @crosstalk_inverse.setter
+    def crosstalk_inverse(self, value: "CrosstalkMatrix | None") -> None:
+        self._crosstalk_inverse = value
 
     def __getitem__(self, bus: str) -> float | list[float] | np.ndarray:
         """Given a bus, returns its corresponding flux
@@ -92,8 +110,9 @@ class FluxVector:
                 inputs produce array bias outputs.
         """
         self.crosstalk = crosstalk
-        self.crosstalk_inverse = crosstalk.inverse()
-        self.crosstalk_inverse.flux_offsets = self.crosstalk.flux_offsets
+        # Invalidate the lazy inverse; it is rebuilt on demand only if crosstalk_inverse
+        # is read. The bias below uses crosstalk.flux_to_bias, not this attribute.
+        self._crosstalk_inverse = None
 
         for bus in self.crosstalk.matrix.keys():
             if bus not in self.flux_vector:
@@ -164,17 +183,25 @@ class FluxVector:
         Returns:
             dict[str, FluxVector]: Dictionary containing different flux vectors for each bus.
         """
-        list_fluxes = {}
-        if self.crosstalk:
-            for bus in self.crosstalk.matrix.keys():
-                flux_vector_copy = deepcopy(self)
-                for zero_flux in self.crosstalk.matrix.keys():
-                    if (bus_list is not None and bus in bus_list and zero_flux in bus_list and zero_flux != bus) or (
-                        bus_list is None and zero_flux != bus
-                    ):
-                        flux_vector_copy[zero_flux] = 0
-                if (bus_list is not None and bus in bus_list) or bus_list is None:
-                    list_fluxes[bus] = flux_vector_copy
+        list_fluxes: dict[str, "FluxVector"] = {}
+        if not self.crosstalk:
+            return list_fluxes
+
+        buses = list(self.crosstalk.matrix.keys())
+        for bus in buses:
+            if bus_list is not None and bus not in bus_list:
+                continue
+            # Build the decomposed flux directly: keep this bus's flux, zero the others
+            # (restricted to bus_list when given). Then compute the bias once, instead of
+            # re-running set_crosstalk on every individual zero-assignment.
+            decomposed_flux = dict(self.flux_vector)
+            for zero_flux in buses:
+                if zero_flux != bus and (bus_list is None or zero_flux in bus_list):
+                    decomposed_flux[zero_flux] = 0
+            decomposed = FluxVector.from_dict(decomposed_flux)
+            # Share the crosstalk matrix (read-only here) rather than deep-copying it per bus.
+            decomposed.set_crosstalk(self.crosstalk)
+            list_fluxes[bus] = decomposed
         return list_fluxes
 
     @classmethod
