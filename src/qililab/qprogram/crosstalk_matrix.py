@@ -40,27 +40,22 @@ class _CrosstalkCache:
     """
 
     buses: list[str]
-    matrix: xr.DataArray  # dims (bus_out, bus_in), coords = buses
-    inverse: xr.DataArray  # dims (bus_out, bus_in), coords = buses
+    # dims (bus_out, bus_in), coords = buses
+    matrix: xr.DataArray
+    inverse: xr.DataArray
     version: int
     source: dict[str, dict[str, float]]
 
 
 class _RowView(dict):
     """Transient, write-through view of a single crosstalk-matrix row.
-
-    Returned by :meth:`CrosstalkMatrix.__getitem__` so that the historical
-    ``crosstalk[bus1][bus2] = value`` idiom keeps working *and* invalidates the cached
-    array. It subclasses ``dict`` (callers rely on ``isinstance(row, dict)``) but is
-    never stored on the matrix — only plain dicts live in ``matrix`` — so serialization
-    still emits ordinary mappings.
     """
 
     def __init__(self, parent: "CrosstalkMatrix", bus: str) -> None:
         self._parent = parent
         self._bus = bus
         existed = bus in parent.matrix
-        row = parent.matrix.setdefault(bus, {})  # autovivify, matching the old __getitem__
+        row = parent.matrix.setdefault(bus, {})
         super().__init__(row)
         if not existed:
             # Adding a new (empty) row changes the set of buses seen by to_array().
@@ -86,8 +81,6 @@ class _RowView(dict):
 class CrosstalkMatrix:
     """A class to represent a crosstalk matrix where each index corresponds to a bus."""
 
-    # Class-level defaults so a deserialized instance (ruamel builds it via ``__new__``
-    # and never calls ``__init__``) has valid cache state until its first computation.
     _cache: "_CrosstalkCache | None" = None
     _version: int = 0
 
@@ -105,10 +98,6 @@ class CrosstalkMatrix:
 
     def __getstate__(self) -> dict:
         """Serialized state: only the persistent dicts, never the derived array cache.
-
-        Keeps the on-disk (ruamel/pickle/deepcopy) format identical to the pre-xarray
-        version — ``matrix``, ``flux_offsets``, ``resistances`` (plus any subclass
-        fields) — so ``Calibration`` documents are unaffected.
         """
         state = self.__dict__.copy()
         state.pop("_cache", None)
@@ -123,10 +112,6 @@ class CrosstalkMatrix:
 
     def _get_cache(self) -> "_CrosstalkCache":
         """Returns the memoized labeled array/inverse, rebuilding only when ``matrix`` changed.
-
-        The rebuild fills a dense identity-based array from the sparse dict (missing
-        diagonal → 1.0, missing off-diagonal → 0.0, matching the historical semantics)
-        and inverts it once. Subsequent calls with an unchanged matrix are O(1).
         """
         cache = self._cache
         if cache is not None and cache.source is self.matrix and cache.version == self._version:
@@ -277,7 +262,7 @@ class CrosstalkMatrix:
         """
         cache = self._get_cache()
         buses = cache.buses
-        inverse = cache.inverse.values  # labeled DataArray for storage/alignment; ndarray for the hot arithmetic
+        inverse = cache.inverse.values
 
         offsets = np.array([self.flux_offsets.get(bus, 0.0) for bus in buses])
         flux_values = [flux[bus] for bus in buses]

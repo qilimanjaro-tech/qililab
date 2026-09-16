@@ -44,13 +44,7 @@ class FluxVector:
 
     @property
     def crosstalk_inverse(self) -> "CrosstalkMatrix | None":
-        """Inverse of the attached crosstalk matrix, computed lazily on first access.
-
-        Kept for backward compatibility. The bias computation goes through
-        ``crosstalk.flux_to_bias`` (which uses the matrix's own cached inverse), so this
-        inverse — a full ``CrosstalkMatrix`` with its nested dict — is only materialised
-        if a caller actually reads it, instead of on every ``set_crosstalk`` call.
-        """
+        """Inverse of the attached crosstalk matrix, computed lazily on first access."""
         if self._crosstalk_inverse is None and self.crosstalk is not None:
             inverse = self.crosstalk.inverse()
             inverse.flux_offsets = self.crosstalk.flux_offsets
@@ -110,8 +104,6 @@ class FluxVector:
                 inputs produce array bias outputs.
         """
         self.crosstalk = crosstalk
-        # Invalidate the lazy inverse; it is rebuilt on demand only if crosstalk_inverse
-        # is read. The bias below uses crosstalk.flux_to_bias, not this attribute.
         self._crosstalk_inverse = None
 
         for bus in self.crosstalk.matrix.keys():
