@@ -404,8 +404,8 @@ class TestPlatform:
 
     def test_set_flux_to_zero(self, platform: Platform):
         """Test set_flux_to_zero function."""
-        crosstalk_matrix = CrosstalkMatrix.from_buses(
-            buses={
+        crosstalk_matrix = _crosstalk_with_resistances(
+            {
                 "drive_line_q0_bus": {"drive_line_q0_bus": 1.0, "flux_line_q1_bus": 0.1},
                 "flux_line_q1_bus": {"drive_line_q0_bus": 0.1, "flux_line_q1_bus": 1.0},
             }
@@ -423,8 +423,8 @@ class TestPlatform:
 
     def test_set_bias_to_zero(self, platform: Platform):
         """Test set_bias_to_zero function."""
-        crosstalk_matrix = CrosstalkMatrix.from_buses(
-            buses={
+        crosstalk_matrix = _crosstalk_with_resistances(
+            {
                 "drive_line_q0_bus": {"drive_line_q0_bus": 1.0, "flux_line_q1_bus": 0.1},
                 "flux_line_q1_bus": {"drive_line_q0_bus": 0.1, "flux_line_q1_bus": 1.0},
             }
@@ -436,8 +436,8 @@ class TestPlatform:
 
     def test_set_bias_to_zero_updates_tracked_flux(self, platform: Platform):
         """set_bias_to_zero must reset the tracked Parameter.FLUX, not leave it stale."""
-        crosstalk_matrix = CrosstalkMatrix.from_buses(
-            buses={
+        crosstalk_matrix = _crosstalk_with_resistances(
+            {
                 "drive_line_q0_bus": {"drive_line_q0_bus": 1.0, "flux_line_q1_bus": 0.1},
                 "flux_line_q1_bus": {"drive_line_q0_bus": 0.1, "flux_line_q1_bus": 1.0},
             }
@@ -460,8 +460,8 @@ class TestPlatform:
 
     def test_set_bias_to_zero_with_flux_offsets_keeps_voltage_zero(self, platform: Platform):
         """With non-zero flux offsets, voltage must stay 0 and FLUX must track the zero-bias flux."""
-        crosstalk_matrix = CrosstalkMatrix.from_buses(
-            buses={
+        crosstalk_matrix = _crosstalk_with_resistances(
+            {
                 "drive_line_q0_bus": {"drive_line_q0_bus": 1.0, "flux_line_q1_bus": 0.1},
                 "flux_line_q1_bus": {"drive_line_q0_bus": 0.1, "flux_line_q1_bus": 1.0},
             }
