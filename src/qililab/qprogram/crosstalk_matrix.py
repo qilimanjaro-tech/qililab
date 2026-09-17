@@ -33,7 +33,7 @@ class _CrosstalkCache:
     """Memoized numeric view of a :class:`CrosstalkMatrix`."""
 
     buses: list[str]
-    # dims (bus_out, bus_in), coords = buses
+    # matrix has these dimensions (bus_out, bus_in), coords = buses
     matrix: xr.DataArray
     inverse: xr.DataArray
     version: int
