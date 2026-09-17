@@ -114,7 +114,8 @@ class StreamArray:
                     qprogram=serialize(self.qprogram) if self.qprogram else None,
                     calibration=serialize(calibration) if calibration else None,
                     debug_file=self._get_debug() if self.platform and self.qprogram else None,
-                    dc_offsets=self._get_offsets() if self.platform else None,
+                    dc_offsets=self._get_dc_offsets() if self.platform else None,
+                    flux_offsets=self._get_flux_offsets() if calibration and calibration.crosstalk_matrix else None,
                     target=self._get_index_list(self.qubit_idx),
                     secondary_source=self._get_index_list(self.second_idx),
                     bus_mapping=self.bus_mapping,
@@ -246,7 +247,7 @@ class StreamArray:
         debug_exception = "Non Qblox machine."
         return debug_exception
 
-    def _get_offsets(self) -> dict[str, float] | None:
+    def _get_dc_offsets(self) -> dict[str, float] | None:
         qdac_buses = {
             bus.alias: bus.get_parameter(Parameter.VOLTAGE)
             for bus in self.platform.buses.elements  # type: ignore [union-attr]
@@ -254,6 +255,13 @@ class StreamArray:
             if isinstance(instrument, QDevilQDac2)
         }
         return qdac_buses if qdac_buses else None
+
+    def _get_flux_offsets(self) -> dict[str, float] | None:
+        if self.qprogram:
+            return self.qprogram.
+        if self.platform and self.platform.flux_vector:
+            return self.platform.flux_vector.flux_vector
+        return None
 
     def _get_index_list(self, qubit: int | str | list[str] | None) -> list[str] | None:
         if qubit is None:
