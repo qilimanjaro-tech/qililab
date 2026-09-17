@@ -149,7 +149,7 @@ class FluxVector:
         bias_values = [self.bias_vector[bus] for bus in buses]
 
         # Scalar Flux
-        if all(np.ndim(value) == 0 for value in bias_values):
+        if all(isinstance(value, (int, float, np.number)) for value in bias_values):
             flux = matrix @ np.array(bias_values, dtype=float) + offsets
             for bus, value in zip(buses, flux):
                 self.flux_vector[bus] = float(value)
@@ -606,7 +606,7 @@ class NonLinearFluxVector:
         bias_values = [bias_vector[bus] for bus in buses]
 
         # Scalar Flux
-        if all(np.ndim(value) == 0 for value in bias_values):
+        if all(isinstance(value, (int, float, np.number)) for value in bias_values):
             flux = matrix @ np.array(bias_values, dtype=float) + offsets
             for bus, value in zip(buses, flux):
                 self.offset[bus] = float(value)

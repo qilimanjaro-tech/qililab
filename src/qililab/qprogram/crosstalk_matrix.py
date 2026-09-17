@@ -30,7 +30,7 @@ _BUS_IN: Final = "bus_in"
 
 @dataclass
 class _CrosstalkCache:
-    """Memoized numeric view of a :class:`CrosstalkMatrix`."""
+    """Numeric view of a :class:`CrosstalkMatrix`."""
 
     buses: list[str]
     # matrix has these dimensions (bus_out, bus_in), coords = buses
@@ -95,12 +95,6 @@ class CrosstalkMatrix:
         state.pop("_version", None)
         return state
 
-    def __setstate__(self, state: dict) -> None:
-        """Restores persistent state and resets the (lazily rebuilt) array cache."""
-        self.__dict__.update(state)
-        self._cache = None
-        self._version = 0
-
     def _get_cache(self) -> "_CrosstalkCache":
         """Returns the memoized labeled array/inverse, rebuilding only when ``matrix`` changed."""
         cache = self._cache
@@ -112,9 +106,8 @@ class CrosstalkMatrix:
         index = {bus: i for i, bus in enumerate(buses)}
         data = np.eye(n)
         for bus1, row in self.matrix.items():
-            i = index[bus1]
-            for bus2, value in row.items():
-                data[i, index[bus2]] = value
+            if row:
+                data[index[bus1], [index[bus2] for bus2 in row]] = list(row.values())
 
         coords = {_BUS_OUT: buses, _BUS_IN: buses}
         matrix_da = xr.DataArray(data, dims=(_BUS_OUT, _BUS_IN), coords=coords)
@@ -256,7 +249,7 @@ class CrosstalkMatrix:
 
         offsets = np.array([self.flux_offsets.get(bus, 0.0) for bus in buses])
         flux_values = [flux[bus] for bus in buses]
-        scalar_input = all(np.ndim(value) == 0 for value in flux_values)
+        scalar_input = all(isinstance(value, (int, float, np.number)) for value in flux_values)
 
         if scalar_input:
             bias = inverse @ (np.array(flux_values, dtype=float) - offsets)
@@ -320,6 +313,15 @@ class CrosstalkMatrix:
         return instance
 
 
+@dataclass
+class _NonLinearCache:
+    """Sparse index of the non-None nonlinear terms of a :class:`NonLinearCrosstalkMatrix`."""
+
+    version: int
+    beta_terms: list[tuple[str, str, float]]
+    junction_terms: list[tuple[str, str, float]]
+
+
 @yaml.register_class
 class NonLinearCrosstalkMatrix(CrosstalkMatrix):
     """Extends CrosstalkMatrix with nonlinear crosstalk correction terms.
@@ -333,12 +335,45 @@ class NonLinearCrosstalkMatrix(CrosstalkMatrix):
     respectively. Entries that are None indicate no nonlinear coupling between that pair.
     """
 
+    _nonlinear_cache: "_NonLinearCache | None" = None
+    _nonlinear_version: int = 0
+
     def __init__(self) -> None:
         """Initializes an empty nonlinear crosstalk matrix."""
         super().__init__()
         self.beta_c_matrix: dict[str, dict[str, float | None]] = {}
         self.non_lin_amp_matrix: dict[str, dict[str, float | None]] = {}
         self.junction_asym_matrix: dict[str, dict[str, float | None]] = {}
+        self._nonlinear_cache = None
+        self._nonlinear_version = 0
+
+    def __getstate__(self) -> dict:
+        """Serialized state drops the derived nonlinear index too (kept dense in the dicts)."""
+        state = super().__getstate__()
+        state.pop("_nonlinear_cache", None)
+        state.pop("_nonlinear_version", None)
+        return state
+
+    def _active_nonlinear_terms(self) -> "_NonLinearCache":
+        """Returns the non-None nonlinear terms, rebuilding only when they changed."""
+        cache = self._nonlinear_cache
+        if cache is not None and cache.version == self._nonlinear_version:
+            return cache
+
+        beta_terms = [
+            (bus_i, bus_j, beta)
+            for bus_i, row in self.beta_c_matrix.items()
+            for bus_j, beta in row.items()
+            if beta is not None
+        ]
+        junction_terms = [
+            (bus_i, bus_j, d)
+            for bus_i, row in self.junction_asym_matrix.items()
+            for bus_j, d in row.items()
+            if d is not None
+        ]
+        self._nonlinear_cache = _NonLinearCache(self._nonlinear_version, beta_terms, junction_terms)
+        return self._nonlinear_cache
 
     def __setitem__(self, key: str, value: dict[str, float]) -> None:
         """Sets the crosstalk values for the given bus and initializes nonlinear entries.
@@ -368,6 +403,8 @@ class NonLinearCrosstalkMatrix(CrosstalkMatrix):
             for bus in value:
                 if bus not in self.junction_asym_matrix[key]:
                     self.junction_asym_matrix[key][bus] = None
+
+        self._nonlinear_version += 1
 
     def set_non_linear_params(
         self,
@@ -422,6 +459,8 @@ class NonLinearCrosstalkMatrix(CrosstalkMatrix):
             if bus_i not in self.junction_asym_matrix:
                 self.junction_asym_matrix[bus_i] = {}
             self.junction_asym_matrix[bus_i][bus_j] = junction_asym
+
+        self._nonlinear_version += 1
 
     def sin_beta_scaled(
         self,
@@ -495,30 +534,24 @@ class NonLinearCrosstalkMatrix(CrosstalkMatrix):
             ValueError: If a bus with nonlinear params set is not found in the provided flux dict.
         """
         corrections: dict[str, float | np.ndarray] = dict.fromkeys(flux, 0.0)
+        terms = self._active_nonlinear_terms()
 
-        for bus_i, row in self.beta_c_matrix.items():
-            for bus_j, beta in row.items():
-                if beta is None:
-                    continue
-                if bus_i not in flux:
-                    raise ValueError(
-                        f"Bus '{bus_i}' has nonlinear parameters set but was not found "
-                        f"in the provided flux dict. All buses with nonlinear corrections "
-                        f"must be included."
-                    )
-                amp = self.non_lin_amp_matrix.get(bus_i, {}).get(bus_j)
-                if amp is None:
-                    raise ValueError(f"beta_c is set for ({bus_i}, {bus_j}) but non_lin_amp is None.")
-                if bus_j not in flux:
-                    raise ValueError(f"Bus '{bus_j}' not found in provided flux dict.")
-                result = self.sin_beta_scaled(flux=flux[bus_j], beta=beta, amp=amp)
-                corrections[bus_i] += result  # type: ignore[assignment]
-        for bus_i in self.junction_asym_matrix:
-            for bus_j in self.junction_asym_matrix[bus_i]:
-                d = self.junction_asym_matrix[bus_i][bus_j]
-                if d is None:
-                    continue
-                corrections[bus_i] += self.junction_asymmetry_correction(flux_x=flux[bus_j], d=d)
+        for bus_i, bus_j, beta in terms.beta_terms:
+            if bus_i not in flux:
+                raise ValueError(
+                    f"Bus '{bus_i}' has nonlinear parameters set but was not found "
+                    f"in the provided flux dict. All buses with nonlinear corrections "
+                    f"must be included."
+                )
+            amp = self.non_lin_amp_matrix.get(bus_i, {}).get(bus_j)
+            if amp is None:
+                raise ValueError(f"beta_c is set for ({bus_i}, {bus_j}) but non_lin_amp is None.")
+            if bus_j not in flux:
+                raise ValueError(f"Bus '{bus_j}' not found in provided flux dict.")
+            result = self.sin_beta_scaled(flux=flux[bus_j], beta=beta, amp=amp)
+            corrections[bus_i] += result  # type: ignore[assignment]
+        for bus_i, bus_j, d in terms.junction_terms:
+            corrections[bus_i] += self.junction_asymmetry_correction(flux_x=flux[bus_j], d=d)
 
         return corrections
 
@@ -541,10 +574,10 @@ class NonLinearCrosstalkMatrix(CrosstalkMatrix):
         sorted_buses = cache.buses
 
         corrections = self.get_non_linear_flux_terms(flux)
-        if all(isinstance(f, (float, int)) for f in flux.values()):
+        if all(isinstance(f, (int, float, np.number)) for f in flux.values()):
             corrected_flux = np.array([flux[bus] + corrections[bus] for bus in sorted_buses], dtype=float)
         else:
-            len_wf = max(len(flux[bus]) for bus in sorted_buses if not isinstance(flux[bus], (float, int)))  # type: ignore[arg-type]
+            len_wf = max(len(flux[bus]) for bus in sorted_buses if not isinstance(flux[bus], (int, float, np.number)))  # type: ignore[arg-type]
             corrected_flux = np.array(
                 [
                     flux[bus]
