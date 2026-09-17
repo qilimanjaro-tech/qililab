@@ -615,7 +615,7 @@ class NonLinearFluxVector:
             length = max(np.asarray(value).size for value in bias_values)
             bias_stack = np.stack([np.broadcast_to(np.asarray(value, dtype=float), length) for value in bias_values])
             flux = matrix @ bias_stack + offsets[:, np.newaxis]
-            for bus, row in zip(buses, flux):
-                self.offset[bus] = row
+            for bus, vector in zip(buses, flux):
+                self.offset[bus] = vector
 
         return self.offset
