@@ -512,6 +512,19 @@ class TestFluxVector:
         assert flux_vector._crosstalk_inverse is None  # invalidated, not stale
         assert np.allclose(flux_vector.crosstalk_inverse.to_array(), np.eye(3))
 
+    def test_crosstalk_inverse_cached_on_repeated_access(self, flux_vector, crosstalk_matrix):
+        """Repeated reads return the same materialised inverse object (computed once)."""
+        flux_vector.set_crosstalk(crosstalk_matrix)
+        first = flux_vector.crosstalk_inverse
+        assert flux_vector.crosstalk_inverse is first
+
+    def test_crosstalk_inverse_setter(self, flux_vector, crosstalk_matrix):
+        """The setter overrides the stored inverse and is returned as-is."""
+        flux_vector.set_crosstalk(crosstalk_matrix)
+        sentinel = CrosstalkMatrix.from_array(["flux_0", "flux_1", "flux_2"], np.eye(3))
+        flux_vector.crosstalk_inverse = sentinel
+        assert flux_vector.crosstalk_inverse is sentinel
+
     def test_get_decomposed_vector_shares_crosstalk_reference(self, flux_vector, crosstalk_matrix):
         """The rewrite shares the (read-only) crosstalk instead of deep-copying it per bus."""
         flux_vector.set_crosstalk_from_bias(

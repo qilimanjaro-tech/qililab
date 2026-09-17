@@ -491,6 +491,22 @@ class TestCrosstalkMatrixCache:
         source["b"] = 0.9
         assert cm.matrix["a"]["b"] == 0.5
 
+    def test_rowview_delitem_invalidates(self):
+        """Deleting an entry via ``del cm[bus][bus2]`` writes through and invalidates."""
+        cm = CrosstalkMatrix.from_array(["a", "b"], np.array([[1.0, 0.2], [0.1, 1.0]]))
+        assert cm.to_array()[0, 1] == 0.2  # builds + caches
+        del cm["a"]["b"]
+        assert "b" not in cm.matrix["a"]
+        assert cm.to_array()[0, 1] == 0.0  # missing off-diagonal now defaults to 0.0
+
+    def test_rowview_update_invalidates(self):
+        """Bulk-updating a row via ``cm[bus].update(...)`` writes through and invalidates."""
+        cm = CrosstalkMatrix.from_array(["a", "b"], np.array([[1.0, 0.2], [0.1, 1.0]]))
+        _ = cm.to_array()  # builds + caches
+        cm["a"].update({"b": 0.6})
+        assert cm.matrix["a"]["b"] == 0.6
+        assert cm.to_array()[0, 1] == 0.6
+
     def test_to_array_returns_fresh_copy(self):
         """Callers may mutate the returned array without corrupting the cache."""
         cm = CrosstalkMatrix.from_array(["a", "b"], np.array([[1.0, 0.2], [0.1, 1.0]]))
