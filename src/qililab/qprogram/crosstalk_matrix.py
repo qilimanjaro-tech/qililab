@@ -89,8 +89,7 @@ class CrosstalkMatrix:
         self._version += 1
 
     def __getstate__(self) -> dict:
-        """Serialized state: only the persistent dicts, never the derived array cache.
-        """
+        """Serialized state: only the persistent dicts, never the derived array cache."""
         state = self.__dict__.copy()
         state.pop("_cache", None)
         state.pop("_version", None)
@@ -103,8 +102,7 @@ class CrosstalkMatrix:
         self._version = 0
 
     def _get_cache(self) -> "_CrosstalkCache":
-        """Returns the memoized labeled array/inverse, rebuilding only when ``matrix`` changed.
-        """
+        """Returns the memoized labeled array/inverse, rebuilding only when ``matrix`` changed."""
         cache = self._cache
         if cache is not None and cache.source is self.matrix and cache.version == self._version:
             return cache
