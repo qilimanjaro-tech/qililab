@@ -392,10 +392,16 @@ class TestPlatform:
 
     def test_set_flux_to_zero(self, platform: Platform):
         """Test set_flux_to_zero function."""
-        crosstalk_matrix = CrosstalkMatrix.from_buses(buses={"drive_line_q0_bus": {"drive_line_q0_bus": 0.1}})
+        crosstalk_matrix = CrosstalkMatrix.from_buses(
+            buses={
+                "drive_line_q0_bus": {"drive_line_q0_bus": 1.0, "flux_line_q1_bus": 0.1},
+                "flux_line_q1_bus": {"drive_line_q0_bus": 0.1, "flux_line_q1_bus": 1.0},
+            }
+        )
         platform.set_crosstalk(crosstalk_matrix)
         platform.set_flux_to_zero()
         assert platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.FLUX) == 0.0
+        assert platform.get_parameter(alias="flux_line_q1_bus", parameter=Parameter.FLUX) == 0.0
 
     def test_set_flux_to_zero_without_crosstalk_raises_error(self, platform: Platform):
         """Test set_flux_to_zero function error without crosstalk."""
@@ -405,10 +411,62 @@ class TestPlatform:
 
     def test_set_bias_to_zero(self, platform: Platform):
         """Test set_bias_to_zero function."""
-        crosstalk_matrix = CrosstalkMatrix.from_buses(buses={"drive_line_q0_bus": {"drive_line_q0_bus": 0.1}})
+        crosstalk_matrix = CrosstalkMatrix.from_buses(
+            buses={
+                "drive_line_q0_bus": {"drive_line_q0_bus": 1.0, "flux_line_q1_bus": 0.1},
+                "flux_line_q1_bus": {"drive_line_q0_bus": 0.1, "flux_line_q1_bus": 1.0},
+            }
+        )
         platform.set_crosstalk(crosstalk_matrix)
         platform.set_bias_to_zero()
         assert platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.OFFSET_OUT0) == 0.0
+        assert platform.get_parameter(alias="flux_line_q1_bus", parameter=Parameter.OFFSET_OUT1) == 0.0
+
+    def test_set_bias_to_zero_updates_tracked_flux(self, platform: Platform):
+        """set_bias_to_zero must reset the tracked Parameter.FLUX, not leave it stale."""
+        crosstalk_matrix = CrosstalkMatrix.from_buses(
+            buses={
+                "drive_line_q0_bus": {"drive_line_q0_bus": 1.0, "flux_line_q1_bus": 0.1},
+                "flux_line_q1_bus": {"drive_line_q0_bus": 0.1, "flux_line_q1_bus": 1.0},
+            }
+        )
+        platform.set_crosstalk(crosstalk_matrix)
+
+        # Set non-zero fluxes so the flux_parameter cache holds stale values.
+        platform.set_parameter(alias="drive_line_q0_bus", parameter=Parameter.FLUX, value=0.3)
+        platform.set_parameter(alias="flux_line_q1_bus", parameter=Parameter.FLUX, value=0.2)
+        assert platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.FLUX) == 0.3
+        assert platform.get_parameter(alias="flux_line_q1_bus", parameter=Parameter.FLUX) == 0.2
+
+        platform.set_bias_to_zero()
+
+        # Instrument outputs are 0 and the tracked fluxes are back in sync.
+        assert platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.OFFSET_OUT0) == 0.0
+        assert platform.get_parameter(alias="flux_line_q1_bus", parameter=Parameter.OFFSET_OUT1) == 0.0
+        assert platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.FLUX) == 0.0
+        assert platform.get_parameter(alias="flux_line_q1_bus", parameter=Parameter.FLUX) == 0.0
+
+    def test_set_bias_to_zero_with_flux_offsets_keeps_voltage_zero(self, platform: Platform):
+        """With non-zero flux offsets, voltage must stay 0 and FLUX must track the zero-bias flux."""
+        crosstalk_matrix = CrosstalkMatrix.from_buses(
+            buses={
+                "drive_line_q0_bus": {"drive_line_q0_bus": 1.0, "flux_line_q1_bus": 0.1},
+                "flux_line_q1_bus": {"drive_line_q0_bus": 0.1, "flux_line_q1_bus": 1.0},
+            }
+        )
+        crosstalk_matrix.set_offset({"drive_line_q0_bus": 0.5, "flux_line_q1_bus": 0.2})
+        platform.set_crosstalk(crosstalk_matrix)
+
+        platform.set_parameter(alias="drive_line_q0_bus", parameter=Parameter.FLUX, value=0.3)
+        platform.set_parameter(alias="flux_line_q1_bus", parameter=Parameter.FLUX, value=0.4)
+        platform.set_bias_to_zero()
+
+        # Instrument outputs are always driven to 0 V/A, regardless of flux offsets.
+        assert platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.OFFSET_OUT0) == 0.0
+        assert platform.get_parameter(alias="flux_line_q1_bus", parameter=Parameter.OFFSET_OUT1) == 0.0
+        # The tracked fluxes reflect the flux that corresponds to zero bias, i.e. the flux offsets.
+        assert platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.FLUX) == 0.5
+        assert platform.get_parameter(alias="flux_line_q1_bus", parameter=Parameter.FLUX) == 0.2
 
     def test_set_bias_to_zero_without_crosstalk_raises_error(self, platform: Platform):
         """Test set_bias_to_zero function error without crosstalk."""
