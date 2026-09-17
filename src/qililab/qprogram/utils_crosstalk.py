@@ -51,7 +51,7 @@ class CrosstalkElements:
         for ii in self.element_group[operation]:
             self.element_list[ii] = (self.flux_vector[operation], self.element_group[operation])
 
-    def check_flux_vector(self, element: Play | SetOffset | SetGain):
+    def check_flux_vector(self, element: Play | SetOffset | SetGain, check_new_play: bool = False):
         """Function to verify the flux vectors of each element and in case they don't exist,
         create empty dictionary entries.
 
@@ -60,9 +60,9 @@ class CrosstalkElements:
         """
         operation = str(element.__class__)
         if operation not in self.flux_vector_bus.keys() or element.bus in self.flux_vector_bus[operation]:
-            self.restart_flux_vector(operation, check_after_loop=True)
+            self.restart_flux_vector(operation, check_after_loop=True, check_new_play=check_new_play)
 
-    def restart_flux_vector(self, operation: str | None = None, check_after_loop: bool = False):
+    def restart_flux_vector(self, operation: str | None = None, check_after_loop: bool = False, check_new_play: bool = False):
         """Function create or overwrite empty dictionary entries for each operation given.
         If no operations given it does it for every element in those dictionaries.
 
@@ -76,7 +76,7 @@ class CrosstalkElements:
             self.element[operation] = []
             self.element_group[operation] = []
             self.flux_vector_bus[operation] = []
-            if operation not in self.flux_vector or not check_after_loop:
+            if operation not in self.flux_vector or not check_after_loop or check_new_play:
                 self.flux_vector[operation] = FluxVector()
                 self.flux_vector[operation].set_crosstalk(self.crosstalk)
         else:

@@ -507,7 +507,10 @@ class QProgram(StructuredProgram):
                                 element.waveform if isinstance(element.waveform, Waveform) else element.waveform.get_I()
                             )
                     else:
-                        crosstalk_elements.check_flux_vector(element)
+                        check_new_play = False
+                        if str(element.__class__) in crosstalk_elements.flux_vector_bus and (element.bus in crosstalk_elements.flux_vector_bus[str(element.__class__)]):
+                            check_new_play = True
+                        crosstalk_elements.check_flux_vector(element, check_new_play)
                         crosstalk_elements.flux_vector[str(element.__class__)] = handle_flux_vector(
                             flux_vector=crosstalk_elements.flux_vector[str(element.__class__)],
                             element=element,
