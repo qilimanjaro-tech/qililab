@@ -65,7 +65,9 @@ class CrosstalkElements:
             bus_reused = isinstance(element, Play) and element.bus in self.flux_vector_bus.get(operation, [])
             self.restart_flux_vector(operation, check_after_loop=True, bus_reused=bus_reused)
 
-    def restart_flux_vector(self, operation: str | None = None, check_after_loop: bool = False, bus_reused: bool = False):
+    def restart_flux_vector(
+        self, operation: str | None = None, check_after_loop: bool = False, bus_reused: bool = False
+    ):
         """Function create or overwrite empty dictionary entries for each operation given.
         If no operations given it does it for every element in those dictionaries.
 
