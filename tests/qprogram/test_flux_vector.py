@@ -117,6 +117,21 @@ class TestNonLinearFluxVector:
         assert result is nlfv_no_crosstalk.offset
         assert result == pytest.approx({"flux_0": 0.23, "flux_1": 0.30, "flux_2": 0.20})
 
+    def test_set_crosstalk_from_bias_array(self, nlfv_no_crosstalk, crosstalk_matrix):
+        """The vectorized bias->flux transform works element-wise for array bias."""
+        bias = {
+            "flux_0": np.array([0.1, 0.2]),
+            "flux_1": np.array([0.2, 0.3]),
+            "flux_2": np.array([0.3, 0.4]),
+        }
+        result = nlfv_no_crosstalk.set_crosstalk_from_bias(crosstalk_matrix, {k: v.copy() for k, v in bias.items()})
+        buses = ["flux_0", "flux_1", "flux_2"]
+        expected = crosstalk_matrix.to_array() @ np.array([bias[b] for b in buses]) + np.array(
+            [crosstalk_matrix.flux_offsets[b] for b in buses]
+        )[:, np.newaxis]
+        for i, bus in enumerate(buses):
+            assert np.allclose(result[bus], expected[i])
+
     def test_set_loop_for_loop(self, nlfv_no_crosstalk):
         phi = Variable("phi")
         nlfv_no_crosstalk.set_loop(ForLoop(variable=phi, start=0.0, stop=1.0, step=0.1))
@@ -384,6 +399,23 @@ class TestFluxVector:
         assert flux_vector.crosstalk == crosstalk_matrix
         assert flux_vector.flux_vector == flux
         assert flux_vector.to_dict() == flux_vector.bias_vector
+
+    def test_set_crosstalk_from_bias_array(self, flux_vector, crosstalk_matrix):
+        """The vectorized bias->flux transform works element-wise for array bias."""
+        bias = {
+            "flux_0": np.array([0.1, 0.2]),
+            "flux_1": np.array([0.2, 0.3]),
+            "flux_2": np.array([0.3, 0.4]),
+        }
+        result = flux_vector.set_crosstalk_from_bias(
+            crosstalk_matrix, bias_vector={k: v.copy() for k, v in bias.items()}
+        )
+        buses = ["flux_0", "flux_1", "flux_2"]
+        expected = crosstalk_matrix.to_array() @ np.array([bias[b] for b in buses]) + np.array(
+            [crosstalk_matrix.flux_offsets[b] for b in buses]
+        )[:, np.newaxis]
+        for i, bus in enumerate(buses):
+            assert np.allclose(result[bus], expected[i])
 
     def test_get_decomposed_vector(self, flux_vector, crosstalk_matrix):
         flux_vector.set_crosstalk_from_bias(crosstalk_matrix, bias_vector={"flux_0": 0.1, "flux_1": 0.2, "flux_2": 0.3})

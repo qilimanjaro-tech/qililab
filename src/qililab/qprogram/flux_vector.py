@@ -143,14 +143,23 @@ class FluxVector:
         if not self.bias_vector:
             self.bias_vector = self.flux_vector.copy()
 
-        for bus_1 in self.crosstalk.matrix.keys():
-            self.flux_vector[bus_1] = (
-                sum(
-                    (self.bias_vector[bus_2] * self.crosstalk.matrix[bus_1][bus_2])  # type: ignore
-                    for bus_2 in self.crosstalk.matrix[bus_1].keys()
-                )
-                + self.crosstalk.flux_offsets[bus_1]
-            )
+        buses = crosstalk._sorted_buses()
+        matrix = crosstalk.to_array()
+        offsets = np.array([crosstalk.flux_offsets.get(bus, 0.0) for bus in buses])
+        bias_values = [self.bias_vector[bus] for bus in buses]
+
+        # Scalar Flux
+        if all(np.ndim(value) == 0 for value in bias_values):
+            flux = matrix @ np.array(bias_values, dtype=float) + offsets
+            for bus, value in zip(buses, flux):
+                self.flux_vector[bus] = float(value)
+        # Array Flux
+        else:
+            length = max(np.asarray(value).size for value in bias_values)
+            bias_stack = np.stack([np.broadcast_to(np.asarray(value, dtype=float), length) for value in bias_values])
+            flux = matrix @ bias_stack + offsets[:, np.newaxis]
+            for bus, vector in zip(buses, flux):
+                self.flux_vector[bus] = vector
 
         return self.flux_vector
 
@@ -590,13 +599,23 @@ class NonLinearFluxVector:
         """
         self.set_crosstalk(crosstalk)
         crosstalk = cast("CrosstalkMatrix", self.crosstalk)
-        for bus_1 in crosstalk.matrix.keys():
-            self.offset[bus_1] = (
-                sum(
-                    (bias_vector[bus_2] * crosstalk.matrix[bus_1][bus_2])  # type: ignore
-                    for bus_2 in crosstalk.matrix[bus_1].keys()
-                )
-                + crosstalk.flux_offsets[bus_1]
-            )
+
+        buses = crosstalk._sorted_buses()
+        matrix = crosstalk.to_array()
+        offsets = np.array([crosstalk.flux_offsets.get(bus, 0.0) for bus in buses])
+        bias_values = [bias_vector[bus] for bus in buses]
+
+        # Scalar Flux
+        if all(np.ndim(value) == 0 for value in bias_values):
+            flux = matrix @ np.array(bias_values, dtype=float) + offsets
+            for bus, value in zip(buses, flux):
+                self.offset[bus] = float(value)
+        # Array Flux
+        else:
+            length = max(np.asarray(value).size for value in bias_values)
+            bias_stack = np.stack([np.broadcast_to(np.asarray(value, dtype=float), length) for value in bias_values])
+            flux = matrix @ bias_stack + offsets[:, np.newaxis]
+            for bus, row in zip(buses, flux):
+                self.offset[bus] = row
 
         return self.offset
