@@ -11,6 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from copy import deepcopy
+
 from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
 from qililab.qprogram.flux_vector import FluxVector
 from qililab.qprogram.operations import Play, SetGain, SetOffset
@@ -60,9 +62,12 @@ class CrosstalkElements:
         """
         operation = str(element.__class__)
         if operation not in self.flux_vector_bus.keys() or element.bus in self.flux_vector_bus[operation]:
-            self.restart_flux_vector(operation, check_after_loop=True)
+            bus_reused = isinstance(element, Play) and element.bus in self.flux_vector_bus.get(operation, [])
+            self.restart_flux_vector(operation, check_after_loop=True, bus_reused=bus_reused)
 
-    def restart_flux_vector(self, operation: str | None = None, check_after_loop: bool = False):
+    def restart_flux_vector(
+        self, operation: str | None = None, check_after_loop: bool = False, bus_reused: bool = False
+    ):
         """Function create or overwrite empty dictionary entries for each operation given.
         If no operations given it does it for every element in those dictionaries.
 
@@ -70,13 +75,14 @@ class CrosstalkElements:
             operation (str | None, optional): Class of the element to be restarted.
                                                 Defaults to None implying restarting all operations in the dictionaries.
             check_after_loop (bool, optional): Trigger to avoid restarting the flux vector after starting a new loop. Defaults to False.
+            bus_reused (bool, optional): Trigger to force a fresh flux vector when a play reuses a bus. Defaults to False.
         """
 
         if operation is not None:
             self.element[operation] = []
             self.element_group[operation] = []
             self.flux_vector_bus[operation] = []
-            if operation not in self.flux_vector or not check_after_loop:
+            if operation not in self.flux_vector or not check_after_loop or bus_reused:
                 self.flux_vector[operation] = FluxVector()
                 self.flux_vector[operation].set_crosstalk(self.crosstalk)
         else:
@@ -85,8 +91,11 @@ class CrosstalkElements:
                 self.element_group[operation] = []
                 self.flux_vector_bus[operation] = []
                 if operation not in self.flux_vector or not check_after_loop:
-                    self.flux_vector[operation] = FluxVector()
-                    self.flux_vector[operation].set_crosstalk(self.crosstalk)
+                    if operation == str(Play) or operation not in self.flux_vector:
+                        self.flux_vector[operation] = FluxVector()
+                        self.flux_vector[operation].set_crosstalk(self.crosstalk)
+                    else:
+                        self.flux_vector[operation] = deepcopy(self.flux_vector[operation])
 
 
 class NonLinearFlagState:
