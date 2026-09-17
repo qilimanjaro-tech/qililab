@@ -183,9 +183,6 @@ class FluxVector:
         for bus in buses:
             if bus_list is not None and bus not in bus_list:
                 continue
-            # Build the decomposed flux directly: keep this bus's flux, zero the others
-            # (restricted to bus_list when given). Then compute the bias once, instead of
-            # re-running set_crosstalk on every individual zero-assignment.
             decomposed_flux = dict(self.flux_vector)
             for zero_flux in buses:
                 if zero_flux != bus and (bus_list is None or zero_flux in bus_list):

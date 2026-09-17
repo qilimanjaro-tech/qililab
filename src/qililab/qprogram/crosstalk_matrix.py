@@ -30,14 +30,7 @@ _BUS_IN: Final = "bus_in"
 
 @dataclass
 class _CrosstalkCache:
-    """Memoized numeric view of a :class:`CrosstalkMatrix`.
-
-    The nested-dict ``matrix`` stays the source of truth (and the serialized form), but
-    the linear algebra runs on labeled :class:`xarray.DataArray` objects built once and
-    reused. ``source`` and ``version`` are the invalidation keys: ``source`` catches a
-    full reassignment of ``matrix`` (identity change), ``version`` catches an in-place
-    edit routed through :class:`_RowView` or ``__setitem__``.
-    """
+    """Memoized numeric view of a :class:`CrosstalkMatrix`."""
 
     buses: list[str]
     # dims (bus_out, bus_in), coords = buses
@@ -48,8 +41,7 @@ class _CrosstalkCache:
 
 
 class _RowView(dict):
-    """Transient, write-through view of a single crosstalk-matrix row.
-    """
+    """Transient, write-through view of a single crosstalk-matrix row."""
 
     def __init__(self, parent: "CrosstalkMatrix", bus: str) -> None:
         self._parent = parent
