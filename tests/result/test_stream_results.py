@@ -7,8 +7,9 @@ import numpy as np
 import pytest
 from tests.data import Galadriel, SauronQuantumMachines
 
+from qililab import Domain
 from qililab.data_management import build_platform
-from qililab.qprogram import Calibration, QProgram
+from qililab.qprogram import Calibration, CrosstalkMatrix, FluxVector, QProgram
 from qililab.result import stream_results
 from qililab.result.stream_results import RawStreamArray, StreamArray
 from qililab.typings.enums import Parameter
@@ -617,6 +618,127 @@ class TestStreamArray:
         mock_measurement.add_fitting.assert_called_once_with(stream_array.db_manager, "/test/fit.h5", {"a": 1.0})
         assert stream_array.measurement == updated_measurement
         assert result == updated_measurement
+
+
+def _calibration_with_crosstalk(buses: list[str]) -> Calibration:
+    """Calibration whose crosstalk matrix contains the given buses."""
+    crosstalk = CrosstalkMatrix()
+    crosstalk.matrix = {bus: {other: 1.0 for other in buses} for bus in buses}
+    calibration = Calibration()
+    calibration.crosstalk_matrix = crosstalk
+    return calibration
+
+
+def _qprogram_with_offsets(offsets: list[tuple[str, float]]) -> QProgram:
+    """QProgram with a constant ``set_offset`` per (bus, value) entry (duplicates allowed)."""
+    qprogram = QProgram()
+    for bus, value in offsets:
+        qprogram.set_offset(bus, value)
+    return qprogram
+
+
+class TestFluxOffsets:
+    """Test `_get_qprogram_flux_vector` and `_get_flux_offsets`."""
+
+    def test_qprogram_flux_vector_single_scalar_in_crosstalk(self, stream_array: StreamArray):
+        """Each crosstalk bus offset once by a scalar is returned as a float."""
+        stream_array.calibration = _calibration_with_crosstalk(["flux_q0", "flux_q1"])
+        stream_array.qprogram = _qprogram_with_offsets([("flux_q0", 0.15), ("flux_q1", 0)])
+
+        assert stream_array._get_qprogram_flux_vector() == {"flux_q0": 0.15, "flux_q1": 0.0}
+
+    def test_qprogram_flux_vector_reads_nested_blocks(self, stream_array: StreamArray):
+        """Offsets set inside nested blocks (loops) are collected."""
+        stream_array.calibration = _calibration_with_crosstalk(["flux_q0", "flux_q1"])
+        qprogram = QProgram()
+        qprogram.set_offset("flux_q0", 0.15)
+        with qprogram.for_loop(variable=qprogram.variable("t", Domain.Time), start=0, stop=4, step=1):
+            qprogram.set_offset("flux_q1", 0.2)
+        stream_array.qprogram = qprogram
+
+        assert stream_array._get_qprogram_flux_vector() == {"flux_q0": 0.15, "flux_q1": 0.2}
+
+    def test_qprogram_flux_vector_duplicate_bus_returns_empty(self, stream_array: StreamArray):
+        """A crosstalk bus offset more than once makes the whole flux vector empty."""
+        stream_array.calibration = _calibration_with_crosstalk(["flux_q0", "flux_q1"])
+        stream_array.qprogram = _qprogram_with_offsets([("flux_q0", 0.15), ("flux_q0", 0.4), ("flux_q1", 0.2)])
+
+        assert stream_array._get_qprogram_flux_vector() == {}
+
+    def test_qprogram_flux_vector_ignores_non_crosstalk_bus(self, stream_array: StreamArray):
+        """Offsets on buses absent from the crosstalk matrix are ignored, even if duplicated."""
+        stream_array.calibration = _calibration_with_crosstalk(["flux_q0", "flux_q1"])
+        stream_array.qprogram = _qprogram_with_offsets([("flux_q0", 0.15), ("flux_q9", 1.0), ("flux_q9", 2.0)])
+
+        assert stream_array._get_qprogram_flux_vector() == {"flux_q0": 0.15}
+
+    def test_qprogram_flux_vector_excludes_swept_offset(self, stream_array: StreamArray):
+        """A bus offset by a swept variable is left out while scalar buses remain."""
+        stream_array.calibration = _calibration_with_crosstalk(["flux_q0", "flux_q1"])
+        qprogram = QProgram()
+        qprogram.set_offset("flux_q0", 0.15)
+        variable = qprogram.variable("amp", Domain.Voltage)
+        with qprogram.for_loop(variable=variable, start=0, stop=1, step=0.1):
+            qprogram.set_offset("flux_q1", variable)
+        stream_array.qprogram = qprogram
+
+        assert stream_array._get_qprogram_flux_vector() == {"flux_q0": 0.15}
+
+    def test_qprogram_flux_vector_no_crosstalk_matrix_returns_empty(self, stream_array: StreamArray):
+        """Without a crosstalk matrix the qprogram flux vector is empty."""
+        stream_array.calibration = Calibration()
+        stream_array.qprogram = _qprogram_with_offsets([("flux_q0", 0.15)])
+
+        assert stream_array._get_qprogram_flux_vector() == {}
+
+    def test_qprogram_flux_vector_no_calibration_returns_empty(self, stream_array: StreamArray):
+        """Without a calibration the qprogram flux vector is empty."""
+        stream_array.calibration = None
+        stream_array.qprogram = _qprogram_with_offsets([("flux_q0", 0.15)])
+
+        assert stream_array._get_qprogram_flux_vector() == {}
+
+    def test_flux_offsets_sums_platform_and_qprogram(self, stream_array: StreamArray):
+        """Platform and qprogram flux vectors are summed over the union of buses."""
+        stream_array.calibration = _calibration_with_crosstalk(["flux_q0", "flux_q1"])
+        stream_array.qprogram = _qprogram_with_offsets([("flux_q0", 0.15), ("flux_q1", 0.2)])
+        stream_array.platform.flux_vector = FluxVector.from_dict({"flux_q1": 0.05, "flux_q4": 0.5})
+
+        assert stream_array._get_flux_offsets() == {"flux_q0": 0.15, "flux_q1": 0.25, "flux_q4": 0.5}
+
+    def test_flux_offsets_does_not_mutate_platform_flux_vector(self, stream_array: StreamArray):
+        """Summing must not mutate the platform's flux vector dictionary."""
+        stream_array.calibration = _calibration_with_crosstalk(["flux_q1"])
+        stream_array.qprogram = _qprogram_with_offsets([("flux_q1", 0.2)])
+        stream_array.platform.flux_vector = FluxVector.from_dict({"flux_q1": 0.05})
+
+        stream_array._get_flux_offsets()
+
+        assert stream_array.platform.flux_vector.flux_vector == {"flux_q1": 0.05}
+
+    def test_flux_offsets_platform_only(self, stream_array: StreamArray):
+        """With no qualifying qprogram offsets the platform flux vector is returned as-is."""
+        stream_array.calibration = _calibration_with_crosstalk(["flux_q0"])
+        stream_array.qprogram = QProgram()
+        stream_array.platform.flux_vector = FluxVector.from_dict({"flux_q4": 0.5})
+
+        assert stream_array._get_flux_offsets() == {"flux_q4": 0.5}
+
+    def test_flux_offsets_qprogram_only(self, stream_array: StreamArray):
+        """With no platform flux vector the qprogram flux vector is returned."""
+        stream_array.calibration = _calibration_with_crosstalk(["flux_q0"])
+        stream_array.qprogram = _qprogram_with_offsets([("flux_q0", 0.15)])
+        stream_array.platform.flux_vector = None
+
+        assert stream_array._get_flux_offsets() == {"flux_q0": 0.15}
+
+    def test_flux_offsets_returns_none_when_both_empty(self, stream_array: StreamArray):
+        """None is returned when neither source contributes a flux offset."""
+        stream_array.calibration = _calibration_with_crosstalk(["flux_q0"])
+        stream_array.qprogram = QProgram()
+        stream_array.platform.flux_vector = None
+
+        assert stream_array._get_flux_offsets() is None
 
 
 class TestRawStreamArray:
