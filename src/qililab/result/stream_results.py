@@ -18,8 +18,11 @@ from typing import TYPE_CHECKING, Any
 import h5py
 import numpy as np
 
+from qililab.core.variables import Variable
 from qililab.instruments.qblox.qblox_module import QbloxModule
 from qililab.instruments.qdevil.qdevil_qdac2 import QDevilQDac2
+from qililab.qprogram.blocks import Block
+from qililab.qprogram.operations import SetOffset
 from qililab.typings.enums import Parameter
 from qililab.utils.serialization import serialize
 
@@ -257,11 +260,43 @@ class StreamArray:
         return qdac_buses if qdac_buses else None
 
     def _get_flux_offsets(self) -> dict[str, float] | None:
-        if self.qprogram:
-            return self.qprogram.
-        if self.platform and self.platform.flux_vector:
-            return self.platform.flux_vector.flux_vector
-        return None
+        platform_flux = (
+            dict(self.platform.flux_vector.flux_vector) if self.platform and self.platform.flux_vector else {}
+        )
+        qprogram_flux = self._get_qprogram_flux_vector() if self.qprogram else {}
+        if not platform_flux and not qprogram_flux:
+            return None
+        flux_offsets: dict[str, float] = dict(platform_flux)  # type: ignore[arg-type]
+        for bus, flux in qprogram_flux.items():
+            flux_offsets[bus] = flux_offsets.get(bus, 0.0) + flux
+        return flux_offsets
+
+    def _get_qprogram_flux_vector(self) -> dict[str, float]:
+        """Flux vector from the QProgram's constant ``set_offset`` calls on crosstalk buses.
+
+        Returns empty if any bus is offset more than once; swept offsets are skipped.
+        """
+        if not self.calibration or not self.calibration.crosstalk_matrix:
+            return {}
+        crosstalk_buses = set(self.calibration.crosstalk_matrix.matrix.keys())
+
+        offsets: dict[str, list[float | Variable]] = {}
+
+        def traverse(block: Block) -> None:
+            for element in block.elements:
+                if isinstance(element, SetOffset) and element.bus in crosstalk_buses:
+                    offsets.setdefault(element.bus, []).append(element.offset_path0)
+                elif isinstance(element, Block):
+                    traverse(element)
+
+        traverse(self.qprogram._body)  # type: ignore[union-attr]
+        if any(len(values) > 1 for values in offsets.values()):
+            return {}
+        return {
+            bus: float(values[0])
+            for bus, values in offsets.items()
+            if isinstance(values[0], (int, float)) and not isinstance(values[0], Variable)
+        }
 
     def _get_index_list(self, qubit: int | str | list[str] | None) -> list[str] | None:
         if qubit is None:
