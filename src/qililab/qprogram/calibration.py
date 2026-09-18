@@ -176,7 +176,10 @@ class Calibration:
         return self.blocks[name]
 
     def set_non_linear_crosstalk(self, enabled: bool = True) -> None:
-        """Enables or disables the nonlinear crosstalk correction terms on the stored crosstalk matrix.
+        """Enables or disables the nonlinear crosstalk correction terms on the stored crosstalk matrices.
+
+        Applies to both the DC (``crosstalk_matrix``) and AC (``crosstalk_matrix_ac``) matrices when
+        present. A matrix that is not a ``NonLinearCrosstalkMatrix`` is left untouched with a warning.
 
         Args:
             enabled (bool): Whether to apply the nonlinear corrections. Defaults to True.
@@ -184,12 +187,15 @@ class Calibration:
         Raises:
             ValueError: If no crosstalk matrix has been given to the Calibration file.
         """
-        if self.crosstalk_matrix is None:
+        if self.crosstalk_matrix is None and self.crosstalk_matrix_ac is None:
             raise ValueError(_NO_CROSSTALK)
-        if not isinstance(self.crosstalk_matrix, NonLinearCrosstalkMatrix):
-            logger.warning("crosstalk_matrix is not a NonLinearCrosstalkMatrix; nonlinear terms cannot be toggled.")
-            return
-        self.crosstalk_matrix.set_non_linear(enabled)
+        for name, matrix in (("crosstalk_matrix", self.crosstalk_matrix), ("crosstalk_matrix_ac", self.crosstalk_matrix_ac)):
+            if matrix is None:
+                continue
+            if not isinstance(matrix, NonLinearCrosstalkMatrix):
+                logger.warning("%s is not a NonLinearCrosstalkMatrix; nonlinear terms cannot be toggled.", name)
+                continue
+            matrix.set_non_linear(enabled)
 
     def _add_crosstalk_history_iteration(self):
         """Creates a new empty iteration on the crosstalk history tuple."""

@@ -322,20 +322,34 @@ class TestCalibration:
         os.remove(path="calibration.yml")
 
     def test_set_non_linear_crosstalk_toggles_matrix(self):
-        """set_non_linear_crosstalk flips the flag on a NonLinearCrosstalkMatrix."""
+        """set_non_linear_crosstalk flips the flag on the DC and AC NonLinearCrosstalkMatrix."""
         buses = {
             "flux_0": {"flux_0": 1.0, "flux_1": 0.1},
             "flux_1": {"flux_0": 0.1, "flux_1": 1.0},
         }
-        crosstalk_matrix = NonLinearCrosstalkMatrix.from_linear(CrosstalkMatrix().from_buses(buses))
         calibration = Calibration()
-        calibration.crosstalk_matrix = crosstalk_matrix
+        calibration.crosstalk_matrix = NonLinearCrosstalkMatrix.from_linear(CrosstalkMatrix().from_buses(buses))
+        calibration.crosstalk_matrix_ac = NonLinearCrosstalkMatrix.from_linear(CrosstalkMatrix().from_buses(buses))
 
         calibration.set_non_linear_crosstalk(False)
         assert calibration.crosstalk_matrix.non_linear_enabled is False
+        assert calibration.crosstalk_matrix_ac.non_linear_enabled is False
 
         calibration.set_non_linear_crosstalk(True)
         assert calibration.crosstalk_matrix.non_linear_enabled is True
+        assert calibration.crosstalk_matrix_ac.non_linear_enabled is True
+
+    def test_set_non_linear_crosstalk_toggles_ac_only(self):
+        """set_non_linear_crosstalk works when only the AC matrix is set."""
+        buses = {
+            "flux_0": {"flux_0": 1.0, "flux_1": 0.1},
+            "flux_1": {"flux_0": 0.1, "flux_1": 1.0},
+        }
+        calibration = Calibration()
+        calibration.crosstalk_matrix_ac = NonLinearCrosstalkMatrix.from_linear(CrosstalkMatrix().from_buses(buses))
+
+        calibration.set_non_linear_crosstalk(False)
+        assert calibration.crosstalk_matrix_ac.non_linear_enabled is False
 
     def test_set_non_linear_crosstalk_defaults_to_true(self):
         """set_non_linear_crosstalk enables the terms by default."""
