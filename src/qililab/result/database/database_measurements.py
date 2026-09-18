@@ -176,6 +176,7 @@ class Measurement(base):  # type: ignore
     cooldown: Column = Column("cooldown", ForeignKey(Cooldown.cooldown), index=True)
     sequence_id: Column = Column("sequence_id", Integer)
     dc_offsets: Column = Column("dc_offsets", JSONB)
+    flux_offsets: Column = Column("flux_offsets", JSONB)
     target: Column = Column("target", ARRAY(String))
     secondary_source: Column = Column("secondary_source", ARRAY(String))
     result_path: Column = Column("result_path", String, unique=True, nullable=False)
@@ -300,6 +301,7 @@ class Measurement(base):  # type: ignore
         data_shape=None,
         debug_file=None,
         dc_offsets=None,
+        flux_offsets=None,
         target=None,
         secondary_source=None,
         bus_mapping=None,
@@ -325,6 +327,7 @@ class Measurement(base):  # type: ignore
         self.data_shape = data_shape
         self.debug_file = debug_file
         self.dc_offsets = dc_offsets
+        self.flux_offsets = flux_offsets
         self.target = target
         self.secondary_source = secondary_source
         self.bus_mapping = bus_mapping
