@@ -1,3 +1,4 @@
+import logging
 import os
 
 import numpy as np
@@ -6,7 +7,7 @@ import pytest
 from qililab.qprogram import QProgram
 from qililab.qprogram.blocks import Block
 from qililab.qprogram.calibration import Calibration
-from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
+from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix, NonLinearCrosstalkMatrix
 from qililab.utils.serialization import deserialize_from, serialize_to
 from qililab.waveforms import IQPair, Square
 
@@ -319,6 +320,57 @@ class TestCalibration:
         assert loaded_calibration.crosstalk_matrix_ac["flux_1"]["flux_0"] == ac_crosstalk_matrix["flux_1"]["flux_0"]
 
         os.remove(path="calibration.yml")
+
+    def test_set_non_linear_crosstalk_toggles_matrix(self):
+        """set_non_linear_crosstalk flips the flag on a NonLinearCrosstalkMatrix."""
+        buses = {
+            "flux_0": {"flux_0": 1.0, "flux_1": 0.1},
+            "flux_1": {"flux_0": 0.1, "flux_1": 1.0},
+        }
+        crosstalk_matrix = NonLinearCrosstalkMatrix.from_linear(CrosstalkMatrix().from_buses(buses))
+        calibration = Calibration()
+        calibration.crosstalk_matrix = crosstalk_matrix
+
+        calibration.set_non_linear_crosstalk(False)
+        assert calibration.crosstalk_matrix.non_linear_enabled is False
+
+        calibration.set_non_linear_crosstalk(True)
+        assert calibration.crosstalk_matrix.non_linear_enabled is True
+
+    def test_set_non_linear_crosstalk_defaults_to_true(self):
+        """set_non_linear_crosstalk enables the terms by default."""
+        buses = {
+            "flux_0": {"flux_0": 1.0, "flux_1": 0.1},
+            "flux_1": {"flux_0": 0.1, "flux_1": 1.0},
+        }
+        crosstalk_matrix = NonLinearCrosstalkMatrix.from_linear(CrosstalkMatrix().from_buses(buses))
+        crosstalk_matrix.set_non_linear(False)
+        calibration = Calibration()
+        calibration.crosstalk_matrix = crosstalk_matrix
+
+        calibration.set_non_linear_crosstalk()
+        assert calibration.crosstalk_matrix.non_linear_enabled is True
+
+    def test_set_non_linear_crosstalk_raises_error_no_crosstalk(self):
+        """set_non_linear_crosstalk raises when no crosstalk matrix has been set."""
+        calibration = Calibration()
+        with pytest.raises(ValueError, match="No crosstalk has been given to the Calibration file."):
+            calibration.set_non_linear_crosstalk(True)
+
+    def test_set_non_linear_crosstalk_warns_on_linear_matrix(self, caplog):
+        """A plain CrosstalkMatrix cannot be toggled; a warning is logged and nothing changes."""
+        buses = {
+            "flux_0": {"flux_0": 1.0, "flux_1": 0.1},
+            "flux_1": {"flux_0": 0.1, "flux_1": 1.0},
+        }
+        crosstalk_matrix = CrosstalkMatrix().from_buses(buses)
+        calibration = Calibration()
+        calibration.crosstalk_matrix = crosstalk_matrix
+
+        with caplog.at_level(logging.WARNING):
+            calibration.set_non_linear_crosstalk(False)
+        assert "crosstalk_matrix is not a NonLinearCrosstalkMatrix" in caplog.text
+        assert not hasattr(calibration.crosstalk_matrix, "non_linear_enabled")
 
     def test_add_intra_crosstalk(self):
         """Test adding an intra qubit crosstalk matrix to the crosstalk history"""
