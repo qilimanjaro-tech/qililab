@@ -6264,7 +6264,7 @@ class TestQBloxCompiler:
         qp.play(bus="flux2", waveform=square_wf_wrong)
         
         compiler = QbloxCompiler()
-        with pytest.raises(ValueError, match=re.escape("operands could not be broadcast together with shapes (50,) (500,) ")):
+        with pytest.raises(ValueError, match="could not be broadcast together"):
             compiler.compile(qprogram=qp, crosstalk=crosstalk)
 
         # Raise error for FlatTop pulses with different elements (duration, smooth_duration or buffer)

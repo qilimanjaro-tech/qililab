@@ -1,5 +1,9 @@
+import copy
+import io
+
 import numpy as np
 import pytest
+import xarray as xr
 
 from qililab.qprogram.crosstalk_matrix import (
     PHI_0_WB,
@@ -7,6 +11,7 @@ from qililab.qprogram.crosstalk_matrix import (
     NonLinearCrosstalkMatrix,
     convert_pH_to_phi0_per_volt,
 )
+from qililab.yaml import yaml
 
 # Insertion orders that diverge from the canonical sort order once names are multi-digit
 # (alphabetical q0, q1, q10, q2 vs sorted q0, q1, q2, q10). Used by the bus-ordering regression tests.
@@ -510,3 +515,167 @@ class TestNonLinearCrosstalkMatrix:
         bias = NonLinearCrosstalkMatrix.from_linear(matrix).flux_to_bias(flux)
         for bus in buses:
             assert bias[bus] == pytest.approx(expected[bus], rel=1e-6)
+
+
+class TestCrosstalkMatrixCache:
+    """Tests for the xarray-backed compute cache and its invalidation.
+
+    The nested-dict ``matrix`` stays the public/serialized source of truth; these tests
+    lock down that the memoized array stays consistent with it across every mutation path.
+    """
+
+    def test_internal_representation_is_xarray(self):
+        """The cache holds bus-labeled xarray DataArrays (the requested internal system)."""
+        cm = CrosstalkMatrix.from_array(["a", "b"], np.array([[1.0, 0.2], [0.1, 1.0]]))
+        cache = cm._get_cache()
+        assert isinstance(cache.matrix, xr.DataArray)
+        assert isinstance(cache.inverse, xr.DataArray)
+        assert cache.matrix.dims == ("bus_out", "bus_in")
+        assert list(cache.matrix.coords["bus_out"].values) == cm._sorted_buses()
+
+    def test_getitem_returns_dict_and_writes_through(self):
+        """__getitem__ yields a real dict whose writes reach the stored plain dict."""
+        cm = CrosstalkMatrix()
+        cm["bus1"]["bus2"] = 0.5
+        row = cm["bus1"]
+        assert isinstance(row, dict)
+        assert row["bus2"] == 0.5
+        assert cm.matrix["bus1"]["bus2"] == 0.5
+
+    def test_to_array_reflects_in_place_row_edit(self):
+        """A ``cm[bus][bus2] = x`` edit must invalidate the cache."""
+        cm = CrosstalkMatrix.from_array(["a", "b"], np.array([[1.0, 0.2], [0.1, 1.0]]))
+        assert cm.to_array()[0, 1] == 0.2  # builds + caches
+        cm["a"]["b"] = 0.9
+        assert cm.to_array()[0, 1] == 0.9
+        assert np.allclose(cm.inverse().to_array(), np.linalg.inv(cm.to_array()))
+
+    def test_to_array_reflects_setitem(self):
+        """A ``cm[bus] = {...}`` assignment must invalidate the cache."""
+        cm = CrosstalkMatrix.from_array(["a", "b"], np.array([[1.0, 0.2], [0.1, 1.0]]))
+        _ = cm.to_array()
+        cm["a"] = {"b": 0.7}
+        assert cm.to_array()[0, 1] == 0.7
+
+    def test_to_array_reflects_matrix_reassignment(self):
+        """Rebinding ``.matrix`` (identity change) must invalidate the cache."""
+        cm = CrosstalkMatrix.from_array(["a", "b"], np.array([[1.0, 0.2], [0.1, 1.0]]))
+        _ = cm.inverse()
+        cm.matrix = {"a": {"a": 1.0, "b": 0.4}, "b": {"a": 0.0, "b": 1.0}}
+        assert cm.to_array()[0, 1] == 0.4
+        assert np.allclose(cm.inverse().to_array(), np.linalg.inv(cm.to_array()))
+
+    def test_accessing_new_bus_grows_matrix(self):
+        """Autovivifying a new row (via __getitem__) enlarges the computed array."""
+        cm = CrosstalkMatrix.from_array(["a", "b"], np.array([[1.0, 0.2], [0.1, 1.0]]))
+        assert cm.to_array().shape == (2, 2)
+        _ = cm["c"]
+        assert cm.to_array().shape == (3, 3)
+
+    def test_setitem_does_not_alias_input_dict(self):
+        """``cm[bus] = d`` stores a copy so ``d`` cannot smuggle a _RowView into the matrix."""
+        cm = CrosstalkMatrix()
+        source = {"b": 0.5}
+        cm["a"] = source
+        source["b"] = 0.9
+        assert cm.matrix["a"]["b"] == 0.5
+
+    def test_rowview_delitem_invalidates(self):
+        """Deleting an entry via ``del cm[bus][bus2]`` writes through and invalidates."""
+        cm = CrosstalkMatrix.from_array(["a", "b"], np.array([[1.0, 0.2], [0.1, 1.0]]))
+        assert cm.to_array()[0, 1] == 0.2  # builds + caches
+        del cm["a"]["b"]
+        assert "b" not in cm.matrix["a"]
+        assert cm.to_array()[0, 1] == 0.0  # missing off-diagonal now defaults to 0.0
+
+    def test_rowview_update_invalidates(self):
+        """Bulk-updating a row via ``cm[bus].update(...)`` writes through and invalidates."""
+        cm = CrosstalkMatrix.from_array(["a", "b"], np.array([[1.0, 0.2], [0.1, 1.0]]))
+        _ = cm.to_array()  # builds + caches
+        cm["a"].update({"b": 0.6})
+        assert cm.matrix["a"]["b"] == 0.6
+        assert cm.to_array()[0, 1] == 0.6
+
+    def test_to_array_returns_fresh_copy(self):
+        """Callers may mutate the returned array without corrupting the cache."""
+        cm = CrosstalkMatrix.from_array(["a", "b"], np.array([[1.0, 0.2], [0.1, 1.0]]))
+        arr = cm.to_array()
+        arr[0, 0] = 999.0
+        assert cm.to_array()[0, 0] == 1.0
+
+    def test_to_array_identity_defaults(self):
+        """Missing diagonal defaults to 1.0, missing off-diagonal to 0.0 (np.eye base)."""
+        cm = CrosstalkMatrix()
+        cm["a"]["b"] = 0.5
+        cm["b"]["b"] = 1.0
+        arr = cm.to_array()
+        idx = {bus: i for i, bus in enumerate(cm._sorted_buses())}
+        assert arr[idx["a"], idx["a"]] == 1.0
+        assert arr[idx["b"], idx["a"]] == 0.0
+
+    def test_empty_matrix_to_array(self):
+        assert CrosstalkMatrix().to_array().shape == (0, 0)
+
+    @pytest.mark.parametrize("scalar_type", [float, np.float64, np.float32])
+    def test_flux_to_bias_scalar_numpy_input(self, scalar_type):
+        """Scalar detection uses np.ndim, so numpy scalars stay on the scalar path."""
+        cm = CrosstalkMatrix.from_array(["a", "b"], np.array([[1.0, 0.2], [0.1, 1.0]]))
+        cm.set_resistances(_unit_resistances(["a", "b"]))
+        bias = cm.flux_to_bias({"a": scalar_type(0.1), "b": scalar_type(0.2)})
+        expected = np.linalg.inv([[1.0, 0.2], [0.1, 1.0]]) @ np.array([0.1, 0.2])
+        assert np.ndim(bias["a"]) == 0
+        assert bias["a"] == pytest.approx(expected[0])
+        assert bias["b"] == pytest.approx(expected[1])
+
+
+class TestCrosstalkMatrixSerialization:
+    """The xarray cache must never leak into the serialized form; the on-disk format
+    stays the legacy plain-dict layout so ``Calibration`` documents are unaffected."""
+
+    def test_yaml_emits_only_plain_dicts(self):
+        cm = CrosstalkMatrix.from_array(["flux q0", "flux q1"], np.array([[1.0, 0.05], [0.05, 1.0]]))
+        cm.set_resistances(_unit_resistances(["flux q0", "flux q1"]))
+        cm.flux_to_bias({"flux q0": 0.1, "flux q1": 0.2})  # warm the cache
+        buf = io.StringIO()
+        yaml.dump(cm, buf)
+        text = buf.getvalue()
+        for leaked in ("_cache", "_version", "xarray", "PandasIndex", "python/object/new"):
+            assert leaked not in text
+
+    def test_yaml_roundtrip_preserves_state_and_computes(self):
+        cm = CrosstalkMatrix.from_array(["flux q0", "flux q1"], np.array([[1.0, 0.05], [0.05, 1.0]]))
+        cm.set_offset({"flux q0": 0.3})
+        cm.set_resistances(_unit_resistances(["flux q0", "flux q1"]))
+        cm.flux_to_bias({"flux q0": 0.1, "flux q1": 0.2})  # warm the cache before dumping
+        buf = io.StringIO()
+        yaml.dump(cm, buf)
+        loaded = yaml.load(io.StringIO(buf.getvalue()))
+        assert loaded.matrix == cm.matrix
+        assert loaded.flux_offsets == cm.flux_offsets
+        assert loaded.resistances == cm.resistances
+        # __init__ was never called on the reconstructed object, yet compute must work.
+        assert np.allclose(loaded.to_array(), cm.to_array())
+        flux = {"flux q0": 0.1, "flux q1": 0.2}
+        assert loaded.flux_to_bias(flux) == pytest.approx(cm.flux_to_bias(flux))
+
+    def test_nonlinear_yaml_roundtrip(self, non_linear_crosstalk_matrix):
+        non_linear_crosstalk_matrix.set_non_linear_params("flux_0", "flux_1", beta_c=-0.3, amplitude=-0.08)
+        non_linear_crosstalk_matrix.flux_to_bias({"flux_0": 0.1, "flux_1": 0.2, "flux_2": 0.05})
+        buf = io.StringIO()
+        yaml.dump(non_linear_crosstalk_matrix, buf)
+        text = buf.getvalue()
+        for leaked in ("_cache", "_version", "xarray"):
+            assert leaked not in text
+        loaded = yaml.load(io.StringIO(text))
+        assert loaded.matrix == non_linear_crosstalk_matrix.matrix
+        assert loaded.beta_c_matrix["flux_0"]["flux_1"] == pytest.approx(-0.3)
+        assert loaded.non_lin_amp_matrix["flux_0"]["flux_1"] == pytest.approx(-0.08)
+
+    def test_deepcopy_is_independent(self):
+        cm = CrosstalkMatrix.from_array(["a", "b"], np.array([[1.0, 0.2], [0.1, 1.0]]))
+        _ = cm.to_array()  # warm the cache
+        clone = copy.deepcopy(cm)
+        clone["a"]["b"] = 0.9
+        assert cm.matrix["a"]["b"] == 0.2  # original untouched
+        assert clone.to_array()[0, 1] == 0.9  # clone rebuilt its own cache
+        assert cm.to_array()[0, 1] == 0.2

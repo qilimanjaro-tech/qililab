@@ -1177,6 +1177,107 @@ class TestQProgram(TestStructuredProgram):
         # ... second iteration of the loop
         assert isinstance(new_qp.body.elements[26], Sync)
 
+    def test_with_crosstalk_linear_repeated_bus_restarts_flux_vector(self):
+        """Test with_crosstalk_qblox restarts the flux vector when a bus is played again on the linear path."""
+        crosstalk = _crosstalk_with_resistances(
+            CrosstalkMatrix.from_array(["flux1", "flux2"], np.linalg.inv([[1, 0.5], [0.5, 1]]))
+        )
+
+        square_wf = Square(amplitude=0.1, duration=40)
+        long_square_wf = Square(amplitude=0.1, duration=400)
+        qp = QProgram()
+        qp.play(bus="flux1", waveform=square_wf)
+        qp.play(bus="flux2", waveform=square_wf)
+        qp.play(bus="flux1", waveform=long_square_wf)
+
+        new_qp = qp.with_crosstalk_qblox(crosstalk)
+
+        assert len(new_qp.body.elements) == 4
+        # First group: flux1 and flux2 played together.
+        assert isinstance(new_qp.body.elements[0], Play)
+        assert new_qp.body.elements[0].bus == "flux1"
+        assert math.isclose(new_qp.body.elements[0].waveform.amplitude, 0.15)
+        assert new_qp.body.elements[0].waveform.duration == 40
+        assert isinstance(new_qp.body.elements[1], Play)
+        assert new_qp.body.elements[1].bus == "flux2"
+        assert math.isclose(new_qp.body.elements[1].waveform.amplitude, 0.15)
+        assert new_qp.body.elements[1].waveform.duration == 40
+        # Second group: repeated flux1 compensated with flux2 back at zero.
+        assert isinstance(new_qp.body.elements[2], Play)
+        assert new_qp.body.elements[2].bus == "flux2"
+        assert math.isclose(new_qp.body.elements[2].waveform.amplitude, 0.05)
+        assert new_qp.body.elements[2].waveform.duration == 400
+        assert isinstance(new_qp.body.elements[3], Play)
+        assert new_qp.body.elements[3].bus == "flux1"
+        assert math.isclose(new_qp.body.elements[3].waveform.amplitude, 0.1)
+        assert new_qp.body.elements[3].waveform.duration == 400
+
+    def test_with_crosstalk_linear_repeated_bus_keeps_flux_vector_offset(self):
+        """Test with_crosstalk_qblox keeps the flux vector when a bus offset is set again on the linear path."""
+        crosstalk = _crosstalk_with_resistances(
+            CrosstalkMatrix.from_array(["flux1", "flux2"], np.linalg.inv([[1, 0.5], [0.5, 1]]))
+        )
+
+        qp = QProgram()
+        qp.set_offset(bus="flux1", offset_path0=0.1)
+        qp.set_offset(bus="flux2", offset_path0=0.2)
+        qp.wait(bus="flux1", duration=100)
+        qp.wait(bus="flux2", duration=100)
+        qp.set_offset(bus="flux1", offset_path0=0.3)
+
+        new_qp = qp.with_crosstalk_qblox(crosstalk)
+
+        assert len(new_qp.body.elements) == 6
+        # First group: flux1 and flux2 set together.
+        assert isinstance(new_qp.body.elements[0], SetOffset)
+        assert new_qp.body.elements[0].bus == "flux1"
+        assert math.isclose(new_qp.body.elements[0].offset_path0, 0.2)
+        assert isinstance(new_qp.body.elements[1], SetOffset)
+        assert new_qp.body.elements[1].bus == "flux2"
+        assert math.isclose(new_qp.body.elements[1].offset_path0, 0.25)
+        assert isinstance(new_qp.body.elements[2], Wait)
+        assert isinstance(new_qp.body.elements[3], Wait)
+        # Second group: the flux vector is maintained, so flux2 persists when flux1 is set again.
+        assert isinstance(new_qp.body.elements[4], SetOffset)
+        assert new_qp.body.elements[4].bus == "flux2"
+        assert math.isclose(new_qp.body.elements[4].offset_path0, 0.35)
+        assert isinstance(new_qp.body.elements[5], SetOffset)
+        assert new_qp.body.elements[5].bus == "flux1"
+        assert math.isclose(new_qp.body.elements[5].offset_path0, 0.4)
+
+    def test_with_crosstalk_linear_repeated_bus_keeps_flux_vector_gain(self):
+        """Test with_crosstalk_qblox keeps the flux vector when a bus gain is set again on the linear path."""
+        crosstalk = _crosstalk_with_resistances(
+            CrosstalkMatrix.from_array(["flux1", "flux2"], np.linalg.inv([[1, 0.5], [0.5, 1]]))
+        )
+
+        qp = QProgram()
+        qp.set_gain(bus="flux1", gain=0.1)
+        qp.set_gain(bus="flux2", gain=0.2)
+        qp.wait(bus="flux1", duration=100)
+        qp.wait(bus="flux2", duration=100)
+        qp.set_gain(bus="flux1", gain=0.3)
+
+        new_qp = qp.with_crosstalk_qblox(crosstalk)
+
+        assert len(new_qp.body.elements) == 6
+        # First group: flux1 and flux2 set together.
+        assert isinstance(new_qp.body.elements[0], SetGain)
+        assert new_qp.body.elements[0].bus == "flux1"
+        assert math.isclose(new_qp.body.elements[0].gain, 0.2)
+        assert isinstance(new_qp.body.elements[1], SetGain)
+        assert new_qp.body.elements[1].bus == "flux2"
+        assert math.isclose(new_qp.body.elements[1].gain, 0.25)
+        assert isinstance(new_qp.body.elements[2], Wait)
+        assert isinstance(new_qp.body.elements[3], Wait)
+        # Second group: the flux vector is maintained, so flux2 persists when flux1 is set again.
+        assert isinstance(new_qp.body.elements[4], SetGain)
+        assert new_qp.body.elements[4].bus == "flux2"
+        assert math.isclose(new_qp.body.elements[4].gain, 0.35)
+        assert isinstance(new_qp.body.elements[5], SetGain)
+        assert new_qp.body.elements[5].bus == "flux1"
+        assert math.isclose(new_qp.body.elements[5].gain, 0.4)
+
     def test_set_markers(self):
         qp = QProgram()
         qp.qblox.set_markers(bus="drive", mask="0111")
