@@ -16,11 +16,14 @@ from typing import Any
 
 import numpy as np
 
+from qililab.config import logger
 from qililab.qprogram.blocks import Block
-from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
+from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix, NonLinearCrosstalkMatrix
 from qililab.utils import sort_buses
 from qililab.waveforms import IQWaveform, Waveform
 from qililab.yaml import yaml
+
+_NO_CROSSTALK = "No crosstalk has been given to the Calibration file."
 
 
 @yaml.register_class
@@ -172,6 +175,28 @@ class Calibration:
             raise KeyError(f"The block {name} do not exist.")
         return self.blocks[name]
 
+    def set_non_linear_crosstalk(self, enabled: bool = True) -> None:
+        """Enables or disables the nonlinear crosstalk correction terms on the stored crosstalk matrices.
+
+        Applies to both the DC (``crosstalk_matrix``) and AC (``crosstalk_matrix_ac``) matrices when
+        present. A matrix that is not a ``NonLinearCrosstalkMatrix`` is left untouched with a warning.
+
+        Args:
+            enabled (bool): Whether to apply the nonlinear corrections. Defaults to True.
+
+        Raises:
+            ValueError: If no crosstalk matrix has been given to the Calibration file.
+        """
+        if self.crosstalk_matrix is None and self.crosstalk_matrix_ac is None:
+            raise ValueError(_NO_CROSSTALK)
+        for name, matrix in (("crosstalk_matrix", self.crosstalk_matrix), ("crosstalk_matrix_ac", self.crosstalk_matrix_ac)):
+            if matrix is None:
+                continue
+            if not isinstance(matrix, NonLinearCrosstalkMatrix):
+                logger.warning("%s is not a NonLinearCrosstalkMatrix; nonlinear terms cannot be toggled.", name)
+                continue
+            matrix.set_non_linear(enabled)
+
     def _add_crosstalk_history_iteration(self):
         """Creates a new empty iteration on the crosstalk history tuple."""
 
@@ -223,7 +248,7 @@ class Calibration:
                 raise NotImplementedError(
                     "crosstalk_matrix_ac is not valid for crosstalk history, use crosstalk_matrix."
                 )
-            raise ValueError("No crosstalk has been given to the Calibration file.")
+            raise ValueError(_NO_CROSSTALK)
 
         bus_list = list(self.crosstalk_matrix.matrix.keys())
         if set(bus_list) != set(block_diag_xt_matrix.keys()):
@@ -269,7 +294,7 @@ class Calibration:
                 raise NotImplementedError(
                     "crosstalk_matrix_ac is not valid for crosstalk history, use crosstalk_matrix."
                 )
-            raise ValueError("No crosstalk has been given to the Calibration file.")
+            raise ValueError(_NO_CROSSTALK)
 
         bus_list = list(self.crosstalk_matrix.matrix.keys())
         if set(bus_list) != set(full_crosstalk_matrix.keys()):

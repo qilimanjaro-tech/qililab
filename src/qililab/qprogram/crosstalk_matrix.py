@@ -344,8 +344,21 @@ class NonLinearCrosstalkMatrix(CrosstalkMatrix):
         self.beta_c_matrix: dict[str, dict[str, float | None]] = {}
         self.non_lin_amp_matrix: dict[str, dict[str, float | None]] = {}
         self.junction_asym_matrix: dict[str, dict[str, float | None]] = {}
+        self.non_linear_enabled: bool = True
         self._nonlinear_cache = None
         self._nonlinear_version = 0
+
+    def set_non_linear(self, enabled: bool = True) -> None:
+        """Enables or disables the nonlinear crosstalk correction terms.
+
+        When disabled, :meth:`flux_to_bias` (and :meth:`get_non_linear_flux_terms`) skip the
+        non-linear corrections, so the matrix behaves as a purely linear crosstalk matrix
+        while retaining its stored nonlinear parameters.
+
+        Args:
+            enabled (bool): Whether to apply the nonlinear corrections. Defaults to True.
+        """
+        self.non_linear_enabled = enabled
 
     def __getstate__(self) -> dict:
         """Serialized state drops the derived nonlinear index too (kept dense in the dicts)."""
@@ -534,6 +547,11 @@ class NonLinearCrosstalkMatrix(CrosstalkMatrix):
             ValueError: If a bus with nonlinear params set is not found in the provided flux dict.
         """
         corrections: dict[str, float | np.ndarray] = dict.fromkeys(flux, 0.0)
+
+        # getattr keeps objects deserialized before this flag existed defaulting to enabled.
+        if not getattr(self, "non_linear_enabled", True):
+            return corrections
+
         terms = self._active_nonlinear_terms()
 
         for bus_i, bus_j, beta in terms.beta_terms:
@@ -616,6 +634,7 @@ class NonLinearCrosstalkMatrix(CrosstalkMatrix):
         instance.beta_c_matrix = {bus: dict.fromkeys(row) for bus, row in linear.matrix.items()}
         instance.non_lin_amp_matrix = {bus: dict.fromkeys(row) for bus, row in linear.matrix.items()}
         instance.junction_asym_matrix = {bus: dict.fromkeys(row) for bus, row in linear.matrix.items()}
+        instance.non_linear_enabled = getattr(linear, "non_linear_enabled", True)
         return instance
 
     def __repr__(self) -> str:
