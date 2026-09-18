@@ -16,8 +16,9 @@ from typing import Any
 
 import numpy as np
 
+from qililab.config import logger
 from qililab.qprogram.blocks import Block
-from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
+from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix, NonLinearCrosstalkMatrix
 from qililab.utils import sort_buses
 from qililab.waveforms import IQWaveform, Waveform
 from qililab.yaml import yaml
@@ -171,6 +172,22 @@ class Calibration:
         if name not in self.blocks:
             raise KeyError(f"The block {name} do not exist.")
         return self.blocks[name]
+
+    def set_non_linear_crosstalk(self, enabled: bool = True) -> None:
+        """Enables or disables the nonlinear crosstalk correction terms on the stored crosstalk matrix.
+
+        Args:
+            enabled (bool): Whether to apply the nonlinear corrections. Defaults to True.
+
+        Raises:
+            ValueError: If no crosstalk matrix has been given to the Calibration file.
+        """
+        if self.crosstalk_matrix is None:
+            raise ValueError("No crosstalk has been given to the Calibration file.")
+        if not isinstance(self.crosstalk_matrix, NonLinearCrosstalkMatrix):
+            logger.warning("crosstalk_matrix is not a NonLinearCrosstalkMatrix; nonlinear terms cannot be toggled.")
+            return
+        self.crosstalk_matrix.set_non_linear(enabled)
 
     def _add_crosstalk_history_iteration(self):
         """Creates a new empty iteration on the crosstalk history tuple."""

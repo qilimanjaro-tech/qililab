@@ -254,6 +254,19 @@ class NonLinearCrosstalkMatrix(CrosstalkMatrix):
         self.beta_c_matrix: dict[str, dict[str, float | None]] = {}
         self.non_lin_amp_matrix: dict[str, dict[str, float | None]] = {}
         self.junction_asym_matrix: dict[str, dict[str, float | None]] = {}
+        self.non_linear_enabled: bool = True
+
+    def set_non_linear(self, enabled: bool = True) -> None:
+        """Enables or disables the nonlinear crosstalk correction terms.
+
+        When disabled, :meth:`flux_to_bias` (and :meth:`get_non_linear_flux_terms`) skip the
+        non-linear corrections, so the matrix behaves as a purely linear crosstalk matrix
+        while retaining its stored nonlinear parameters.
+
+        Args:
+            enabled (bool): Whether to apply the nonlinear corrections. Defaults to True.
+        """
+        self.non_linear_enabled = enabled
 
     def __setitem__(self, key: str, value: dict[str, float]) -> None:
         """Sets the crosstalk values for the given bus and initializes nonlinear entries.
@@ -411,6 +424,10 @@ class NonLinearCrosstalkMatrix(CrosstalkMatrix):
         """
         corrections: dict[str, float | np.ndarray] = dict.fromkeys(flux, 0.0)
 
+        # getattr keeps objects deserialized before this flag existed defaulting to enabled.
+        if not getattr(self, "non_linear_enabled", True):
+            return corrections
+
         for bus_i, row in self.beta_c_matrix.items():
             for bus_j, beta in row.items():
                 if beta is None:
@@ -497,6 +514,7 @@ class NonLinearCrosstalkMatrix(CrosstalkMatrix):
         instance.beta_c_matrix = {bus: dict.fromkeys(row) for bus, row in linear.matrix.items()}
         instance.non_lin_amp_matrix = {bus: dict.fromkeys(row) for bus, row in linear.matrix.items()}
         instance.junction_asym_matrix = {bus: dict.fromkeys(row) for bus, row in linear.matrix.items()}
+        instance.non_linear_enabled = getattr(linear, "non_linear_enabled", True)
         return instance
 
     def __repr__(self) -> str:
