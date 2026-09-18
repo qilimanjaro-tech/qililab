@@ -3,7 +3,10 @@ import math
 import pytest
 from scipy.special import jv
 
-from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix, NonLinearCrosstalkMatrix
+from qililab.qprogram.crosstalk_matrix import PHI_0_WB, CrosstalkMatrix, NonLinearCrosstalkMatrix
+
+# Resistance for which the pH → Φ₀/V conversion factor (Φ₀ · R · 1e12) is exactly 1.0.
+_UNIT_RESISTANCE = 1.0 / (PHI_0_WB * 1e12)
 
 
 @pytest.fixture(name="linear_crosstalk_matrix")
@@ -16,7 +19,10 @@ def get_linear_crosstalk_matrix():
     """
     xtalk_array = np.array([[1, 0.2, 0.3], [0.1, 1, 0.3], [0, 1, 0]])
     buses = ["flux_0", "flux_1", "flux_2"]
-    return CrosstalkMatrix.from_array(buses=buses, matrix_array=xtalk_array)
+    matrix = CrosstalkMatrix.from_array(buses=buses, matrix_array=xtalk_array)
+    # Values are in pH; unit resistances make the bias path apply them directly.
+    matrix.set_resistances({bus: _UNIT_RESISTANCE for bus in buses})
+    return matrix
 
 
 @pytest.fixture(name="nonlinear_crosstalk_matrix")
