@@ -23,7 +23,6 @@ from qililab.utils import sort_buses
 from qililab.waveforms import IQWaveform, Waveform
 from qililab.yaml import yaml
 
-
 _NO_CROSSTALK = "No crosstalk has been given to the Calibration file."
 
 
