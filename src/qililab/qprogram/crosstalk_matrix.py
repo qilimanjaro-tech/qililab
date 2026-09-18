@@ -12,9 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from dataclasses import dataclass
 from typing import Final, Mapping
 
 import numpy as np
+import xarray as xr
 from scipy.special import jv
 
 from qililab.utils import Sentinel, Unset, sort_buses
@@ -22,16 +24,98 @@ from qililab.yaml import yaml
 
 _UNSET: Final = Sentinel.UNSET
 
+_BUS_OUT: Final = "bus_out"
+_BUS_IN: Final = "bus_in"
+
+
+@dataclass
+class _CrosstalkCache:
+    """Numeric view of a :class:`CrosstalkMatrix`."""
+
+    buses: list[str]
+    # matrix has these dimensions (bus_out, bus_in), coords = buses
+    matrix: xr.DataArray
+    inverse: xr.DataArray
+    version: int
+    source: dict[str, dict[str, float]]
+
+
+class _RowView(dict):
+    """Transient, write-through view of a single crosstalk-matrix row."""
+
+    def __init__(self, parent: "CrosstalkMatrix", bus: str) -> None:
+        self._parent = parent
+        self._bus = bus
+        existed = bus in parent.matrix
+        row = parent.matrix.setdefault(bus, {})
+        super().__init__(row)
+        if not existed:
+            # Adding a new (empty) row changes the set of buses seen by to_array().
+            parent._invalidate()
+
+    def __setitem__(self, key: str, value: float) -> None:
+        super().__setitem__(key, value)
+        self._parent.matrix[self._bus][key] = value
+        self._parent._invalidate()
+
+    def __delitem__(self, key: str) -> None:
+        super().__delitem__(key)
+        self._parent.matrix[self._bus].pop(key, None)
+        self._parent._invalidate()
+
+    def update(self, *args, **kwargs) -> None:  # type: ignore[override]
+        super().update(*args, **kwargs)
+        self._parent.matrix[self._bus].update(dict(*args, **kwargs))
+        self._parent._invalidate()
+
 
 @yaml.register_class
 class CrosstalkMatrix:
     """A class to represent a crosstalk matrix where each index corresponds to a bus."""
+
+    _cache: "_CrosstalkCache | None" = None
+    _version: int = 0
 
     def __init__(self) -> None:
         """Initializes an empty crosstalk matrix."""
         self.matrix: dict[str, dict[str, float]] = {}
         self.flux_offsets: dict[str, float] = {}
         self.resistances: dict[str, float | None] = {}
+        self._cache = None
+        self._version = 0
+
+    def _invalidate(self) -> None:
+        """Marks the cached array stale after an in-place mutation of ``matrix``."""
+        self._version += 1
+
+    def __getstate__(self) -> dict:
+        """Serialized state: only the persistent dicts, never the derived array cache."""
+        state = self.__dict__.copy()
+        state.pop("_cache", None)
+        state.pop("_version", None)
+        return state
+
+    def _get_cache(self) -> "_CrosstalkCache":
+        """Returns the memoized labeled array/inverse, rebuilding only when ``matrix`` changed."""
+        cache = self._cache
+        if cache is not None and cache.source is self.matrix and cache.version == self._version:
+            return cache
+
+        buses = self._sorted_buses()
+        n = len(buses)
+        index = {bus: i for i, bus in enumerate(buses)}
+        data = np.eye(n)
+        for bus1, row in self.matrix.items():
+            if row:
+                data[index[bus1], [index[bus2] for bus2 in row]] = list(row.values())
+
+        coords = {_BUS_OUT: buses, _BUS_IN: buses}
+        matrix_da = xr.DataArray(data, dims=(_BUS_OUT, _BUS_IN), coords=coords)
+        inverse_data = np.linalg.inv(data) if n else np.zeros((0, 0))
+        inverse_da = xr.DataArray(inverse_data, dims=(_BUS_OUT, _BUS_IN), coords=coords)
+
+        self._cache = _CrosstalkCache(buses, matrix_da, inverse_da, self._version, self.matrix)
+        return self._cache
 
     def _sorted_buses(self) -> list[str]:
         """Canonical bus ordering shared by to_array/inverse/from_array.
@@ -55,14 +139,7 @@ class CrosstalkMatrix:
         Returns:
             np.ndarray: crosstalk matrix as a numpy array.
         """
-        sorted_buses = self._sorted_buses()
-
-        xtalk_matrix = np.eye(len(self.matrix))
-        for i, bus1 in enumerate(sorted_buses):
-            for j, bus2 in enumerate(sorted_buses):
-                if bus1 in self.matrix and bus2 in self.matrix[bus1]:
-                    xtalk_matrix[i, j] = self.matrix[bus1][bus2]
-        return xtalk_matrix
+        return self._get_cache().matrix.values.copy()
 
     def inverse(self) -> "CrosstalkMatrix":
         """Returns the inverse version of the crosstalk matrix (as a bus dictionary).
@@ -70,8 +147,8 @@ class CrosstalkMatrix:
         Returns:
             CrosstalkMatrix: inverse crosstalk matrix
         """
-        inverse_xtalk_array = np.linalg.inv(self.to_array())
-        return self.from_array(self._sorted_buses(), inverse_xtalk_array)
+        cache = self._get_cache()
+        return self.from_array(cache.buses, cache.inverse.values)
 
     def __getitem__(self, bus: str) -> dict[str, float]:
         """Returns the dictionary of crosstalk values for the given bus.
@@ -82,9 +159,7 @@ class CrosstalkMatrix:
         Returns:
             dict[str, float]: A dictionary of crosstalk values for the given bus.
         """
-        if bus not in self.matrix:
-            self.matrix[bus] = {}
-        return self.matrix[bus]
+        return _RowView(self, bus)
 
     def __setitem__(self, key: str, value: dict[str, float]) -> None:
         """Sets the crosstalk values for the given bus.
@@ -94,7 +169,7 @@ class CrosstalkMatrix:
             value (dict[str, float]): A dictionary of crosstalk values to set for the given bus.
         """
         if key not in self.matrix:
-            self.matrix[key] = value
+            self.matrix[key] = dict(value)
         else:
             for bus in value.keys():
                 self.matrix[key][bus] = value[bus]
@@ -104,6 +179,8 @@ class CrosstalkMatrix:
 
         if key not in self.resistances:
             self.resistances[key] = None
+
+        self._invalidate()
 
     def __repr__(self) -> str:
         """Returns a string representation of the CrosstalkMatrix.
@@ -166,17 +243,22 @@ class CrosstalkMatrix:
         Returns:
             dict[str, float | np.ndarray]: Hardware bias values keyed by bus name.
         """
-        sorted_buses = sort_buses(self.matrix.keys())
-        inverse = self.inverse()
-        inverse.flux_offsets = self.flux_offsets
+        cache = self._get_cache()
+        buses = cache.buses
+        inverse = cache.inverse.values
 
-        bias = {}
-        for bus_1 in sorted_buses:
-            bias[bus_1] = sum(
-                (flux[bus_2] - inverse.flux_offsets[bus_2]) * inverse.matrix[bus_1][bus_2]
-                for bus_2 in inverse.matrix[bus_1].keys()
-            )
-        return bias
+        offsets = np.array([self.flux_offsets.get(bus, 0.0) for bus in buses])
+        flux_values = [flux[bus] for bus in buses]
+        scalar_input = all(isinstance(value, (int, float, np.number)) for value in flux_values)
+
+        if scalar_input:
+            bias = inverse @ (np.array(flux_values, dtype=float) - offsets)
+            return {bus: float(value) for bus, value in zip(buses, bias)}
+
+        length = max(np.asarray(value).size for value in flux_values)
+        flux_stack = np.stack([np.broadcast_to(np.asarray(value, dtype=float), length) for value in flux_values])
+        bias = inverse @ (flux_stack - offsets[:, np.newaxis])
+        return dict(zip(buses, bias))
 
     @classmethod
     def from_array(cls, buses: list[str], matrix_array: np.ndarray) -> "CrosstalkMatrix":
@@ -194,12 +276,8 @@ class CrosstalkMatrix:
         """
 
         instance = cls()
-        instance.matrix = {}
-        for i, bus1 in enumerate(buses):
-            for j, bus2 in enumerate(buses):
-                if bus1 not in instance.matrix:
-                    instance.matrix[bus1] = {}
-                instance.matrix[bus1][bus2] = float(matrix_array[i, j])
+        rows = np.asarray(matrix_array, dtype=float).tolist()
+        instance.matrix = {bus1: dict(zip(buses, rows[i])) for i, bus1 in enumerate(buses)}
 
         if not instance.flux_offsets:
             for bus in buses:
@@ -235,6 +313,15 @@ class CrosstalkMatrix:
         return instance
 
 
+@dataclass
+class _NonLinearCache:
+    """Sparse index of the non-None nonlinear terms of a :class:`NonLinearCrosstalkMatrix`."""
+
+    version: int
+    beta_terms: list[tuple[str, str, float]]
+    junction_terms: list[tuple[str, str, float]]
+
+
 @yaml.register_class
 class NonLinearCrosstalkMatrix(CrosstalkMatrix):
     """Extends CrosstalkMatrix with nonlinear crosstalk correction terms.
@@ -248,6 +335,9 @@ class NonLinearCrosstalkMatrix(CrosstalkMatrix):
     respectively. Entries that are None indicate no nonlinear coupling between that pair.
     """
 
+    _nonlinear_cache: "_NonLinearCache | None" = None
+    _nonlinear_version: int = 0
+
     def __init__(self) -> None:
         """Initializes an empty nonlinear crosstalk matrix."""
         super().__init__()
@@ -255,6 +345,8 @@ class NonLinearCrosstalkMatrix(CrosstalkMatrix):
         self.non_lin_amp_matrix: dict[str, dict[str, float | None]] = {}
         self.junction_asym_matrix: dict[str, dict[str, float | None]] = {}
         self.non_linear_enabled: bool = True
+        self._nonlinear_cache = None
+        self._nonlinear_version = 0
 
     def set_non_linear(self, enabled: bool = True) -> None:
         """Enables or disables the nonlinear crosstalk correction terms.
@@ -267,6 +359,34 @@ class NonLinearCrosstalkMatrix(CrosstalkMatrix):
             enabled (bool): Whether to apply the nonlinear corrections. Defaults to True.
         """
         self.non_linear_enabled = enabled
+
+    def __getstate__(self) -> dict:
+        """Serialized state drops the derived nonlinear index too (kept dense in the dicts)."""
+        state = super().__getstate__()
+        state.pop("_nonlinear_cache", None)
+        state.pop("_nonlinear_version", None)
+        return state
+
+    def _active_nonlinear_terms(self) -> "_NonLinearCache":
+        """Returns the non-None nonlinear terms, rebuilding only when they changed."""
+        cache = self._nonlinear_cache
+        if cache is not None and cache.version == self._nonlinear_version:
+            return cache
+
+        beta_terms = [
+            (bus_i, bus_j, beta)
+            for bus_i, row in self.beta_c_matrix.items()
+            for bus_j, beta in row.items()
+            if beta is not None
+        ]
+        junction_terms = [
+            (bus_i, bus_j, d)
+            for bus_i, row in self.junction_asym_matrix.items()
+            for bus_j, d in row.items()
+            if d is not None
+        ]
+        self._nonlinear_cache = _NonLinearCache(self._nonlinear_version, beta_terms, junction_terms)
+        return self._nonlinear_cache
 
     def __setitem__(self, key: str, value: dict[str, float]) -> None:
         """Sets the crosstalk values for the given bus and initializes nonlinear entries.
@@ -296,6 +416,8 @@ class NonLinearCrosstalkMatrix(CrosstalkMatrix):
             for bus in value:
                 if bus not in self.junction_asym_matrix[key]:
                     self.junction_asym_matrix[key][bus] = None
+
+        self._nonlinear_version += 1
 
     def set_non_linear_params(
         self,
@@ -350,6 +472,8 @@ class NonLinearCrosstalkMatrix(CrosstalkMatrix):
             if bus_i not in self.junction_asym_matrix:
                 self.junction_asym_matrix[bus_i] = {}
             self.junction_asym_matrix[bus_i][bus_j] = junction_asym
+
+        self._nonlinear_version += 1
 
     def sin_beta_scaled(
         self,
@@ -428,29 +552,24 @@ class NonLinearCrosstalkMatrix(CrosstalkMatrix):
         if not getattr(self, "non_linear_enabled", True):
             return corrections
 
-        for bus_i, row in self.beta_c_matrix.items():
-            for bus_j, beta in row.items():
-                if beta is None:
-                    continue
-                if bus_i not in flux:
-                    raise ValueError(
-                        f"Bus '{bus_i}' has nonlinear parameters set but was not found "
-                        f"in the provided flux dict. All buses with nonlinear corrections "
-                        f"must be included."
-                    )
-                amp = self.non_lin_amp_matrix.get(bus_i, {}).get(bus_j)
-                if amp is None:
-                    raise ValueError(f"beta_c is set for ({bus_i}, {bus_j}) but non_lin_amp is None.")
-                if bus_j not in flux:
-                    raise ValueError(f"Bus '{bus_j}' not found in provided flux dict.")
-                result = self.sin_beta_scaled(flux=flux[bus_j], beta=beta, amp=amp)
-                corrections[bus_i] += result  # type: ignore[assignment]
-        for bus_i in self.junction_asym_matrix:
-            for bus_j in self.junction_asym_matrix[bus_i]:
-                d = self.junction_asym_matrix[bus_i][bus_j]
-                if d is None:
-                    continue
-                corrections[bus_i] += self.junction_asymmetry_correction(flux_x=flux[bus_j], d=d)
+        terms = self._active_nonlinear_terms()
+
+        for bus_i, bus_j, beta in terms.beta_terms:
+            if bus_i not in flux:
+                raise ValueError(
+                    f"Bus '{bus_i}' has nonlinear parameters set but was not found "
+                    f"in the provided flux dict. All buses with nonlinear corrections "
+                    f"must be included."
+                )
+            amp = self.non_lin_amp_matrix.get(bus_i, {}).get(bus_j)
+            if amp is None:
+                raise ValueError(f"beta_c is set for ({bus_i}, {bus_j}) but non_lin_amp is None.")
+            if bus_j not in flux:
+                raise ValueError(f"Bus '{bus_j}' not found in provided flux dict.")
+            result = self.sin_beta_scaled(flux=flux[bus_j], beta=beta, amp=amp)
+            corrections[bus_i] += result  # type: ignore[assignment]
+        for bus_i, bus_j, d in terms.junction_terms:
+            corrections[bus_i] += self.junction_asymmetry_correction(flux_x=flux[bus_j], d=d)
 
         return corrections
 
@@ -469,13 +588,14 @@ class NonLinearCrosstalkMatrix(CrosstalkMatrix):
             dict[str, float | np.ndarray]: Hardware bias values keyed by bus name,
                 including nonlinear corrections.
         """
-        sorted_buses = sort_buses(self.matrix.keys())
+        cache = self._get_cache()
+        sorted_buses = cache.buses
 
         corrections = self.get_non_linear_flux_terms(flux)
-        if all(isinstance(f, (float, int)) for f in flux.values()):
+        if all(isinstance(f, (int, float, np.number)) for f in flux.values()):
             corrected_flux = np.array([flux[bus] + corrections[bus] for bus in sorted_buses], dtype=float)
         else:
-            len_wf = max(len(flux[bus]) for bus in sorted_buses if not isinstance(flux[bus], (float, int)))  # type: ignore[arg-type]
+            len_wf = max(len(flux[bus]) for bus in sorted_buses if not isinstance(flux[bus], (int, float, np.number)))  # type: ignore[arg-type]
             corrected_flux = np.array(
                 [
                     flux[bus]
@@ -490,7 +610,7 @@ class NonLinearCrosstalkMatrix(CrosstalkMatrix):
             )
         offsets = np.array([self.flux_offsets.get(bus, 0.0) for bus in sorted_buses])
 
-        inverse_matrix = self.inverse().to_array()
+        inverse_matrix = cache.inverse.values
         corr_m_off = corrected_flux.T - offsets
         bias_array = inverse_matrix @ corr_m_off.T
 
