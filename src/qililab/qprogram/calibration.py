@@ -24,6 +24,9 @@ from qililab.waveforms import IQWaveform, Waveform
 from qililab.yaml import yaml
 
 
+_NO_CROSSTALK = "No crosstalk has been given to the Calibration file."
+
+
 @yaml.register_class
 class Calibration:
     """A class to manage calibration data."""
@@ -183,7 +186,7 @@ class Calibration:
             ValueError: If no crosstalk matrix has been given to the Calibration file.
         """
         if self.crosstalk_matrix is None:
-            raise ValueError("No crosstalk has been given to the Calibration file.")
+            raise ValueError(_NO_CROSSTALK)
         if not isinstance(self.crosstalk_matrix, NonLinearCrosstalkMatrix):
             logger.warning("crosstalk_matrix is not a NonLinearCrosstalkMatrix; nonlinear terms cannot be toggled.")
             return
@@ -240,7 +243,7 @@ class Calibration:
                 raise NotImplementedError(
                     "crosstalk_matrix_ac is not valid for crosstalk history, use crosstalk_matrix."
                 )
-            raise ValueError("No crosstalk has been given to the Calibration file.")
+            raise ValueError(_NO_CROSSTALK)
 
         bus_list = list(self.crosstalk_matrix.matrix.keys())
         if set(bus_list) != set(block_diag_xt_matrix.keys()):
@@ -286,7 +289,7 @@ class Calibration:
                 raise NotImplementedError(
                     "crosstalk_matrix_ac is not valid for crosstalk history, use crosstalk_matrix."
                 )
-            raise ValueError("No crosstalk has been given to the Calibration file.")
+            raise ValueError(_NO_CROSSTALK)
 
         bus_list = list(self.crosstalk_matrix.matrix.keys())
         if set(bus_list) != set(full_crosstalk_matrix.keys()):
