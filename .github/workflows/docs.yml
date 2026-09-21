@@ -35,7 +35,7 @@ jobs:
         fetch-depth: 1
 
     - name: Install uv
-      uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d  # v10.0.1
+      uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4  # v10.1.0
       with:
         python-version: "3.13"
         cache-dependency-glob: |
@@ -44,7 +44,7 @@ jobs:
         enable-cache: true
 
     - name: Configure AWS Credentials (OIDC)
-      uses: aws-actions/configure-aws-credentials@cbe3b392738ccf3f987d68400dafcf4b0624a56c  # v6.2.4
+      uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd  # v6.3.0
       with:
         role-to-assume: arn:aws:iam::723412851021:role/GitHub_actions_role
         aws-region: eu-west-1
@@ -52,7 +52,7 @@ jobs:
     
     - name: Assume deploy role in target account
       id: chained
-      uses: aws-actions/configure-aws-credentials@cbe3b392738ccf3f987d68400dafcf4b0624a56c  # v6.2.4
+      uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd  # v6.3.0
       with:
         role-to-assume: arn:aws:iam::723412851021:role/Code-Artifact-Publish
         aws-region: eu-west-1
