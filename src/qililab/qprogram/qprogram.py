@@ -22,6 +22,7 @@ from qililab.qprogram.blocks import Block, ForLoop, Parallel
 from qililab.qprogram.calibration import Calibration
 from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix, NonLinearCrosstalkMatrix
 from qililab.qprogram.flux_vector import FluxVector, NonLinearFluxVector
+from qililab.qprogram.loop_utils import loop_range
 from qililab.qprogram.operations import (
     Acquire,
     AcquireWithCalibratedWeights,
@@ -597,7 +598,7 @@ class QProgram(StructuredProgram):
                 variable_loop = next((loop for loop in self._active_loops[::-1] if loop.variable == envelope), None)
                 if variable_loop:
                     envelope = (
-                        np.arange(variable_loop.start, variable_loop.stop, variable_loop.step)
+                        loop_range(variable_loop.start, variable_loop.stop, variable_loop.step)
                         if isinstance(variable_loop, ForLoop)
                         else variable_loop
                     )

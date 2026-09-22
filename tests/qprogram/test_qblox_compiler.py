@@ -5143,7 +5143,7 @@ class TestQBloxCompiler:
         main:
                 move             0, R0         
                 move             0, R1          
-                move             10, R2          
+                move             11, R2          
         loop_0:
                 set_awg_offs     R0, R0
                 upd_param        10
@@ -5166,7 +5166,7 @@ class TestQBloxCompiler:
         main:
                 move             0, R0         
                 move             0, R1          
-                move             10, R2          
+                move             11, R2          
         loop_0:
                 set_awg_offs     R1, R1
                 upd_param        10
@@ -5189,7 +5189,7 @@ class TestQBloxCompiler:
         main:
                 move             0, R0         
                 move             0, R1          
-                move             10, R2          
+                move             11, R2          
         loop_0:
                 wait             10             
                 play             0, 0, 50       
@@ -5212,7 +5212,7 @@ class TestQBloxCompiler:
                 move             0, R1          
                 move             0, R2         
                 move             0, R3          
-                move             10, R4          
+                move             11, R4          
         loop_0:
                 wait             60             
                 play             0, 0, 4        
@@ -5775,7 +5775,7 @@ class TestQBloxCompiler:
         main:
                 move             0, R0         
                 move             0, R1          
-                move             10, R2          
+                move             11, R2          
         loop_0:
                 set_awg_offs     1638, 1638
                 upd_param        10
@@ -5798,7 +5798,7 @@ class TestQBloxCompiler:
         main:
                 move             0, R0         
                 move             0, R1          
-                move             10, R2          
+                move             11, R2          
         loop_0:
                 set_awg_offs     819, 819
                 upd_param        10
@@ -5821,7 +5821,7 @@ class TestQBloxCompiler:
         main:
                 move             0, R0         
                 move             0, R1          
-                move             10, R2          
+                move             11, R2          
         loop_0:
                 wait             10             
                 play             0, 0, 50       
@@ -5844,7 +5844,7 @@ class TestQBloxCompiler:
                 move             0, R1          
                 move             0, R2         
                 move             0, R3          
-                move             10, R4          
+                move             11, R4          
         loop_0:
                 wait             60             
                 play             0, 0, 4        
@@ -5954,7 +5954,7 @@ class TestQBloxCompiler:
         main:
                 move             1638, R0
                 move             3276, R1
-                move             10, R2
+                move             11, R2
         loop_0:
                 set_awg_gain     R0, R0
                 play             0, 1, 50
@@ -5963,7 +5963,7 @@ class TestQBloxCompiler:
                 loop             R2, @loop_0
                 move             1638, R3
                 move             3276, R4
-                move             10, R5
+                move             11, R5
         loop_1:
                 set_awg_offs     R3, R3
                 upd_param        10
@@ -5983,7 +5983,7 @@ class TestQBloxCompiler:
         main:
                 move             1638, R0
                 move             3276, R1
-                move             10, R2
+                move             11, R2
         loop_0:
                 set_awg_gain     R1, R1
                 play             0, 1, 50
@@ -5992,7 +5992,7 @@ class TestQBloxCompiler:
                 loop             R2, @loop_0
                 move             1638, R3
                 move             3276, R4
-                move             10, R5
+                move             11, R5
         loop_1:
                 set_awg_offs     R4, R4
                 upd_param        10
@@ -6028,11 +6028,11 @@ class TestQBloxCompiler:
         main:
                 move             0, R0          
                 move             0, R1          
-                move             10, R2         
+                move             11, R2         
         loop_0:
                 move             1638, R3       
                 move             3276, R4       
-                move             10, R5         
+                move             11, R5         
         loop_1:
                 add              R0, R3, R6
                 nop
@@ -6057,11 +6057,11 @@ class TestQBloxCompiler:
         main:
                         move             0, R0          
                         move             0, R1          
-                        move             10, R2         
+                        move             11, R2         
         loop_0:
                         move             1638, R3       
                         move             3276, R4       
-                        move             10, R5         
+                        move             11, R5         
         loop_1:
                         add              R4, R1, R6
                         nop
@@ -6099,11 +6099,11 @@ class TestQBloxCompiler:
         main:
                         move             0, R0          
                         move             0, R1          
-                        move             10, R2         
+                        move             11, R2         
         loop_0:
                         move             1638, R3       
                         move             3276, R4       
-                        move             10, R5         
+                        move             11, R5         
         loop_1:
                         add              R0, R3, R6
                         nop
@@ -6128,11 +6128,11 @@ class TestQBloxCompiler:
         main:
                         move             0, R0          
                         move             0, R1          
-                        move             10, R2         
+                        move             11, R2         
         loop_0:
                         move             1638, R3       
                         move             3276, R4       
-                        move             10, R5         
+                        move             11, R5         
         loop_1:
                         add              R4, R1, R6
                         nop
