@@ -22,6 +22,7 @@ from qililab.qprogram.blocks import Block, ForLoop, Parallel
 from qililab.qprogram.calibration import Calibration
 from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix, NonLinearCrosstalkMatrix
 from qililab.qprogram.flux_vector import FluxVector, NonLinearFluxVector
+from qililab.qprogram.loop_utils import loop_range
 from qililab.qprogram.operations import (
     Acquire,
     AcquireWithCalibratedWeights,
