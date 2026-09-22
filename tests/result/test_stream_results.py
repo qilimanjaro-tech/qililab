@@ -340,7 +340,7 @@ class TestStreamArray:
                 assert stream_array_qubit_idx_bus_map._get_debug() == debug_q1asm
                 assert stream_array_qubit_idx_bus_map._get_index_list(stream_array_qubit_idx_bus_map.qubit_idx) == ["1"]
                 assert stream_array_qubit_idx_bus_map._get_index_list(stream_array_qubit_idx_bus_map.second_idx) == ["1", "2"]
-    
+
     def test_stream_array_instantiation_qubit_idx_raises_debug_error(self, stream_array_qubit_idx: StreamArray):
         """Tests the instantiation of a StreamArray object with target and secondary indexes."""
         # Create mock for the file context
@@ -648,11 +648,11 @@ class TestFluxOffsets:
         assert stream_array._get_qprogram_flux_vector() == {"flux_q0": 0.15, "flux_q1": 0.0}
 
     def test_qprogram_flux_vector_reads_nested_blocks(self, stream_array: StreamArray):
-        """Offsets set inside nested blocks (loops) are collected."""
+        """Offsets set inside nested blocks are collected."""
         stream_array.calibration = _calibration_with_crosstalk(["flux_q0", "flux_q1"])
         qprogram = QProgram()
         qprogram.set_offset("flux_q0", 0.15)
-        with qprogram.for_loop(variable=qprogram.variable("t", Domain.Time), start=0, stop=4, step=1):
+        with qprogram.average(shots=10):
             qprogram.set_offset("flux_q1", 0.2)
         stream_array.qprogram = qprogram
 

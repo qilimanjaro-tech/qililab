@@ -276,7 +276,7 @@ class StreamArray:
 
         Returns empty if any bus is offset more than once; swept offsets are skipped.
         """
-        if not self.calibration or not self.calibration.crosstalk_matrix:
+        if not self.qprogram or not self.calibration or not self.calibration.crosstalk_matrix:
             return {}
         crosstalk_buses = set(self.calibration.crosstalk_matrix.matrix.keys())
 
@@ -289,7 +289,7 @@ class StreamArray:
                 elif isinstance(element, Block):
                     traverse(element)
 
-        traverse(self.qprogram._body)  # type: ignore[union-attr]
+        traverse(self.qprogram._body)
         if any(len(values) > 1 for values in offsets.values()):
             return {}
         return {
