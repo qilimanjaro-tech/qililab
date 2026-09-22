@@ -431,6 +431,73 @@ class QProgram(StructuredProgram):
         copied_qprogram.qblox._weight_duration = resolved
         return copied_qprogram
 
+    @staticmethod
+    def _flux_offset_value(operation: "SetOffset | SetGain"):
+        """The variable/scalar value carried by a SetOffset (path0) or SetGain."""
+        return operation.offset_path0 if isinstance(operation, SetOffset) else operation.gain
+
+    @staticmethod
+    def _set_flux_offset_value(operation: "SetOffset | SetGain", value) -> None:
+        if isinstance(operation, SetOffset):
+            operation.offset_path0 = value
+        else:
+            operation.gain = value
+
+    @staticmethod
+    def _sum_flux_offsets(left, right):
+        """Add two flux-offset contributions, treating a scalar zero as the identity element."""
+        if isinstance(left, (int, float)) and left == 0:
+            return right
+        if isinstance(right, (int, float)) and right == 0:
+            return left
+        return left + right
+
+    @staticmethod
+    def _flux_offset_buses(block: Block, flux_buses: set[str]) -> set[str]:
+        """Crosstalk buses that have a SetOffset/SetGain anywhere within ``block``."""
+        buses: set[str] = set()
+        for element in block.elements:
+            if isinstance(element, (SetOffset, SetGain)) and element.bus in flux_buses:
+                buses.add(element.bus)
+            elif isinstance(element, Block):
+                buses |= QProgram._flux_offset_buses(element, flux_buses)
+        return buses
+
+    @staticmethod
+    def _carry_flux_offsets(block: Block, flux_buses: set[str], carried: dict[str, object] | None = None) -> None:
+        """Carry crosstalk-compensated flux offsets from outer loop levels into the innermost block."""
+        carried = dict(carried) if carried else {}
+
+        own_ops = {
+            element.bus: element
+            for element in block.elements
+            if isinstance(element, (SetOffset, SetGain)) and element.bus in flux_buses
+        }
+        child_blocks = [element for element in block.elements if isinstance(element, Block)]
+        deep_buses: set[str] = set()
+        for child in child_blocks:
+            deep_buses |= QProgram._flux_offset_buses(child, flux_buses)
+
+        merged = dict(carried)
+        moved: set[str] = set()
+        for bus, operation in own_ops.items():
+            value = QProgram._flux_offset_value(operation)
+            if bus in deep_buses:
+                merged[bus] = QProgram._sum_flux_offsets(merged[bus], value) if bus in merged else value
+                moved.add(bus)
+            elif bus in carried:
+                QProgram._set_flux_offset_value(operation, QProgram._sum_flux_offsets(carried[bus], value))
+
+        for child in child_blocks:
+            QProgram._carry_flux_offsets(child, flux_buses, merged)
+
+        if moved:
+            block.elements = [
+                element
+                for element in block.elements
+                if not (isinstance(element, (SetOffset, SetGain)) and element.bus in moved)
+            ]
+
     def with_crosstalk_qblox(self, crosstalk: CrosstalkMatrix):
         """Apply crosstalk compensation to the qprogram flux buses.
 
@@ -449,6 +516,8 @@ class QProgram(StructuredProgram):
         self._parallel_loops: dict[Variable, list[ForLoop]] = {}
         self._active_loops: list[ForLoop | Parallel] = []
         self._loop_depths: list[int] = []
+        self._bus_loop_depth: dict[str, int] = {}
+        self._constant_bus_variables: set[Variable] = set()
 
         non_lin_flux_vector: NonLinearFluxVector | None = None
         if isinstance(crosstalk, NonLinearCrosstalkMatrix):
@@ -597,6 +666,11 @@ class QProgram(StructuredProgram):
             if isinstance(envelope, Variable):
                 variable_loop = next((loop for loop in self._active_loops[::-1] if loop.variable == envelope), None)
                 if variable_loop:
+                    depth = next(
+                        (d for loop, d in zip(self._active_loops, self._loop_depths) if loop is variable_loop), None
+                    )
+                    if depth is not None:
+                        self._bus_loop_depth[element.bus] = depth
                     envelope = (
                         loop_range(variable_loop.start, variable_loop.stop, variable_loop.step)
                         if isinstance(variable_loop, ForLoop)
@@ -606,7 +680,21 @@ class QProgram(StructuredProgram):
                         raise ValueError(
                             "Parameters of the ForLoop not assigned correctly. Please check start, stop and step values."
                         )
-            flux_vector[element.bus] = envelope
+            envelope_is_array = isinstance(envelope, np.ndarray) and envelope.ndim > 0
+            existing_arrays = [
+                value for value in flux_vector.flux_vector.values() if isinstance(value, np.ndarray) and value.ndim > 0
+            ]
+            ragged = (
+                isinstance(element, (SetOffset, SetGain))
+                and envelope_is_array
+                and any(value.shape != envelope.shape for value in existing_arrays)
+            )
+            if ragged:
+                flux_vector.flux_vector[element.bus] = envelope
+                if flux_vector.crosstalk:
+                    flux_vector.bias_vector[element.bus] = envelope
+            else:
+                flux_vector[element.bus] = envelope
             return flux_vector
 
         def handle_crosstalk_element(block: Block, crosstalk_elements: CrosstalkElements):
@@ -685,15 +773,21 @@ class QProgram(StructuredProgram):
                     )
                 )
                 bus_variable = self._bus_variable_map[variable, bus]
+                if bus_variable in self._constant_bus_variables:
+                    return SetOffset(bus, 0.0)
                 self._block_variables[variable].append(bus_variable)
 
                 summed_variable = bus_variable
                 if len(variable_list) > 1 and variable in variable_list:
                     for var in variable_list:
                         if isinstance(variable, Variable) and var.label != variable.label:
+                            cross_variable = self._bus_variable_map[var, bus]
+                            if cross_variable in self._constant_bus_variables:
+                                # Zero crosstalk contribution: skip both the summed term and its loop.
+                                continue
                             # Only added if there are more than one loop with different variables.
-                            summed_variable = summed_variable + self._bus_variable_map[var, bus]
-                            self._block_variables[var].append(self._bus_variable_map[var, bus])
+                            summed_variable = summed_variable + cross_variable
+                            self._block_variables[var].append(cross_variable)
 
                 offset = SetOffset(bus, summed_variable)
             elif isinstance(bias_vector, float):
@@ -726,15 +820,21 @@ class QProgram(StructuredProgram):
                     )
                 )
                 bus_variable = self._bus_variable_map[variable, bus]
+                if bus_variable in self._constant_bus_variables:
+                    return SetGain(bus, 0.0)
                 self._block_variables[variable].append(bus_variable)
 
                 summed_variable = bus_variable
                 if len(variable_list) > 1 and variable in variable_list:
                     for var in variable_list:
                         if isinstance(variable, Variable) and var.label != variable.label:
+                            cross_variable = self._bus_variable_map[var, bus]
+                            if cross_variable in self._constant_bus_variables:
+                                # Zero crosstalk contribution: skip both the summed term and its loop.
+                                continue
                             # Only added if there are more than one loop with different variables.
-                            summed_variable = summed_variable + self._bus_variable_map[var, bus]
-                            self._block_variables[var].append(self._bus_variable_map[var, bus])
+                            summed_variable = summed_variable + cross_variable
+                            self._block_variables[var].append(cross_variable)
 
                 gain = SetGain(bus, summed_variable)
             elif isinstance(bias_vector, float):
@@ -818,11 +918,15 @@ class QProgram(StructuredProgram):
                     for_loop_list = []
                     list_fluxes, _ = handle_flux_v_flux(elements, flux_vector, element_group, element_group_bus)
 
-                    if len(list_fluxes) > 1:
+                    if _flux_loops_are_nested(flux_vector) and element.bus in list_fluxes:
+                        # Nested flux-vs-flux loops: use this bus's per-variable decomposition so each
+                        # loop level contributes only its own crosstalk term; the other levels are
+                        # carried in later by _carry_flux_offsets.
                         for bus in crosstalk.matrix.keys():
                             bias_vector = list_fluxes[element.bus].bias_vector[bus]
                             for_loop_list.append(make_for_loop(variable, bus, bias_vector))
                     else:
+                        # Lockstep (parallel/single) loops: use the combined compensated bias.
                         for bus in crosstalk.matrix.keys():
                             bias_vector = flux_vector.bias_vector[bus]
                             for_loop_list.append(make_for_loop(variable, bus, bias_vector))  # type: ignore [arg-type]
@@ -854,7 +958,24 @@ class QProgram(StructuredProgram):
                         used_loop_indices.add(loop_idx)
                         bus_list.append(element_group_bus[ii])
                         variable_list.append(variable)
+            if _flux_loops_are_nested(flux_vector):
+                reduced = FluxVector.from_dict(
+                    {bus: (flux if bus in bus_list else 0) for bus, flux in flux_vector.flux_vector.items()}
+                )
+                reduced.crosstalk = flux_vector.crosstalk
+                return reduced.get_decomposed_vector(bus_list), variable_list
             return flux_vector.get_decomposed_vector(bus_list), variable_list
+
+        def _flux_loops_are_nested(flux_vector: FluxVector) -> bool:
+            """True when the array-valued flux buses are swept by loops at different nesting depths
+            (a flux-vs-flux sweep across levels), as opposed to a single lockstep parallel/loop."""
+            depths = {
+                self._bus_loop_depth.get(bus)
+                for bus, flux in flux_vector.flux_vector.items()
+                if isinstance(flux, np.ndarray) and flux.ndim > 0
+            }
+            depths.discard(None)
+            return len(depths) > 1
 
         def get_element_variable(element: Play | SetGain | SetOffset) -> Variable | None:
             """
@@ -875,6 +996,10 @@ class QProgram(StructuredProgram):
 
             start, stop = bias_vector[0], bias_vector[-1]
             step = bias_vector[1] - bias_vector[0]
+
+            if step == 0:
+                # No variation over the loop: this compensation is a constant and is dropped downstream.
+                self._constant_bus_variables.add(self._bus_variable_map[variable, bus])
 
             return ForLoop(variable=self._bus_variable_map[variable, bus], start=start, stop=stop, step=step)
 
@@ -1007,6 +1132,8 @@ class QProgram(StructuredProgram):
                 non_lin_play_waveforms,
             )
             copied_qprogram.body.elements = corrected_elements
+        else:
+            QProgram._carry_flux_offsets(copied_qprogram.body, set(crosstalk.matrix.keys()))
         return copied_qprogram
 
     def with_crosstalk_qdac(
