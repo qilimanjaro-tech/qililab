@@ -189,7 +189,10 @@ class Calibration:
         """
         if self.crosstalk_matrix is None and self.crosstalk_matrix_ac is None:
             raise ValueError(_NO_CROSSTALK)
-        for name, matrix in (("crosstalk_matrix", self.crosstalk_matrix), ("crosstalk_matrix_ac", self.crosstalk_matrix_ac)):
+        for name, matrix in (
+            ("crosstalk_matrix", self.crosstalk_matrix),
+            ("crosstalk_matrix_ac", self.crosstalk_matrix_ac),
+        ):
             if matrix is None:
                 continue
             if not isinstance(matrix, NonLinearCrosstalkMatrix):
