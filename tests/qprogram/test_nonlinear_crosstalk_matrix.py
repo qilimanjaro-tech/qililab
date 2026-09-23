@@ -40,54 +40,14 @@ class TestNonLinearCrosstalkMatrix:
     def test_init_empty(self):
         xtalk = NonLinearCrosstalkMatrix()
         assert isinstance(xtalk.matrix, dict)
-        assert isinstance(xtalk.beta_c_matrix, dict)
-        assert isinstance(xtalk.non_lin_amp_matrix, dict)
+        assert isinstance(xtalk.beta_c_params, dict)
+        assert isinstance(xtalk.junction_asym_params, dict)
         assert len(xtalk.matrix) == 0
-        assert len(xtalk.beta_c_matrix) == 0
-        assert len(xtalk.non_lin_amp_matrix) == 0
+        assert len(xtalk.beta_c_params) == 0
+        assert len(xtalk.junction_asym_params) == 0
 
     def test_inherits_from_crosstalk_matrix(self):
         assert isinstance(NonLinearCrosstalkMatrix(), CrosstalkMatrix)
-
-    # --- __setitem__ ---
-
-    def test_setitem_initializes_nonlinear_entries(self):
-        xtalk = NonLinearCrosstalkMatrix()
-        xtalk["flux_0"] = {"flux_0": 1.0, "flux_1": 0.2}
-        assert "flux_0" in xtalk.beta_c_matrix
-        assert xtalk.beta_c_matrix["flux_0"]["flux_0"] is None
-        assert xtalk.beta_c_matrix["flux_0"]["flux_1"] is None
-        assert xtalk.non_lin_amp_matrix["flux_0"]["flux_0"] is None
-        assert xtalk.non_lin_amp_matrix["flux_0"]["flux_1"] is None
-
-    def test_setitem_does_not_overwrite_existing_nonlinear_entries(self):
-        xtalk = NonLinearCrosstalkMatrix()
-        xtalk["flux_0"] = {"flux_0": 1.0, "flux_1": 0.2}
-        xtalk.beta_c_matrix["flux_0"]["flux_1"] = -0.23
-        xtalk.non_lin_amp_matrix["flux_0"]["flux_1"] = -0.02
-        xtalk["flux_0"] = {"flux_0": 1.0, "flux_1": 0.3}
-        assert xtalk.beta_c_matrix["flux_0"]["flux_1"] == -0.23
-        assert xtalk.non_lin_amp_matrix["flux_0"]["flux_1"] == -0.02
-
-    def test_setitem_adds_new_bus_to_existing_nonlinear_entries(self):
-        xtalk = NonLinearCrosstalkMatrix()
-        xtalk["flux_0"] = {"flux_0": 1.0, "flux_1": 0.2}
-        xtalk["flux_0"] = {"flux_0": 1.0, "flux_1": 0.2, "flux_2": 0.3}
-        assert xtalk.beta_c_matrix["flux_0"]["flux_2"] is None
-        assert xtalk.non_lin_amp_matrix["flux_0"]["flux_2"] is None
-        assert xtalk.beta_c_matrix["flux_0"]["flux_0"] is None
-        assert xtalk.beta_c_matrix["flux_0"]["flux_1"] is None
-
-    def test_setitem_adds_new_bus_preserves_existing_nonlinear_params(self):
-        xtalk = NonLinearCrosstalkMatrix()
-        xtalk["flux_0"] = {"flux_0": 1.0, "flux_1": 0.2}
-        xtalk.beta_c_matrix["flux_0"]["flux_1"] = -0.23
-        xtalk.non_lin_amp_matrix["flux_0"]["flux_1"] = -0.02
-        xtalk["flux_0"] = {"flux_0": 1.0, "flux_1": 0.2, "flux_2": 0.3}
-        assert xtalk.beta_c_matrix["flux_0"]["flux_2"] is None
-        assert xtalk.non_lin_amp_matrix["flux_0"]["flux_2"] is None
-        assert xtalk.beta_c_matrix["flux_0"]["flux_1"] == -0.23
-        assert xtalk.non_lin_amp_matrix["flux_0"]["flux_1"] == -0.02
 
     # --- from_linear ---
 
@@ -105,13 +65,6 @@ class TestNonLinearCrosstalkMatrix:
         xtalk = NonLinearCrosstalkMatrix.from_linear(linear_crosstalk_matrix)
         assert xtalk.resistances == linear_crosstalk_matrix.resistances
 
-    def test_from_linear_initializes_nonlinear_to_none(self, linear_crosstalk_matrix):
-        xtalk = NonLinearCrosstalkMatrix.from_linear(linear_crosstalk_matrix)
-        for bus_i in xtalk.matrix:
-            for bus_j in xtalk.matrix[bus_i]:
-                assert xtalk.beta_c_matrix[bus_i][bus_j] is None
-                assert xtalk.non_lin_amp_matrix[bus_i][bus_j] is None
-
     def test_from_linear_does_not_share_matrix_reference(self, linear_crosstalk_matrix):
         xtalk = NonLinearCrosstalkMatrix.from_linear(linear_crosstalk_matrix)
         xtalk.matrix["flux_0"]["flux_1"] = 999.0
@@ -120,15 +73,12 @@ class TestNonLinearCrosstalkMatrix:
     # --- set_non_linear_params ---
 
     def test_set_non_linear_params(self, nonlinear_crosstalk_matrix):
-        assert nonlinear_crosstalk_matrix.beta_c_matrix["flux_0"]["flux_2"] == pytest.approx(-0.234)
-        assert nonlinear_crosstalk_matrix.non_lin_amp_matrix["flux_0"]["flux_2"] == pytest.approx(-0.021)
-        assert nonlinear_crosstalk_matrix.beta_c_matrix["flux_1"]["flux_2"] == pytest.approx(-0.253)
-        assert nonlinear_crosstalk_matrix.non_lin_amp_matrix["flux_1"]["flux_2"] == pytest.approx(-0.021)
+        assert nonlinear_crosstalk_matrix.beta_c_params["flux_0"]["flux_2"] == pytest.approx((-0.234,-0.021))
+        assert nonlinear_crosstalk_matrix.beta_c_params["flux_1"]["flux_2"] == pytest.approx((-0.253, -0.021))
 
     def test_set_non_linear_params_overwrite(self, nonlinear_crosstalk_matrix):
         nonlinear_crosstalk_matrix.set_non_linear_params("flux_0", "flux_2", beta_c=-0.999, amplitude=-0.999)
-        assert nonlinear_crosstalk_matrix.beta_c_matrix["flux_0"]["flux_2"] == pytest.approx(-0.999)
-        assert nonlinear_crosstalk_matrix.non_lin_amp_matrix["flux_0"]["flux_2"] == pytest.approx(-0.999)
+        assert nonlinear_crosstalk_matrix.beta_c_params["flux_0"]["flux_2"] == pytest.approx((-0.999, -0.999))
 
     def test_set_non_linear_params_raises_on_missing_bus_i(self, nonlinear_crosstalk_matrix):
         with pytest.raises(ValueError, match="Bus 'nonexistent' not present"):
@@ -152,26 +102,24 @@ class TestNonLinearCrosstalkMatrix:
 
     def test_set_non_linear_params_junction_asym_only(self, nonlinear_crosstalk_matrix):
         nonlinear_crosstalk_matrix.set_non_linear_params("flux_0", "flux_2", junction_asym=0.02)
-        assert nonlinear_crosstalk_matrix.junction_asym_matrix["flux_0"]["flux_2"] == pytest.approx(0.02)
-        assert nonlinear_crosstalk_matrix.beta_c_matrix["flux_0"]["flux_2"] == pytest.approx(-0.234)
+        assert nonlinear_crosstalk_matrix.junction_asym_params["flux_0"]["flux_2"] == pytest.approx(0.02)
+        assert nonlinear_crosstalk_matrix.beta_c_params["flux_0"]["flux_2"][0] == pytest.approx(-0.234)
 
     def test_set_non_linear_params_creates_missing_bus_i_entry(self):
         xtalk = NonLinearCrosstalkMatrix()
         xtalk["flux_0"] = {"flux_0": 1.0, "flux_1": 0.2}
         xtalk["flux_1"] = {"flux_0": 0.1, "flux_1": 1.0}
-        del xtalk.beta_c_matrix["flux_0"]
-        del xtalk.non_lin_amp_matrix["flux_0"]
+        assert "flux_0" not in xtalk.beta_c_params
         xtalk.set_non_linear_params("flux_0", "flux_1", beta_c=-0.234, amplitude=-0.021)
-        assert xtalk.beta_c_matrix["flux_0"]["flux_1"] == pytest.approx(-0.234)
-        assert xtalk.non_lin_amp_matrix["flux_0"]["flux_1"] == pytest.approx(-0.021)
+        assert xtalk.beta_c_params["flux_0"]["flux_1"] == pytest.approx((-0.234, -0.021))
 
     def test_set_junction_asym_creates_missing_entry(self):
         xtalk = NonLinearCrosstalkMatrix()
         xtalk["flux_0"] = {"flux_0": 1.0, "flux_1": 0.2}
         xtalk["flux_1"] = {"flux_0": 0.1, "flux_1": 1.0}
-        del xtalk.junction_asym_matrix["flux_0"]
+        assert "flux_0" not in xtalk.junction_asym_params
         xtalk.set_non_linear_params("flux_0", "flux_1", junction_asym=0.05)
-        assert xtalk.junction_asym_matrix["flux_0"]["flux_1"] == pytest.approx(0.05)
+        assert xtalk.junction_asym_params["flux_0"]["flux_1"] == pytest.approx(0.05)
 
     # --- sin_beta_scaled ---
 
@@ -274,12 +222,6 @@ class TestNonLinearCrosstalkMatrix:
     def test_get_non_linear_flux_terms_raises_on_missing_bus_i(self, nonlinear_crosstalk_matrix):
         with pytest.raises(ValueError, match="Bus 'flux_0' has nonlinear parameters set"):
             nonlinear_crosstalk_matrix.get_non_linear_flux_terms({"flux_1": 0.2, "flux_2": 0.05})
-
-    def test_get_non_linear_flux_terms_raises_on_missing_amplitude(self, linear_crosstalk_matrix):
-        xtalk = NonLinearCrosstalkMatrix.from_linear(linear_crosstalk_matrix)
-        xtalk.beta_c_matrix["flux_0"]["flux_2"] = -0.234
-        with pytest.raises(ValueError, match="non_lin_amp is None"):
-            xtalk.get_non_linear_flux_terms({"flux_0": 0.1, "flux_1": 0.2, "flux_2": 0.05})
 
     def test_get_non_linear_flux_terms_raises_on_missing_bus_in_flux(self, nonlinear_crosstalk_matrix):
         with pytest.raises(ValueError, match="Bus 'flux_2' not found"):

@@ -3,10 +3,50 @@ import io
 
 import numpy as np
 import pytest
+import ruamel.yaml
 import xarray as xr
 
-from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix, NonLinearCrosstalkMatrix
+from qililab.qprogram.crosstalk_matrix import _LEGACY_PARAMS, CrosstalkMatrix, NonLinearCrosstalkMatrix
 from qililab.yaml import yaml
+
+# A document in the pre-``beta_c_params`` format: one dense dict per parameter, padded with
+# null for every pair without a nonlinear coupling. Calibration files written before the
+# sparse layout look like this, so loading one must keep working.
+_LEGACY_NONLINEAR_DOCUMENT = """!NonLinearCrosstalkMatrix
+beta_c_matrix:
+  flux_0: {flux_0: null, flux_1: -0.3}
+  flux_1: {flux_0: null, flux_1: null}
+non_lin_amp_matrix:
+  flux_0: {flux_0: null, flux_1: -0.08}
+  flux_1: {flux_0: null, flux_1: null}
+junction_asym_matrix:
+  flux_0: {flux_0: null, flux_1: null}
+  flux_1: {flux_0: 0.2, flux_1: null}
+flux_offsets: {flux_0: 0.0, flux_1: 0.0}
+matrix:
+  flux_0: {flux_0: 1.0, flux_1: 0.1}
+  flux_1: {flux_0: 0.2, flux_1: 1.0}
+resistances: {flux_0: null, flux_1: null}
+"""
+
+
+def _nonlinear_pair():
+    """A 2-bus nonlinear matrix matching _LEGACY_NONLINEAR_DOCUMENT, and a flux dict for it."""
+    xtalk = NonLinearCrosstalkMatrix()
+    xtalk["flux_0"] = {"flux_0": 1.0, "flux_1": 0.1}
+    xtalk["flux_1"] = {"flux_0": 0.2, "flux_1": 1.0}
+    xtalk.set_non_linear_params("flux_0", "flux_1", beta_c=-0.3, amplitude=-0.08)
+    xtalk.set_non_linear_params("flux_1", "flux_0", junction_asym=0.2)
+    return xtalk, {"flux_0": 0.1, "flux_1": 0.2}
+
+
+def _roundtrip(obj):
+    """Dump to YAML and load back, returning the reconstructed object and the document text."""
+    buf = io.StringIO()
+    yaml.dump(obj, buf)
+    text = buf.getvalue()
+    return yaml.load(io.StringIO(text)), text
+
 
 # Insertion orders that diverge from the canonical sort order once names are multi-digit
 # (alphabetical q0, q1, q10, q2 vs sorted q0, q1, q2, q10). Used by the bus-ordering regression tests.
@@ -319,16 +359,13 @@ class TestNonLinearCrosstalkMatrix:
     def test_from_linear_preserves_matrix(self, non_linear_crosstalk_matrix, crosstalk_matrix):
         assert non_linear_crosstalk_matrix.matrix == crosstalk_matrix.matrix
 
-    def test_from_linear_initializes_nonlinear_to_none(self, non_linear_crosstalk_matrix):
-        for bus_i in non_linear_crosstalk_matrix.matrix:
-            for bus_j in non_linear_crosstalk_matrix.matrix[bus_i]:
-                assert non_linear_crosstalk_matrix.beta_c_matrix[bus_i][bus_j] is None
-                assert non_linear_crosstalk_matrix.non_lin_amp_matrix[bus_i][bus_j] is None
+    def test_from_linear_doesnt_initialize_nonlinear_to_none(self, non_linear_crosstalk_matrix):
+        assert non_linear_crosstalk_matrix.beta_c_params == {}
+        assert non_linear_crosstalk_matrix.junction_asym_params == {}
 
     def test_set_non_linear_params(self, non_linear_crosstalk_matrix):
         non_linear_crosstalk_matrix.set_non_linear_params("flux_0", "flux_1", beta_c=-0.3, amplitude=-0.08)
-        assert non_linear_crosstalk_matrix.beta_c_matrix["flux_0"]["flux_1"] == pytest.approx(-0.3)
-        assert non_linear_crosstalk_matrix.non_lin_amp_matrix["flux_0"]["flux_1"] == pytest.approx(-0.08)
+        assert non_linear_crosstalk_matrix.beta_c_params["flux_0"]["flux_1"] == pytest.approx((-0.3, -0.08))
 
     def test_set_non_linear_params_raises_on_partial_params(self, non_linear_crosstalk_matrix):
         with pytest.raises(ValueError, match="Both 'amplitude' and 'beta_c' must be provided together"):
@@ -337,16 +374,26 @@ class TestNonLinearCrosstalkMatrix:
             non_linear_crosstalk_matrix.set_non_linear_params("flux_0", "flux_1", amplitude=-0.08)
 
     def test_set_non_linear_params_with_none(self, non_linear_crosstalk_matrix):
+        non_linear_crosstalk_matrix.set_non_linear_params("flux_0", "flux_2", beta_c=-0.2, amplitude=-0.1)
+        non_linear_crosstalk_matrix.set_non_linear_params("flux_0", "flux_2", junction_asym=0.5)
+
         non_linear_crosstalk_matrix.set_non_linear_params("flux_0", "flux_1", beta_c=-0.3, amplitude=-0.08)
-        non_linear_crosstalk_matrix.set_non_linear_params("flux_0", "flux_1", junction_asym=0.3)    
-        non_linear_crosstalk_matrix.set_non_linear_params("flux_0", "flux_1", beta_c=None, amplitude=None, junction_asym=None)
-        assert non_linear_crosstalk_matrix.beta_c_matrix["flux_0"]["flux_1"] == pytest.approx(None)
-        assert non_linear_crosstalk_matrix.non_lin_amp_matrix["flux_0"]["flux_1"] == pytest.approx(None)
-        assert non_linear_crosstalk_matrix.junction_asym_matrix["flux_0"]["flux_1"] == pytest.approx(None)
+        non_linear_crosstalk_matrix.set_non_linear_params("flux_0", "flux_1", junction_asym=0.3)
+        non_linear_crosstalk_matrix.set_non_linear_params(
+            "flux_0", "flux_1", beta_c=None, amplitude=None, junction_asym=None
+        )
+        assert "flux_1" not in non_linear_crosstalk_matrix.beta_c_params["flux_0"]
+        assert "flux_1" not in non_linear_crosstalk_matrix.junction_asym_params["flux_0"]
+
+        # If you eliminate the last value in a bus, the whole bus is eliminated from the parameter dict.
+        non_linear_crosstalk_matrix.set_non_linear_params(
+            "flux_0", "flux_2", beta_c=None, amplitude=None, junction_asym=None
+        )
+        assert "flux_0" not in non_linear_crosstalk_matrix.beta_c_params
+        assert "flux_0" not in non_linear_crosstalk_matrix.junction_asym_params
         # Raises on only one of the beta-sin parameters being set to None
         with pytest.raises(ValueError, match="You can only set to None 'amplitude' and 'beta_c' together."):
             non_linear_crosstalk_matrix.set_non_linear_params("flux_0", "flux_1", beta_c=None, amplitude=-0.08)
-
 
     def test_set_non_linear_params_raises_on_zero_beta_c(self, non_linear_crosstalk_matrix):
         with pytest.raises(ValueError, match="beta_c cannot be zero"):
@@ -354,7 +401,7 @@ class TestNonLinearCrosstalkMatrix:
 
     def test_set_non_linear_params_junction_asym_only(self, non_linear_crosstalk_matrix):
         non_linear_crosstalk_matrix.set_non_linear_params("flux_0", "flux_1", junction_asym=0.02)
-        assert non_linear_crosstalk_matrix.junction_asym_matrix["flux_0"]["flux_1"] == pytest.approx(0.02)
+        assert non_linear_crosstalk_matrix.junction_asym_params["flux_0"]["flux_1"] == pytest.approx(0.02)
 
     def test_set_non_linear_params_raises_on_missing_bus(self, non_linear_crosstalk_matrix):
         with pytest.raises(ValueError, match="not present in the crosstalk matrix"):
@@ -566,18 +613,58 @@ class TestCrosstalkMatrixSerialization:
         flux = {"flux q0": 0.1, "flux q1": 0.2}
         assert loaded.flux_to_bias(flux) == pytest.approx(cm.flux_to_bias(flux))
 
-    def test_nonlinear_yaml_roundtrip(self, non_linear_crosstalk_matrix):
+    def test_nonlinear_yaml_emits_only_plain_dicts(self, non_linear_crosstalk_matrix):
         non_linear_crosstalk_matrix.set_non_linear_params("flux_0", "flux_1", beta_c=-0.3, amplitude=-0.08)
-        non_linear_crosstalk_matrix.flux_to_bias({"flux_0": 0.1, "flux_1": 0.2, "flux_2": 0.05})
-        buf = io.StringIO()
-        yaml.dump(non_linear_crosstalk_matrix, buf)
-        text = buf.getvalue()
-        for leaked in ("_cache", "_version", "xarray"):
+        non_linear_crosstalk_matrix.flux_to_bias({"flux_0": 0.1, "flux_1": 0.2, "flux_2": 0.05})  # warm both caches
+        _, text = _roundtrip(non_linear_crosstalk_matrix)
+        for leaked in ("_cache", "_version", "_nonlinear_cache", "_nonlinear_version", "xarray"):
             assert leaked not in text
-        loaded = yaml.load(io.StringIO(text))
-        assert loaded.matrix == non_linear_crosstalk_matrix.matrix
-        assert loaded.beta_c_matrix["flux_0"]["flux_1"] == pytest.approx(-0.3)
-        assert loaded.non_lin_amp_matrix["flux_0"]["flux_1"] == pytest.approx(-0.08)
+
+    def test_nonlinear_yaml_roundtrip_preserves_state_and_computes(self):
+        xtalk, flux = _nonlinear_pair()
+        expected = xtalk.flux_to_bias(flux)
+        loaded, _ = _roundtrip(xtalk)
+        assert loaded.matrix == xtalk.matrix
+        assert loaded.beta_c_params == xtalk.beta_c_params
+        assert loaded.junction_asym_params == xtalk.junction_asym_params
+        # __init__ was never called on the reconstructed object, yet the nonlinear
+        # correction must still be computable — the cache attributes have to be seeded.
+        assert loaded.flux_to_bias(flux) == pytest.approx(expected)
+
+    def test_nonlinear_deepcopy_computes(self):
+        xtalk, flux = _nonlinear_pair()
+        expected = xtalk.flux_to_bias(flux)
+        assert copy.deepcopy(xtalk).flux_to_bias(flux) == pytest.approx(expected)
+
+    def test_nonlinear_deserialized_matrix_invalidates_its_cache(self):
+        """A reconstructed matrix must rebuild the nonlinear index when its params change,
+        rather than serving a version counter restored from the document."""
+        xtalk, flux = _nonlinear_pair()
+        loaded, _ = _roundtrip(xtalk)
+        before = loaded.flux_to_bias(flux)
+        loaded.set_non_linear_params("flux_0", "flux_1", beta_c=-0.9, amplitude=-0.5)
+        assert loaded.flux_to_bias(flux) != pytest.approx(before)
+
+    def test_beta_pairs_serialize_as_sequences_and_load_back_as_tuples(self):
+        """The in-memory pair is a tuple, which ruamel would tag !!python/tuple and only an
+        unsafe loader could read. The document must carry a plain two-element sequence."""
+        xtalk, _ = _nonlinear_pair()
+        loaded, text = _roundtrip(xtalk)
+        assert "!!python/tuple" not in text
+        assert "flux_1: [-0.3, -0.08]" in text
+        assert isinstance(loaded.beta_c_params["flux_0"]["flux_1"], tuple)
+
+    def test_nonlinear_document_is_readable_by_a_safe_loader(self):
+        """Nothing in the document may need typ="unsafe" beyond the class tag itself."""
+        xtalk, _ = _nonlinear_pair()
+        _, text = _roundtrip(xtalk)
+        safe = ruamel.yaml.YAML(typ="safe")
+        safe.constructor.add_constructor(
+            "!NonLinearCrosstalkMatrix", lambda constructor, node: constructor.construct_mapping(node, deep=True)
+        )
+        state = safe.load(io.StringIO(text))
+        assert state["beta_c_params"]["flux_0"]["flux_1"] == [-0.3, -0.08]
+        assert state["junction_asym_params"]["flux_1"]["flux_0"] == pytest.approx(0.2)
 
     def test_deepcopy_is_independent(self):
         cm = CrosstalkMatrix.from_array(["a", "b"], np.array([[1.0, 0.2], [0.1, 1.0]]))
@@ -587,3 +674,57 @@ class TestCrosstalkMatrixSerialization:
         assert cm.matrix["a"]["b"] == 0.2  # original untouched
         assert clone.to_array()[0, 1] == 0.9  # clone rebuilt its own cache
         assert cm.to_array()[0, 1] == 0.2
+
+
+class TestNonLinearCrosstalkMatrixLegacyMigration:
+    """Documents written before the sparse layout stored one dense dict per parameter,
+    padded with null. They must still load, and must land on exactly the state an
+    equivalent matrix built through the current API would have."""
+
+    def test_legacy_document_loads_into_current_layout(self):
+        loaded = yaml.load(io.StringIO(_LEGACY_NONLINEAR_DOCUMENT))
+        assert loaded.beta_c_params == {"flux_0": {"flux_1": (-0.3, -0.08)}}
+        assert loaded.junction_asym_params == {"flux_1": {"flux_0": 0.2}}
+
+    def test_legacy_null_padding_is_dropped(self):
+        """The dense nulls were placeholders, not couplings: they must not survive as terms."""
+        loaded = yaml.load(io.StringIO(_LEGACY_NONLINEAR_DOCUMENT))
+        assert "flux_1" not in loaded.beta_c_params
+        assert "flux_0" not in loaded.beta_c_params["flux_0"]
+        assert "flux_0" not in loaded.junction_asym_params
+
+    def test_legacy_attributes_do_not_survive(self):
+        """Both spellings living on the same object would be two sources of truth."""
+        loaded = yaml.load(io.StringIO(_LEGACY_NONLINEAR_DOCUMENT))
+        for legacy in _LEGACY_PARAMS:
+            assert not hasattr(loaded, legacy)
+
+    def test_migrated_matrix_computes_like_a_native_one(self):
+        loaded = yaml.load(io.StringIO(_LEGACY_NONLINEAR_DOCUMENT))
+        native, flux = _nonlinear_pair()
+        assert loaded.flux_to_bias(flux) == pytest.approx(native.flux_to_bias(flux))
+
+    def test_migrated_matrix_redumps_in_the_current_format(self):
+        loaded = yaml.load(io.StringIO(_LEGACY_NONLINEAR_DOCUMENT))
+        reloaded, text = _roundtrip(loaded)
+        for legacy in _LEGACY_PARAMS:
+            assert legacy not in text
+        assert "beta_c_params" in text
+        assert reloaded.beta_c_params == loaded.beta_c_params
+
+    def test_partial_legacy_trio_is_rejected(self):
+        """Half a legacy document means the amplitudes are gone; migrating it would
+        silently drop calibrated terms, so refuse to load instead."""
+        partial = _LEGACY_NONLINEAR_DOCUMENT.replace(
+            "non_lin_amp_matrix:\n  flux_0: {flux_0: null, flux_1: -0.08}\n  flux_1: {flux_0: null, flux_1: null}\n",
+            "",
+        )
+        assert "non_lin_amp_matrix" not in partial
+        with pytest.raises(ValueError, match="non_lin_amp_matrix"):
+            yaml.load(io.StringIO(partial))
+
+    def test_legacy_beta_without_amplitude_is_rejected(self):
+        """A beta with no amplitude leaves the Bessel term unevaluable."""
+        corrupt = _LEGACY_NONLINEAR_DOCUMENT.replace("flux_1: -0.08}", "flux_1: null}")
+        with pytest.raises(ValueError, match=r"beta_c is set for \('flux_0', 'flux_1'\)"):
+            yaml.load(io.StringIO(corrupt))
