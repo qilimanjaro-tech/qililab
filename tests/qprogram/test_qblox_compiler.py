@@ -5143,7 +5143,7 @@ class TestQBloxCompiler:
         main:
                 move             0, R0         
                 move             0, R1          
-                move             10, R2          
+                move             11, R2          
         loop_0:
                 set_awg_offs     R0, R0
                 upd_param        10
@@ -5166,7 +5166,7 @@ class TestQBloxCompiler:
         main:
                 move             0, R0         
                 move             0, R1          
-                move             10, R2          
+                move             11, R2          
         loop_0:
                 set_awg_offs     R1, R1
                 upd_param        10
@@ -5189,7 +5189,7 @@ class TestQBloxCompiler:
         main:
                 move             0, R0         
                 move             0, R1          
-                move             10, R2          
+                move             11, R2          
         loop_0:
                 wait             10             
                 play             0, 0, 50       
@@ -5212,7 +5212,7 @@ class TestQBloxCompiler:
                 move             0, R1          
                 move             0, R2         
                 move             0, R3          
-                move             10, R4          
+                move             11, R4          
         loop_0:
                 wait             60             
                 play             0, 0, 4        
@@ -5775,7 +5775,7 @@ class TestQBloxCompiler:
         main:
                 move             0, R0         
                 move             0, R1          
-                move             10, R2          
+                move             11, R2          
         loop_0:
                 set_awg_offs     1638, 1638
                 upd_param        10
@@ -5798,7 +5798,7 @@ class TestQBloxCompiler:
         main:
                 move             0, R0         
                 move             0, R1          
-                move             10, R2          
+                move             11, R2          
         loop_0:
                 set_awg_offs     819, 819
                 upd_param        10
@@ -5821,7 +5821,7 @@ class TestQBloxCompiler:
         main:
                 move             0, R0         
                 move             0, R1          
-                move             10, R2          
+                move             11, R2          
         loop_0:
                 wait             10             
                 play             0, 0, 50       
@@ -5844,7 +5844,7 @@ class TestQBloxCompiler:
                 move             0, R1          
                 move             0, R2         
                 move             0, R3          
-                move             10, R4          
+                move             11, R4          
         loop_0:
                 wait             60             
                 play             0, 0, 4        
@@ -5954,7 +5954,7 @@ class TestQBloxCompiler:
         main:
                 move             1638, R0
                 move             3276, R1
-                move             10, R2
+                move             11, R2
         loop_0:
                 set_awg_gain     R0, R0
                 play             0, 1, 50
@@ -5963,7 +5963,7 @@ class TestQBloxCompiler:
                 loop             R2, @loop_0
                 move             1638, R3
                 move             3276, R4
-                move             10, R5
+                move             11, R5
         loop_1:
                 set_awg_offs     R3, R3
                 upd_param        10
@@ -5983,7 +5983,7 @@ class TestQBloxCompiler:
         main:
                 move             1638, R0
                 move             3276, R1
-                move             10, R2
+                move             11, R2
         loop_0:
                 set_awg_gain     R1, R1
                 play             0, 1, 50
@@ -5992,7 +5992,7 @@ class TestQBloxCompiler:
                 loop             R2, @loop_0
                 move             1638, R3
                 move             3276, R4
-                move             10, R5
+                move             11, R5
         loop_1:
                 set_awg_offs     R4, R4
                 upd_param        10
@@ -6028,11 +6028,11 @@ class TestQBloxCompiler:
         main:
                 move             0, R0          
                 move             0, R1          
-                move             10, R2         
+                move             11, R2         
         loop_0:
                 move             1638, R3       
                 move             3276, R4       
-                move             10, R5         
+                move             11, R5         
         loop_1:
                 add              R0, R3, R6
                 nop
@@ -6057,11 +6057,11 @@ class TestQBloxCompiler:
         main:
                         move             0, R0          
                         move             0, R1          
-                        move             10, R2         
+                        move             11, R2         
         loop_0:
                         move             1638, R3       
                         move             3276, R4       
-                        move             10, R5         
+                        move             11, R5         
         loop_1:
                         add              R4, R1, R6
                         nop
@@ -6099,11 +6099,11 @@ class TestQBloxCompiler:
         main:
                         move             0, R0          
                         move             0, R1          
-                        move             10, R2         
+                        move             11, R2         
         loop_0:
                         move             1638, R3       
                         move             3276, R4       
-                        move             10, R5         
+                        move             11, R5         
         loop_1:
                         add              R0, R3, R6
                         nop
@@ -6128,11 +6128,11 @@ class TestQBloxCompiler:
         main:
                         move             0, R0          
                         move             0, R1          
-                        move             10, R2         
+                        move             11, R2         
         loop_0:
                         move             1638, R3       
                         move             3276, R4       
-                        move             10, R5         
+                        move             11, R5         
         loop_1:
                         add              R4, R1, R6
                         nop
@@ -6151,6 +6151,167 @@ class TestQBloxCompiler:
 
         assert is_q1asm_equal(sequences["flux1"], flux1_offset)
         assert is_q1asm_equal(sequences["flux2"], flux2_offset)
+
+    def test_crosstalk_compensation_unequal_length_loops(self):
+        """Nested flux-vs-flux loops of different lengths must compile: the eager cross product is
+        skipped (ragged) and each variable is compensated via decomposition."""
+        crosstalk = CrosstalkMatrix().from_array(["flux1", "flux2"], np.linalg.inv([[1, 0.5], [0.5, 1]]))
+        square_wf = Square(amplitude=0.1, duration=50)
+        qp = QProgram()
+        offset_1 = qp.variable(label="offset_1", domain=Domain.Voltage)
+        offset_2 = qp.variable(label="offset_2", domain=Domain.Voltage)
+        with qp.for_loop(variable=offset_1, start=-0.19, stop=0.19, step=0.01):  # 39 points
+            with qp.for_loop(variable=offset_2, start=-0.18, stop=0.19, step=0.01):  # 38 points
+                qp.set_offset(bus="flux1", offset_path0=offset_1)
+                qp.set_offset(bus="flux2", offset_path0=offset_2)
+                qp.play(bus="flux1", waveform=square_wf)
+
+        sequences, _ = QbloxCompiler().compile(qprogram=qp, crosstalk=crosstalk)
+        # Both nested loops keep their own (different) iteration counts.
+        counts = [int(m) for m in re.findall(r"move\s+(\d+),\s+R\d+", str(sequences["flux1"]._program))]
+        assert 39 in counts
+        assert 38 in counts
+
+    def test_crosstalk_compensation_identity_matrix_behaves_as_no_crosstalk(self):
+        """An identity crosstalk matrix has zero cross-terms, so each flux bus is swept only by its
+        own variable: no constant (step-0) compensation loop is emitted."""
+        identity = CrosstalkMatrix().from_array(["flux1", "flux2"], np.eye(2))
+        square_wf = Square(amplitude=0.1, duration=50)
+        qp = QProgram()
+        offset_1 = qp.variable(label="offset_1", domain=Domain.Voltage)
+        offset_2 = qp.variable(label="offset_2", domain=Domain.Voltage)
+        with qp.for_loop(variable=offset_1, start=0.0, stop=0.1, step=0.01):
+            with qp.for_loop(variable=offset_2, start=0.0, stop=0.1, step=0.01):
+                qp.set_offset(bus="flux1", offset_path0=offset_1)
+                qp.set_offset(bus="flux2", offset_path0=offset_2)
+                qp.play(bus="flux1", waveform=square_wf)
+
+        # Compiles (no step-0 loop) and flux1's offset only depends on its own register: a single
+        # `set_awg_offs R, R` with one register, exactly as it would be without crosstalk.
+        sequences, _ = QbloxCompiler().compile(qprogram=qp, crosstalk=identity)
+        program = str(sequences["flux1"]._program)
+        assert "set_awg_offs" in program
+
+    @pytest.mark.parametrize(
+        "matrix, sweep_1, sweep_2",
+        [
+            (np.linalg.inv([[1, 0.5], [0.5, 1]]), (0.0, 0.1, 0.01), (0.0, 0.1, 0.01)),
+            (np.linalg.inv([[1, 0.5], [0.5, 1]]), (-0.19, 0.19, 0.01), (-0.18, 0.19, 0.01)),
+            (np.eye(2), (-0.19, 0.19, 0.01), (-0.18, 0.19, 0.01)),
+            (np.diag([2.0, 3.0]), (0.0, 0.1, 0.01), (0.0, 0.1, 0.01)),
+        ],
+    )
+    def test_crosstalk_compensation_offsets_across_loop_levels(self, matrix, sweep_1, sweep_2):
+        """Setting the flux offsets at different loop levels (flux_1 in the outer loop, flux_2 in the
+        inner one) must yield the same crosstalk compensation as setting both in the innermost loop:
+        the outer contribution is carried inward and summed instead of being overwritten."""
+        crosstalk = CrosstalkMatrix().from_array(["flux1", "flux2"], matrix)
+        square_wf = Square(amplitude=0.1, duration=50)
+
+        def canonical(sequence):
+            # Ignore the commutative operand order of the summing add (Ra, Rb -> R6).
+            text = " ".join(str(sequence._program).split())
+            return re.sub(
+                r"add R(\d+), R(\d+), R6", lambda m: f"sum6 {sorted([m.group(1), m.group(2)])}", text
+            )
+
+        def build(across_levels):
+            qp = QProgram()
+            offset_1 = qp.variable(label="offset_1", domain=Domain.Voltage)
+            offset_2 = qp.variable(label="offset_2", domain=Domain.Voltage)
+            with qp.for_loop(variable=offset_1, start=sweep_1[0], stop=sweep_1[1], step=sweep_1[2]):
+                if across_levels:
+                    qp.set_offset(bus="flux1", offset_path0=offset_1)
+                with qp.for_loop(variable=offset_2, start=sweep_2[0], stop=sweep_2[1], step=sweep_2[2]):
+                    if not across_levels:
+                        qp.set_offset(bus="flux1", offset_path0=offset_1)
+                    qp.set_offset(bus="flux2", offset_path0=offset_2)
+                    qp.play(bus="flux1", waveform=square_wf)
+            return qp
+
+        across, _ = QbloxCompiler().compile(qprogram=build(True), crosstalk=crosstalk)
+        same, _ = QbloxCompiler().compile(qprogram=build(False), crosstalk=crosstalk)
+        for bus in ("flux1", "flux2"):
+            assert canonical(across[bus]) == canonical(same[bus])
+
+    def test_crosstalk_compensation_offsets_across_three_loop_levels(self):
+        """Three nested flux loops, each setting its offset at its own level. A bus's contribution is
+        carried through more than one enclosing level, so it is summed into the already-carried value
+        (not just seeded). Uses a block matrix (flux1/flux2 coupled, flux3 independent) so no bus sums
+        more than two contributions (chaining Variable expressions is unsupported). The result must
+        match setting all three offsets in the innermost loop."""
+        matrix = np.linalg.inv([[1, 0.5, 0], [0.5, 1, 0], [0, 0, 1]])
+        crosstalk = CrosstalkMatrix().from_array(["flux1", "flux2", "flux3"], matrix)
+        square_wf = Square(amplitude=0.1, duration=50)
+
+        def canonical(sequence):
+            text = " ".join(str(sequence._program).split())
+            return re.sub(
+                r"add R(\d+), R(\d+), R(\d+)", lambda m: f"add {sorted([m.group(1), m.group(2)])} R{m.group(3)}", text
+            )
+
+        def build(across_levels):
+            qp = QProgram()
+            a1 = qp.variable(label="a1", domain=Domain.Voltage)
+            a2 = qp.variable(label="a2", domain=Domain.Voltage)
+            a3 = qp.variable(label="a3", domain=Domain.Voltage)
+            with qp.for_loop(variable=a1, start=0.0, stop=0.1, step=0.01):
+                if across_levels:
+                    qp.set_offset(bus="flux1", offset_path0=a1)
+                with qp.for_loop(variable=a2, start=0.0, stop=0.1, step=0.01):
+                    if across_levels:
+                        qp.set_offset(bus="flux2", offset_path0=a2)
+                    with qp.for_loop(variable=a3, start=0.0, stop=0.1, step=0.01):
+                        if not across_levels:
+                            qp.set_offset(bus="flux1", offset_path0=a1)
+                            qp.set_offset(bus="flux2", offset_path0=a2)
+                        qp.set_offset(bus="flux3", offset_path0=a3)
+                        qp.play(bus="flux1", waveform=square_wf)
+            return qp
+
+        across, _ = QbloxCompiler().compile(qprogram=build(True), crosstalk=crosstalk)
+        same, _ = QbloxCompiler().compile(qprogram=build(False), crosstalk=crosstalk)
+        for bus in ("flux1", "flux2", "flux3"):
+            assert canonical(across[bus]) == canonical(same[bus])
+
+    @pytest.mark.parametrize(
+        "matrix",
+        [
+            np.linalg.inv([[1, 0.5], [0.5, 1]]),  # coupled: exercises the gain carry/summation
+            np.eye(2),  # identity: zero cross-terms -> constant SetGain(bus, 0.0) and skipped cross-terms
+            np.diag([2.0, 3.0]),  # diagonal: same zero cross-terms with non-unit diagonal
+        ],
+    )
+    def test_crosstalk_compensation_gains_across_loop_levels(self, matrix):
+        """Same as the offset case but for gains. With a coupled matrix the outer gain is carried into
+        the inner loop and summed; with an identity/diagonal matrix the zero cross-terms compile to a
+        constant gain and are skipped from the summation. Either way, setting the gains at different
+        loop levels must match setting both in the innermost loop."""
+        crosstalk = CrosstalkMatrix().from_array(["flux1", "flux2"], matrix)
+        square_wf = Square(amplitude=0.1, duration=50)
+
+        def build(across_levels):
+            qp = QProgram()
+            gain_1 = qp.variable(label="gain_1", domain=Domain.Voltage)
+            gain_2 = qp.variable(label="gain_2", domain=Domain.Voltage)
+            with qp.for_loop(variable=gain_1, start=0.0, stop=0.1, step=0.01):
+                if across_levels:
+                    qp.set_gain(bus="flux1", gain=gain_1)
+                with qp.for_loop(variable=gain_2, start=0.0, stop=0.1, step=0.01):
+                    if not across_levels:
+                        qp.set_gain(bus="flux1", gain=gain_1)
+                    qp.set_gain(bus="flux2", gain=gain_2)
+                    qp.play(bus="flux1", waveform=square_wf)
+            return qp
+
+        def canonical(sequence):
+            text = " ".join(str(sequence._program).split())
+            return re.sub(r"add R(\d+), R(\d+), R6", lambda m: f"sum6 {sorted([m.group(1), m.group(2)])}", text)
+
+        across, _ = QbloxCompiler().compile(qprogram=build(True), crosstalk=crosstalk)
+        same, _ = QbloxCompiler().compile(qprogram=build(False), crosstalk=crosstalk)
+        for bus in ("flux1", "flux2"):
+            assert canonical(across[bus]) == canonical(same[bus])
 
     def test_crosstalk_compensation_through_calibration(self, crosstalk_qprogram: QProgram, calibration_crosstalk: Calibration):
 
