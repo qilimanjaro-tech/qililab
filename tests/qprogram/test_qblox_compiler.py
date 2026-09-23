@@ -6234,11 +6234,60 @@ class TestQBloxCompiler:
         for bus in ("flux1", "flux2"):
             assert canonical(across[bus]) == canonical(same[bus])
 
-    def test_crosstalk_compensation_gains_across_loop_levels(self):
-        """Same as the offset case but for gains: a gain set in the outer loop is carried into the
-        inner loop and summed, so setting gains at different loop levels matches setting both in the
-        innermost loop (exercises the SetGain branch of the carry)."""
-        crosstalk = CrosstalkMatrix().from_array(["flux1", "flux2"], np.linalg.inv([[1, 0.5], [0.5, 1]]))
+    def test_crosstalk_compensation_offsets_across_three_loop_levels(self):
+        """Three nested flux loops, each setting its offset at its own level. A bus's contribution is
+        carried through more than one enclosing level, so it is summed into the already-carried value
+        (not just seeded). Uses a block matrix (flux1/flux2 coupled, flux3 independent) so no bus sums
+        more than two contributions (chaining Variable expressions is unsupported). The result must
+        match setting all three offsets in the innermost loop."""
+        matrix = np.linalg.inv([[1, 0.5, 0], [0.5, 1, 0], [0, 0, 1]])
+        crosstalk = CrosstalkMatrix().from_array(["flux1", "flux2", "flux3"], matrix)
+        square_wf = Square(amplitude=0.1, duration=50)
+
+        def canonical(sequence):
+            text = " ".join(str(sequence._program).split())
+            return re.sub(
+                r"add R(\d+), R(\d+), R(\d+)", lambda m: f"add {sorted([m.group(1), m.group(2)])} R{m.group(3)}", text
+            )
+
+        def build(across_levels):
+            qp = QProgram()
+            a1 = qp.variable(label="a1", domain=Domain.Voltage)
+            a2 = qp.variable(label="a2", domain=Domain.Voltage)
+            a3 = qp.variable(label="a3", domain=Domain.Voltage)
+            with qp.for_loop(variable=a1, start=0.0, stop=0.1, step=0.01):
+                if across_levels:
+                    qp.set_offset(bus="flux1", offset_path0=a1)
+                with qp.for_loop(variable=a2, start=0.0, stop=0.1, step=0.01):
+                    if across_levels:
+                        qp.set_offset(bus="flux2", offset_path0=a2)
+                    with qp.for_loop(variable=a3, start=0.0, stop=0.1, step=0.01):
+                        if not across_levels:
+                            qp.set_offset(bus="flux1", offset_path0=a1)
+                            qp.set_offset(bus="flux2", offset_path0=a2)
+                        qp.set_offset(bus="flux3", offset_path0=a3)
+                        qp.play(bus="flux1", waveform=square_wf)
+            return qp
+
+        across, _ = QbloxCompiler().compile(qprogram=build(True), crosstalk=crosstalk)
+        same, _ = QbloxCompiler().compile(qprogram=build(False), crosstalk=crosstalk)
+        for bus in ("flux1", "flux2", "flux3"):
+            assert canonical(across[bus]) == canonical(same[bus])
+
+    @pytest.mark.parametrize(
+        "matrix",
+        [
+            np.linalg.inv([[1, 0.5], [0.5, 1]]),  # coupled: exercises the gain carry/summation
+            np.eye(2),  # identity: zero cross-terms -> constant SetGain(bus, 0.0) and skipped cross-terms
+            np.diag([2.0, 3.0]),  # diagonal: same zero cross-terms with non-unit diagonal
+        ],
+    )
+    def test_crosstalk_compensation_gains_across_loop_levels(self, matrix):
+        """Same as the offset case but for gains. With a coupled matrix the outer gain is carried into
+        the inner loop and summed; with an identity/diagonal matrix the zero cross-terms compile to a
+        constant gain and are skipped from the summation. Either way, setting the gains at different
+        loop levels must match setting both in the innermost loop."""
+        crosstalk = CrosstalkMatrix().from_array(["flux1", "flux2"], matrix)
         square_wf = Square(amplitude=0.1, duration=50)
 
         def build(across_levels):
