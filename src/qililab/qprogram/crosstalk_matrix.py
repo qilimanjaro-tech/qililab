@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from copy import deepcopy
 from dataclasses import dataclass
 from typing import Final, Mapping
 
@@ -94,6 +95,19 @@ class CrosstalkMatrix:
         state.pop("_cache", None)
         state.pop("_version", None)
         return state
+
+    def __setstate__(self, state: dict) -> None:
+        """Restores the matrix during deserialization.
+
+        ``ruamel``, ``copy`` and ``pickle`` all build the instance with ``cls.__new__``
+        and never run ``__init__``, so the cache attributes that ``__getstate__`` drops
+        have to be seeded here before the persisted dicts are overlaid on top.
+
+        Args:
+            state (dict): The attribute mapping reconstructed from the document.
+        """
+        self.__init__()  # type: ignore[misc]
+        self.__dict__.update(state)
 
     def _get_cache(self) -> "_CrosstalkCache":
         """Returns the memoized labeled array/inverse, rebuilding only when ``matrix`` changed."""
@@ -315,96 +329,144 @@ class CrosstalkMatrix:
 
 @dataclass
 class _NonLinearCache:
-    """Sparse index of the non-None nonlinear terms of a :class:`NonLinearCrosstalkMatrix`."""
+    """Flattened index of the nonlinear terms of a :class:`NonLinearCrosstalkMatrix`."""
 
     version: int
-    beta_terms: list[tuple[str, str, float]]
+    beta_terms: list[tuple[str, str, float, float]]
     junction_terms: list[tuple[str, str, float]]
+
+
+_LEGACY_PARAMS: Final = ("beta_c_matrix", "non_lin_amp_matrix", "junction_asym_matrix")
 
 
 @yaml.register_class
 class NonLinearCrosstalkMatrix(CrosstalkMatrix):
     """Extends CrosstalkMatrix with nonlinear crosstalk correction terms.
 
-    The nonlinear correction models the flux induced on qubit i by coupler j
-    as a Bessel-series expansion:
+    Two independent corrections are applied on top of the linear matrix. The first
+    models the flux induced on qubit i by coupler j as a Bessel-series expansion:
 
         delta_phi_i = 2 * amp_ij * sum_{k=1}^{K} [J_k(k*beta_ij) / (k*beta_ij)] * sin(k * 2pi * phi_j)
 
-    where beta_ij and amp_ij are stored in ``beta_c_matrix`` and ``non_lin_amp_matrix``
-    respectively. Entries that are None indicate no nonlinear coupling between that pair.
+    The second is the flux shift induced by SQUID junction asymmetry; see
+    :meth:`junction_asymmetry_correction` for its form.
+
+    Use :meth:`set_non_linear_params` to add, change or remove either coupling.
     """
 
-    _nonlinear_cache: "_NonLinearCache | None" = None
-    _nonlinear_version: int = 0
-
     def __init__(self) -> None:
-        """Initializes an empty nonlinear crosstalk matrix."""
+        """Initializes an empty nonlinear crosstalk matrix.
+
+        Both parameter dicts are keyed ``[bus_i][bus_j]``: ``beta_c_params`` holds the
+        ``(beta_c, amplitude)`` pair of the Bessel term, ``junction_asym_params`` the
+        asymmetry coefficient d. They are sparse; a pair appears only where that
+        coupling has been set, so a missing entry means no coupling.
+        """
         super().__init__()
-        self.beta_c_matrix: dict[str, dict[str, float | None]] = {}
-        self.non_lin_amp_matrix: dict[str, dict[str, float | None]] = {}
-        self.junction_asym_matrix: dict[str, dict[str, float | None]] = {}
-        self._nonlinear_cache = None
-        self._nonlinear_version = 0
+        self.beta_c_params: dict[str, dict[str, tuple[float, float]]] = {}
+        self.junction_asym_params: dict[str, dict[str, float]] = {}
+        self._nonlinear_cache: _NonLinearCache | None = None
+        self._nonlinear_version: int = 0
 
     def __getstate__(self) -> dict:
-        """Serialized state drops the derived nonlinear index too (kept dense in the dicts)."""
-        state = super().__getstate__()
+        """Serialized state drops the derived nonlinear index; beta pairs go out as plain lists.
+
+        The in-memory pair is a tuple, which ``ruamel`` would tag ``!!python/tuple`` and
+        only an unsafe loader could read back. Emitting a two-element sequence keeps the
+        document loadable by any YAML parser.
+        """
+        state: dict = super().__getstate__()
         state.pop("_nonlinear_cache", None)
         state.pop("_nonlinear_version", None)
+        state["beta_c_params"] = {
+            bus_i: {bus_j: list(params) for bus_j, params in row.items()}
+            for bus_i, row in state["beta_c_params"].items()
+        }
+        return state
+
+    def __setstate__(self, state: dict) -> None:
+        """Restores a nonlinear matrix, migrating pre-``beta_c_params`` documents on the way in.
+
+        Args:
+            state (dict): The attribute mapping reconstructed from the document.
+        """
+        state = dict(state)
+        if any(key in state for key in _LEGACY_PARAMS):
+            state = self._migrate_legacy_state(state)
+        else:
+            state["beta_c_params"] = {
+                bus_i: {bus_j: tuple(params) for bus_j, params in row.items()}
+                for bus_i, row in state["beta_c_params"].items()
+            }
+        super().__setstate__(state)
+
+    @staticmethod
+    def _migrate_legacy_state(state: dict) -> dict:
+        """Rewrites a pre-``beta_c_params`` state into the current sparse layout.
+
+        Documents written before the split stored one dense dict per parameter, padded
+        with ``None`` for every pair without a nonlinear coupling. The current layout
+        keeps only the pairs that have one, with beta and amplitude paired up.
+
+        Args:
+            state (dict): Attribute mapping holding the legacy ``*_matrix`` dicts.
+
+        Returns:
+            dict: The mapping with the legacy keys replaced by the current ones.
+
+        Raises:
+            ValueError: If only part of the legacy trio is present.
+            ValueError: If a beta_c entry has no matching amplitude, which would leave
+                the Bessel term unevaluable.
+        """
+        missing = [key for key in _LEGACY_PARAMS if key not in state]
+        if missing:
+            raise ValueError(
+                f"Cannot migrate crosstalk state: {missing} not found. "
+                f"A legacy document must carry all of {list(_LEGACY_PARAMS)}."
+            )
+
+        beta_matrix = state.pop("beta_c_matrix")
+        amp_matrix = state.pop("non_lin_amp_matrix")
+        junction_matrix = state.pop("junction_asym_matrix")
+
+        beta_c_params: dict[str, dict[str, tuple[float, float]]] = {}
+        for bus_i, row in beta_matrix.items():
+            for bus_j, beta in row.items():
+                if beta is None:
+                    continue
+                amp = amp_matrix.get(bus_i, {}).get(bus_j)
+                if amp is None:
+                    raise ValueError(
+                        f"Cannot migrate crosstalk state: beta_c is set for ('{bus_i}', '{bus_j}') "
+                        f"but its amplitude is None."
+                    )
+                beta_c_params.setdefault(bus_i, {})[bus_j] = (beta, amp)
+
+        junction_asym_params: dict[str, dict[str, float]] = {}
+        for bus_i, row in junction_matrix.items():
+            for bus_j, asym in row.items():
+                if asym is not None:
+                    junction_asym_params.setdefault(bus_i, {})[bus_j] = asym
+
+        state["beta_c_params"] = beta_c_params
+        state["junction_asym_params"] = junction_asym_params
         return state
 
     def _active_nonlinear_terms(self) -> "_NonLinearCache":
-        """Returns the non-None nonlinear terms, rebuilding only when they changed."""
+        """Returns the nonlinear terms flattened for iteration, rebuilding only when they changed."""
         cache = self._nonlinear_cache
         if cache is not None and cache.version == self._nonlinear_version:
             return cache
 
         beta_terms = [
-            (bus_i, bus_j, beta)
-            for bus_i, row in self.beta_c_matrix.items()
-            for bus_j, beta in row.items()
-            if beta is not None
+            (bus_i, bus_j, beta, amp) for bus_i, row in self.beta_c_params.items() for bus_j, (beta, amp) in row.items()
         ]
         junction_terms = [
-            (bus_i, bus_j, d)
-            for bus_i, row in self.junction_asym_matrix.items()
-            for bus_j, d in row.items()
-            if d is not None
+            (bus_i, bus_j, d) for bus_i, row in self.junction_asym_params.items() for bus_j, d in row.items()
         ]
         self._nonlinear_cache = _NonLinearCache(self._nonlinear_version, beta_terms, junction_terms)
         return self._nonlinear_cache
-
-    def __setitem__(self, key: str, value: dict[str, float]) -> None:
-        """Sets the crosstalk values for the given bus and initializes nonlinear entries.
-
-        Args:
-            key (str): The bus for which to set the crosstalk values.
-            value (dict[str, float]): A dictionary of crosstalk values.
-        """
-        super().__setitem__(key, value)
-
-        if key not in self.beta_c_matrix:
-            self.beta_c_matrix[key] = dict.fromkeys(value)
-        else:
-            for bus in value:
-                if bus not in self.beta_c_matrix[key]:
-                    self.beta_c_matrix[key][bus] = None
-
-        if key not in self.non_lin_amp_matrix:
-            self.non_lin_amp_matrix[key] = dict.fromkeys(value)
-        else:
-            for bus in value:
-                if bus not in self.non_lin_amp_matrix[key]:
-                    self.non_lin_amp_matrix[key][bus] = None
-        if key not in self.junction_asym_matrix:
-            self.junction_asym_matrix[key] = dict.fromkeys(value)
-        else:
-            for bus in value:
-                if bus not in self.junction_asym_matrix[key]:
-                    self.junction_asym_matrix[key][bus] = None
-
-        self._nonlinear_version += 1
 
     def set_non_linear_params(
         self,
@@ -414,8 +476,14 @@ class NonLinearCrosstalkMatrix(CrosstalkMatrix):
         amplitude: float | Unset | None = _UNSET,
         junction_asym: float | Unset | None = _UNSET,
     ) -> None:
-        """Sets the nonlinear coupling parameters between bus_i (target) and bus_j (source).
-            None eliminates the value stored.
+        """Sets, changes or removes the nonlinear coupling between bus_i (target) and bus_j (source).
+
+        Every parameter is three-state: omit it to leave the stored value untouched,
+        pass a float to set it, or pass ``None`` to remove the entry, which drops the
+        row once its last pair is gone.
+
+        ``beta_c`` and ``amplitude`` are two halves of one term and travel together:
+        pass both as floats, or both as ``None``, never one of each.
 
         Args:
             bus_i (str): The bus that receives the nonlinear flux correction.
@@ -428,8 +496,8 @@ class NonLinearCrosstalkMatrix(CrosstalkMatrix):
             ValueError: If either bus is not present in the matrix.
             ValueError: If beta_c is zero, which would cause a division by zero in the
                 Bessel expansion.
-            ValueError: If both "amplitude" and "beta_c" aren't set to the same type of value.
-                i.e. amplitude set to a float and beta to none or unset.
+            ValueError: If only one of "beta_c" and "amplitude" is given, or if one is a
+                float while the other is None.
         """
         for bus in (bus_i, bus_j):
             if bus not in self.matrix:
@@ -440,25 +508,31 @@ class NonLinearCrosstalkMatrix(CrosstalkMatrix):
                 raise ValueError(
                     "Both 'amplitude' and 'beta_c' must be provided together — you cannot specify one without the other."
                 )
-            if (beta_c is None) != (amplitude is None):
-                # Errors if you are setting only one of the two parameters to None.
-                raise ValueError("You can only set to None 'amplitude' and 'beta_c' together.")
+            if (beta_c is None) or (amplitude is None):
+                if (beta_c is None) != (amplitude is None):
+                    # Errors if you are setting only one of the two parameters to None.
+                    raise ValueError("You can only set to None 'amplitude' and 'beta_c' together.")
+                if bus_i in self.beta_c_params and bus_j in self.beta_c_params[bus_i]:
+                    del self.beta_c_params[bus_i][bus_j]
+                    if not self.beta_c_params[bus_i]:
+                        del self.beta_c_params[bus_i]
+            else:
+                if beta_c == 0:
+                    raise ValueError("beta_c cannot be zero: it appears as a divisor in the Bessel expansion ")
 
-            if beta_c == 0:
-                raise ValueError("beta_c cannot be zero: it appears as a divisor in the Bessel expansion ")
-
-            if bus_i not in self.beta_c_matrix:
-                self.beta_c_matrix[bus_i] = {}
-            if bus_i not in self.non_lin_amp_matrix:
-                self.non_lin_amp_matrix[bus_i] = {}
-
-            self.beta_c_matrix[bus_i][bus_j] = beta_c
-            self.non_lin_amp_matrix[bus_i][bus_j] = amplitude
+                if bus_i not in self.beta_c_params:
+                    self.beta_c_params[bus_i] = {}
+                self.beta_c_params[bus_i][bus_j] = (beta_c, amplitude)
 
         if junction_asym is not _UNSET:
-            if bus_i not in self.junction_asym_matrix:
-                self.junction_asym_matrix[bus_i] = {}
-            self.junction_asym_matrix[bus_i][bus_j] = junction_asym
+            if junction_asym is not None:
+                if bus_i not in self.junction_asym_params:
+                    self.junction_asym_params[bus_i] = {}
+                self.junction_asym_params[bus_i][bus_j] = junction_asym
+            elif bus_i in self.junction_asym_params and bus_j in self.junction_asym_params[bus_i]:
+                del self.junction_asym_params[bus_i][bus_j]
+                if not self.junction_asym_params[bus_i]:
+                    del self.junction_asym_params[bus_i]
 
         self._nonlinear_version += 1
 
@@ -484,7 +558,7 @@ class NonLinearCrosstalkMatrix(CrosstalkMatrix):
             ValueError: If amp is NaN.
         """
         if np.isnan(amp):
-            raise ValueError("Amplitude cannot be NaN. Set non_lin_amp_matrix accordingly.")
+            raise ValueError("Amplitude cannot be NaN. Set beta_c_params accordingly.")
 
         phi = np.asarray(flux, dtype=float) * 2 * np.pi
         result = np.zeros_like(phi, dtype=float)
@@ -514,7 +588,7 @@ class NonLinearCrosstalkMatrix(CrosstalkMatrix):
         """
 
         if np.isnan(d):
-            raise ValueError("Junction asymetry cannot be NaN. Set junction_asym_matrix accordingly.")
+            raise ValueError("Junction asymetry cannot be NaN. Set junction_asym_params accordingly.")
         phi_d = np.arctan(d * np.tan(np.pi * flux_x))
         return -phi_d / (2 * np.pi)
 
@@ -525,32 +599,36 @@ class NonLinearCrosstalkMatrix(CrosstalkMatrix):
         """Computes the nonlinear flux correction for each bus.
 
         Args:
-            flux (Mapping[str, float]): Flux values keyed by bus name.
+            flux (Mapping[str, float | np.ndarray]): Flux values keyed by bus name. Scalars
+                and arrays can be mixed: a scalar is a bus parked while others are swept.
 
         Returns:
-            dict[str, float]: Nonlinear correction terms keyed by bus name.
+            dict[str, float | np.ndarray]: Nonlinear correction terms keyed by bus name.
+                A bus with no nonlinear coupling keeps the scalar 0.0 it was seeded with,
+                so the returned dict can mix scalars and arrays.
 
         Raises:
             ValueError: If a bus with nonlinear params set is not found in the provided flux dict.
         """
-        corrections: dict[str, float | np.ndarray] = dict.fromkeys(flux, 0.0)
-        terms = self._active_nonlinear_terms()
 
-        for bus_i, bus_j, beta in terms.beta_terms:
+        def check_buses(bus_i, bus_j):
             if bus_i not in flux:
                 raise ValueError(
                     f"Bus '{bus_i}' has nonlinear parameters set but was not found "
                     f"in the provided flux dict. All buses with nonlinear corrections "
                     f"must be included."
                 )
-            amp = self.non_lin_amp_matrix.get(bus_i, {}).get(bus_j)
-            if amp is None:
-                raise ValueError(f"beta_c is set for ({bus_i}, {bus_j}) but non_lin_amp is None.")
             if bus_j not in flux:
                 raise ValueError(f"Bus '{bus_j}' not found in provided flux dict.")
-            result = self.sin_beta_scaled(flux=flux[bus_j], beta=beta, amp=amp)
-            corrections[bus_i] += result  # type: ignore[assignment]
+
+        corrections: dict[str, float | np.ndarray] = dict.fromkeys(flux, 0.0)
+        terms = self._active_nonlinear_terms()
+
+        for bus_i, bus_j, beta, amp in terms.beta_terms:
+            check_buses(bus_i, bus_j)
+            corrections[bus_i] += self.sin_beta_scaled(flux=flux[bus_j], beta=beta, amp=amp)
         for bus_i, bus_j, d in terms.junction_terms:
+            check_buses(bus_i, bus_j)
             corrections[bus_i] += self.junction_asymmetry_correction(flux_x=flux[bus_j], d=d)
 
         return corrections
@@ -558,9 +636,10 @@ class NonLinearCrosstalkMatrix(CrosstalkMatrix):
     def flux_to_bias(self, flux: Mapping[str, float | np.ndarray]) -> dict[str, float | np.ndarray]:
         """Converts target flux values to hardware bias values, including nonlinear corrections.
 
-        First computes the nonlinear flux corrections via the Bessel-series expansion and
-        adds them to the target flux values, then applies the linear matrix inversion to
-        obtain the final hardware bias values. Both scalar and array inputs are supported.
+        First computes the nonlinear flux corrections — the Bessel-series term and the
+        junction-asymmetry shift — and adds them to the target flux values, then applies
+        the linear matrix inversion to obtain the final hardware bias values. Both scalar
+        and array inputs are supported.
 
         Args:
             flux (Mapping[str, float | np.ndarray]): Target flux values keyed by bus name.
@@ -600,23 +679,25 @@ class NonLinearCrosstalkMatrix(CrosstalkMatrix):
 
     @classmethod
     def from_linear(cls, linear: CrosstalkMatrix) -> "NonLinearCrosstalkMatrix":
-        """Creates a NonLinearCrosstalkMatrix from an existing linear CrosstalkMatrix,
-        copying all its data and initializing nonlinear parameters to None.
+        """Creates a NonLinearCrosstalkMatrix from an existing linear CrosstalkMatrix.
+
+        The new instance takes a deep copy of the source's state, so later edits to
+        either one leave the other untouched. Its nonlinear parameters start empty;
+        use :meth:`set_non_linear_params` to populate them.
 
         Args:
             linear (CrosstalkMatrix): An existing linear crosstalk matrix.
 
         Returns:
-            NonLinearCrosstalkMatrix: A new instance with linear parameters copied.
+            NonLinearCrosstalkMatrix: A new instance with the linear parameters copied.
         """
         instance = cls()
-        instance.matrix = {bus: dict(row) for bus, row in linear.matrix.items()}
-        instance.flux_offsets = dict(linear.flux_offsets)
-        instance.resistances = dict(linear.resistances)
-        instance.beta_c_matrix = {bus: dict.fromkeys(row) for bus, row in linear.matrix.items()}
-        instance.non_lin_amp_matrix = {bus: dict.fromkeys(row) for bus, row in linear.matrix.items()}
-        instance.junction_asym_matrix = {bus: dict.fromkeys(row) for bus, row in linear.matrix.items()}
+        instance.__dict__.update(deepcopy(linear.__dict__))
+        instance.beta_c_params = {}
+        instance.junction_asym_params = {}
+        instance._nonlinear_cache = None
+        instance._nonlinear_version = 0
         return instance
 
     def __repr__(self) -> str:
-        return f"NonLinearCrosstalkMatrix({self.matrix}, beta_c={self.beta_c_matrix})"
+        return f"NonLinearCrosstalkMatrix({self.matrix}, beta_c={self.beta_c_params}, junction_asymmetry={self.junction_asym_params})"
