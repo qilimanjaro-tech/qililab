@@ -6169,7 +6169,8 @@ class TestQBloxCompiler:
         sequences, _ = QbloxCompiler().compile(qprogram=qp, crosstalk=crosstalk)
         # Both nested loops keep their own (different) iteration counts.
         counts = [int(m) for m in re.findall(r"move\s+(\d+),\s+R\d+", str(sequences["flux1"]._program))]
-        assert 39 in counts and 38 in counts
+        assert 39 in counts
+        assert 38 in counts
 
     def test_crosstalk_compensation_identity_matrix_behaves_as_no_crosstalk(self):
         """An identity crosstalk matrix has zero cross-terms, so each flux bus is swept only by its
@@ -6227,6 +6228,36 @@ class TestQBloxCompiler:
                     qp.set_offset(bus="flux2", offset_path0=offset_2)
                     qp.play(bus="flux1", waveform=square_wf)
             return qp
+
+        across, _ = QbloxCompiler().compile(qprogram=build(True), crosstalk=crosstalk)
+        same, _ = QbloxCompiler().compile(qprogram=build(False), crosstalk=crosstalk)
+        for bus in ("flux1", "flux2"):
+            assert canonical(across[bus]) == canonical(same[bus])
+
+    def test_crosstalk_compensation_gains_across_loop_levels(self):
+        """Same as the offset case but for gains: a gain set in the outer loop is carried into the
+        inner loop and summed, so setting gains at different loop levels matches setting both in the
+        innermost loop (exercises the SetGain branch of the carry)."""
+        crosstalk = CrosstalkMatrix().from_array(["flux1", "flux2"], np.linalg.inv([[1, 0.5], [0.5, 1]]))
+        square_wf = Square(amplitude=0.1, duration=50)
+
+        def build(across_levels):
+            qp = QProgram()
+            gain_1 = qp.variable(label="gain_1", domain=Domain.Voltage)
+            gain_2 = qp.variable(label="gain_2", domain=Domain.Voltage)
+            with qp.for_loop(variable=gain_1, start=0.0, stop=0.1, step=0.01):
+                if across_levels:
+                    qp.set_gain(bus="flux1", gain=gain_1)
+                with qp.for_loop(variable=gain_2, start=0.0, stop=0.1, step=0.01):
+                    if not across_levels:
+                        qp.set_gain(bus="flux1", gain=gain_1)
+                    qp.set_gain(bus="flux2", gain=gain_2)
+                    qp.play(bus="flux1", waveform=square_wf)
+            return qp
+
+        def canonical(sequence):
+            text = " ".join(str(sequence._program).split())
+            return re.sub(r"add R(\d+), R(\d+), R6", lambda m: f"sum6 {sorted([m.group(1), m.group(2)])}", text)
 
         across, _ = QbloxCompiler().compile(qprogram=build(True), crosstalk=crosstalk)
         same, _ = QbloxCompiler().compile(qprogram=build(False), crosstalk=crosstalk)
