@@ -184,6 +184,8 @@ class QdacCompiler:
         if len(self._qdacs) > 1:
             self._handle_simultaneous_qdacs()
 
+        self._synchronize_qdac_channels()
+
         return QdacCompilationOutput(
             qprogram=self._qprogram, qdacs=self._qdacs, trigger_position=self._trigger_position
         )
@@ -465,6 +467,44 @@ class QdacCompiler:
                             channel_id=self._channels[bus], in_port=in_instrument.in_trigger
                         )
         self._qdacs = [qdac for qdac in self._qdacs if qdac != self._out_instrument] + [self._out_instrument]
+
+    def _synchronize_qdac_channels(self):
+        """Start every QDAC channel that plays a list on a common hardware trigger.
+
+        When crosstalk spreads a play onto several channels of the same QDAC, each channel gets
+        its own DC list. Without this, ``QDevilQDac2.start()`` launches them with independent SCPI
+        ``start()`` calls, so they begin a command-latency apart. Here one channel per QDAC keeps
+        starting on ``start()`` and emits an internal trigger at its list start; every other
+        channel is armed to start on that trigger, so they all begin together.
+        """
+        for instrument in self._qdacs:
+            # Channels launched by start(), i.e. not already waiting on an input trigger.
+            free_keys = [key for key in instrument._cache_dc if key not in instrument._armed_on_trigger]
+            if len(free_keys) <= 1:
+                continue
+            free_channels = [int(key.rsplit("_", 1)[1]) for key in free_keys]
+
+            master_channel, trigger = self._qdac_start_trigger(instrument, free_channels)
+            for channel in free_channels:
+                if channel != master_channel:
+                    instrument.set_in_internal_trigger(channel_id=channel, trigger=trigger)
+
+    @staticmethod
+    def _qdac_start_trigger(instrument: QDevilQDac2, channels: list[int]) -> tuple[int, str]:
+        """Return the (master channel, trigger name) providing an internal list-start trigger.
+
+        Reuses a start-marker trigger already set on one of ``channels`` (e.g. the one created by
+        ``set_trigger`` to drive the Qblox), so a single trigger both drives external hardware and
+        synchronizes the QDAC channels. If none exists, a dedicated internal start trigger is
+        allocated on the first channel.
+        """
+        for name, (channel_id, generator, marker_location) in instrument._marker_registers.items():
+            if channel_id in channels and generator == "DC" and marker_location == "PSTart":
+                return channel_id, name
+        master = channels[0]
+        trigger = f"qdac_sync_{instrument.device.name}_{master}"
+        instrument.set_start_marker_internal_trigger(channel_id=master, trigger=trigger)
+        return master, trigger
 
     @staticmethod
     def _calculate_iterations(start: int | float, stop: int | float, step: int | float):
