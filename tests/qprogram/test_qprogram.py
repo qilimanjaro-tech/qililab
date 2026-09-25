@@ -1233,19 +1233,25 @@ class TestQProgram(TestStructuredProgram):
         crosstalk = CrosstalkMatrix().from_array(["flux1", "flux2"], inverse_xtalk_array)
 
         qp = QProgram()
+        qp.set_offset(bus="flux1", offset_path0=0.15)
+        qp.set_offset(bus="flux2", offset_path0=0.15)
+        qp.wait(bus="readout", duration=400)
+        qp.sync()
         qp.set_offset(bus="flux1", offset_path0=0.0)
         qp.set_offset(bus="flux2", offset_path0=0.0)
         qp.play(bus="flux1", waveform=Square(amplitude=0.1, duration=40))
         qp.play(bus="flux2", waveform=Square(amplitude=0.1, duration=40))
         qp.set_offset(bus="flux1", offset_path0=0.15)
         qp.set_offset(bus="flux2", offset_path0=0.15)
+        qp.wait(bus="readout", duration=400)
 
         new_qp = qp.with_crosstalk_qblox(crosstalk)
 
         offsets = [element for element in new_qp.body.elements if isinstance(element, SetOffset)]
-        assert [offset.bus for offset in offsets] == ["flux1", "flux2", "flux1", "flux2"]
-        assert all(math.isclose(offset.offset_path0, 0.0) for offset in offsets[:2])
-        assert all(math.isclose(offset.offset_path0, 0.225) for offset in offsets[2:])
+        assert [offset.bus for offset in offsets] == ["flux1", "flux2"] * 3
+        assert all(math.isclose(offset.offset_path0, 0.225) for offset in offsets[:2])
+        assert all(math.isclose(offset.offset_path0, 0.0) for offset in offsets[2:4])
+        assert all(math.isclose(offset.offset_path0, 0.225) for offset in offsets[4:])
 
     def test_with_crosstalk_linear_repeated_bus_keeps_flux_vector_gain(self):
         """Test with_crosstalk_qblox keeps the flux vector when a bus gain is set again on the linear path."""
