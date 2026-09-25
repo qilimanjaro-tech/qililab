@@ -85,6 +85,8 @@ class CrosstalkElements:
             if operation not in self.flux_vector or not check_after_loop or bus_reused:
                 self.flux_vector[operation] = FluxVector()
                 self.flux_vector[operation].set_crosstalk(self.crosstalk)
+            else:
+                self.flux_vector[operation] = deepcopy(self.flux_vector[operation])
         else:
             for operation in self.element_group.keys():
                 self.element[operation] = []
