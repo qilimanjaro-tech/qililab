@@ -548,7 +548,7 @@ class NonLinearCrosstalkMatrix(CrosstalkMatrix):
         """
         corrections: dict[str, float | np.ndarray] = dict.fromkeys(flux, 0.0)
 
-        # getattr keeps objects deserialized before this flag existed defaulting to enabled.
+        # Skip all nonlinear corrections when disabled; default to enabled if the flag is absent.
         if not getattr(self, "non_linear_enabled", True):
             return corrections
 
@@ -634,7 +634,6 @@ class NonLinearCrosstalkMatrix(CrosstalkMatrix):
         instance.beta_c_matrix = {bus: dict.fromkeys(row) for bus, row in linear.matrix.items()}
         instance.non_lin_amp_matrix = {bus: dict.fromkeys(row) for bus, row in linear.matrix.items()}
         instance.junction_asym_matrix = {bus: dict.fromkeys(row) for bus, row in linear.matrix.items()}
-        instance.non_linear_enabled = getattr(linear, "non_linear_enabled", True)
         return instance
 
     def __repr__(self) -> str:

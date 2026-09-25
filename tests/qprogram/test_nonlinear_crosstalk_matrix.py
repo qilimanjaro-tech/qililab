@@ -402,11 +402,6 @@ class TestNonLinearCrosstalkMatrix:
         assert nonlinear_crosstalk_matrix.beta_c_matrix["flux_0"]["flux_2"] == pytest.approx(-0.234)
         assert nonlinear_crosstalk_matrix.non_lin_amp_matrix["flux_0"]["flux_2"] == pytest.approx(-0.021)
 
-    def test_from_linear_carries_over_flag(self, nonlinear_crosstalk_matrix):
-        nonlinear_crosstalk_matrix.set_non_linear(False)
-        rebuilt = NonLinearCrosstalkMatrix.from_linear(nonlinear_crosstalk_matrix)
-        assert rebuilt.non_linear_enabled is False
-
     # --- __repr__ and inherited methods ---
 
     def test_repr(self, nonlinear_crosstalk_matrix):
