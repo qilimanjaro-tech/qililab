@@ -1227,6 +1227,26 @@ class TestQProgram(TestStructuredProgram):
         assert new_qp.body.elements[5].bus == "flux1"
         assert math.isclose(new_qp.body.elements[5].offset_path0, 0.4)
 
+    def test_with_crosstalk_linear_repeated_offset_group_is_not_overwritten(self):
+        """Test with_crosstalk_qblox keeps each offset group's value when offsets are set again without a wait."""
+        inverse_xtalk_array = np.linalg.inv([[1, 0.5], [0.5, 1]])
+        crosstalk = CrosstalkMatrix().from_array(["flux1", "flux2"], inverse_xtalk_array)
+
+        qp = QProgram()
+        qp.set_offset(bus="flux1", offset_path0=0.0)
+        qp.set_offset(bus="flux2", offset_path0=0.0)
+        qp.play(bus="flux1", waveform=Square(amplitude=0.1, duration=40))
+        qp.play(bus="flux2", waveform=Square(amplitude=0.1, duration=40))
+        qp.set_offset(bus="flux1", offset_path0=0.15)
+        qp.set_offset(bus="flux2", offset_path0=0.15)
+
+        new_qp = qp.with_crosstalk_qblox(crosstalk)
+
+        offsets = [element for element in new_qp.body.elements if isinstance(element, SetOffset)]
+        assert [offset.bus for offset in offsets] == ["flux1", "flux2", "flux1", "flux2"]
+        assert all(math.isclose(offset.offset_path0, 0.0) for offset in offsets[:2])
+        assert all(math.isclose(offset.offset_path0, 0.225) for offset in offsets[2:])
+
     def test_with_crosstalk_linear_repeated_bus_keeps_flux_vector_gain(self):
         """Test with_crosstalk_qblox keeps the flux vector when a bus gain is set again on the linear path."""
         inverse_xtalk_array = np.linalg.inv([[1, 0.5], [0.5, 1]])
