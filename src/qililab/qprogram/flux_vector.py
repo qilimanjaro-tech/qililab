@@ -46,7 +46,8 @@ class FluxVector:
     def crosstalk_inverse(self) -> "CrosstalkMatrix | None":
         """Inverse of the attached crosstalk matrix, computed lazily on first access."""
         if self._crosstalk_inverse is None and self.crosstalk is not None:
-            inverse = self.crosstalk.inverse()
+            # The matrix is stored in pH; its bias inverse operates in Φ₀/V (see flux_to_bias).
+            inverse = self.crosstalk.in_phi0_per_volt().inverse()
             inverse.flux_offsets = self.crosstalk.flux_offsets
             self._crosstalk_inverse = inverse
         return self._crosstalk_inverse
@@ -143,8 +144,11 @@ class FluxVector:
         if not self.bias_vector:
             self.bias_vector = self.flux_vector.copy()
 
-        buses = crosstalk._sorted_buses()
-        matrix = crosstalk.to_array()
+        # The matrix is stored in pH; the forward flux = M · bias relation is defined in Φ₀/V,
+        # so convert with the per-line resistances (raises if any is missing) before applying it.
+        phi0 = crosstalk.in_phi0_per_volt()
+        buses = phi0._sorted_buses()
+        matrix = phi0.to_array()
         offsets = np.array([crosstalk.flux_offsets.get(bus, 0.0) for bus in buses])
         bias_values = [self.bias_vector[bus] for bus in buses]
 
@@ -599,9 +603,11 @@ class NonLinearFluxVector:
         """
         self.set_crosstalk(crosstalk)
         crosstalk = cast("CrosstalkMatrix", self.crosstalk)
-
-        buses = crosstalk._sorted_buses()
-        matrix = crosstalk.to_array()
+        # The matrix is stored in pH; the forward flux = M · bias relation is defined in Φ₀/V,
+        # so convert with the per-line resistances (raises if any is missing) before applying it.
+        phi0 = crosstalk.in_phi0_per_volt()
+        buses = phi0._sorted_buses()
+        matrix = phi0.to_array()
         offsets = np.array([crosstalk.flux_offsets.get(bus, 0.0) for bus in buses])
         bias_values = [bias_vector[bus] for bus in buses]
 
