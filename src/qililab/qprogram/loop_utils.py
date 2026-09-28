@@ -45,22 +45,3 @@ def calculate_iterations(start: int | float, stop: int | float, step: int | floa
 
     # Otherwise incrementing sweeps take the floor and decrementing sweeps the ceiling.
     return math.floor(raw_iterations) if step > 0 else math.ceil(raw_iterations)
-
-
-def loop_range(start: int | float, stop: int | float, step: int | float) -> np.ndarray:
-    """Values a ``ForLoop(start, stop, step)`` runs, ``stop`` inclusive.
-
-    Uses ``np.linspace`` over :func:`calculate_iterations` points instead of a half-open
-    ``np.arange`` so the last value lands exactly on ``stop`` and the length always matches
-    the number of iterations the compilers execute.
-
-    Args:
-        start (int | float): First value of the sweep.
-        stop (int | float): Last value of the sweep (inclusive).
-        step (int | float): Increment between consecutive values.
-
-    Returns:
-        np.ndarray: The swept values. Empty when the parameters describe no iterations
-            (e.g. a step pointing away from ``stop``).
-    """
-    return np.linspace(start, stop, max(calculate_iterations(start, stop, step), 0))
