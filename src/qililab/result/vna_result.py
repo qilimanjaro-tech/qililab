@@ -32,7 +32,7 @@ class VNAResult(Result):
     """VNAResult class."""
 
     data: npt.NDArray[np.float32]
-    name: ResultName = ResultName.VECTOR_NETWORK_ANALYZER  # type: ignore[misc]
+    name: ResultName = ResultName.VECTOR_NETWORK_ANALYZER
 
     def acquisitions(self) -> np.ndarray:
         """Return acquisition values."""
