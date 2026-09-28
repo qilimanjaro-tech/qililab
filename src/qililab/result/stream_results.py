@@ -13,6 +13,7 @@
 # limitations under the License.
 from __future__ import annotations
 
+import warnings
 from typing import TYPE_CHECKING, Any
 
 import h5py
@@ -31,7 +32,7 @@ if TYPE_CHECKING:
 
     from qililab.platform import Platform
     from qililab.qprogram.qprogram import Calibration, QProgram
-    from qililab.result.database import AutocalMeasurement, DatabaseManager, Measurement
+    from qililab.result.database import AutocalMeasurement, DatabaseManager, DatabaseSchema, Measurement
     from qililab.result.result_management import LoopData
 
 
@@ -49,9 +50,13 @@ class StreamArray:
             ``LoopData`` dictionary with the array and its ``units``, ``bus`` and ``parameter`` metadata.
         platform (Platform): platform where the experiment was executed
         experiment_name (str): Name of the experiment.
-        db_manager (DatabaseManager): database manager loaded from the database after setting the db parameters.
+        db_manager (DatabaseManager): database manager loaded from the database after setting the db parameters. Its
+            ``database_schema`` selects where the measurement is saved: ``"measurements"`` or ``"autocal"``.
         qprogram (QProgram | None, optional): Qprogram of the experiment, if there is no Qprogram related to the results it is not mandatory. Defaults to None.
         optional_identifier (str | None, optional): String containing a description or any relevant information about the experiment. Defaults to None.
+        autocalibration (bool | None, optional): Deprecated, set ``database_schema`` on the ``DatabaseManager`` instead.
+            If given, it must match ``db_manager.database_schema``: True needs ``"autocal"`` and False
+            ``"measurements"``, otherwise an error is raised. Defaults to None.
     """
 
     path: str
@@ -70,7 +75,7 @@ class StreamArray:
         calibration: Calibration | None = None,
         bus_mapping: dict[str, str] | None = None,
         optional_identifier: str | None = None,
-        autocalibration: bool = False,
+        autocalibration: bool | None = None,
         qubit_idx: int | str | list[str] | None = None,
         secondary_idx: int | str | list[str] | None = None,
     ):
@@ -84,6 +89,13 @@ class StreamArray:
         self.qprogram = qprogram
         self.calibration = calibration
         self.bus_mapping = bus_mapping
+        if autocalibration is not None:
+            warnings.warn(
+                "`autocalibration` is deprecated and will be removed in a future release. Select the database with "
+                '`get_db_manager(..., database_schema="autocal")` instead.',
+                FutureWarning,
+                stacklevel=2,
+            )
         self.autocalibration = autocalibration
         self.qubit_idx = qubit_idx
         self.second_idx = secondary_idx
@@ -100,19 +112,20 @@ class StreamArray:
             if calibration is None and self.platform is not None:
                 calibration = self.platform.calibration
 
-            if self.autocalibration:
+            database_schema = self._database_schema()
+            if database_schema == "autocal":
                 if not calibration:
                     raise ValueError("For autocalibration a Calibration file is mandatory.")
                 self.measurement = self.db_manager.add_autocal_measurement(
                     experiment_name=self.experiment_name,
-                    qubit_idx=self.qubit_idx,
+                    target=self.qubit_idx,
                     platform=self.platform.to_dict() if self.platform else None,
                     qprogram=serialize(self.qprogram) if self.qprogram else None,
                     calibration=calibration,
                     parameters=self.loops,
                     data_shape=self.shape,
                 )
-            else:
+            elif database_schema == "measurements":
                 self.measurement = self.db_manager.add_measurement(
                     experiment_name=self.experiment_name,
                     experiment_completed=False,
@@ -127,6 +140,8 @@ class StreamArray:
                     secondary_source=self._get_index_list(self.second_idx),
                     bus_mapping=self.bus_mapping,
                 )
+            else:
+                raise ValueError(f"StreamArray cannot save to the '{database_schema}' database schema.")
             self.path = self.measurement.result_path
 
             # Save loops
@@ -157,6 +172,18 @@ class StreamArray:
             return self
         except Exception as e:
             raise RuntimeError("An error occurred while creating the StreamArray.") from e
+
+    def _database_schema(self) -> DatabaseSchema:
+        """Database schema of the ``db_manager``, checked against the deprecated ``autocalibration`` flag."""
+        database_schema = self.db_manager.database_schema
+        if self.autocalibration is not None:
+            expected = "autocal" if self.autocalibration else "measurements"
+            if database_schema != expected:
+                raise ValueError(
+                    f"`autocalibration={self.autocalibration}` needs a db_manager with database_schema='{expected}', "
+                    f"this one uses '{database_schema}'."
+                )
+        return database_schema
 
     def __setitem__(
         self, key: tuple, value: np.ndarray[Any, np.dtype[np.floating]] | np.ndarray[Any, np.dtype[np.complexfloating]]
