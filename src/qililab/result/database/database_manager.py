@@ -542,9 +542,9 @@ class DatabaseManager:
         self,
         experiment_name: str,
         qubit_idx: int | str,
-        calibration: "Calibration",  # type: ignore
-        platform: "Platform" = None,  # type: ignore
-        qprogram: "QProgram" = None,  # type: ignore
+        calibration: "Calibration",
+        platform: "Platform" = None,
+        qprogram: "QProgram" = None,
         parameters: list[str] | None = None,
         data_shape: np.ndarray | None = None,
     ):
@@ -656,10 +656,10 @@ class DatabaseManager:
         optional_identifier: str | None = None,
         end_time: datetime.datetime | None = None,
         run_length: float | None = None,
-        platform: "Platform" = None,  # type: ignore
-        experiment: "Experiment" = None,  # type: ignore
-        qprogram: "QProgram" = None,  # type: ignore
-        calibration: "Calibration" = None,  # type: ignore
+        platform: "Platform" = None,
+        experiment: "Experiment" = None,
+        qprogram: "QProgram" = None,
+        calibration: "Calibration" = None,
         debug_file: str | None = None,
         parameters: list[str] | None = None,
         data_shape: np.ndarray | None = None,
@@ -756,10 +756,10 @@ class DatabaseManager:
         cooldown: str | None = None,
         sample_name: str | None = None,
         optional_identifier: str | None = None,
-        platform: "Platform" = None,  # type: ignore
-        experiment: "Experiment" = None,  # type: ignore
-        qprogram: "QProgram" = None,  # type: ignore
-        calibration: "Calibration" = None,  # type: ignore
+        platform: "Platform" = None,
+        experiment: "Experiment" = None,
+        qprogram: "QProgram" = None,
+        calibration: "Calibration" = None,
         parameters: list[str] | None = None,
     ):
         """Add measurement metadata, data path and results from a finished experiment.
