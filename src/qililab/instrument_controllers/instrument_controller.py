@@ -55,7 +55,6 @@ class InstrumentControllerSettings(Settings):
     connection: Connection
     modules: list[InstrumentReference]
     reference_clock: str = "internal"
-    ext_trigger: bool = False
     reset: bool = True
 
     def __post_init__(self):
@@ -263,15 +262,6 @@ class InstrumentController(BusElement, ABC):
         return self.settings.reference_clock
 
     @property
-    def ext_trigger(self):
-        """Instrument Controller 'ext_trigger' property.
-
-        Returns:
-            str: settings.ext_trigger.
-        """
-        return self.settings.ext_trigger
-
-    @property
     def connection(self):
         """Instrument Controller 'connection' property.
 
@@ -302,5 +292,4 @@ class InstrumentController(BusElement, ABC):
             INSTRUMENTCONTROLLER.MODULES: [module.to_dict() for module in self.settings.modules],
             INSTRUMENTCONTROLLER.RESET: self.settings.reset,
             INSTRUMENTCONTROLLER.REFERENCE_CLOCK: self.settings.reference_clock,
-            INSTRUMENTCONTROLLER.EXT_TRIGGER: self.settings.ext_trigger,
         }
