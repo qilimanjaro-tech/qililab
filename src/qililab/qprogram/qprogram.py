@@ -430,7 +430,7 @@ class QProgram(StructuredProgram):
         copied_qprogram.qblox._weight_duration = resolved
         return copied_qprogram
 
-    def with_crosstalk_qblox(self, crosstalk: CrosstalkMatrix):
+    def with_crosstalk_qblox(self, crosstalk: CrosstalkMatrix, dc_flux: dict[str, float] | None = None):
         """Apply crosstalk compensation to the qprogram flux buses.
 
         This method traverses the elements of the QProgram, replacing any
@@ -439,6 +439,9 @@ class QProgram(StructuredProgram):
 
         Args:
             crosstalk (CrosstalkMatrix): Crosstalk matrix class.
+            dc_flux (dict[str, float] | None, optional): DC operating point flux of the buses shared with DC lines.
+                If given, the AC bias is computed relative to it, so the crosstalk flux offsets are left to the DC
+                lines. Defaults to None.
 
         Returns:
             QProgram: A new instance of QProgram with calibrated crosstalk.
@@ -450,9 +453,15 @@ class QProgram(StructuredProgram):
         self._loop_depths: list[int] = []
 
         non_lin_flux_vector: NonLinearFluxVector | None = None
-        if isinstance(crosstalk, NonLinearCrosstalkMatrix):
+        if isinstance(crosstalk, NonLinearCrosstalkMatrix) and crosstalk.non_linear_enabled:
             non_lin_flux_vector = NonLinearFluxVector()
             non_lin_flux_vector.set_crosstalk(crosstalk)
+            if dc_flux is not None:
+                non_lin_flux_vector.set_reference(dc_flux)
+        elif dc_flux is not None:
+            # A linear compensation relative to the DC operating point only drops the flux offsets.
+            crosstalk = deepcopy(crosstalk)
+            crosstalk.flux_offsets = dict.fromkeys(crosstalk.flux_offsets, 0.0)
 
         non_lin_play_waveforms = []
         non_lin_offsets = []
@@ -1013,6 +1022,7 @@ class QProgram(StructuredProgram):
         crosstalk: CrosstalkMatrix,
         qdac_buses_offset: dict[str, float],
         target_fluxes: dict[str, float | list[float] | np.ndarray] | None = None,
+        ac_flux: dict[str, float] | None = None,
     ):
         """Apply crosstalk compensation to the qprogram flux buses.
         This method traverses the elements of the QProgram, replacing any
@@ -1023,6 +1033,8 @@ class QProgram(StructuredProgram):
             crosstalk (CrosstalkMatrix): Crosstalk matrix class.
             qdac_buses_offset (dict[str, float]): Hardware bias voltage per bus, used to recover the parked flux only when ``target_fluxes`` is not provided.
             target_fluxes (dict[str, float] | None, optional): Target flux per bus for the parked operating point. Defaults to None.
+            ac_flux (dict[str, float] | None, optional): Constant flux of the AC lines. The DC bias is computed for
+                the total flux minus the linear bias of the AC flux. Defaults to None.
 
         Returns:
             QProgram: A new instance of QProgram with calibrated crosstalk.
@@ -1071,8 +1083,16 @@ class QProgram(StructuredProgram):
             flux_vector.flux_vector[element.bus] = envelope
             return flux_vector
 
-        def handle_crosstalk_element(block: Block, element_list: list[int], flux_vector: FluxVector):
+        def update_bias_vector(flux_vector: FluxVector):
             flux_vector.update_bias_vector()
+            if ac_flux:
+                total_flux = {bus: flux_vector.flux_vector[bus] + ac_flux.get(bus, 0.0) for bus in crosstalk.matrix}
+                ac_bias = crosstalk.linear_flux_to_bias(ac_flux)
+                for bus, bias in crosstalk.flux_to_bias(total_flux).items():
+                    flux_vector.bias_vector[bus] = bias - ac_bias[bus]
+
+        def handle_crosstalk_element(block: Block, element_list: list[int], flux_vector: FluxVector):
+            update_bias_vector(flux_vector)
             if element_list:
                 elements = []
                 for ii, element_idx in enumerate(element_list):

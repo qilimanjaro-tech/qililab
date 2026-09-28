@@ -284,6 +284,7 @@ class QbloxCompiler:
         single_channel: list[str] | None = None,
         bus_distortions: dict[str, list["PulseDistortion"]] | None = None,
         crosstalk: CrosstalkMatrix | None = None,
+        dc_flux: dict[str, float] | None = None,
     ) -> QbloxCompilationOutput:
         """Compile QProgram to qpysequence.Sequence
 
@@ -291,6 +292,8 @@ class QbloxCompiler:
             qprogram (QProgram): The QProgram to be compiled
             bus_mapping (dict[str, str], optional): Optional mapping of bus names. Defaults to None.
             times_of_flight (dict[str, int], optional): Optional time of flight of bus. Defaults to None.
+            dc_flux (dict[str, float], optional): DC operating point flux of the buses shared with DC lines, used
+                to compensate the AC crosstalk around it. Defaults to None.
 
         Returns:
             QbloxCompilationOutput: Compiled sequences keyed by bus name, alongside acquisition
@@ -358,7 +361,7 @@ class QbloxCompiler:
                 "Cannot compile to hardware-native instructions because QProgram contains named operations that are not mapped. Provide a calibration instance containing all necessary mappings."
             )
         if crosstalk is not None:
-            self._qprogram = self._qprogram.with_crosstalk_qblox(crosstalk=crosstalk)
+            self._qprogram = self._qprogram.with_crosstalk_qblox(crosstalk=crosstalk, dc_flux=dc_flux)
         if bus_distortions is not None:
             self._qprogram = self._qprogram.with_distortions(bus_distortions=bus_distortions)
 
