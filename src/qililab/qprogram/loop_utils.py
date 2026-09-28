@@ -21,8 +21,6 @@ single source of truth for that count and for the swept values.
 
 import math
 
-import numpy as np
-
 
 def calculate_iterations(start: int | float, stop: int | float, step: int | float) -> int:
     """Number of points a ``ForLoop(start, stop, step)`` runs, ``stop`` inclusive.
