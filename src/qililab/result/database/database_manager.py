@@ -393,6 +393,7 @@ class DatabaseManager:
                     (Measurement.calibration != "null").label("has_calibration"),
                     (Measurement.debug_file != "null").label("has_debug"),
                     (Measurement.dc_offsets != "null").label("has_dc_offsets"),
+                    (Measurement.flux_offsets != "null").label("has_flux_offsets"),
                 )
 
             if pandas_output:
@@ -458,6 +459,7 @@ class DatabaseManager:
                     (Measurement.calibration != "null").label("has_calibration"),
                     (Measurement.debug_file != "null").label("has_debug"),
                     (Measurement.dc_offsets != "null").label("has_dc_offsets"),
+                    (Measurement.flux_offsets != "null").label("has_flux_offsets"),
                 )
 
             if pandas_output:
@@ -660,6 +662,7 @@ class DatabaseManager:
         parameters: list[str] | None = None,
         data_shape: np.ndarray | None = None,
         dc_offsets: dict[str, float] | None = None,
+        flux_offsets: dict[str, float] | None = None,
         target: list[str] | None = None,
         secondary_source: list[str] | None = None,
         bus_mapping: dict[str, str] | None = None,
@@ -681,7 +684,8 @@ class DatabaseManager:
             calibration (Calibration | None, optional): Calibration used on the experiment. Defaults to None.
             parameters (list[str] | None, optional): Parameters used on the experiment. Defaults to None.
             data_shape (np.ndarray | None, optional): Shape of the results array. Defaults to None.
-            dc_offsets (np.ndarray | None, optional): Instruments offsets. Defaults to None.
+            dc_offsets (dict | None, optional): Instruments offsets. Defaults to None.
+            flux_offsets (dict | None, optional): Flux offsets. Defaults to None.
             target (np.ndarray | None, optional): Target qubits list. Defaults to None.
             secondary_source (np.ndarray | None, optional): Secondary source buses list. Defaults to None.
             bus_mapping (dict[str, str] | None, optional): Bus map of the qprogram. Defaults to None.
@@ -731,6 +735,7 @@ class DatabaseManager:
             parameters=parameters,
             data_shape=data_shape,
             dc_offsets=dc_offsets,
+            flux_offsets=flux_offsets,
             target=target,
             secondary_source=secondary_source,
             bus_mapping=bus_mapping,

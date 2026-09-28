@@ -1251,6 +1251,27 @@ class Testdatabase:
         db_manager._mock_session.commit.assert_called_once()
         mock_makedirs.assert_called_once_with("/shared_test/measurement_folder/sampleA/cdX/2023-01-01/12_00_00_000000")
 
+    @patch("qililab.result.database.database_manager.os.makedirs")
+    @patch("qililab.result.database.database_manager.datetime")
+    def test_add_measurement_flux_offsets(self, mock_datetime, mock_makedirs, db_manager: DatabaseManager):
+        # Setup
+        db_manager.current_sample = "sampleA"
+        db_manager.current_cd = "cdX"
+
+        fixed_time = datetime.datetime(2023, 1, 1, 12, 0, 0)
+        mock_datetime.datetime.now.return_value = fixed_time
+        # fallback
+        mock_datetime.datetime.strftime = datetime.datetime.strftime
+
+        flux_offsets = {"flux_q0": 0.15, "flux_q1": 0.25}
+        # Act
+        measurement = db_manager.add_measurement("exp1", experiment_completed=True, flux_offsets=flux_offsets)
+
+        # Assert
+        assert measurement.flux_offsets == flux_offsets
+        db_manager._mock_session.add.assert_called_once()
+        db_manager._mock_session.commit.assert_called_once()
+
     def test_add_measurement_raises_exception_no_sample(self, db_manager: DatabaseManager):
         # Set current_sample to None to simulate no sample set
         db_manager.current_sample = None
