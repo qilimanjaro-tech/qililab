@@ -13,25 +13,19 @@
 # limitations under the License.
 
 import datetime
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, ClassVar
 
 from pandas import read_hdf
 from sqlalchemy import (
     ARRAY,
-    Boolean,
-    Column,
-    Date,
-    DateTime,
     ForeignKey,
     Integer,
-    Interval,
     String,
     Text,
     text,
 )
 from sqlalchemy.dialects.postgresql import JSONB
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column, sessionmaker
 from xarray import DataArray
 
 from qililab.result.experiment_results import ExperimentResults
@@ -40,100 +34,61 @@ from qililab.result.result_management import load_results
 if TYPE_CHECKING:
     from qililab.result.database.database_manager import DatabaseManager
 
-base = declarative_base()
+
+class _MeasurementsBase(DeclarativeBase):
+    type_annotation_map: ClassVar[dict] = {
+        dict[str, Any]: JSONB,
+        list[int]: ARRAY(Integer),
+        list[str]: ARRAY(String),
+    }
 
 
-class Cooldown(base):  # type: ignore
+class Cooldown(_MeasurementsBase):
     """Creates and manipulates CoolDown metadata database"""
 
     __tablename__ = "cooldowns"
 
-    cooldown: Column = Column("cooldown", String, primary_key=True)
-    date: Column = Column("date", Date)
-    fridge: Column = Column("fridge", String)
-    active: Column = Column("active", Boolean, server_default=text("true"))
-
-    def __init__(self, cooldown, date, fridge):
-        self.cooldown = cooldown
-        self.date = date
-        self.fridge = fridge
+    cooldown: Mapped[str] = mapped_column(primary_key=True)
+    date: Mapped[datetime.date | None]
+    fridge: Mapped[str | None]
+    active: Mapped[bool | None] = mapped_column(server_default=text("true"))
 
     def __repr__(self):
         return f"{self.cooldown} {self.date} {self.fridge} {self.active}"
 
 
-class Sample(base):  # type: ignore
+class Sample(_MeasurementsBase):
     """Creates and manipulates Sample metadata database"""
 
     __tablename__ = "samples"
 
-    sample_name: Column = Column("sample_name", String, primary_key=True)
-    manufacturer: Column = Column("manufacturer", String)
-    wafer: Column = Column("wafer", String)
-    fab_run: Column = Column("fab_run", String)
-    sample: Column = Column("sample", String)
-    device_design: Column = Column("device_design", String)
-    n_qubits_per_device: Column = Column("n_qubits_per_device", ARRAY(Integer))
-    additional_info: Column = Column("additional_info", String)
-
-    def __init__(
-        self,
-        sample_name,
-        fab_run,
-        wafer,
-        sample,
-        device_design,
-        n_qubits_per_device,
-        additional_info,
-        manufacturer,
-    ):
-        self.sample_name = sample_name
-        self.fab_run = fab_run
-        self.wafer = wafer
-        self.sample = sample
-        self.device_design = device_design
-        self.n_qubits_per_device = n_qubits_per_device
-        self.additional_info = additional_info
-        self.manufacturer = manufacturer
+    sample_name: Mapped[str] = mapped_column(primary_key=True)
+    manufacturer: Mapped[str | None]
+    wafer: Mapped[str | None]
+    fab_run: Mapped[str | None]
+    sample: Mapped[str | None]
+    device_design: Mapped[str | None]
+    n_qubits_per_device: Mapped[list[int] | None]
+    additional_info: Mapped[str | None]
 
     def __repr__(self):
         return f"{self.sample_name} {self.manufacturer} {self.additional_info}"
 
 
-class SequenceRun(base):  # type: ignore
+class SequenceRun(_MeasurementsBase):
     """Creates and manipulates a sequence of measurements run metadata database"""
 
     __tablename__ = "sequence_run"
 
-    sequence_id: Column = Column("sequence_id", Integer, primary_key=True)
-    sequence_name: Column = Column("sequence_name", String, nullable=False)
-    start_time: Column = Column("start_time", DateTime, nullable=False)
-    end_time: Column = Column("end_time", DateTime)
-    run_length: Column = Column("run_length", Interval)
-    sequence_tree: Column = Column("sequence_tree", JSONB)
-    sequence_completed: Column = Column("sequence_completed", Boolean, nullable=False)
-    cooldown: Column = Column("cooldown", ForeignKey(Cooldown.cooldown), index=True)
-    sample_name: Column = Column("sample_name", ForeignKey(Sample.sample_name), nullable=False)
-
-    def __init__(
-        self,
-        sequence_name,
-        start_time,
-        sequence_tree,
-        sequence_completed,
-        sample_name,
-        end_time=None,
-        run_length=None,
-        cooldown=None,
-    ):
-        self.sequence_name = sequence_name
-        self.start_time = start_time
-        self.end_time = end_time
-        self.run_length = run_length
-        self.sequence_tree = sequence_tree
-        self.sequence_completed = sequence_completed
-        self.sample_name = sample_name
-        self.cooldown = cooldown
+    sequence_id: Mapped[int] = mapped_column(primary_key=True)
+    sequence_name: Mapped[str]
+    start_time: Mapped[datetime.datetime]
+    end_time: Mapped[datetime.datetime | None]
+    run_length: Mapped[datetime.timedelta | None]
+    sequence_tree: Mapped[dict[str, Any] | None]
+    sequence_completed: Mapped[bool]
+    cooldown: Mapped[str | None] = mapped_column(ForeignKey(Cooldown.cooldown), index=True)
+    sample_name: Mapped[str] = mapped_column(ForeignKey(Sample.sample_name))
 
     def end_sequence(self, session: sessionmaker[Session], traceback: str | None = None):
         """Function to end sequence of experiments. The function sets inside the database information
@@ -142,14 +97,14 @@ class SequenceRun(base):  # type: ignore
         with session() as running_session:
             # Merge the detached instance into the current session
             persistent_instance = running_session.merge(self)
-            persistent_instance.end_time = datetime.datetime.now()  # type: ignore[assignment]
-            persistent_instance.run_length = persistent_instance.end_time - persistent_instance.start_time  # type: ignore[assignment]
+            persistent_instance.end_time = datetime.datetime.now()
+            persistent_instance.run_length = persistent_instance.end_time - persistent_instance.start_time
             self.end_time = persistent_instance.end_time
             self.run_length = persistent_instance.run_length
             try:
                 if traceback is None:
-                    persistent_instance.sequence_completed = True  # type: ignore[assignment]
-                    self.sequence_completed = True  # type: ignore[assignment]
+                    persistent_instance.sequence_completed = True
+                    self.sequence_completed = True
                 running_session.commit()
                 return persistent_instance
             except Exception as e:
@@ -160,36 +115,36 @@ class SequenceRun(base):  # type: ignore
         return f"{self.sequence_id} {self.sequence_name} {self.start_time} {self.sequence_completed} {self.sample_name} {self.cooldown}"
 
 
-class Measurement(base):  # type: ignore
+class Measurement(_MeasurementsBase):
     """Creates and manipulates Measurement metadata database"""
 
     __tablename__ = "measurements"
 
-    measurement_id: Column = Column("measurement_id", Integer, primary_key=True)
-    experiment_name: Column = Column("experiment_name", String, nullable=False)
-    optional_identifier: Column = Column("optional_identifier", String)
-    start_time: Column = Column("start_time", DateTime, nullable=False)
-    end_time: Column = Column("end_time", DateTime)
-    run_length: Column = Column("run_length", Interval)
-    experiment_completed: Column = Column("experiment_completed", Boolean, nullable=False)
-    sample_name: Column = Column("sample_name", ForeignKey(Sample.sample_name), nullable=False)
-    cooldown: Column = Column("cooldown", ForeignKey(Cooldown.cooldown), index=True)
-    sequence_id: Column = Column("sequence_id", Integer)
-    dc_offsets: Column = Column("dc_offsets", JSONB)
-    target: Column = Column("target", ARRAY(String))
-    secondary_source: Column = Column("secondary_source", ARRAY(String))
-    result_path: Column = Column("result_path", String, unique=True, nullable=False)
-    platform: Column = Column("platform", JSONB)
-    experiment: Column = Column("experiment", JSONB)
-    qprogram: Column = Column("qprogram", JSONB)
-    bus_mapping: Column = Column("bus_mapping", JSONB)
-    calibration: Column = Column("calibration", JSONB)
-    parameters: Column = Column("parameters", JSONB)
-    data_shape: Column = Column("data_shape", ARRAY(Integer))
-    fitting_path: Column = Column("fitting_path", String)
-    fitting_parameters: Column = Column("fitting_parameters", JSONB)
-    debug_file = Column("debug_file", Text)
-    created_by = Column("created_by", String, server_default=text("current_user"))
+    measurement_id: Mapped[int] = mapped_column(primary_key=True)
+    experiment_name: Mapped[str]
+    optional_identifier: Mapped[str | None]
+    start_time: Mapped[datetime.datetime]
+    end_time: Mapped[datetime.datetime | None]
+    run_length: Mapped[datetime.timedelta | None]
+    experiment_completed: Mapped[bool]
+    sample_name: Mapped[str] = mapped_column(ForeignKey(Sample.sample_name))
+    cooldown: Mapped[str | None] = mapped_column(ForeignKey(Cooldown.cooldown), index=True)
+    sequence_id: Mapped[int | None]
+    dc_offsets: Mapped[dict[str, Any] | None]
+    target: Mapped[list[str] | None]
+    secondary_source: Mapped[list[str] | None]
+    result_path: Mapped[str] = mapped_column(unique=True)
+    platform: Mapped[dict[str, Any] | None]
+    experiment: Mapped[dict[str, Any] | None]
+    qprogram: Mapped[dict[str, Any] | None]
+    bus_mapping: Mapped[dict[str, Any] | None]
+    calibration: Mapped[dict[str, Any] | None]
+    parameters: Mapped[dict[str, Any] | None]
+    data_shape: Mapped[list[int] | None]
+    fitting_path: Mapped[str | None]
+    fitting_parameters: Mapped[dict[str, Any] | None]
+    debug_file: Mapped[str | None] = mapped_column(Text)
+    created_by: Mapped[str | None] = mapped_column(server_default=text("current_user"))
     # TODO: add error_report = Column("error_report", String, nullable=True)
 
     def end_experiment(self, session: sessionmaker[Session], traceback: str | None = None):
@@ -199,11 +154,11 @@ class Measurement(base):  # type: ignore
         with session() as running_session:
             # Merge the detached instance into the current session
             persistent_instance = running_session.merge(self)
-            persistent_instance.end_time = datetime.datetime.now()  # type: ignore[assignment]
-            persistent_instance.run_length = persistent_instance.end_time - persistent_instance.start_time  # type: ignore[assignment]
+            persistent_instance.end_time = datetime.datetime.now()
+            persistent_instance.run_length = persistent_instance.end_time - persistent_instance.start_time
             try:
                 if traceback is None:
-                    persistent_instance.experiment_completed = True  # type: ignore[assignment]
+                    persistent_instance.experiment_completed = True
                 # TODO: add else: persistent_instance.error_report = traceback
                 running_session.commit()
                 return persistent_instance
@@ -270,66 +225,15 @@ class Measurement(base):  # type: ignore
         session = database_manager.session
         with session() as running_session:
             persistent_instance = running_session.merge(self)
-            persistent_instance.fitting_path = path  # type: ignore[assignment]
+            persistent_instance.fitting_path = path
             if parameters:
-                persistent_instance.fitting_parameters = parameters  # type: ignore[assignment]
+                persistent_instance.fitting_parameters = parameters
             try:
                 running_session.commit()
                 return persistent_instance
             except Exception as e:
                 running_session.rollback()
                 raise e
-
-    def __init__(
-        self,
-        experiment_name,
-        sample_name,
-        result_path,
-        experiment_completed,
-        start_time,
-        cooldown=None,
-        sequence_id=None,
-        optional_identifier=None,
-        end_time=None,
-        run_length=None,
-        platform=None,
-        experiment=None,
-        qprogram=None,
-        calibration=None,
-        parameters=None,
-        data_shape=None,
-        debug_file=None,
-        dc_offsets=None,
-        target=None,
-        secondary_source=None,
-        bus_mapping=None,
-    ):
-        # Required fields
-        self.experiment_name = experiment_name
-        self.sample_name = sample_name
-        self.result_path = result_path
-        self.experiment_completed = experiment_completed
-        self.start_time = start_time
-
-        # Optional fields
-        self.cooldown = cooldown
-        self.sequence_id = sequence_id
-        self.optional_identifier = optional_identifier
-        self.end_time = end_time
-        self.run_length = run_length
-        self.platform = platform
-        self.experiment = experiment
-        self.qprogram = qprogram
-        self.calibration = calibration
-        self.parameters = parameters
-        self.data_shape = data_shape
-        self.debug_file = debug_file
-        self.dc_offsets = dc_offsets
-        self.target = target
-        self.secondary_source = secondary_source
-        self.bus_mapping = bus_mapping
-        self.fitting_path = None
-        self.fitting_parameters = None
 
     def __repr__(self):
         return f"{self.measurement_id} {self.experiment_name} {self.start_time} {self.end_time} {self.run_length} {self.sample_name} {self.cooldown}"
