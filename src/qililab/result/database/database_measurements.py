@@ -131,6 +131,7 @@ class Measurement(_MeasurementsBase):
     cooldown: Mapped[str | None] = mapped_column(ForeignKey(Cooldown.cooldown), index=True)
     sequence_id: Mapped[int | None]
     dc_offsets: Mapped[dict[str, Any] | None]
+    flux_offsets: Mapped[dict[str, Any] | None]
     target: Mapped[list[str] | None]
     secondary_source: Mapped[list[str] | None]
     result_path: Mapped[str] = mapped_column(unique=True)
