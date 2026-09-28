@@ -127,10 +127,10 @@ def load_results(path: str) -> tuple[np.ndarray, dict[str, np.ndarray]]:
         for name, data in hf["loops"].items():
             loops[name] = {
                 "array": data[:],
-                "units": data.attrs.get("units", ""),  # type: ignore
-                "bus": data.attrs.get("bus", ""),  # type: ignore
-                "parameter": data.attrs.get("parameter", ""),  # type: ignore
+                "units": data.attrs.get("units", ""),
+                "bus": data.attrs.get("bus", ""),
+                "parameter": data.attrs.get("parameter", ""),
             }
-        results = hf["results"][:]  # type: ignore
+        results = hf["results"][:]
 
-    return results, loops  # type: ignore
+    return results, loops
