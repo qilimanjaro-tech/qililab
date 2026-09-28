@@ -124,7 +124,6 @@ class QdacCompiler:
         crosstalk: CrosstalkMatrix | None = None,
         out_instrument: QDevilQDac2 | None = None,
         target_fluxes: dict[str, float | list[float] | np.ndarray] | None = None,
-        ac_flux: dict[str, float] | None = None,
     ) -> QdacCompilationOutput:
         """Compile QProgram to qdac execution schedule.
 
@@ -139,8 +138,6 @@ class QdacCompiler:
             out_instrument (QDevilQDac2, optional): Output trigger in case there is more than one qdac instruments. Defaults to None.
             target_fluxes (dict[str, float], optional): Known target flux per bus for the parked
                 operating point, used to seed crosstalk compensation. Defaults to None.
-            ac_flux (dict[str, float], optional): Constant flux of the AC lines sharing buses with the DC ones,
-                accounted for in the DC crosstalk compensation. Defaults to None.
         """
 
         def traverse(block: Block):
@@ -173,10 +170,7 @@ class QdacCompiler:
                 crosstalk = calibration.crosstalk_matrix
         if crosstalk is not None:
             self._qprogram = self._qprogram.with_crosstalk_qdac(
-                crosstalk=crosstalk,
-                target_fluxes=target_fluxes,
-                qdac_buses_offset=qdac_buses_offset,
-                ac_flux=ac_flux,
+                crosstalk=crosstalk, target_fluxes=target_fluxes, qdac_buses_offset=qdac_buses_offset
             )
 
         if self._qprogram.has_calibrated_waveforms_or_weights():

@@ -1143,20 +1143,8 @@ class Platform:
             if isinstance(instrument, (QbloxModule, QuantumMachinesCluster))
         }
 
-        # On buses with both an AC (Qblox) and a DC (QDAC) line the QProgram sweeps the `flux_sweep` line,
-        # while the other one keeps the static value of the platform.
-        shared_buses = {
-            bus.alias
-            for bus in buses
-            if any(isinstance(instrument, QbloxModule) for instrument in bus.instruments)
-            and any(isinstance(instrument, QDevilQDac2) for instrument in bus.instruments)
-        }
-
         qdac_qprogram_buses = [
-            bus
-            for bus in buses
-            if bus.alias not in shared_buses or flux_sweep == "dc"
-            if any(isinstance(instrument, QDevilQDac2) for instrument in bus.instruments)
+            bus for bus in buses if any(isinstance(instrument, QDevilQDac2) for instrument in bus.instruments)
         ]
         self.qdac_buses = [
             bus for bus in self.buses if any(isinstance(instrument, QDevilQDac2) for instrument in bus.instruments)
@@ -1166,19 +1154,6 @@ class Platform:
         target_fluxes = dict(flux_vector.flux_vector) if flux_vector is not None else None
         # Voltage bias offset defined in the runcard.
         qdac_offsets = [float(bus.get_parameter(Parameter.VOLTAGE)) for bus in self.qdac_buses]
-
-        dc_flux, ac_flux = None, None
-        dc_crosstalk = getattr(self, "crosstalk", None) if crosstalk else None
-        if dc_crosstalk is None and calibration is not None:
-            dc_crosstalk = calibration.crosstalk_matrix
-        ac_crosstalk = calibration.crosstalk_matrix_ac if calibration is not None else None
-        if shared_buses and dc_crosstalk is not None and ac_crosstalk is not None:
-            flux_buses = set(dc_crosstalk.matrix) & set(ac_crosstalk.matrix)
-            if flux_buses and flux_sweep == "ac":
-                qdac_voltages = {bus.alias: offset for bus, offset in zip(self.qdac_buses, qdac_offsets)}
-                dc_flux = self._get_dc_static_flux(dc_crosstalk, flux_buses, target_fluxes, qdac_voltages)
-            elif flux_buses:
-                ac_flux = self._get_ac_static_flux(ac_crosstalk, flux_buses)
 
         compiled_qdac = None
         if qdac_qprogram_buses:
@@ -1200,7 +1175,7 @@ class Platform:
 
             qdac_compiler = QdacCompiler()
             compiled_qdac = qdac_compiler.compile(
-                qprogram=qdac_qprogram,
+                qprogram=qprogram,
                 qdacs=self.qdac_instruments,
                 qdac_buses=self.qdac_buses,
                 qdac_offsets=qdac_offsets,
@@ -1209,7 +1184,6 @@ class Platform:
                 crosstalk=self.crosstalk if crosstalk else None,
                 out_instrument=out_trigger_qdac,
                 target_fluxes=target_fluxes,
-                ac_flux=ac_flux,
             )
 
         if all(isinstance(instrument, QbloxModule) for instrument in instruments):
@@ -1249,7 +1223,7 @@ class Platform:
                 if bus.distortions:
                     bus_distortions[bus.alias] = bus.distortions
 
-            qprogram = qblox_qprogram.with_resolved_weight_duration(calibration, bus_mapping)
+            qprogram = qprogram.with_resolved_weight_duration(calibration, bus_mapping)
             qblox_compiler = QbloxCompiler()
             qblox_buses = [
                 bus.alias for bus in buses if any(isinstance(instrument, QbloxModule) for instrument in bus.instruments)
@@ -1267,7 +1241,6 @@ class Platform:
                     single_channel=single_channel,
                     bus_distortions=bus_distortions,
                     crosstalk=self.crosstalk if crosstalk else None,
-                    dc_flux=dc_flux,
                 ),
                 qdac=compiled_qdac,
             )
@@ -1307,33 +1280,6 @@ class Platform:
                 qdac=compiled_qdac,
             )
         raise NotImplementedError("Compiling QProgram for a mixture of AWG instruments is not supported.")
-
-    @staticmethod
-    def _get_dc_static_flux(
-        dc_crosstalk: "CrosstalkMatrix",
-        buses: set[str],
-        target_fluxes: dict[str, float] | None,
-        qdac_voltages: dict[str, float],
-    ) -> dict[str, float]:
-        """DC operating point flux of ``buses``, from the target fluxes or, if unknown, from the QDAC voltages."""
-        if target_fluxes:
-            flux = target_fluxes
-        elif all(bus in qdac_voltages for bus in dc_crosstalk.matrix):
-            flux = FluxVector().set_crosstalk_from_bias(dc_crosstalk, qdac_voltages)  # type: ignore[arg-type,assignment]
-        else:
-            flux = {}
-        return {bus: float(flux.get(bus, 0.0)) for bus in buses}  # type: ignore[arg-type]
-
-    def _get_ac_static_flux(self, ac_crosstalk: "CrosstalkMatrix", buses: set[str]) -> dict[str, float]:
-        """Flux of ``buses`` induced by the Qblox offsets of the AC crosstalk buses (linear, without flux offsets)."""
-        ac_buses = ac_crosstalk._sorted_buses()
-        bias = []
-        for alias in ac_buses:
-            bus = self.buses.get(alias=alias)
-            has_qblox = bus is not None and any(isinstance(instrument, QbloxModule) for instrument in bus.instruments)
-            bias.append(float(bus.get_parameter(Parameter.OFFSET_I)) if has_qblox else 0.0)  # type: ignore[union-attr]
-        flux = dict(zip(ac_buses, ac_crosstalk.to_array() @ np.array(bias)))
-        return {bus: float(flux.get(bus, 0.0)) for bus in buses}
 
     def execute_compilation_output(
         self,
