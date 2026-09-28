@@ -22,7 +22,7 @@ from qililab.qprogram.blocks import Block, ForLoop, Parallel
 from qililab.qprogram.calibration import Calibration
 from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix, NonLinearCrosstalkMatrix
 from qililab.qprogram.flux_vector import FluxVector, NonLinearFluxVector
-from qililab.qprogram.loop_utils import loop_range
+from qililab.qprogram.loop_utils import calculate_iterations
 from qililab.qprogram.operations import (
     Acquire,
     AcquireWithCalibratedWeights,
@@ -672,7 +672,11 @@ class QProgram(StructuredProgram):
                     if depth is not None:
                         self._bus_loop_depth[element.bus] = depth
                     envelope = (
-                        loop_range(variable_loop.start, variable_loop.stop, variable_loop.step)
+                        np.linspace(
+                            variable_loop.start,
+                            variable_loop.stop,
+                            max(calculate_iterations(variable_loop.start, variable_loop.stop, variable_loop.step), 0),
+                        )
                         if isinstance(variable_loop, ForLoop)
                         else variable_loop
                     )
