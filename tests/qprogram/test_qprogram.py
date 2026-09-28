@@ -10,6 +10,7 @@ from qililab import Arbitrary, Domain, GaussianDragCorrection, Gaussian, IQPair,
 from qililab.core.variables import Variable, VariableExpression
 from qililab.qprogram.blocks import Average, Block, Parallel
 from qililab.qprogram.calibration import Calibration
+from qililab.qprogram.loop_utils import calculate_iterations
 from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix, NonLinearCrosstalkMatrix
 from qililab.pulse_distortion import ExponentialCorrection
 from qililab.qprogram.operations import (

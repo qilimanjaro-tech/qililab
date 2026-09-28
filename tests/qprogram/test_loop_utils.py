@@ -35,3 +35,11 @@ class TestCalculateIterations:
     def test_negative_count_for_malformed_range(self):
         # Step pointing away from stop -> non-positive count (callers clamp with max(..., 0)).
         assert calculate_iterations(0.0, 0.1, -0.01) <= 0
+
+    def test_descending_non_integer_rounds_up(self):
+        # raw == 2.25; a descending sweep ceils (matches the Qblox compiler count).
+        assert calculate_iterations(0.1, 0.0, -0.08) == 3
+
+    def test_ascending_non_integer_rounds_down(self):
+        # raw == 2.25; an ascending sweep floors.
+        assert calculate_iterations(0.0, 0.1, 0.08) == 2
