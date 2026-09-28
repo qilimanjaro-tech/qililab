@@ -183,7 +183,7 @@ class DatabaseManager:
             running_session.add(sequence_obj)
             try:
                 running_session.commit()
-                self.current_sequence = sequence_obj.sequence_id  # type: ignore[assignment]
+                self.current_sequence = sequence_obj.sequence_id
                 return sequence_obj
 
             except Exception as e:
@@ -247,7 +247,11 @@ class DatabaseManager:
             if measurement_by_id_list is not None:
                 for meas in measurement_by_id_list:
                     path = meas.result_path
-                    if not os.path.isfile(path):
+                    if (
+                        self.base_path_local is not None
+                        and self.base_path_share is not None
+                        and not os.path.isfile(path)
+                    ):
                         new_path = path.replace(self.base_path_local, self.base_path_share)
                         meas.result_path = new_path
             return measurement_by_id_list if len(measurement_by_id_list) > 1 else measurement_by_id_list[0]
@@ -282,7 +286,7 @@ class DatabaseManager:
             )
             for meas in measurement_by_id_list:
                 path = meas.result_path
-                if not os.path.isfile(path):
+                if self.base_path_local is not None and self.base_path_share is not None and not os.path.isfile(path):
                     new_path = path.replace(self.base_path_local, self.base_path_share)
                     meas.result_path = new_path
             return measurement_by_id_list
@@ -328,7 +332,7 @@ class DatabaseManager:
 
             if experiment_by_id is not None:
                 path = experiment_by_id.result_path
-                if not os.path.isfile(path):
+                if self.base_path_local is not None and self.base_path_share is not None and not os.path.isfile(path):
                     new_path = path.replace(self.base_path_local, self.base_path_share)
                     experiment_by_id.result_path = new_path
 
