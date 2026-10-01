@@ -117,6 +117,21 @@ class TestNonLinearFluxVector:
         assert result is nlfv_no_crosstalk.offset
         assert result == pytest.approx({"flux_0": 0.23, "flux_1": 0.30, "flux_2": 0.20})
 
+    def test_set_crosstalk_from_bias_array(self, nlfv_no_crosstalk, crosstalk_matrix):
+        """The vectorized bias->flux transform works element-wise for array bias."""
+        bias = {
+            "flux_0": np.array([0.1, 0.2]),
+            "flux_1": np.array([0.2, 0.3]),
+            "flux_2": np.array([0.3, 0.4]),
+        }
+        result = nlfv_no_crosstalk.set_crosstalk_from_bias(crosstalk_matrix, {k: v.copy() for k, v in bias.items()})
+        buses = ["flux_0", "flux_1", "flux_2"]
+        expected = crosstalk_matrix.to_array() @ np.array([bias[b] for b in buses]) + np.array(
+            [crosstalk_matrix.flux_offsets[b] for b in buses]
+        )[:, np.newaxis]
+        for i, bus in enumerate(buses):
+            assert np.allclose(result[bus], expected[i])
+
     def test_set_loop_for_loop(self, nlfv_no_crosstalk):
         phi = Variable("phi")
         nlfv_no_crosstalk.set_loop(ForLoop(variable=phi, start=0.0, stop=1.0, step=0.1))
@@ -385,6 +400,23 @@ class TestFluxVector:
         assert flux_vector.flux_vector == flux
         assert flux_vector.to_dict() == flux_vector.bias_vector
 
+    def test_set_crosstalk_from_bias_array(self, flux_vector, crosstalk_matrix):
+        """The vectorized bias->flux transform works element-wise for array bias."""
+        bias = {
+            "flux_0": np.array([0.1, 0.2]),
+            "flux_1": np.array([0.2, 0.3]),
+            "flux_2": np.array([0.3, 0.4]),
+        }
+        result = flux_vector.set_crosstalk_from_bias(
+            crosstalk_matrix, bias_vector={k: v.copy() for k, v in bias.items()}
+        )
+        buses = ["flux_0", "flux_1", "flux_2"]
+        expected = crosstalk_matrix.to_array() @ np.array([bias[b] for b in buses]) + np.array(
+            [crosstalk_matrix.flux_offsets[b] for b in buses]
+        )[:, np.newaxis]
+        for i, bus in enumerate(buses):
+            assert np.allclose(result[bus], expected[i])
+
     def test_get_decomposed_vector(self, flux_vector, crosstalk_matrix):
         flux_vector.set_crosstalk_from_bias(crosstalk_matrix, bias_vector={"flux_0": 0.1, "flux_1": 0.2, "flux_2": 0.3})
         assert flux_vector.crosstalk == crosstalk_matrix
@@ -488,5 +520,78 @@ class TestFluxVector:
             not np.allclose(fv_nonlinear.bias_vector[bus], fv_linear.bias_vector[bus])
             for bus in flux_dict
         )
+
+    def test_crosstalk_inverse_none_without_crosstalk(self):
+        """crosstalk_inverse is None until a crosstalk matrix is attached."""
+        assert FluxVector().crosstalk_inverse is None
+
+    def test_crosstalk_inverse_is_lazy_and_correct(self, flux_vector, crosstalk_matrix):
+        """set_crosstalk must not eagerly build the inverse; it is computed on first read."""
+        flux_vector.set_crosstalk(crosstalk_matrix)
+        # not materialised by set_crosstalk (the bias math uses crosstalk.flux_to_bias)
+        assert flux_vector._crosstalk_inverse is None
+        inverse = flux_vector.crosstalk_inverse
+        assert flux_vector._crosstalk_inverse is inverse  # cached after first access
+        assert np.allclose(inverse.to_array(), np.linalg.inv(crosstalk_matrix.to_array()))
+        assert inverse.flux_offsets == crosstalk_matrix.flux_offsets
+
+    def test_crosstalk_inverse_recomputed_after_new_set_crosstalk(self, flux_vector, crosstalk_matrix):
+        """Attaching a new crosstalk invalidates a previously materialised inverse."""
+        flux_vector.set_crosstalk(crosstalk_matrix)
+        _ = flux_vector.crosstalk_inverse  # materialise it
+        identity = CrosstalkMatrix.from_array(["flux_0", "flux_1", "flux_2"], np.eye(3))
+        flux_vector.set_crosstalk(identity)
+        assert flux_vector._crosstalk_inverse is None  # invalidated, not stale
+        assert np.allclose(flux_vector.crosstalk_inverse.to_array(), np.eye(3))
+
+    def test_crosstalk_inverse_cached_on_repeated_access(self, flux_vector, crosstalk_matrix):
+        """Repeated reads return the same materialised inverse object (computed once)."""
+        flux_vector.set_crosstalk(crosstalk_matrix)
+        first = flux_vector.crosstalk_inverse
+        assert flux_vector.crosstalk_inverse is first
+
+    def test_crosstalk_inverse_setter(self, flux_vector, crosstalk_matrix):
+        """The setter overrides the stored inverse and is returned as-is."""
+        flux_vector.set_crosstalk(crosstalk_matrix)
+        sentinel = CrosstalkMatrix.from_array(["flux_0", "flux_1", "flux_2"], np.eye(3))
+        flux_vector.crosstalk_inverse = sentinel
+        assert flux_vector.crosstalk_inverse is sentinel
+
+    def test_get_decomposed_vector_shares_crosstalk_reference(self, flux_vector, crosstalk_matrix):
+        """The rewrite shares the (read-only) crosstalk instead of deep-copying it per bus."""
+        flux_vector.set_crosstalk_from_bias(
+            crosstalk_matrix, bias_vector={"flux_0": 0.1, "flux_1": 0.2, "flux_2": 0.3}
+        )
+        decomposed = flux_vector.get_decomposed_vector()
+        assert set(decomposed) == set(crosstalk_matrix.matrix)
+        for sub_vector in decomposed.values():
+            assert sub_vector.crosstalk is crosstalk_matrix
+
+    def test_get_decomposed_vector_bias_matches_flux_to_bias(self, crosstalk_matrix):
+        """Each decomposed vector zeros the other buses and recomputes bias once."""
+        fv = FluxVector.from_dict({"flux_0": 0.23, "flux_1": 0.3, "flux_2": 0.2})
+        fv.set_crosstalk(crosstalk_matrix)
+        decomposed = fv.get_decomposed_vector()
+        for bus, sub_vector in decomposed.items():
+            expected_flux = {b: (fv.flux_vector[b] if b == bus else 0) for b in crosstalk_matrix.matrix}
+            assert sub_vector.flux_vector == pytest.approx(expected_flux)
+            expected_bias = crosstalk_matrix.flux_to_bias(expected_flux)
+            for b in crosstalk_matrix.matrix:
+                assert sub_vector.bias_vector[b] == pytest.approx(expected_bias[b])
+
+    def test_get_decomposed_vector_respects_bus_list(self, flux_vector, crosstalk_matrix):
+        """With a bus_list, only listed buses are decomposed and only they are zeroed."""
+        flux_vector.set_crosstalk_from_bias(
+            crosstalk_matrix, bias_vector={"flux_0": 0.1, "flux_1": 0.2, "flux_2": 0.3}
+        )
+        decomposed = flux_vector.get_decomposed_vector(bus_list=["flux_0", "flux_1"])
+        assert set(decomposed) == {"flux_0", "flux_1"}
+        # flux_2 is outside the bus_list, so it keeps its value in every decomposed vector
+        assert decomposed["flux_0"].flux_vector["flux_1"] == 0
+        assert decomposed["flux_0"].flux_vector["flux_2"] != 0
+
+    def test_get_decomposed_vector_empty_without_crosstalk(self, flux_vector):
+        """No crosstalk attached -> empty decomposition, no error."""
+        assert flux_vector.get_decomposed_vector() == {}
 
 
