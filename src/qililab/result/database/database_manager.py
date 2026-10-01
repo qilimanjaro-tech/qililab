@@ -251,7 +251,41 @@ class DatabaseManager:
                 raise e
 
     @overload
-    def load_by_id(self, id: list[int]) -> list[Measurement] | list[AutocalMeasurement] | list[QaaS_Experiment]:
+    def load_by_id(self, id: list[int]) -> list[Measurement]:
+        """Load list of measurements by their measurement_id.
+
+        Args:
+            id (list[int]): measurement_id list given by the database.
+        """
+
+    @overload
+    def load_by_id(self, id: int) -> Measurement:
+        """Load a measurement by its measurement_id.
+
+        Args:
+            id (int): measurement_id value given by the database.
+        """
+
+    def load_by_id(self, id: int | list[int]):
+        """Load measurements by their measurement_id. Needs a manager with the ``"measurements"`` schema.
+
+        To load from the table of any ``database_schema``, use ``load_entry_by_id``.
+
+        Args:
+            id (int | list[int]): measurement_id value or list of measurement_id values given by the database.
+
+        Returns:
+            Measurement | list[Measurement]: the measurement for an id, or a list of measurements for a list of ids.
+
+        Raises:
+            ValueError: if the manager's ``database_schema`` is not ``"measurements"``.
+            IndexError: if any of the ids does not exist.
+        """
+        self._check_database_schema("measurements", "load_by_id")
+        return self._load_by_id(Measurement, id)
+
+    @overload
+    def load_entry_by_id(self, id: list[int]) -> list[Measurement] | list[AutocalMeasurement] | list[QaaS_Experiment]:
         """Load list of entries by their id.
 
         Args:
@@ -259,21 +293,27 @@ class DatabaseManager:
         """
 
     @overload
-    def load_by_id(self, id: int) -> Measurement | AutocalMeasurement | QaaS_Experiment:
+    def load_entry_by_id(self, id: int) -> Measurement | AutocalMeasurement | QaaS_Experiment:
         """Load an entry by its id.
 
         Args:
             id (int): id value given by the database.
         """
 
-    def load_by_id(self, id: int | list[int]):
+    def load_entry_by_id(self, id: int | list[int]):
         """Load entries by their id from the table of the manager's ``database_schema``.
 
         The id is the ``measurement_id`` for the ``"measurements"`` and ``"autocal"`` schemas, and the
-        ``experiment_id`` for the ``"qaas"`` schema.
+        ``experiment_id`` for the ``"qaas"`` schema. Since the entry type depends on the ``database_schema``, the
+        return type is a union: when the schema is known, prefer ``load_by_id``, ``load_calibration_by_id`` or
+        ``load_experiment_by_id``, which return a precise type.
 
         Args:
             id (int | list[int]): id value or list of id values given by the database.
+
+        Returns:
+            Measurement | AutocalMeasurement | QaaS_Experiment | list: the entry for an id, or a list of entries for a
+            list of ids.
 
         Raises:
             IndexError: if any of the ids does not exist.
@@ -320,20 +360,15 @@ class DatabaseManager:
             return measurement_by_id_list
 
     def load_calibration_by_id(self, id: int) -> AutocalMeasurement:
-        """Load autocalibration measurement by its measurement_id.
-
-        .. deprecated::
-            Use ``load_by_id`` with a ``DatabaseManager`` created with ``database_schema="autocal"`` instead.
+        """Load autocalibration measurement by its measurement_id. Needs a manager with the ``"autocal"`` schema.
 
         Args:
             id (int): measurement_id value given by the database.
+
+        Raises:
+            ValueError: if the manager's ``database_schema`` is not ``"autocal"``.
+            IndexError: if the id does not exist.
         """
-        warnings.warn(
-            "`load_calibration_by_id` is deprecated and will be removed in a future release. Use `load_by_id` with "
-            '`database_schema="autocal"` instead.',
-            FutureWarning,
-            stacklevel=2,
-        )
         self._check_database_schema("autocal", "load_calibration_by_id")
         return self._load_by_id(AutocalMeasurement, id)
 
@@ -360,20 +395,15 @@ class DatabaseManager:
         return self._add_autocal_fitting(id, path, parameters)
 
     def load_experiment_by_id(self, id: int) -> QaaS_Experiment:
-        """Load QaaS measurement by its experiment_id.
-
-        .. deprecated::
-            Use ``load_by_id`` with a ``DatabaseManager`` created with ``database_schema="qaas"`` instead.
+        """Load QaaS measurement by its experiment_id. Needs a manager with the ``"qaas"`` schema.
 
         Args:
             id (int): experiment_id value given by the database.
+
+        Raises:
+            ValueError: if the manager's ``database_schema`` is not ``"qaas"``.
+            IndexError: if the id does not exist.
         """
-        warnings.warn(
-            "`load_experiment_by_id` is deprecated and will be removed in a future release. Use `load_by_id` with "
-            '`database_schema="qaas"` instead.',
-            FutureWarning,
-            stacklevel=2,
-        )
         self._check_database_schema("qaas", "load_experiment_by_id")
         return self._load_by_id(QaaS_Experiment, id)
 
@@ -397,7 +427,7 @@ class DatabaseManager:
     @overload
     def _load_by_id(self, model: type[_Entry], id: int) -> _Entry: ...
 
-    def _load_by_id(self, model: type[_Entry], id: int | list[int]) -> list[_Entry] | _Entry:
+    def _load_by_id(self, model: type[_Entry], id: int | list[int]) -> _Entry | list[_Entry]:
         """Load entries of ``model`` by its primary key: a list for a list of ids, else the entry.
 
         Raises:
@@ -639,7 +669,7 @@ class DatabaseManager:
     def add_autocal_measurement(
         self,
         experiment_name: str,
-        target: int | str,
+        qubit_idx: int | str,
         calibration: "Calibration",
         platform: "Platform | None" = None,
         qprogram: "QProgram | None" = None,
@@ -650,7 +680,7 @@ class DatabaseManager:
 
         Args:
             experiment_name (str): Experiment name.
-            target (int | str): Index of the measured qubit, stored in the ``qbit_idx`` column.
+            qubit_idx (int | str): Index of the measured qubit, stored in the ``qbit_idx`` column.
             calibration (Calibration): Experiment calibration parameters.
             platform (Platform, optional): Platform used on the experiment. Defaults to None.
             qprogram (QProgram | None, optional): Qprogram used on the experiment. Defaults to None.
@@ -679,7 +709,7 @@ class DatabaseManager:
         self.calibration_measurement = AutocalMeasurement(
             experiment_name=experiment_name,
             calibration_id=calibration_id,
-            qbit_idx=target,
+            qbit_idx=qubit_idx,
             result_path=result_path,
             fitting_path=base_path,
             experiment_completed=False,
@@ -982,24 +1012,23 @@ def get_engine(user: str, passwd: str, host: str, port: str, database: str):
     return create_engine(url)
 
 
-def load_by_id(
-    id: int | list[int], path: str = "~/database.ini", database_schema: DatabaseSchema | None = None
-) -> (
-    list[Measurement]
-    | list[AutocalMeasurement]
-    | list[QaaS_Experiment]
-    | Measurement
-    | AutocalMeasurement
-    | QaaS_Experiment
-):
-    """Function to get the database ID without loading the Database Manager
+@overload
+def load_by_id(id: list[int], path: str = "~/database.ini") -> list[Measurement]: ...
+
+
+@overload
+def load_by_id(id: int, path: str = "~/database.ini") -> Measurement: ...
+
+
+def load_by_id(id: int | list[int], path: str = "~/database.ini") -> list[Measurement] | Measurement:
+    """Load measurements by their measurement_id without creating a ``DatabaseManager`` yourself.
+
+    See ``DatabaseManager.load_by_id``. The `.ini` section must use the ``"measurements"`` database schema.
 
     Args:
-        id (int | list[int]): id value or list of id values given by the database.
+        id (int | list[int]): measurement_id value or list of measurement_id values given by the database.
         path (str, optional): Location of the database `.ini`. Defaults to "~/database.ini".
-        database_schema (DatabaseSchema | None, optional): Database to load from. See ``DatabaseManager``.
-            Defaults to None.
     """
 
-    db = get_db_manager(path, database_schema=database_schema)
+    db = get_db_manager(path)
     return db.load_by_id(id)

@@ -118,7 +118,7 @@ class StreamArray:
                     raise ValueError("For autocalibration a Calibration file is mandatory.")
                 self.measurement = self.db_manager.add_autocal_measurement(
                     experiment_name=self.experiment_name,
-                    target=self.qubit_idx,
+                    qubit_idx=self.qubit_idx,
                     platform=self.platform.to_dict() if self.platform else None,
                     qprogram=serialize(self.qprogram) if self.qprogram else None,
                     calibration=calibration,
