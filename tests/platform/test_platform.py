@@ -1057,6 +1057,7 @@ class TestMethods:
 
         # Mock database manager
         mock_database = MagicMock()
+        mock_database.database_schema = "measurements"
         platform.db_manager = mock_database
         platform.save_experiment_results_in_database = True
 
@@ -2351,6 +2352,7 @@ class TestMethods:
         loops = {"test_amp_loop": np.arange(0, 2)}
         experiment_name = "test_db_real_time_saving"
         mock_database = MagicMock()
+        mock_database.database_schema = "measurements"
         platform.db_manager = mock_database
         description = "description"
 
@@ -2396,6 +2398,7 @@ class TestMethods:
         results = np.array([[1.0, 1.0], [1.0, 1.0]])
 
         mock_database = MagicMock()
+        mock_database.database_schema = "measurements"
         platform.db_manager = mock_database
         description = "description"
 
@@ -2418,6 +2421,7 @@ class TestMethods:
         results = np.array([[1.0, 1.0], [1.0, 1.0]])
 
         mock_database = MagicMock()
+        mock_database.database_schema = "measurements"
         platform.db_manager = mock_database
         description = "description"
 
@@ -2438,6 +2442,7 @@ class TestMethods:
         results = np.array([[1.0, 1.0], [1.0, 1.0]])
 
         mock_database = MagicMock()
+        mock_database.database_schema = "measurements"
         platform.db_manager = mock_database
         description = "description"
 
@@ -2458,6 +2463,7 @@ class TestMethods:
         results = np.array([[1.0, 1.0], [1.0, 1.0]])
 
         mock_database = MagicMock()
+        mock_database.database_schema = "measurements"
         platform.db_manager = mock_database
         description = "description"
 

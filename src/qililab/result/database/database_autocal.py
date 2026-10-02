@@ -83,11 +83,16 @@ class AutocalMeasurement(_AutocalBase):
     fitting_parameters: Mapped[dict[str, Any] | None]
     qbit_idx: Mapped[str | None]
     platform_after: Mapped[dict[str, Any] | None]
-    platform_before: Mapped[dict[str, Any] | None]
+    platform: Mapped[dict[str, Any] | None] = mapped_column("platform_before")
     qprogram: Mapped[dict[str, Any] | None]
     calibration: Mapped[dict[str, Any] | None]
     parameters: Mapped[dict[str, Any] | None]
     data_shape: Mapped[list[int] | None]
+
+    @property
+    def target(self) -> list[str] | None:
+        """Measured qubit as a list, matching ``Measurement.target``. None if no qubit was stored."""
+        return None if self.qbit_idx is None else [self.qbit_idx]
 
     def end_experiment(self, session: sessionmaker[Session], traceback: str | None = None):
         """Function to end measurement of the experiment. The function sets inside the database information

@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import datetime
+import warnings
 from typing import TYPE_CHECKING, Any, ClassVar
 
 from pandas import read_hdf
@@ -195,7 +196,20 @@ class Measurement(_MeasurementsBase):
         return data_xr
 
     def load_old_h5(self):
-        """Load old experiment data from h5 files."""
+        """Load experiment data from h5 files.
+
+        .. deprecated::
+            Use ``load_h5`` instead.
+        """
+        warnings.warn(
+            "`load_old_h5` is deprecated and will be removed in a future release. Use `load_h5` instead.",
+            FutureWarning,
+            stacklevel=2,
+        )
+        return self.load_h5()
+
+    def load_h5(self):
+        """Load experiment data from h5 files."""
         return load_results(self.result_path)
 
     def load_df(self):

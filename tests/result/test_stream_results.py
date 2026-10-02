@@ -1,6 +1,7 @@
 """Test StreamArray"""
 
 import copy
+import warnings
 from unittest.mock import MagicMock, patch
 
 import numpy as np
@@ -30,6 +31,7 @@ def fixture_stream_array():
     platform = build_platform(runcard=copy.deepcopy(Galadriel.runcard))
     experiment_name = "test_stream_array"
     mock_database = MagicMock()
+    mock_database.database_schema = "measurements"
     db_manager = mock_database
 
     qprogram = QProgram()
@@ -58,6 +60,7 @@ def fixture_stream_array_qubit_idx():
     platform = build_platform(runcard=copy.deepcopy(Galadriel.runcard))
     experiment_name = "test_stream_array"
     mock_database = MagicMock()
+    mock_database.database_schema = "measurements"
     db_manager = mock_database
     qubit_idx = 1
     secondary_idx = ["1", "2"]
@@ -90,6 +93,7 @@ def fixture_stream_array_qubit_idx_bus_map():
     platform = build_platform(runcard=copy.deepcopy(Galadriel.runcard))
     experiment_name = "test_stream_array"
     mock_database = MagicMock()
+    mock_database.database_schema = "measurements"
     db_manager = mock_database
     qubit_idx = 1
     secondary_idx = ["1", "2"]
@@ -125,6 +129,7 @@ def fixture_stream_array_bus_map():
     platform = build_platform(runcard=copy.deepcopy(Galadriel.runcard))
     experiment_name = "test_stream_array"
     mock_database = MagicMock()
+    mock_database.database_schema = "measurements"
     mock_database.add_measurement.return_value.bus_mapping = {"readout_q0": "feedline_input_output_bus"}
     mock_database.add_measurement.return_value.result_path = "some/mock/path"
     db_manager = mock_database
@@ -158,6 +163,7 @@ def fixture_stream_array_not_in_platform():
     platform = build_platform(runcard=copy.deepcopy(Galadriel.runcard))
     experiment_name = "test_stream_array"
     mock_database = MagicMock()
+    mock_database.database_schema = "measurements"
     db_manager = mock_database
 
     qprogram = QProgram()
@@ -189,6 +195,7 @@ def fixture_stream_array_qm():
     platform = build_platform(runcard=copy.deepcopy(SauronQuantumMachines.runcard))
     experiment_name = "test_stream_array_qm"
     mock_database = MagicMock()
+    mock_database.database_schema = "measurements"
     db_manager = mock_database
 
     qprogram = QProgram()
@@ -217,6 +224,7 @@ def fixture_stream_array_complex():
     platform = build_platform(runcard=copy.deepcopy(Galadriel.runcard))
     experiment_name = "test_stream_array_complex"
     mock_database = MagicMock()
+    mock_database.database_schema = "measurements"
     db_manager = mock_database
 
     return StreamArray(
@@ -236,6 +244,7 @@ def fixture_stream_array_dict_loops():
     platform = build_platform(runcard=copy.deepcopy(Galadriel.runcard))
     experiment_name = "test_stream_array"
     mock_database = MagicMock()
+    mock_database.database_schema = "measurements"
     db_manager = mock_database
 
     return StreamArray(
@@ -377,7 +386,7 @@ class TestStreamArray:
 
     def test_stream_array_autocalibration(self, stream_array: StreamArray):
         """Tests the instantiation of a StreamArray object."""
-        stream_array.autocalibration = True
+        stream_array.db_manager.database_schema = "autocal"
 
         calibration = Calibration()
         calibration.parameters = {"sample_name": "sampleA", "cooldown": "cdX", "base_path": "/shared_test/"}
@@ -413,7 +422,7 @@ class TestStreamArray:
     def test_stream_array_autocalibration_no_calibration_file_rises_error(self, stream_array: StreamArray):
         """Tests the instantiation of a StreamArray object."""
         # Create mock for the file context
-        stream_array.autocalibration = True
+        stream_array.db_manager.database_schema = "autocal"
 
         with patch("h5py.File") as mock_h5file:
             mock_file = MagicMock()
@@ -426,6 +435,40 @@ class TestStreamArray:
                     stream_array[0, 0] = [1]
         assert isinstance(excinfo.value.__cause__, ValueError)
         assert "For autocalibration a Calibration file is mandatory." in str(excinfo.value.__cause__)
+
+    def test_stream_array_autocal_schema_uses_autocal_measurement(self, stream_array: StreamArray):
+        """A db_manager with the autocal schema saves to the autocalibration table, without the deprecated flag."""
+        stream_array.db_manager.database_schema = "autocal"
+        calibration = Calibration()
+        calibration.parameters = {"sample_name": "sampleA", "cooldown": "cdX", "base_path": "/shared_test/"}
+        stream_array.calibration = calibration
+
+        with patch("h5py.File"):
+            with stream_array:
+                pass
+
+        stream_array.db_manager.add_autocal_measurement.assert_called_once()
+        stream_array.db_manager.add_measurement.assert_not_called()
+
+    def test_stream_array_measurements_schema_uses_measurement(self, stream_array: StreamArray):
+        """A db_manager with the measurements schema saves to the measurements table."""
+        with patch("h5py.File"):
+            with stream_array:
+                pass
+
+        stream_array.db_manager.add_measurement.assert_called_once()
+        stream_array.db_manager.add_autocal_measurement.assert_not_called()
+
+    def test_stream_array_qaas_schema_raises_error(self, stream_array: StreamArray):
+        """StreamArray cannot save to the qaas schema."""
+        stream_array.db_manager.database_schema = "qaas"
+
+        with patch("h5py.File"):
+            with pytest.raises(RuntimeError, match="An error occurred while creating the StreamArray.") as excinfo:
+                with stream_array:
+                    pass
+        assert isinstance(excinfo.value.__cause__, ValueError)
+        assert "cannot save to the 'qaas' database schema" in str(excinfo.value.__cause__)
 
     def test_stream_array_uses_platform_calibration_in_measurement(self, stream_array: StreamArray):
         """The platform-level calibration lands in the add_measurement entry without being passed to StreamArray."""
@@ -472,7 +515,7 @@ class TestStreamArray:
         calibration = Calibration()
         calibration.parameters = {"sample_name": "sampleA", "cooldown": "cdX", "base_path": "/shared_test/"}
         stream_array.platform.set_calibration(calibration)
-        stream_array.autocalibration = True
+        stream_array.db_manager.database_schema = "autocal"
         assert stream_array.calibration is None
 
         with patch("h5py.File") as mock_h5file:
@@ -581,7 +624,6 @@ class TestStreamArray:
                 assert 1.0 + 1.0j in stream_array_complex
                 assert (stream_array_complex[0] == 1.0 + 1.0j).all
 
-
     def test_add_fitting(self, stream_array: StreamArray):
         """Tests that add_fitting delegates to the measurement injecting the db session."""
         mock_measurement = MagicMock()
@@ -611,7 +653,7 @@ class TestStreamArray:
         updated_measurement = MagicMock()
         mock_measurement.add_fitting.return_value = updated_measurement
         stream_array.measurement = mock_measurement
-        stream_array.autocalibration = True
+        stream_array.db_manager.database_schema = "autocal"
 
         result = stream_array.add_fitting(path="/test/fit.h5", parameters={"a": 1.0})
 
@@ -793,3 +835,50 @@ class TestRawStreamArray:
         assert sum(1 for _ in iter(stream_results)) == 2
         assert str(stream_results) == "[[[1.+1.j]\n  [2.+2.j]]\n\n [[3.+3.j]\n  [4.+4.j]]]"
         assert (stream_results[0] == [1.0 + 1.0j, 2.0 + 2.0j]).all
+
+
+class TestStreamArrayDeprecated:
+    """Deprecated ``autocalibration`` flag, remove together with it."""
+
+    @pytest.mark.parametrize("autocalibration", [True, False])
+    def test_stream_array_autocalibration_flag_is_deprecated(self, autocalibration: bool):
+        """Passing the autocalibration flag, True or False, raises a FutureWarning."""
+        with pytest.warns(FutureWarning, match="`autocalibration` is deprecated"):
+            StreamArray(
+                shape=(2, 2),
+                loops={"test_amp_loop": AMP_VALUES},
+                experiment_name="test_stream_array",
+                db_manager=MagicMock(),
+                autocalibration=autocalibration,
+            )
+
+    def test_stream_array_without_autocalibration_flag_does_not_warn(self):
+        """Not passing the autocalibration flag raises no FutureWarning."""
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", FutureWarning)
+            stream_array = StreamArray(
+                shape=(2, 2),
+                loops={"test_amp_loop": AMP_VALUES},
+                experiment_name="test_stream_array",
+                db_manager=MagicMock(),
+            )
+        assert stream_array.autocalibration is None
+
+    @pytest.mark.parametrize(
+        ("autocalibration", "database_schema"), [(True, "measurements"), (False, "autocal")], ids=["true", "false"]
+    )
+    def test_stream_array_autocalibration_flag_mismatching_schema_raises_error(
+        self, stream_array: StreamArray, autocalibration: bool, database_schema: str
+    ):
+        """The deprecated flag must match the db_manager schema, it does not select the table."""
+        stream_array.db_manager.database_schema = database_schema
+        stream_array.autocalibration = autocalibration
+
+        with patch("h5py.File"):
+            with pytest.raises(RuntimeError, match="An error occurred while creating the StreamArray.") as excinfo:
+                with stream_array:
+                    pass
+        assert isinstance(excinfo.value.__cause__, ValueError)
+        assert f"needs a db_manager with database_schema=" in str(excinfo.value.__cause__)
+        stream_array.db_manager.add_measurement.assert_not_called()
+        stream_array.db_manager.add_autocal_measurement.assert_not_called()

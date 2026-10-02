@@ -3,7 +3,10 @@
 # pylint: disable=protected-access
 import copy
 import datetime
+import inspect
 import os
+import warnings
+from typing import get_args
 from unittest.mock import MagicMock, patch
 
 import matplotlib as mpl
@@ -17,6 +20,7 @@ from qililab.result import AutocalMeasurement
 from qililab.result.database import CalibrationRun, QaaS_Experiment
 from qililab.result.database.database_manager import (
     DatabaseManager,
+    DatabaseSchema,
     _load_config,
     get_db_manager,
     get_engine,
@@ -38,7 +42,6 @@ def fixture_db_manager():
         mock_engine.return_value = MagicMock()
 
         with patch("qililab.result.database.database_manager.sessionmaker") as mock_sessionmaker:
-
             with patch("qililab.result.database.database_manager._load_config") as mock_load_config:
                 mock_load_config.return_value = {
                     "user": "user",
@@ -59,6 +62,20 @@ def fixture_db_manager():
                 dbm = DatabaseManager("test_file.ini", "database")
                 dbm._mock_session = mock_session
                 return dbm
+
+
+@pytest.fixture(name="db_manager_autocal")
+def fixture_db_manage_autocal(db_manager):
+    db_manager.database_schema = "autocal"
+    return db_manager
+
+
+def _entry(model, id: int) -> MagicMock:
+    """Mock database entry of ``model`` with its primary key set to ``id``."""
+    entry = MagicMock(spec=model)
+    setattr(entry, model.__mapper__.get_property_by_column(model.__mapper__.primary_key[0]).key, id)
+    entry.result_path = "/local_test/results/file.h5"
+    return entry
 
 
 @pytest.fixture(name="measurement")
@@ -427,8 +444,10 @@ class TestMeasurement:
         mock_data_array.assert_called_once()
 
     @patch("qililab.result.database.database_measurements.load_results")
-    def test_load_old_h5(self, mock_load_results, measurement):
-        measurement.load_old_h5()
+    def test_load_h5(self, mock_load_results, measurement):
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", FutureWarning)
+            measurement.load_h5()
         mock_load_results.assert_called_once_with(measurement.result_path)
 
     @patch("qililab.result.database.database_measurements.read_hdf")
@@ -468,6 +487,15 @@ class TestMeasurement:
         autocalibration_measurement.load_h5()
         mock_load_results.assert_called_once_with(autocalibration_measurement.result_path)
 
+    def test_autocalibration_target_wraps_qbit_idx(self):
+        assert AutocalMeasurement(qbit_idx="3").target == ["3"]
+        assert AutocalMeasurement().target is None
+
+    def test_autocalibration_platform_maps_to_platform_before_column(self):
+        assert AutocalMeasurement.__table__.c.platform_before is AutocalMeasurement.__mapper__.c.platform
+        assert "platform" not in AutocalMeasurement.__table__.c
+        assert AutocalMeasurement(platform={"name": "p"}).platform == {"name": "p"}
+
     @patch("qililab.result.database.database_qaas.ExperimentResults")
     def test_experiment_load_experiment(self, mock_ExperimentResults, qaas_measurement):
 
@@ -502,13 +530,104 @@ class Testdatabase:
 
             with pytest.raises(ValueError) as exc_info:
                 DatabaseManager("test_file.ini", "database")
-        
+
             message = str(exc_info.value)
             assert "user" in message
             assert "port" in message
             assert "database" in message
             # keys that were present should not be flagged
             assert "host" not in message.split("Missing the database keys:")[1]
+
+    @staticmethod
+    def _build_db_manager(config_schema: str | None = None, **kwargs) -> DatabaseManager:
+        config = {"user": "user", "passwd": "pass", "host": "host", "port": "5432", "database": "db"}
+        if config_schema is not None:
+            config["database_schema"] = config_schema
+        with (
+            patch("qililab.result.database.database_manager._load_config", return_value=config),
+            patch("qililab.result.database.database_manager.get_engine"),
+            patch("qililab.result.database.database_manager.sessionmaker"),
+        ):
+            return DatabaseManager("test_file.ini", "database", **kwargs)
+
+    def test_database_schema_defaults_to_measurements(self):
+        assert self._build_db_manager().database_schema == "measurements"
+
+    def test_database_schema_from_argument(self):
+        assert self._build_db_manager(database_schema="autocal").database_schema == "autocal"
+
+    def test_database_schema_from_config_does_not_warn(self):
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")
+            db_manager = self._build_db_manager(config_schema="qaas")
+        assert db_manager.database_schema == "qaas"
+
+    def test_database_schema_argument_overrides_config_with_warning(self):
+        with pytest.warns(UserWarning, match="Using 'autocal'"):
+            db_manager = self._build_db_manager(config_schema="measurements", database_schema="autocal")
+        assert db_manager.database_schema == "autocal"
+
+    def test_database_schema_matching_argument_and_config_does_not_warn(self):
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")
+            db_manager = self._build_db_manager(config_schema="autocal", database_schema="autocal")
+        assert db_manager.database_schema == "autocal"
+
+    @pytest.mark.parametrize(
+        ("config_schema", "database_schema"), [(None, "wrong"), ("wrong", None)], ids=["argument", "config"]
+    )
+    def test_database_schema_invalid_raises_error(self, config_schema, database_schema):
+        with pytest.raises(ValueError, match="'wrong' is not a valid 'database_schema'"):
+            self._build_db_manager(config_schema=config_schema, database_schema=database_schema)
+
+    @pytest.mark.parametrize(
+        ("method", "schema"),
+        [
+            *[
+                (name, "measurements")
+                for name in (
+                    "set_sample_and_cooldown",
+                    "add_cooldown",
+                    "add_sample",
+                    "add_sequence_run",
+                    "load_by_id",
+                    "load_sequence_by_id",
+                    "tail",
+                    "head",
+                    "get_qprogram",
+                    "get_calibration",
+                    "get_platform",
+                    "get_debug",
+                    "get_dc_offsets",
+                    "add_measurement",
+                    "add_results",
+                )
+            ],
+            *[
+                (name, "autocal")
+                for name in (
+                    "add_calibration_run",
+                    "add_autocal_measurement",
+                    "update_platform",
+                    "load_calibration_by_id",
+                )
+            ],
+            *[(name, "qaas") for name in ("add_experiment", "load_experiment_by_id")],
+        ],
+    )
+    def test_schema_specific_methods_raise_error_on_other_schema(self, db_manager: DatabaseManager, method, schema):
+        bound = getattr(db_manager, method)
+        required = [
+            MagicMock()
+            for parameter in inspect.signature(bound).parameters.values()
+            if parameter.default is inspect.Parameter.empty
+        ]
+        for other in sorted(set(get_args(DatabaseSchema)) - {schema}):
+            db_manager.database_schema = other
+            with pytest.raises(ValueError, match=f"`{method}` needs a DatabaseManager with database_schema='{schema}'"):
+                bound(*required)
+        db_manager._mock_session.assert_not_called()
+        assert db_manager._mock_session.method_calls == []
 
     def test_set_sample(self, db_manager: DatabaseManager):
         mock_session = db_manager.session()
@@ -732,7 +851,7 @@ class Testdatabase:
 
         mock_session.rollback.assert_called_once()
 
-    def test_add_calibration_run(self, db_manager: DatabaseManager):
+    def test_add_calibration_run(self, db_manager_autocal: DatabaseManager):
         calibration_tree = {
             "nodes": [
                 {
@@ -759,12 +878,19 @@ class Testdatabase:
             "dependencies": [["TwoTone", "Rabi"]],
         }
 
-        db_manager.add_calibration_run(calibration_tree=calibration_tree, sample_name="sampleA", cooldown="CDX")
+        db_manager_autocal.add_calibration_run(calibration_tree=calibration_tree, sample_name="sampleA", cooldown="CDX")
 
-        db_manager._mock_session.add.assert_called()
-        db_manager._mock_session.commit.assert_called()
+        db_manager_autocal._mock_session.add.assert_called()
+        db_manager_autocal._mock_session.commit.assert_called()
 
-    def test_add_calibration_run_raises_exception(self, db_manager: DatabaseManager):
+        # It raises with the wrong Schema.
+        db_manager_autocal.database_schema = "measurements"
+        with pytest.raises(ValueError, match="needs a DatabaseManager with database_schema"):
+            db_manager_autocal.add_calibration_run(
+                calibration_tree=calibration_tree, sample_name="sampleA", cooldown="CDX"
+            )
+
+    def test_add_calibration_run_raises_exception(self, db_manager_autocal: DatabaseManager):
         calibration_tree = {
             "nodes": [
                 {
@@ -795,10 +921,12 @@ class Testdatabase:
         mock_session.__enter__.return_value = mock_session
         mock_session.commit.side_effect = Exception("DB error")
 
-        db_manager.session = MagicMock(return_value=mock_session)
+        db_manager_autocal.session = MagicMock(return_value=mock_session)
 
         with pytest.raises(Exception, match="DB error"):
-            db_manager.add_calibration_run(calibration_tree=calibration_tree, sample_name="sampleA", cooldown="CDX")
+            db_manager_autocal.add_calibration_run(
+                calibration_tree=calibration_tree, sample_name="sampleA", cooldown="CDX"
+            )
 
         mock_session.rollback.assert_called_once()
 
@@ -840,17 +968,98 @@ class Testdatabase:
         mock_measurement = MagicMock(spec=Measurement)
         mock_measurement.add_fitting.return_value = mock_measurement
 
-        with patch.object(db_manager, "load_by_id", return_value=mock_measurement) as mock_load:
+        with patch.object(db_manager, "_load_by_id", return_value=mock_measurement) as mock_load:
             result = db_manager.add_fitting(123, path="/test/fit.h5", parameters={"a": 1.0})
 
-        mock_load.assert_called_once_with(123)
+        mock_load.assert_called_once_with(Measurement, 123)
         mock_measurement.add_fitting.assert_called_once_with(db_manager, "/test/fit.h5", {"a": 1.0})
         assert result == mock_measurement
 
     def test_add_fitting_raises_exception_measurement_not_found(self, db_manager: DatabaseManager):
-        with patch.object(db_manager, "load_by_id", return_value=None):
-            with pytest.raises(IndexError, match="Measurement entry '123' does not exist."):
-                db_manager.add_fitting(123, path="/test/fit.h5")
+        db_manager._mock_session.query.return_value.filter.return_value.all.return_value = []
+        with pytest.raises(IndexError, match=r"Measurement entry \[123\] does not exist."):
+            db_manager.add_fitting(123, path="/test/fit.h5")
+
+    @pytest.mark.parametrize(
+        ("database_schema", "model"),
+        [("measurements", Measurement), ("autocal", AutocalMeasurement), ("qaas", QaaS_Experiment)],
+    )
+    @pytest.mark.parametrize("id", [123, [123, 456]], ids=["int", "list"])
+    def test_load_entry_by_id_uses_model_of_database_schema(
+        self, db_manager: DatabaseManager, database_schema, model, id
+    ):
+        db_manager.database_schema = database_schema
+        with patch.object(db_manager, "_load_by_id", return_value="entry") as mock_loader:
+            assert db_manager.load_entry_by_id(id) == "entry"
+        mock_loader.assert_called_once_with(model, id)
+
+    @pytest.mark.parametrize(
+        ("database_schema", "model"),
+        [("measurements", Measurement), ("autocal", AutocalMeasurement), ("qaas", QaaS_Experiment)],
+    )
+    def test_load_entry_by_id_filters_by_primary_key(self, db_manager: DatabaseManager, database_schema, model):
+        db_manager.database_schema = database_schema
+        entries = [_entry(model, 123), _entry(model, 456)]
+        db_manager._mock_session.query.return_value.filter.return_value.all.return_value = entries
+
+        assert db_manager.load_entry_by_id([123, 456]) == entries
+
+        db_manager._mock_session.query.assert_called_once_with(model)
+        (condition,) = db_manager._mock_session.query.return_value.filter.call_args.args
+        assert condition.compare(model.__mapper__.primary_key[0].in_([123, 456]))
+
+    @pytest.mark.parametrize(
+        ("database_schema", "model"),
+        [("measurements", Measurement), ("autocal", AutocalMeasurement), ("qaas", QaaS_Experiment)],
+    )
+    def test_load_entry_by_id_missing_id_raises_index_error(self, db_manager: DatabaseManager, database_schema, model):
+        db_manager.database_schema = database_schema
+        db_manager._mock_session.query.return_value.filter.return_value.all.return_value = []
+
+        with pytest.raises(IndexError, match=rf"{model.__name__} entry \[123\] does not exist."):
+            db_manager.load_entry_by_id(123)
+
+    def test_load_by_id_list_with_missing_ids_raises_index_error(self, db_manager: DatabaseManager):
+        db_manager._mock_session.query.return_value.filter.return_value.all.return_value = [_entry(Measurement, 123)]
+
+        with pytest.raises(IndexError, match=r"Measurement entry \[456, 789\] does not exist."):
+            db_manager.load_by_id([123, 456, 789])
+
+    @pytest.mark.parametrize(
+        ("database_schema", "model"),
+        [("measurements", Measurement), ("autocal", AutocalMeasurement), ("qaas", QaaS_Experiment)],
+    )
+    def test_load_entry_by_id_list_of_one_returns_list(self, db_manager: DatabaseManager, database_schema, model):
+        db_manager.database_schema = database_schema
+        entry = _entry(model, 123)
+        db_manager._mock_session.query.return_value.filter.return_value.all.return_value = [entry]
+
+        with patch("os.path.isfile", return_value=False):
+            result = db_manager.load_entry_by_id([123])
+
+        assert result == [entry]
+        assert entry.result_path == "/shared_test/results/file.h5"
+
+    def test_add_fitting_autocal(self, db_manager: DatabaseManager):
+        db_manager.database_schema = "autocal"
+        mock_measurement = MagicMock(spec=AutocalMeasurement)
+        mock_measurement.add_fitting.return_value = mock_measurement
+
+        with patch.object(db_manager, "_load_by_id", return_value=mock_measurement) as mock_load:
+            result = db_manager.add_fitting(123, parameters={"a": 1.0})
+
+        mock_load.assert_called_once_with(AutocalMeasurement, 123)
+        mock_measurement.add_fitting.assert_called_once_with(db_manager, None, {"a": 1.0})
+        assert result == mock_measurement
+
+    def test_add_fitting_measurements_without_path_raises_error(self, db_manager: DatabaseManager):
+        with pytest.raises(ValueError, match="A fitting 'path' is mandatory"):
+            db_manager.add_fitting(123, parameters={"a": 1.0})
+
+    def test_add_fitting_qaas_raises_error(self, db_manager: DatabaseManager):
+        db_manager.database_schema = "qaas"
+        with pytest.raises(ValueError, match="cannot be stored in the 'qaas' database schema"):
+            db_manager.add_fitting(123, path="/test/fit.h5")
 
     def test_load_sequence_by_id(self, db_manager: DatabaseManager):
         db_manager.base_path_local = "/local_test/results"
@@ -877,6 +1086,7 @@ class Testdatabase:
         # Setup a mock measurement
         mock_measurement = MagicMock(spec=Measurement)
         mock_measurement.result_path = "/local_test/results/file.h5"
+        mock_measurement.measurement_id = 123
         db_manager._mock_session.query.return_value.filter.return_value.all.return_value = [mock_measurement]
 
         # Patch os.path.isfile to return False to simulate missing file
@@ -884,73 +1094,52 @@ class Testdatabase:
             db_manager.load_by_id(123)
 
     def test_load_calibration_by_id(self, db_manager: DatabaseManager):
+        db_manager.database_schema = "autocal"
         mock_measurement = MagicMock(spec=AutocalMeasurement)
         mock_measurement.result_path = "/local_test/results/file.h5"
         mock_measurement.measurement_id = 123
 
-        db_manager._mock_session.query.return_value.where.return_value.one_or_none.return_value = mock_measurement
+        db_manager._mock_session.query.return_value.filter.return_value.all.return_value = [mock_measurement]
 
         with patch("os.path.isfile", return_value=False):
             result = db_manager.load_calibration_by_id(123)
 
-        db_manager._mock_session.query.assert_called()
-        assert result.result_path == "/local_test/results/file.h5"
+        db_manager._mock_session.query.assert_called_once_with(AutocalMeasurement)
+        assert result.result_path == "/shared_test/results/file.h5"
 
     def test_load_calibration_by_id_path_not_found(self, db_manager: DatabaseManager):
+        db_manager.database_schema = "autocal"
         # Setup a mock measurement
         mock_measurement = MagicMock(spec=AutocalMeasurement)
         mock_measurement.result_path = "/local_test/results/file.h5"
-        db_manager._mock_session.query.return_value.where.return_value.one_or_none.return_value = mock_measurement
+        mock_measurement.measurement_id = 123
+        db_manager._mock_session.query.return_value.filter.return_value.all.return_value = [mock_measurement]
 
         # Patch os.path.isfile to return False to simulate missing file
         with patch("os.path.isfile", return_value=False):
             db_manager.load_calibration_by_id(123)
 
-    def test_add_calibration_fitting(self, db_manager: DatabaseManager):
-        mock_measurement = MagicMock(spec=AutocalMeasurement)
-        mock_measurement.add_fitting.return_value = mock_measurement
-
-        with patch.object(db_manager, "load_calibration_by_id", return_value=mock_measurement) as mock_load:
-            result = db_manager.add_calibration_fitting(123, path="/test/fit.h5", parameters={"a": 1.0})
-
-        mock_load.assert_called_once_with(123)
-        mock_measurement.add_fitting.assert_called_once_with(db_manager, "/test/fit.h5", {"a": 1.0})
-        assert result == mock_measurement
-
-    def test_add_calibration_fitting_without_path(self, db_manager: DatabaseManager):
-        mock_measurement = MagicMock(spec=AutocalMeasurement)
-        mock_measurement.add_fitting.return_value = mock_measurement
-
-        with patch.object(db_manager, "load_calibration_by_id", return_value=mock_measurement) as mock_load:
-            result = db_manager.add_calibration_fitting(123, parameters={"a": 1.0})
-
-        mock_load.assert_called_once_with(123)
-        mock_measurement.add_fitting.assert_called_once_with(db_manager, None, {"a": 1.0})
-        assert result == mock_measurement
-
-    def test_add_calibration_fitting_raises_exception_measurement_not_found(self, db_manager: DatabaseManager):
-        with patch.object(db_manager, "load_calibration_by_id", return_value=None):
-            with pytest.raises(IndexError, match="Autocalibration measurement entry '123' does not exist."):
-                db_manager.add_calibration_fitting(123, path="/test/fit.h5")
-
     def test_load_experiment_by_id(self, db_manager: DatabaseManager):
-        mock_measurement = MagicMock(spec=AutocalMeasurement)
+        db_manager.database_schema = "qaas"
+        mock_measurement = MagicMock(spec=QaaS_Experiment)
         mock_measurement.result_path = "/local_test/results/file.h5"
-        mock_measurement.measurement_id = 123
+        mock_measurement.experiment_id = 123
 
-        db_manager._mock_session.query.return_value.where.return_value.one_or_none.return_value = mock_measurement
+        db_manager._mock_session.query.return_value.filter.return_value.all.return_value = [mock_measurement]
 
         with patch("os.path.isfile", return_value=False):
             result = db_manager.load_experiment_by_id(123)
 
-        db_manager._mock_session.query.assert_called()
+        db_manager._mock_session.query.assert_called_once_with(QaaS_Experiment)
         assert result.result_path == "/shared_test/results/file.h5"
 
     def test_load_experiment_by_id_path_not_found(self, db_manager: DatabaseManager):
+        db_manager.database_schema = "qaas"
         # Setup a mock measurement
-        mock_measurement = MagicMock(spec=AutocalMeasurement)
+        mock_measurement = MagicMock(spec=QaaS_Experiment)
         mock_measurement.result_path = "/local_test/results/file.h5"
-        db_manager._mock_session.query.return_value.where.return_value.one_or_none.return_value = mock_measurement
+        mock_measurement.experiment_id = 123
+        db_manager._mock_session.query.return_value.filter.return_value.all.return_value = [mock_measurement]
 
         # Patch os.path.isfile to return False to simulate missing file
         with patch("os.path.isfile", return_value=False):
@@ -1087,7 +1276,7 @@ class Testdatabase:
 
     @patch("qililab.result.database.database_manager.os.makedirs")
     @patch("qililab.result.database.database_manager.datetime")
-    def test_add_autocal_measurement(self, mock_datetime, mock_makedirs, db_manager: DatabaseManager):
+    def test_add_autocal_measurement(self, mock_datetime, mock_makedirs, db_manager_autocal: DatabaseManager):
         # Setup
         mock_calibration_id = MagicMock()
         mock_query = MagicMock()
@@ -1095,7 +1284,7 @@ class Testdatabase:
         mock_calibration_id.calibration_id = 1
         mock_order_by.first.return_value = mock_calibration_id
         mock_query.order_by.return_value = mock_order_by
-        db_manager._mock_session.query.return_value = mock_query
+        db_manager_autocal._mock_session.query.return_value = mock_query
 
         fixed_time = datetime.datetime(2023, 1, 1, 12, 0, 0)
         mock_datetime.datetime.now.return_value = fixed_time
@@ -1105,18 +1294,26 @@ class Testdatabase:
         calibration = Calibration()
         calibration.parameters = {"sample_name": "sampleA", "cooldown": "cdX", "data_folder": "/shared_test/"}
         # Act
-        measurement = db_manager.add_autocal_measurement(experiment_name="exp1", qubit_idx=0, calibration=calibration)
+        measurement = db_manager_autocal.add_autocal_measurement(
+            experiment_name="exp1", qubit_idx=0, calibration=calibration
+        )
 
         # Assert
         expected_path = "/shared_test/exp1.h5"
         assert measurement.result_path == expected_path
-        db_manager._mock_session.add.assert_called_once()
-        db_manager._mock_session.commit.assert_called_once()
+        db_manager_autocal._mock_session.add.assert_called_once()
+        db_manager_autocal._mock_session.commit.assert_called_once()
         mock_makedirs.assert_called_once_with("/shared_test/")
+
+        db_manager_autocal.database_schema = "measurements"
+        with pytest.raises(ValueError, match="needs a DatabaseManager with database_schema"):
+            db_manager_autocal.add_autocal_measurement(experiment_name="exp1", qubit_idx=0, calibration=calibration)
 
     @patch("qililab.result.database.database_manager.os.makedirs")
     @patch("qililab.result.database.database_manager.datetime")
-    def test_add_autocal_measurement_raises_exception(self, mock_datetime, mock_makedirs, db_manager: DatabaseManager):
+    def test_add_autocal_measurement_raises_exception(
+        self, mock_datetime, mock_makedirs, db_manager_autocal: DatabaseManager
+    ):
 
         fixed_time = datetime.datetime(2023, 1, 1, 12, 0, 0)
         mock_datetime.datetime.now.return_value = fixed_time
@@ -1130,39 +1327,38 @@ class Testdatabase:
         calibration = Calibration()
         calibration.parameters = {"sample_name": "sampleA", "cooldown": "cdX", "data_folder": "/shared_test/"}
 
-        db_manager.session = MagicMock(return_value=mock_session)
+        db_manager_autocal.session = MagicMock(return_value=mock_session)
 
         with pytest.raises(Exception, match="DB error"):
-            _ = db_manager.add_autocal_measurement(experiment_name="exp1", qubit_idx=0, calibration=calibration)
+            _ = db_manager_autocal.add_autocal_measurement(experiment_name="exp1", qubit_idx=0, calibration=calibration)
 
         mock_session.rollback.assert_called_once()
 
     @patch("qililab.result.database.database_manager.os.makedirs")
-    def test_update_platform(self, mock_makedirs, db_manager: DatabaseManager):
+    def test_update_platform(self, mock_makedirs, db_manager_autocal: DatabaseManager):
 
         # Setup
         mock_query = MagicMock()
         mock_order_by = MagicMock()
         mock_order_by.first.calibration_id.return_value = 1
         mock_query.order_by.return_value = mock_order_by
-        db_manager._mock_session.query.return_value = mock_query
+        db_manager_autocal._mock_session.query.return_value = mock_query
 
         calibration = Calibration()
         calibration.parameters = {"sample_name": "sampleA", "cooldown": "cdX", "data_folder": "/shared_test/"}
         # Act
-        db_manager.add_autocal_measurement(experiment_name="exp1", qubit_idx=0, calibration=calibration)
+        db_manager_autocal.add_autocal_measurement(experiment_name="exp1", qubit_idx=0, calibration=calibration)
 
         mock_platform = build_platform(runcard=copy.deepcopy(Galadriel.runcard))
 
-        db_manager.update_platform(mock_platform)
+        db_manager_autocal.update_platform(mock_platform)
 
-        assert db_manager.calibration_measurement.platform_after == mock_platform.to_dict()
-        db_manager._mock_session.add.assert_called_once()
-        db_manager._mock_session.commit.assert_called()
+        assert db_manager_autocal.calibration_measurement.platform_after == mock_platform.to_dict()
+        db_manager_autocal._mock_session.add.assert_called_once()
+        db_manager_autocal._mock_session.commit.assert_called()
 
     @patch("qililab.result.database.database_manager.datetime")
     def test_add_experiment(self, mock_datetime, db_manager: DatabaseManager):
-
         fixed_time = datetime.datetime(2023, 1, 1, 12, 0, 0)
         mock_datetime.datetime.now.return_value = fixed_time
         # fallback
@@ -1170,6 +1366,16 @@ class Testdatabase:
 
         expected_path = "/shared_test/measurement_folder/sampleA/cdX/2023-01-01/12_00_00/exp1.h5"
 
+        with pytest.raises(ValueError, match="needs a DatabaseManager with database_schema"):
+            measurement = db_manager.add_experiment(
+                job_id=1,
+                experiment_name="exp1",
+                result_path=expected_path,
+                sample_name="sample_test",
+                cooldown="cd_test",
+            )
+
+        db_manager.database_schema = "qaas"
         measurement = db_manager.add_experiment(
             job_id=1, experiment_name="exp1", result_path=expected_path, sample_name="sample_test", cooldown="cd_test"
         )
@@ -1180,7 +1386,7 @@ class Testdatabase:
 
     @patch("qililab.result.database.database_manager.datetime")
     def test_add_experiment_raises_exception(self, mock_datetime, db_manager: DatabaseManager):
-
+        db_manager.database_schema = "qaas"
         fixed_time = datetime.datetime(2023, 1, 1, 12, 0, 0)
         mock_datetime.datetime.now.return_value = fixed_time
         # fallback
@@ -1416,7 +1622,15 @@ def test_load_config_missing_section(mock_config_parser):
 def test_get_db_manager(mock_db_manager):
     filename = os.path.expanduser("~/database.ini")
     get_db_manager()
-    mock_db_manager.assert_called_once_with(filename, "postgresql")
+    mock_db_manager.assert_called_once_with(filename, "postgresql", database_schema=None)
+
+
+@patch("qililab.result.database.database_manager.DatabaseManager")
+def test_get_db_manager_passes_database_schema(mock_db_manager):
+    filename = os.path.expanduser("~/database.ini")
+    get_db_manager(database_schema="autocal")
+    mock_db_manager.assert_called_once_with(filename, "postgresql", database_schema="autocal")
+
 
 @patch("qililab.result.database.database_manager.create_engine")
 def test_get_engine(mock_create_engine):
@@ -1441,3 +1655,72 @@ def test_independent_load_by_id(mock_get_db_manager):
 
     mock_get_db_manager.assert_called_once()
     mock_db.load_by_id.assert_called_once_with(test_id)
+
+
+class TestDeprecated:
+    """Deprecated methods, remove together with them."""
+
+    @patch("qililab.result.database.database_measurements.load_results")
+    def test_load_old_h5(self, mock_load_results, measurement):
+        with pytest.warns(FutureWarning, match="`load_old_h5` is deprecated"):
+            measurement.load_old_h5()
+        mock_load_results.assert_called_once_with(measurement.result_path)
+
+    @pytest.mark.parametrize(
+        ("method", "kwargs", "schema", "private"),
+        [
+            ("add_calibration_fitting", {"parameters": {"a": 1.0}}, "autocal", "_add_autocal_fitting"),
+        ],
+    )
+    def test_deprecated_loaders_warn(self, db_manager: DatabaseManager, method, kwargs, schema, private):
+        db_manager.database_schema = schema
+        with patch.object(db_manager, private, return_value="entry") as mock_private:
+            with pytest.warns(FutureWarning, match=f"`{method}` is deprecated"):
+                assert getattr(db_manager, method)(123, **kwargs) == "entry"
+        mock_private.assert_called_once()
+
+    @pytest.mark.parametrize(
+        ("method", "kwargs", "private"),
+        [
+            ("add_calibration_fitting", {"parameters": {"a": 1.0}}, "_add_autocal_fitting"),
+        ],
+    )
+    def test_deprecated_loaders_raise_error_on_other_schema(self, db_manager: DatabaseManager, method, kwargs, private):
+        # fixture manager uses the measurements schema
+        with patch.object(db_manager, private) as mock_private:
+            with pytest.warns(FutureWarning), pytest.raises(ValueError, match=f"`{method}` needs a DatabaseManager"):
+                getattr(db_manager, method)(123, **kwargs)
+        mock_private.assert_not_called()
+
+    def test_add_calibration_fitting(self, db_manager: DatabaseManager):
+        db_manager.database_schema = "autocal"
+        mock_measurement = MagicMock(spec=AutocalMeasurement)
+        mock_measurement.add_fitting.return_value = mock_measurement
+
+        with patch.object(db_manager, "_load_by_id", return_value=mock_measurement) as mock_load:
+            with pytest.warns(FutureWarning):
+                result = db_manager.add_calibration_fitting(123, path="/test/fit.h5", parameters={"a": 1.0})
+
+        mock_load.assert_called_once_with(AutocalMeasurement, 123)
+        mock_measurement.add_fitting.assert_called_once_with(db_manager, "/test/fit.h5", {"a": 1.0})
+        assert result == mock_measurement
+
+    def test_add_calibration_fitting_without_path(self, db_manager: DatabaseManager):
+        db_manager.database_schema = "autocal"
+        mock_measurement = MagicMock(spec=AutocalMeasurement)
+        mock_measurement.add_fitting.return_value = mock_measurement
+
+        with patch.object(db_manager, "_load_by_id", return_value=mock_measurement) as mock_load:
+            with pytest.warns(FutureWarning):
+                result = db_manager.add_calibration_fitting(123, parameters={"a": 1.0})
+
+        mock_load.assert_called_once_with(AutocalMeasurement, 123)
+        mock_measurement.add_fitting.assert_called_once_with(db_manager, None, {"a": 1.0})
+        assert result == mock_measurement
+
+    def test_add_calibration_fitting_raises_exception_measurement_not_found(self, db_manager: DatabaseManager):
+        db_manager.database_schema = "autocal"
+        db_manager._mock_session.query.return_value.filter.return_value.all.return_value = []
+        with pytest.raises(IndexError, match=r"AutocalMeasurement entry \[123\] does not exist."):
+            with pytest.warns(FutureWarning):
+                db_manager.add_calibration_fitting(123, path="/test/fit.h5")
