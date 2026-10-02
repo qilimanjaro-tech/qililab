@@ -1005,3 +1005,44 @@ class TestQdacCompiler:
             compiler.compile(
                 qprogram=qp, qdacs=[qdac], qdac_buses=[flux1, flux2], qdac_offsets=[0, 0], crosstalk=crosstalk
             )
+
+    def test_channels_started_on_common_trigger(self, qdac: QDevilQDac2, flux1: Bus, flux2: Bus):
+        """Two QDAC channels playing lists must be armed to a single internal start trigger."""
+        qp = QProgram()
+        qp.qdac.play(bus="flux1", waveform=Square(1.0, 100))
+        # upload_voltage_list is mocked, so emulate the two DC lists crosstalk would produce.
+        qdac._cache_dc = {"qdac_1": MagicMock(), "qdac_2": MagicMock()}
+
+        QdacCompiler().compile(qprogram=qp, qdacs=[qdac], qdac_buses=[flux1, flux2], qdac_offsets=[0, 0])
+
+        # No pre-existing start trigger -> one is created on the master (channel 1)...
+        qdac.set_start_marker_internal_trigger.assert_called_once()
+        assert qdac.set_start_marker_internal_trigger.call_args.kwargs["channel_id"] == 1
+        # ...and the other channel (2) is armed to start on it.
+        qdac.set_in_internal_trigger.assert_called_once()
+        assert qdac.set_in_internal_trigger.call_args.kwargs["channel_id"] == 2
+
+    def test_channels_reuse_existing_start_trigger(self, qdac: QDevilQDac2, flux1: Bus, flux2: Bus):
+        """An existing start-marker trigger (e.g. from set_trigger) is reused as the sync source."""
+        qp = QProgram()
+        qp.qdac.play(bus="flux1", waveform=Square(1.0, 100))
+        qdac._cache_dc = {"qdac_1": MagicMock(), "qdac_2": MagicMock()}
+        qdac._triggers = {"existing": MagicMock()}
+        qdac._marker_registers = {"existing": (1, "DC", "PSTart")}
+
+        QdacCompiler().compile(qprogram=qp, qdacs=[qdac], qdac_buses=[flux1, flux2], qdac_offsets=[0, 0])
+
+        # The existing trigger on channel 1 is reused: no new start trigger is allocated...
+        qdac.set_start_marker_internal_trigger.assert_not_called()
+        # ...and channel 2 is armed to start on that same trigger.
+        qdac.set_in_internal_trigger.assert_called_once_with(channel_id=2, trigger="existing")
+
+    def test_single_channel_is_not_synced(self, qdac: QDevilQDac2, flux1: Bus, flux2: Bus):
+        """A single QDAC channel playing a list needs no trigger arming."""
+        qp = QProgram()
+        qp.qdac.play(bus="flux1", waveform=Square(1.0, 100))
+        qdac._cache_dc = {"qdac_1": MagicMock()}
+
+        QdacCompiler().compile(qprogram=qp, qdacs=[qdac], qdac_buses=[flux1, flux2], qdac_offsets=[0, 0])
+
+        qdac.set_in_internal_trigger.assert_not_called()
