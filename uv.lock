@@ -3632,6 +3632,7 @@ sdist = { url = "https://qilimanjaro-723412851021.d.codeartifact.eu-west-1.amazo
 wheels = [
     { url = "https://qilimanjaro-723412851021.d.codeartifact.eu-west-1.amazonaws.com/pypi/qilimanjaro/simple/qpysequence/0.11.1/qpysequence-0.11.1-py3-none-any.whl", hash = "sha512:7c87735e8fcbf09775aebca41146b72ddb24d53dc422c5c90f048053132edcd040eec6db0ef439c3d54f20c73978e3faba532461ac2aa2316a38a8601eb866e5", size = 111836, upload-time = "2026-09-02T09:54:51.828Z" },
 ]
+docs = []
 
 [[package]]
 name = "referencing"

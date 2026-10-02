@@ -19,8 +19,9 @@ from typing import TYPE_CHECKING, Any, Callable
 import numpy as np
 
 from qililab.config import logger
+from qililab.constants import QDACCONSTANTS
 from qililab.instruments.qdevil import QDevilQDac2
-from qililab.qprogram.blocks import Average, Block, ForLoop, InfiniteLoop, Loop, Parallel
+from qililab.qprogram.blocks import Average, Block, Conditional, ForLoop, InfiniteLoop, Loop, Parallel
 from qililab.qprogram.calibration import Calibration
 from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
 from qililab.qprogram.operations import (
@@ -52,12 +53,23 @@ class QdacCompilationOutput:
     Attributes:
         sequences (Sequence): A dictionary with the buses participating in the QProgram as keys and the corresponding Sequence as values.
         acquisitions (Acquisitions): A dictionary with the buses participating in the acquisitions as keys and the corresponding Acquisitions as values.
+        dwell_us_by_bus (dict[str, int]): Each QDAC-driven bus's resolved ``dwell`` (microseconds, with
+            unset/zero already defaulted), as actually used to compile this QProgram. Lets other compilers
+            (e.g. ``QbloxCompiler`` deriving ``qp.if_trigger()``'s wait time) reuse this instead of
+            independently re-resolving the same defaulting logic.
     """
 
-    def __init__(self, qprogram: QProgram, qdacs: list[QDevilQDac2], trigger_position: str | None):
+    def __init__(
+        self,
+        qprogram: QProgram,
+        qdacs: list[QDevilQDac2],
+        trigger_position: str | None,
+        dwell_us_by_bus: dict[str, int],
+    ):
         self.qprogram = qprogram
         self.qdacs = qdacs
         self.trigger_position = trigger_position
+        self.dwell_us_by_bus = dwell_us_by_bus
 
 
 class QdacBusCompilationInfo:
@@ -101,12 +113,13 @@ class QdacCompiler:
         self._qdacs: list[QDevilQDac2]
         self._out_instrument: QDevilQDac2 | None
 
-        self._dc_dwell: int = 2
+        self._dc_dwell: int = QDACCONSTANTS.DEFAULT_DWELL_US
         self._dc_delay: int = 0
         self._dc_stepped: bool = False
         self._loop_repetitions: dict[str, int] = {}
         self._infinite_loop: bool = False
         self._play_params: dict[str, Any] = {}
+        self._dwell_us_by_bus: dict[str, int] = {}
 
         self._trigger_hashes: dict[str, str] = {}
         self._trigger_position: str | None = None
@@ -140,17 +153,35 @@ class QdacCompiler:
                 operating point, used to seed crosstalk compensation. Defaults to None.
         """
 
-        def traverse(block: Block):
+        def traverse(block: Block, inside_conditional: bool = False) -> None:
             for bus in self._buses and self._qdac_buses_alias:
                 self._buses[bus].qprogram_block_stack.append(block)
             for element in block.elements:
+                currently_conditional = inside_conditional or isinstance(element, Conditional)
+                if currently_conditional:
+                    # QDAC generates the external trigger; it has no way to conditionally skip an operation
+                    # based on whether that same trigger was received in time on the Qblox side, so a
+                    # QDAC-bus operation placed inside qp.if_trigger() would compile and execute
+                    # unconditionally, silently ignoring the "only if trigger received" semantics.
+                    buses = (
+                        (element.buses or self._qdac_buses_alias)
+                        if isinstance(element, Sync)
+                        else [getattr(element, "bus", None)]
+                    )
+                    offending_bus = next((bus for bus in buses if bus in self._qdac_buses_alias), None)
+                    if offending_bus is not None:
+                        raise NotImplementedError(
+                            f"{type(element).__name__} on QDAC bus '{offending_bus}' cannot be used inside "
+                            "qp.if_trigger(): QDAC has no way to conditionally gate on the external trigger "
+                            "it generates."
+                        )
                 handler = self._handlers.get(type(element))
                 if not handler:
                     self._handle_unknown(element)
                 else:
                     handler(element)
                 if isinstance(element, Block):
-                    traverse(element)
+                    traverse(element, inside_conditional=currently_conditional)
             for bus in self._buses and self._qdac_buses_alias:
                 self._buses[bus].qprogram_block_stack.pop()
 
@@ -185,7 +216,10 @@ class QdacCompiler:
             self._handle_simultaneous_qdacs()
 
         return QdacCompilationOutput(
-            qprogram=self._qprogram, qdacs=self._qdacs, trigger_position=self._trigger_position
+            qprogram=self._qprogram,
+            qdacs=self._qdacs,
+            trigger_position=self._trigger_position,
+            dwell_us_by_bus=self._dwell_us_by_bus,
         )
 
     def _populate_qdac_buses(self):
@@ -395,6 +429,8 @@ class QdacCompiler:
                 return
             if not element.dwell:
                 element.dwell = self._dc_dwell
+            if element.bus not in self._dwell_us_by_bus:
+                self._dwell_us_by_bus[element.bus] = element.dwell
             if not element.delay:
                 element.delay = self._dc_delay
             if not element.stepped:
