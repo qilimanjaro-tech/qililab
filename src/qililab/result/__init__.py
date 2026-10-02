@@ -26,6 +26,7 @@ Classes
     Result
     MeasurementResult
     QbloxMeasurementResult
+    LoopData
 
 
 Functions
@@ -42,7 +43,7 @@ Functions
 # isort: skip_file
 from .experiment_results import ExperimentResults
 from .result import Result
-from .result_management import load_results, save_results
+from .result_management import LoopData, load_results, save_results
 
 # Moving database here to avoid circular imports
 from .database import (
@@ -66,6 +67,7 @@ __all__ = [
     "DatabaseManager",
     "ExperimentLivePlot",
     "ExperimentResults",
+    "LoopData",
     "Measurement",
     "MeasurementResult",
     "QaaS_Experiment",

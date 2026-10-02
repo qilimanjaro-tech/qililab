@@ -27,9 +27,12 @@ from qililab.typings.enums import Parameter
 from qililab.utils.serialization import serialize
 
 if TYPE_CHECKING:
+    from collections.abc import Mapping
+
     from qililab.platform import Platform
     from qililab.qprogram.qprogram import Calibration, QProgram
     from qililab.result.database import AutocalMeasurement, DatabaseManager, Measurement
+    from qililab.result.result_management import LoopData
 
 
 class StreamArray:
@@ -42,7 +45,8 @@ class StreamArray:
 
     Args:
         shape (list | tuple): Shape of the results array.
-        loops (dict[str, np.ndarray] | dict[str, dict[str, Any]]): dictionary of loops with the name of the loop and the array.
+        loops (Mapping[str, np.ndarray | LoopData]): dictionary of loops with the name of the loop and either the array or a
+            ``LoopData`` dictionary with the array and its ``units``, ``bus`` and ``parameter`` metadata.
         platform (Platform): platform where the experiment was executed
         experiment_name (str): Name of the experiment.
         db_manager (DatabaseManager): database manager loaded from the database after setting the db parameters.
@@ -58,7 +62,7 @@ class StreamArray:
     def __init__(
         self,
         shape: list | tuple,
-        loops: dict[str, np.ndarray] | dict[str, dict[str, Any]],
+        loops: Mapping[str, np.ndarray | LoopData],
         experiment_name: str,
         db_manager: DatabaseManager,
         platform: Platform | None = None,
@@ -347,7 +351,7 @@ def stream_results(shape: tuple, path: str, loops: dict[str, np.ndarray]):
                [0.25, 0.],
                [0.5, 0.],
                [0.75, 0.],
-               [1., 0.]]), {'loop_name': array([0.  , 0.25, 0.5 , 0.75, 1.  ])})
+               [1., 0.]]), {'loop_name': {'array': array([0.  , 0.25, 0.5 , 0.75, 1.  ]), 'units': '', 'bus': '', 'parameter': ''}})
 
     .. note::
 
