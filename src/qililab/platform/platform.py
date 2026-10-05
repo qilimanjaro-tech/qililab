@@ -71,8 +71,6 @@ from qililab.typings import ChannelID, DistortionState, InstrumentName, OutputID
 from qililab.utils.serialization import deserialize_from
 
 if TYPE_CHECKING:
-    from collections.abc import Mapping
-
     import numpy as np
 
     from qililab.instrument_controllers.instrument_controller import InstrumentController
@@ -1975,7 +1973,7 @@ class Platform:
         self,
         experiment_name: str,
         results: np.ndarray,
-        loops: Mapping[str, np.ndarray | LoopData],
+        loops: dict[str, np.ndarray | LoopData],
         qprogram: QProgram | None = None,
         description: str | None = None,
     ):

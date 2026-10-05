@@ -21,6 +21,15 @@ import h5py
 import numpy as np
 
 
+class InputLoopData(TypedDict):
+    """Loop values and metadata, more permissive version reflecting :meth:`StreamArray.__init__` handling"""
+
+    array: np.typing.ArrayLike
+    units: str
+    bus: str
+    parameter: str
+
+
 class LoopData(TypedDict):
     """Loop values and metadata, as returned for each loop by :func:`load_results`."""
 

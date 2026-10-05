@@ -32,7 +32,7 @@ if TYPE_CHECKING:
     from qililab.platform import Platform
     from qililab.qprogram.qprogram import Calibration, QProgram
     from qililab.result.database import AutocalMeasurement, DatabaseManager, Measurement
-    from qililab.result.result_management import LoopData
+    from qililab.result.result_management import InputLoopData, LoopData
 
 
 class StreamArray:
@@ -45,8 +45,8 @@ class StreamArray:
 
     Args:
         shape (list | tuple): Shape of the results array.
-        loops (Mapping[str, np.ndarray | LoopData]): dictionary of loops with the name of the loop and either the array or a
-            ``LoopData`` dictionary with the array and its ``units``, ``bus`` and ``parameter`` metadata.
+        loops (Mapping[str, np.ndarray | InputLoopData]): dictionary of loops with the name of the loop and either the array or a
+            ``InputLoopData`` dictionary with the array and its ``units``, ``bus`` and ``parameter`` metadata.
         platform (Platform): platform where the experiment was executed
         experiment_name (str): Name of the experiment.
         db_manager (DatabaseManager): database manager loaded from the database after setting the db parameters.
@@ -62,7 +62,7 @@ class StreamArray:
     def __init__(
         self,
         shape: list | tuple,
-        loops: Mapping[str, np.ndarray | LoopData],
+        loops: Mapping[str, np.ndarray | InputLoopData | LoopData],
         experiment_name: str,
         db_manager: DatabaseManager,
         platform: Platform | None = None,
