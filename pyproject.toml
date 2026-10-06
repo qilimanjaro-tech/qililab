@@ -39,7 +39,7 @@ dependencies = [
     "qblox-instruments==1.0.3",
     "qcodes==0.54.3",
     "qcodes-contrib-drivers>=0.23.0",
-    "qpysequence>=0.11.1",
+    "qpysequence>=0.11.2",
     "rich>=14.0.0",
     "ruamel-yaml>=0.18.10",
     "scipy>=1.15",
@@ -109,8 +109,7 @@ url = "https://aws@qilimanjaro-723412851021.d.codeartifact.eu-west-1.amazonaws.c
 explicit = true
 
 [tool.uv.sources]
-#TODO: bring it back to the index once qpysequence release done
-qpysequence = { path = "../qpysequence", editable = true }
+qpysequence = { index = "qilimanjaro" }
 
 [tool.ruff]
 line-length = 120
