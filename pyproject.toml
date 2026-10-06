@@ -1,6 +1,6 @@
 [project]
 name = "qililab"
-version = "0.35.1"
+dynamic = ["version"]
 description = "Fundamental package for fast characterization and calibration of quantum chips."
 authors = [{name = "Qilimanjaro Quantum Tech", email = "info@qilimanjaro.tech"}]
 urls = {Repository = "https://github.com/qilimanjaro-tech/qililab"}
@@ -77,8 +77,22 @@ docs = [
 ]
 
 [build-system]
-requires = ["hatchling"]
+requires = ["hatchling", "hatch-vcs"]
 build-backend = "hatchling.build"
+
+# The version comes from git: a release tag such as `0.35.2` builds as `0.35.2`, and each commit
+# after it builds as a development version such as `0.35.3.dev4+g1a2b3c4`, where 4 counts the
+# commits on main's first-parent line since the tag (one per merged pull request). Only bare
+# `MAJOR.MINOR.PATCH` tags count, so tags like `bsc-15`, `test-sdk-0.1.8` or `0.35.0+euroqcs1`
+# never set the version.
+[tool.hatch.version]
+source = "vcs"
+
+[tool.hatch.version.raw-options.scm.git]
+describe_command = [
+    "git", "describe", "--dirty", "--tags", "--long", "--first-parent",
+    "--match", "[0-9]*.[0-9]*.[0-9]*", "--exclude", "*[!0-9.]*",
+]
 
 [tool.uv]
 prerelease = "if-necessary-or-explicit"
