@@ -1,0 +1,1 @@
+Every merge to `main` that passes Tests and Code Quality now publishes a development version (for example `0.35.3.dev4`) to CodeArtifact. The version is derived from git tags with hatch-vcs instead of being set in `pyproject.toml`. Install the latest one with `uv pip install --upgrade --prerelease=allow qililab`, or pin an exact one.

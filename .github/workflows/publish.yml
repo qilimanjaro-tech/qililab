@@ -25,6 +25,20 @@ on:
         description: "Build and validate the distributions, but do not upload them"
         type: boolean
         default: false
+  # Called by dev-build.yml to publish a development version of a commit on main.
+  workflow_call:
+    inputs:
+      repository:
+        type: string
+        required: false
+        default: qilimanjaro
+      ref:
+        type: string
+        required: true
+      dry_run:
+        type: boolean
+        required: false
+        default: false
 
 concurrency:
   group: publish-${{ inputs.ref || github.event.release.tag_name || github.ref }}
@@ -45,7 +59,8 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
           ref: ${{ inputs.ref || github.ref }}
-          fetch-depth: 1
+          # Full history and tags: hatch-vcs derives the version from the latest release tag.
+          fetch-depth: 0
       - name: Install uv
         uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7  # v10.2.0
         with:
@@ -96,6 +111,23 @@ jobs:
       
       - name: Build project
         run: uv build
+
+      - name: Check the built version
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: |
+          wheels=(dist/*.whl)
+          version="$(basename "${wheels[0]}" | cut -d- -f2)"
+          echo "Built qililab $version"
+          if [ -n "$RELEASE_TAG" ] && [ "$version" != "$RELEASE_TAG" ]; then
+            echo "::error::Release tag '$RELEASE_TAG' built as '$version'. Release tags must be a bare MAJOR.MINOR.PATCH."
+            exit 1
+          fi
+          # A dev build of a commit that already carries a release tag would upload the release version.
+          if [ "$GITHUB_EVENT_NAME" = "workflow_run" ] && [[ "$version" != *.dev* ]]; then
+            echo "::error::Dev build of a release-tagged commit built as '$version'; the release workflow publishes it."
+            exit 1
+          fi
 
       - name: Upload wheel
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
