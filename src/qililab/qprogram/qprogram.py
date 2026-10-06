@@ -1489,13 +1489,14 @@ class QProgram(StructuredProgram):
     @requires_domain("duration", Domain.Time)
     def set_trigger(self, bus: str, duration: float, outputs: list[int] | int | None = None, position: str = "start"):
         """Set the trigger output for a given instrument.
+
         Args:
             bus (str): Unique identifier of the bus.
             duration (float): Duration of the trigger pulse. Unit depends on which instrument the bus maps
                 to: for a QDAC-driven bus, in seconds (passed straight through to the QDAC-II driver's
                 ``width_s``, minimum 4e-9 s); for a Qblox-driven bus, in nanoseconds (minimum 4 ns).
-            outputs(optional, list[int] | int | None): Port channel/s of the trigger output. Defaults to None.
-            outputs(optional, str): Trigger position in respective to the pulse location, it can be either `start` or `end. Defaults to start.
+            outputs (list[int] | int | None, optional): Port channel/s of the trigger output. Defaults to None.
+            position (str, optional): Trigger position relative to the pulse location, either ``"start"`` or ``"end"``. Defaults to ``"start"``.
         """
         operation = SetTrigger(bus=bus, outputs=outputs, duration=_to_scalar(duration), position=position)
         self._active_block.append(operation)
