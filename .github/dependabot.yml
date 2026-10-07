@@ -5,6 +5,19 @@
 # they are the ones that can break us and deserve individual review.
 version: 2
 
+# Dependabot does not run our workflows, so it does not inherit their AWS auth.
+# It uses OIDC to assume a read-only role and get a short-lived CodeArtifact token
+# for private packages (qpysequence). role-name must match the Platform-managed IAM role.
+registries:
+  codeartifact-qilimanjaro:
+    type: python-index
+    url: https://qilimanjaro-723412851021.d.codeartifact.eu-west-1.amazonaws.com/pypi/qilimanjaro/simple
+    aws-region: eu-west-1
+    account-id: "723412851021"
+    role-name: GitHub_actions_role_Dependabot
+    domain: qilimanjaro
+    domain-owner: "723412851021"
+
 updates:
   # ----------------------------- GitHub Actions -----------------------------
   - package-ecosystem: "github-actions"
@@ -29,6 +42,7 @@ updates:
   # -------------------------------- Python ---------------------------------
   - package-ecosystem: "uv"
     directory: "/"
+    registries: ["codeartifact-qilimanjaro"]
     schedule:
       interval: "weekly"
       day: "monday"
