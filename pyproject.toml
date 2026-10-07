@@ -30,7 +30,7 @@ dependencies = [
     "loguru>=0.7.0",
     "matplotlib>=3.9.0",
     "numpy>=1.26.0",
-    "pandas==2.3.3",
+    "pandas==3.0.6",
     "plotly>=5.24.0",
     "psycopg2-binary>=2.9.10",
     "pydantic>=2.9.0",
