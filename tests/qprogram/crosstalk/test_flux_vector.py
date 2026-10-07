@@ -74,7 +74,7 @@ class TestNonLinearFluxVector:
     def test_set_element_stores_offset_path0(self, nlfv):
         nlfv.set_element(SetOffset(bus="flux_1", offset_path0=0.3))
         assert nlfv.offset["flux_1"] == pytest.approx(0.3)
-    
+
     def test_set_element_stores_variables(self, nlfv):
         var_1 = Variable("var_1", Domain.Voltage)
         nlfv.variables[var_1.label] = NonLinearFluxVector.VariableContext(
@@ -143,7 +143,7 @@ class TestNonLinearFluxVector:
             ForLoop(variable=phi, start=0, stop=0.1, step=0.08),
             ForLoop(variable=theta, start=0.1, stop=0, step=-0.08),
         ]))
-    
+
     def test_set_loop_parallel_raises_different_loop_lengths(self, nlfv_no_crosstalk):
         phi = Variable("phi")
         theta = Variable("theta")
@@ -283,7 +283,7 @@ class TestNonLinearFluxVector:
         })
         for bus in nlfv.crosstalk.matrix:
             assert isinstance(result[bus][0], Square)
-        
+
     def test_get_corrected_play_arbitrary_input_returns_arbitrary(self, nlfv):
         result = nlfv.get_corrected_play({
             "flux_2": Arbitrary(np.sin(np.linspace(0, 2 * np.pi, 20))),
@@ -317,7 +317,7 @@ class TestNonLinearFluxVector:
         })
         for bus in nlfv.crosstalk.matrix:
             assert result[bus].shape == (5, 3)
-    
+
     def test_raise_error_invalid_expresion_operator(self, nlfv):
         phi = Variable("phi", Domain.Voltage)
         loop = ForLoop(variable=phi, start=0.0, stop=2.0, step=1.0)
@@ -372,7 +372,7 @@ class TestFluxVector:
         bias_arr = np.array(list(bias.values()))
         supposed_arr = np.linalg.inv(crosstalk_array_buses[0]) @ np.array([0.5, 1.0, 0.0])
         assert np.array_equal(bias_arr, supposed_arr)
-            
+
     def test_set_crosstalk_from_bias(self, flux_vector, crosstalk_matrix):
         flux = flux_vector.set_crosstalk_from_bias(crosstalk_matrix)
         assert flux_vector.crosstalk == crosstalk_matrix
@@ -480,7 +480,7 @@ class TestFluxVector:
         expected = nonlinear.flux_to_bias(flux_dict)
         for bus in flux_dict:
             assert fv.bias_vector[bus] == pytest.approx(expected[bus], rel=1e-6)
-            
+
     def test_set_crosstalk_with_array_flux_linear(self, crosstalk_matrix):
         """set_crosstalk with array flux values should apply linear corrections element-wise."""
         flux_dict = {
@@ -495,7 +495,7 @@ class TestFluxVector:
         for bus in flux_dict:
             assert isinstance(fv.bias_vector[bus], np.ndarray)
             assert len(fv.bias_vector[bus]) == 3
-            
+
     def test_set_crosstalk_with_array_flux_nonlinear(self, crosstalk_matrix):
         """set_crosstalk with array flux values and NonLinearCrosstalkMatrix must
         apply nonlinear corrections element-wise, not fall back to linear path."""
@@ -593,5 +593,3 @@ class TestFluxVector:
     def test_get_decomposed_vector_empty_without_crosstalk(self, flux_vector):
         """No crosstalk attached -> empty decomposition, no error."""
         assert flux_vector.get_decomposed_vector() == {}
-
-

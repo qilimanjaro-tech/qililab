@@ -721,7 +721,7 @@ class TestQProgram(TestStructuredProgram):
             qp.play(bus="drive", waveform=square_iq)
             qp.sync(["drive", "readout"])
             qp.measure(bus="readout", waveform=square_iq, weights=square_iq)
-        
+
         new_qp = qp.with_crosstalk_qblox(non_linear_crosstalk)
         assert new_qp is not None
 
@@ -962,7 +962,7 @@ class TestQProgram(TestStructuredProgram):
             qp.play(bus="drive", waveform=square_iq)
             qp.sync(["drive", "readout"])
             qp.measure(bus="readout", waveform=square_iq, weights=square_iq)
-        
+
         new_qp = qp.with_crosstalk_qblox(non_linear_crosstalk)
         assert new_qp is not None
 
@@ -1024,7 +1024,7 @@ class TestQProgram(TestStructuredProgram):
         assert isinstance(new_qp.body.elements[20], Measure)
         assert new_qp.body.elements[20].bus == "readout"
         assert isinstance(new_qp.body.elements[21], Sync)
-        # The loop repeats itself until 47 iterations, 
+        # The loop repeats itself until 47 iterations,
         # we focus here on the initial offsets being modified and the last point
         assert isinstance(new_qp.body.elements[22], SetOffset)
         assert math.isclose(new_qp.body.elements[22].offset_path0, 0.3471177904070214)
@@ -1046,7 +1046,7 @@ class TestQProgram(TestStructuredProgram):
         assert math.isclose(new_qp.body.elements[28].offset_path0, 0.5442355808140428)
         # ...
         assert isinstance(new_qp.body.elements[43], Sync)
-        
+
     def test_with_crosstalk_non_linear_convert_arbitrary_play(self):
         """Test with_crosstalk_qblox covers the non-linear implementation repeating consecutive offsets and plays."""
         # Build a 2x2 crosstalk matrix between flux_bus_0 and flux_bus_1
@@ -1091,7 +1091,7 @@ class TestQProgram(TestStructuredProgram):
         assert isinstance(new_qp.body.elements[8], Measure)
         assert new_qp.body.elements[8].bus == "readout"
         assert isinstance(new_qp.body.elements[9], Sync)
-        
+
     def test_with_crosstalk_non_linear_play_before_loop(self):
         """Test with_crosstalk_qblox covers the non-linear implementation playing a pulse before a loop."""
         # Build a 2x2 crosstalk matrix between flux_bus_0 and flux_bus_1
