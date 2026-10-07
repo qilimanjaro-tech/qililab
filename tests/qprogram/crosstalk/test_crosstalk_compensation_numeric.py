@@ -206,8 +206,9 @@ def test_single_iteration_loop_raises_a_clear_error():
     with qp.for_loop(x, 0.2, 0.25, 0.051):
         qp.set_offset("flux1", x)
         qp.wait("flux1", 100)
+    crosstalk = make_crosstalk(COUPLED)
     with pytest.raises(NotImplementedError, match="Single point loops"):
-        qp.with_crosstalk_qblox(make_crosstalk(COUPLED))
+        qp.with_crosstalk_qblox(crosstalk)
 
 
 def test_inner_loop_setting_only_some_of_the_buses_an_outer_loop_sweeps_raises():
@@ -221,8 +222,9 @@ def test_inner_loop_setting_only_some_of_the_buses_an_outer_loop_sweeps_raises()
         with qp.for_loop(y, 0, 0.2, 0.1):
             qp.set_offset("flux2", y)
             qp.wait("flux2", 50)
+    crosstalk = make_crosstalk(np.eye(2))
     with pytest.raises(NotImplementedError, match="only some of the buses an outer loop sweeps"):
-        qp.with_crosstalk_qblox(make_crosstalk(np.eye(2)))
+        qp.with_crosstalk_qblox(crosstalk)
 
 
 def test_three_loops_on_one_bus_raise_a_clear_error():
@@ -239,5 +241,6 @@ def test_three_loops_on_one_bus_raise_a_clear_error():
                 qp.set_offset("flux3", z)
                 qp.wait("flux1", 100)
     dense = [[1, 0.2, 0.05], [0.1, 1, 0.15], [0.03, 0.12, 1]]
+    crosstalk = make_crosstalk(dense, buses=buses)
     with pytest.raises(NotImplementedError, match="at most two loops"):
-        qp.with_crosstalk_qblox(make_crosstalk(dense, buses=buses))
+        qp.with_crosstalk_qblox(crosstalk)
