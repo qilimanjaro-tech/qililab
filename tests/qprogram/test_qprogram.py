@@ -10,7 +10,6 @@ from qililab import Arbitrary, Domain, GaussianDragCorrection, Gaussian, IQPair,
 from qililab.core.variables import Variable, VariableExpression
 from qililab.qprogram.blocks import Average, Block, Parallel
 from qililab.qprogram.calibration import Calibration
-from qililab.qprogram.loop_utils import calculate_iterations
 from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix, NonLinearCrosstalkMatrix
 from qililab.pulse_distortion import ExponentialCorrection
 from qililab.qprogram.operations import (
@@ -34,6 +33,7 @@ from qililab.qprogram.operations import (
     Wait,
 )
 from qililab.utils.serialization import deserialize, deserialize_from, serialize, serialize_to
+from tests.qprogram.crosstalk.crosstalk_simulation import assert_compensated
 from tests.qprogram.test_structured_program import (
     TestStructuredProgram,
 )
@@ -1302,6 +1302,8 @@ class TestQProgram(TestStructuredProgram):
     def test_with_crosstalk_qblox_offset_flux_vs_flux_unequal_length_loops(self):
         """Nested flux-vs-flux offset loops of different lengths must not raise: the per-bus arrays
         are accumulated without an eager element-wise cross product and compensated via decomposition."""
+        from qililab.qprogram.qblox_compiler import QbloxCompiler
+
         crosstalk = CrosstalkMatrix().from_array(["flux1", "flux2"], np.linalg.inv([[1, 0.5], [0.5, 1]]))
         square_wf = Square(amplitude=0.1, duration=50)
         qp = QProgram()
@@ -1320,8 +1322,8 @@ class TestQProgram(TestStructuredProgram):
         outer = new_qp.body.elements[0]
         assert isinstance(outer, Parallel)
         inner = next(element for element in outer.elements if isinstance(element, Parallel))
-        assert {calculate_iterations(loop.start, loop.stop, loop.step) for loop in outer.loops} == {39}
-        assert {calculate_iterations(loop.start, loop.stop, loop.step) for loop in inner.loops} == {38}
+        assert {QbloxCompiler._calculate_iterations(loop.start, loop.stop, loop.step) for loop in outer.loops} == {39}
+        assert {QbloxCompiler._calculate_iterations(loop.start, loop.stop, loop.step) for loop in inner.loops} == {38}
 
         # Both flux buses are compensated at the innermost level, each combining the two variables.
         inner_offsets = [element for element in inner.elements if isinstance(element, SetOffset)]
@@ -1329,30 +1331,37 @@ class TestQProgram(TestStructuredProgram):
         assert all(isinstance(offset.offset_path0, VariableExpression) for offset in inner_offsets)
 
     def test_with_crosstalk_qblox_offsets_across_loop_levels_carried_and_summed(self):
-        """flux_1 offset set in the outer loop and flux_2 in the inner one: the outer compensation is
-        carried into the innermost block and summed, so the outer level keeps no SetOffset and each
-        innermost offset combines both variables' contributions (a VariableExpression)."""
+        """flux_1 offset set in the outer loop and flux_2 in the inner one: the outer level keeps its
+        compensated offsets for the time before the inner loop, and each innermost offset combines both
+        variables' contributions (a VariableExpression)."""
         crosstalk = CrosstalkMatrix().from_array(["flux1", "flux2"], np.linalg.inv([[1, 0.5], [0.5, 1]]))
         square_wf = Square(amplitude=0.1, duration=50)
-        qp = QProgram()
-        offset_1 = qp.variable(label="offset_1", domain=Domain.Voltage)
-        offset_2 = qp.variable(label="offset_2", domain=Domain.Voltage)
-        with qp.for_loop(variable=offset_1, start=0.0, stop=0.1, step=0.01):
-            qp.set_offset(bus="flux1", offset_path0=offset_1)
-            with qp.for_loop(variable=offset_2, start=0.0, stop=0.1, step=0.01):
-                qp.set_offset(bus="flux2", offset_path0=offset_2)
-                qp.play(bus="flux1", waveform=square_wf)
 
-        new_qp = qp.with_crosstalk_qblox(crosstalk)
+        def build():
+            qp = QProgram()
+            offset_1 = qp.variable(label="offset_1", domain=Domain.Voltage)
+            offset_2 = qp.variable(label="offset_2", domain=Domain.Voltage)
+            with qp.for_loop(variable=offset_1, start=0.0, stop=0.1, step=0.01):
+                qp.set_offset(bus="flux1", offset_path0=offset_1)
+                # Set explicitly: otherwise flux2 keeps the inner loop's last value from the previous iteration.
+                qp.set_offset(bus="flux2", offset_path0=0.0)
+                qp.wait(bus="flux1", duration=100)
+                with qp.for_loop(variable=offset_2, start=0.0, stop=0.1, step=0.01):
+                    qp.set_offset(bus="flux2", offset_path0=offset_2)
+                    qp.play(bus="flux1", waveform=square_wf)
+                    qp.wait(bus="flux1", duration=100)
+            return qp
+
+        new_qp = build().with_crosstalk_qblox(crosstalk)
         outer = new_qp.body.elements[0]
         assert isinstance(outer, Parallel)
-        # Outer offsets were carried inward, so nothing is left to overwrite them at the outer level.
-        assert not any(isinstance(element, SetOffset) for element in outer.elements)
+        assert {element.bus for element in outer.elements if isinstance(element, SetOffset)} == {"flux1", "flux2"}
         inner = next(element for element in outer.elements if isinstance(element, Parallel))
         inner_offsets = [element for element in inner.elements if isinstance(element, SetOffset)]
         assert {offset.bus for offset in inner_offsets} == {"flux1", "flux2"}
         # Each innermost offset combines the outer (a1) and inner (a2) contributions.
         assert all(isinstance(offset.offset_path0, VariableExpression) for offset in inner_offsets)
+        assert_compensated(build(), new_qp, crosstalk)
 
     def test_with_crosstalk_qblox_identity_matrix_across_levels_drops_zero_terms(self):
         """An identity matrix has zero cross-terms: no constant (step-0) compensation loop survives
@@ -1429,48 +1438,55 @@ class TestQProgram(TestStructuredProgram):
 
     def test_with_crosstalk_qblox_offsets_across_three_loop_levels(self):
         """Three nested flux loops (flux1/flux2 coupled, flux3 independent): a contribution carried
-        through more than one enclosing level is summed into the already-carried value, not just
-        seeded. The transform must not raise and must leave the offsets at the innermost level."""
+        through more than one enclosing level reaches the innermost block, and every level matches
+        the uncompensated program numerically."""
         matrix = np.linalg.inv([[1, 0.5, 0], [0.5, 1, 0], [0, 0, 1]])
         crosstalk = CrosstalkMatrix().from_array(["flux1", "flux2", "flux3"], matrix)
         square_wf = Square(amplitude=0.1, duration=50)
-        qp = QProgram()
-        a1 = qp.variable(label="a1", domain=Domain.Voltage)
-        a2 = qp.variable(label="a2", domain=Domain.Voltage)
-        a3 = qp.variable(label="a3", domain=Domain.Voltage)
-        with qp.for_loop(variable=a1, start=0.0, stop=0.1, step=0.01):
-            qp.set_offset(bus="flux1", offset_path0=a1)
-            with qp.for_loop(variable=a2, start=0.0, stop=0.1, step=0.01):
-                qp.set_offset(bus="flux2", offset_path0=a2)
-                with qp.for_loop(variable=a3, start=0.0, stop=0.1, step=0.01):
-                    qp.set_offset(bus="flux3", offset_path0=a3)
-                    qp.play(bus="flux1", waveform=square_wf)
 
-        new_qp = qp.with_crosstalk_qblox(crosstalk)
-        # Offsets carried down to the innermost block; the outer two levels keep no SetOffset.
-        assert not any(isinstance(element, SetOffset) for element in new_qp.body.elements[0].elements)
+        def build():
+            qp = QProgram()
+            a1 = qp.variable(label="a1", domain=Domain.Voltage)
+            a2 = qp.variable(label="a2", domain=Domain.Voltage)
+            a3 = qp.variable(label="a3", domain=Domain.Voltage)
+            with qp.for_loop(variable=a1, start=0.0, stop=0.1, step=0.02):
+                qp.set_offset(bus="flux1", offset_path0=a1)
+                with qp.for_loop(variable=a2, start=0.0, stop=0.1, step=0.02):
+                    qp.set_offset(bus="flux2", offset_path0=a2)
+                    with qp.for_loop(variable=a3, start=0.0, stop=0.1, step=0.02):
+                        qp.set_offset(bus="flux3", offset_path0=a3)
+                        qp.play(bus="flux1", waveform=square_wf)
+                        qp.wait(bus="flux1", duration=100)
+            return qp
+
+        assert_compensated(build(), build().with_crosstalk_qblox(crosstalk), crosstalk)
 
     def test_with_crosstalk_qblox_gains_across_loop_levels_carried_and_summed(self):
-        """Gains behave like offsets: a gain set in the outer loop is carried into the inner block
-        and summed, so the outer level keeps no SetGain and the innermost gains combine both loops."""
+        """Gains behave like offsets: the outer level keeps its compensated gains, and the gains in
+        the inner block combine both loops."""
         crosstalk = CrosstalkMatrix().from_array(["flux1", "flux2"], np.linalg.inv([[1, 0.5], [0.5, 1]]))
         square_wf = Square(amplitude=0.1, duration=50)
-        qp = QProgram()
-        gain_1 = qp.variable(label="gain_1", domain=Domain.Voltage)
-        gain_2 = qp.variable(label="gain_2", domain=Domain.Voltage)
-        with qp.for_loop(variable=gain_1, start=0.0, stop=0.1, step=0.01):
-            qp.set_gain(bus="flux1", gain=gain_1)
-            with qp.for_loop(variable=gain_2, start=0.0, stop=0.1, step=0.01):
-                qp.set_gain(bus="flux2", gain=gain_2)
-                qp.play(bus="flux1", waveform=square_wf)
 
-        new_qp = qp.with_crosstalk_qblox(crosstalk)
+        def build():
+            qp = QProgram()
+            gain_1 = qp.variable(label="gain_1", domain=Domain.Voltage)
+            gain_2 = qp.variable(label="gain_2", domain=Domain.Voltage)
+            with qp.for_loop(variable=gain_1, start=0.0, stop=0.1, step=0.01):
+                qp.set_gain(bus="flux1", gain=gain_1)
+                with qp.for_loop(variable=gain_2, start=0.0, stop=0.1, step=0.01):
+                    qp.set_gain(bus="flux2", gain=gain_2)
+                    qp.play(bus="flux1", waveform=square_wf)
+                    qp.wait(bus="flux1", duration=100)
+            return qp
+
+        new_qp = build().with_crosstalk_qblox(crosstalk)
         outer = new_qp.body.elements[0]
-        assert not any(isinstance(element, SetGain) for element in outer.elements)
+        assert {element.bus for element in outer.elements if isinstance(element, SetGain)} == {"flux1", "flux2"}
         inner = next(element for element in outer.elements if isinstance(element, Parallel))
         inner_gains = [element for element in inner.elements if isinstance(element, SetGain)]
         assert {gain.bus for gain in inner_gains} == {"flux1", "flux2"}
         assert all(isinstance(gain.gain, VariableExpression) for gain in inner_gains)
+        assert_compensated(build(), new_qp, crosstalk, quantity="gain")
 
     def test_with_crosstalk_qblox_gain_identity_matrix_drops_zero_terms(self):
         """Identity matrix with gains: zero cross-terms compile to a constant gain (no step-0 loop),
