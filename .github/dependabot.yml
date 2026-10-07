@@ -53,6 +53,15 @@ updates:
         applies-to: version-updates
         patterns: ["*"]
         update-types: ["minor", "patch"]
+    ignore:
+      # Must match the firmware on our Qblox clusters.
+      - dependency-name: "qblox-instruments"
+      # Must match the QOP version on the QM hardware.
+      - dependency-name: "qm-qua"
+      # 0.58 changes GS200 ramping; needs instrument testing first.
+      - dependency-name: "qcodes"
+      # 2.1 defaults postgresql:// to psycopg 3; we ship psycopg2.
+      - dependency-name: "sqlalchemy"
     commit-message:
       prefix: "deps"
       prefix-development: "deps-dev"
