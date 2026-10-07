@@ -10,7 +10,6 @@ from qililab import Arbitrary, Domain, GaussianDragCorrection, Gaussian, IQPair,
 from qililab.core.variables import Variable, VariableExpression
 from qililab.qprogram.blocks import Average, Block, Parallel
 from qililab.qprogram.calibration import Calibration
-from qililab.qprogram.loop_utils import calculate_iterations
 from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix, NonLinearCrosstalkMatrix
 from qililab.pulse_distortion import ExponentialCorrection
 from qililab.qprogram.operations import (
@@ -1439,8 +1438,8 @@ class TestQProgram(TestStructuredProgram):
 
     def test_with_crosstalk_qblox_offsets_across_three_loop_levels(self):
         """Three nested flux loops (flux1/flux2 coupled, flux3 independent): a contribution carried
-        through more than one enclosing level is summed into the already-carried value, not just
-        seeded. The transform must not raise and must leave the offsets at the innermost level."""
+        through more than one enclosing level reaches the innermost block, and every level matches
+        the uncompensated program numerically."""
         matrix = np.linalg.inv([[1, 0.5, 0], [0.5, 1, 0], [0, 0, 1]])
         crosstalk = CrosstalkMatrix().from_array(["flux1", "flux2", "flux3"], matrix)
         square_wf = Square(amplitude=0.1, duration=50)
