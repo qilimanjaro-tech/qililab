@@ -13,12 +13,11 @@
 # limitations under the License.
 
 import datetime
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, ClassVar
 
-from sqlalchemy import ARRAY, Boolean, Column, DateTime, ForeignKey, Integer, Interval, String
+from sqlalchemy import ARRAY, ForeignKey, Integer, String
 from sqlalchemy.dialects.postgresql import JSONB
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column, sessionmaker
 
 from qililab.result.result_management import load_results
 
@@ -26,27 +25,26 @@ if TYPE_CHECKING:
     from qililab.platform.platform import Platform
     from qililab.result.database.database_manager import DatabaseManager
 
-base = declarative_base()
+
+class _AutocalBase(DeclarativeBase):
+    type_annotation_map: ClassVar[dict] = {
+        dict[str, Any]: JSONB,
+        list[int]: ARRAY(Integer),
+        list[str]: ARRAY(String),
+    }
 
 
-class CalibrationRun(base):  # type: ignore
+class CalibrationRun(_AutocalBase):
     """Creates and manipulates Sample metadata database"""
 
     __tablename__ = "calibration_run"
 
-    calibration_id: Column = Column("calibration_id", Integer, primary_key=True)
-    date: Column = Column("date", DateTime)
-    calibration_tree: Column = Column("calibration_tree", JSONB)
-    calibration_completed: Column = Column("calibration_completed", Boolean, nullable=False)
-    cooldown: Column = Column("cooldown", String, index=True)
-    sample_name: Column = Column("sample_name", String, nullable=False)
-
-    def __init__(self, date, calibration_tree, calibration_completed, sample_name, cooldown):
-        self.date = date
-        self.calibration_tree = calibration_tree
-        self.calibration_completed = calibration_completed
-        self.sample_name = sample_name
-        self.cooldown = cooldown
+    calibration_id: Mapped[int] = mapped_column(primary_key=True)
+    date: Mapped[datetime.datetime | None]
+    calibration_tree: Mapped[dict[str, Any] | None]
+    calibration_completed: Mapped[bool]
+    cooldown: Mapped[str | None] = mapped_column(index=True)
+    sample_name: Mapped[str]
 
     def end_calibration(self, session: sessionmaker[Session], traceback: str | None = None):
         """Function to end measurement of the experiment. The function sets inside the database information
@@ -57,7 +55,7 @@ class CalibrationRun(base):  # type: ignore
             persistent_instance = running_session.merge(self)
             try:
                 if traceback is None:
-                    persistent_instance.calibration_completed = True  # type: ignore[assignment]
+                    persistent_instance.calibration_completed = True
                 running_session.commit()
                 return persistent_instance
             except Exception as e:
@@ -68,67 +66,28 @@ class CalibrationRun(base):  # type: ignore
         return f"calibration_run: {self.calibration_id} {self.date}"
 
 
-class AutocalMeasurement(base):  # type: ignore
+class AutocalMeasurement(_AutocalBase):
     """Creates and manipulates Measurement metadata database"""
 
     __tablename__ = "measurements"
 
-    measurement_id: Column = Column("measurement_id", Integer, primary_key=True)
-    experiment_name: Column = Column("experiment_name", String, nullable=False)
-    start_time: Column = Column("start_time", DateTime, nullable=False)
-    end_time: Column = Column("end_time", DateTime)
-    run_length: Column = Column("run_length", Interval)
-    experiment_completed: Column = Column("experiment_completed", Boolean, nullable=False)
-    calibration_id: Column = Column("calibration_id", ForeignKey(CalibrationRun.calibration_id), nullable=False)
-    result_path: Column = Column("result_path", String, unique=True, nullable=False)
-    fitting_path: Column = Column("fitting_path", String)
-    fitting_parameters: Column = Column("fitting_parameters", JSONB)
-    qbit_idx: Column = Column("qbit_idx", String)
-    platform_after: Column = Column("platform_after", JSONB)
-    platform_before: Column = Column("platform_before", JSONB)
-    qprogram: Column = Column("qprogram", JSONB)
-    calibration: Column = Column("calibration", JSONB)
-    parameters: Column = Column("parameters", JSONB)
-    data_shape: Column = Column("data_shape", ARRAY(Integer))
-
-    def __init__(
-        self,
-        experiment_name,
-        calibration_id,
-        result_path,
-        experiment_completed,
-        start_time,
-        qbit_idx,
-        fitting_path=None,
-        fitting_parameters=None,
-        end_time=None,
-        run_length=None,
-        platform_after=None,
-        platform_before=None,
-        qprogram=None,
-        calibration=None,
-        parameters=None,
-        data_shape=None,
-    ):
-        # Required fields
-        self.experiment_name = experiment_name
-        self.result_path = result_path
-        self.experiment_completed = experiment_completed
-        self.start_time = start_time
-        self.calibration_id = calibration_id
-        self.qbit_idx = qbit_idx
-
-        # Optional fields
-        self.fitting_path = fitting_path
-        self.fitting_parameters = fitting_parameters
-        self.end_time = end_time
-        self.run_length = run_length
-        self.platform_after = platform_after
-        self.platform_before = platform_before
-        self.qprogram = qprogram
-        self.calibration = calibration
-        self.parameters = parameters
-        self.data_shape = data_shape
+    measurement_id: Mapped[int] = mapped_column(primary_key=True)
+    experiment_name: Mapped[str]
+    start_time: Mapped[datetime.datetime]
+    end_time: Mapped[datetime.datetime | None]
+    run_length: Mapped[datetime.timedelta | None]
+    experiment_completed: Mapped[bool]
+    calibration_id: Mapped[int] = mapped_column(ForeignKey(CalibrationRun.calibration_id))
+    result_path: Mapped[str] = mapped_column(unique=True)
+    fitting_path: Mapped[str | None]
+    fitting_parameters: Mapped[dict[str, Any] | None]
+    qbit_idx: Mapped[str | None]
+    platform_after: Mapped[dict[str, Any] | None]
+    platform_before: Mapped[dict[str, Any] | None]
+    qprogram: Mapped[dict[str, Any] | None]
+    calibration: Mapped[dict[str, Any] | None]
+    parameters: Mapped[dict[str, Any] | None]
+    data_shape: Mapped[list[int] | None]
 
     def end_experiment(self, session: sessionmaker[Session], traceback: str | None = None):
         """Function to end measurement of the experiment. The function sets inside the database information
@@ -138,15 +97,15 @@ class AutocalMeasurement(base):  # type: ignore
             # Merge the detached instance into the current session
             persistent_instance = running_session.merge(self)
 
-            persistent_instance.end_time = datetime.datetime.now()  # type: ignore[assignment]
-            persistent_instance.run_length = persistent_instance.end_time - persistent_instance.start_time  # type: ignore[assignment]
+            persistent_instance.end_time = datetime.datetime.now()
+            persistent_instance.run_length = persistent_instance.end_time - persistent_instance.start_time
             self.end_time = persistent_instance.end_time
             self.run_length = persistent_instance.run_length
 
             try:
                 if traceback is None:
-                    persistent_instance.experiment_completed = True  # type: ignore[assignment]
-                    self.experiment_completed = True  # type: ignore[assignment]
+                    persistent_instance.experiment_completed = True
+                    self.experiment_completed = True
                 running_session.commit()
                 return persistent_instance
             except Exception as e:
@@ -199,9 +158,9 @@ class AutocalMeasurement(base):  # type: ignore
             if persistent_instance is None:
                 raise IndexError(f"Autocalibration measurement entry '{self.measurement_id}' does not exist.")
             if path:
-                persistent_instance.fitting_path = path  # type: ignore[assignment]
+                persistent_instance.fitting_path = path
             if parameters:
-                persistent_instance.fitting_parameters = parameters  # type: ignore[assignment]
+                persistent_instance.fitting_parameters = parameters
             try:
                 running_session.commit()
                 return persistent_instance

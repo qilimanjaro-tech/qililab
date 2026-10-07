@@ -15,13 +15,32 @@
 import os
 from datetime import datetime
 from pathlib import Path
+from typing import TypedDict
 
 import h5py
 import numpy as np
 
 
+class InputLoopData(TypedDict):
+    """Loop values and metadata, more permissive version reflecting :meth:`StreamArray.__init__` handling"""
+
+    array: np.typing.ArrayLike
+    units: str
+    bus: str
+    parameter: str
+
+
+class LoopData(TypedDict):
+    """Loop values and metadata, as returned for each loop by :func:`load_results`."""
+
+    array: np.ndarray
+    units: str
+    bus: str
+    parameter: str
+
+
 def save_results(results: np.ndarray, loops: dict[str, np.ndarray], data_path: str, name: str | None = None) -> str:
-    """Save the given results and the platform.
+    """Save the given results and loops.
 
     A timestamp is used to create a folder to save the data. The data will be saved within the file located in:
     ``path/yearmonthday/hourminutesecond_name/results.h5``.
@@ -60,7 +79,7 @@ def save_results(results: np.ndarray, loops: dict[str, np.ndarray], data_path: s
         .. code-block:: python3
 
             loops = {"drive_q0_gain": gain_values}
-            ql.save_results(results=results, loops=loops, path="data/", name="rabi")
+            ql.save_results(results=results, loops=loops, data_path="data/", name="rabi")
 
         Imagine we call the cell above on August 22nd of 2023, at 15:14:12. The file will then be saved
         to: ``data/20230822/151412_rabi/results.h5``.
@@ -96,7 +115,7 @@ def save_results(results: np.ndarray, loops: dict[str, np.ndarray], data_path: s
     return now_path
 
 
-def load_results(path: str) -> tuple[np.ndarray, dict[str, np.ndarray]]:
+def load_results(path: str) -> tuple[np.ndarray, dict[str, LoopData]]:
     """Load results from the given path to an `.h5` file.
 
     This function returns a tuple containing the array with the results, and a dictionary containing the loops of
@@ -106,8 +125,10 @@ def load_results(path: str) -> tuple[np.ndarray, dict[str, np.ndarray]]:
         path (str): Path to the `.h5` file that needs to be loaded.
 
     Returns:
-        tuple[np.ndarray, dict[str, np.ndarray]]: Tuple containing a numpy array with the saved results and a
-        dictionary containing the loops of the experiment: ``{"loop_1": loop_1_values, "loop_2": loop_2_values, ...}``.
+        tuple[np.ndarray, dict[str, LoopData]]: Tuple containing a numpy array with the saved results and a
+        dictionary containing the loops of the experiment. Each loop maps to a ``LoopData`` dictionary with the loop
+        values (``"array"``) and its ``"units"``, ``"bus"`` and ``"parameter"`` metadata, which are empty strings when
+        they were not saved.
 
     Examples:
         Imagine you want to load the results of an experiment located in ``data/20230514/083005/results.h5``:
@@ -116,21 +137,21 @@ def load_results(path: str) -> tuple[np.ndarray, dict[str, np.ndarray]]:
         >>> results.shape
         (2, 50)
         >>> loops
-        {'gain_drive_q0': array([0.  , 0.02, 0.04, 0.06, 0.08, 0.1 , 0.12, 0.14, 0.16, 0.18, 0.2 ,
+        {'gain_drive_q0': {'array': array([0.  , 0.02, 0.04, 0.06, 0.08, 0.1 , 0.12, 0.14, 0.16, 0.18, 0.2 ,
                 0.22, 0.24, 0.26, 0.28, 0.3 , 0.32, 0.34, 0.36, 0.38, 0.4 , 0.42,
                 0.44, 0.46, 0.48, 0.5 , 0.52, 0.54, 0.56, 0.58, 0.6 , 0.62, 0.64,
                 0.66, 0.68, 0.7 , 0.72, 0.74, 0.76, 0.78, 0.8 , 0.82, 0.84, 0.86,
-                0.88, 0.9 , 0.92, 0.94, 0.96, 0.98])}
+                0.88, 0.9 , 0.92, 0.94, 0.96, 0.98]), 'units': 'V', 'bus': 'drive_q0', 'parameter': 'gain'}}
     """
     with h5py.File(path, "r", libver="latest", swmr=True) as hf:
-        loops = {}
+        loops: dict[str, LoopData] = {}
         for name, data in hf["loops"].items():
             loops[name] = {
                 "array": data[:],
-                "units": data.attrs.get("units", ""),  # type: ignore
-                "bus": data.attrs.get("bus", ""),  # type: ignore
-                "parameter": data.attrs.get("parameter", ""),  # type: ignore
+                "units": data.attrs.get("units", ""),
+                "bus": data.attrs.get("bus", ""),
+                "parameter": data.attrs.get("parameter", ""),
             }
-        results = hf["results"][:]  # type: ignore
+        results: np.ndarray = hf["results"][:]
 
-    return results, loops  # type: ignore
+    return results, loops

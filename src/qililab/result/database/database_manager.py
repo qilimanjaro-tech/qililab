@@ -183,7 +183,7 @@ class DatabaseManager:
             running_session.add(sequence_obj)
             try:
                 running_session.commit()
-                self.current_sequence = sequence_obj.sequence_id  # type: ignore[assignment]
+                self.current_sequence = sequence_obj.sequence_id
                 return sequence_obj
 
             except Exception as e:
@@ -247,7 +247,11 @@ class DatabaseManager:
             if measurement_by_id_list is not None:
                 for meas in measurement_by_id_list:
                     path = meas.result_path
-                    if not os.path.isfile(path):
+                    if (
+                        self.base_path_local is not None
+                        and self.base_path_share is not None
+                        and not os.path.isfile(path)
+                    ):
                         new_path = path.replace(self.base_path_local, self.base_path_share)
                         meas.result_path = new_path
             return measurement_by_id_list if len(measurement_by_id_list) > 1 else measurement_by_id_list[0]
@@ -282,7 +286,7 @@ class DatabaseManager:
             )
             for meas in measurement_by_id_list:
                 path = meas.result_path
-                if not os.path.isfile(path):
+                if self.base_path_local is not None and self.base_path_share is not None and not os.path.isfile(path):
                     new_path = path.replace(self.base_path_local, self.base_path_share)
                     meas.result_path = new_path
             return measurement_by_id_list
@@ -328,7 +332,7 @@ class DatabaseManager:
 
             if experiment_by_id is not None:
                 path = experiment_by_id.result_path
-                if not os.path.isfile(path):
+                if self.base_path_local is not None and self.base_path_share is not None and not os.path.isfile(path):
                     new_path = path.replace(self.base_path_local, self.base_path_share)
                     experiment_by_id.result_path = new_path
 
@@ -540,9 +544,9 @@ class DatabaseManager:
         self,
         experiment_name: str,
         qubit_idx: int | str,
-        calibration: "Calibration",  # type: ignore
-        platform: "Platform" = None,  # type: ignore
-        qprogram: "QProgram" = None,  # type: ignore
+        calibration: "Calibration",
+        platform: "Platform | None" = None,
+        qprogram: "QProgram | None" = None,
         parameters: list[str] | None = None,
         data_shape: np.ndarray | None = None,
     ):
@@ -654,10 +658,10 @@ class DatabaseManager:
         optional_identifier: str | None = None,
         end_time: datetime.datetime | None = None,
         run_length: float | None = None,
-        platform: "Platform" = None,  # type: ignore
-        experiment: "Experiment" = None,  # type: ignore
-        qprogram: "QProgram" = None,  # type: ignore
-        calibration: "Calibration" = None,  # type: ignore
+        platform: "Platform | None" = None,
+        experiment: "Experiment | None" = None,
+        qprogram: "QProgram | None" = None,
+        calibration: "Calibration | None" = None,
         debug_file: str | None = None,
         parameters: list[str] | None = None,
         data_shape: np.ndarray | None = None,
@@ -757,10 +761,10 @@ class DatabaseManager:
         cooldown: str | None = None,
         sample_name: str | None = None,
         optional_identifier: str | None = None,
-        platform: "Platform" = None,  # type: ignore
-        experiment: "Experiment" = None,  # type: ignore
-        qprogram: "QProgram" = None,  # type: ignore
-        calibration: "Calibration" = None,  # type: ignore
+        platform: "Platform | None" = None,
+        experiment: "Experiment | None" = None,
+        qprogram: "QProgram | None" = None,
+        calibration: "Calibration | None" = None,
         parameters: list[str] | None = None,
     ):
         """Add measurement metadata, data path and results from a finished experiment.

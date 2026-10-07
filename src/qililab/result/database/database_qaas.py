@@ -14,49 +14,30 @@
 
 import datetime
 
-from sqlalchemy import Boolean, Column, DateTime, Integer, Interval, String
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column, sessionmaker
 
 from qililab.result.experiment_results import ExperimentResults
 
-base = declarative_base()
+
+class _QaasBase(DeclarativeBase):
+    pass
 
 
-class QaaS_Experiment(base):  # type: ignore
+class QaaS_Experiment(_QaasBase):
     """Creates and manipulates Experiment metadata database"""
 
     __tablename__ = "executions"
 
-    experiment_id: Column = Column("experiment_id", Integer, primary_key=True)
-    job_id: Column = Column("job_id", Integer)
-    experiment_name: Column = Column("experiment_name", String)
-    start_time: Column = Column("start_time", DateTime, nullable=False)
-    end_time: Column = Column("end_time", DateTime)
-    run_length: Column = Column("run_length", Interval)
-    experiment_completed: Column = Column("experiment_completed", Boolean, nullable=False)
-    cooldown: Column = Column("cooldown", String, index=True)
-    sample_name: Column = Column("sample_name", String, nullable=False)
-    result_path: Column = Column("result_path", String, unique=True, nullable=False)
-
-    def __init__(
-        self,
-        job_id,
-        experiment_name,
-        sample_name,
-        result_path,
-        experiment_completed,
-        start_time,
-        cooldown,
-    ):
-        # Required fields
-        self.job_id = job_id
-        self.experiment_name = experiment_name
-        self.sample_name = sample_name
-        self.result_path = result_path
-        self.experiment_completed = experiment_completed
-        self.start_time = start_time
-        self.cooldown = cooldown
+    experiment_id: Mapped[int] = mapped_column(primary_key=True)
+    job_id: Mapped[int | None]
+    experiment_name: Mapped[str | None]
+    start_time: Mapped[datetime.datetime]
+    end_time: Mapped[datetime.datetime | None]
+    run_length: Mapped[datetime.timedelta | None]
+    experiment_completed: Mapped[bool]
+    cooldown: Mapped[str | None] = mapped_column(index=True)
+    sample_name: Mapped[str]
+    result_path: Mapped[str] = mapped_column(unique=True)
 
     def end_experiment(self, session: sessionmaker[Session], traceback: str | None = None):
         """Function to end measurement of the experiment. The function sets inside the database information
@@ -65,11 +46,11 @@ class QaaS_Experiment(base):  # type: ignore
         with session() as running_session:
             # Merge the detached instance into the current session
             persistent_instance = running_session.merge(self)
-            persistent_instance.end_time = datetime.datetime.now()  # type: ignore[assignment]
-            persistent_instance.run_length = persistent_instance.end_time - persistent_instance.start_time  # type: ignore[assignment]
+            persistent_instance.end_time = datetime.datetime.now()
+            persistent_instance.run_length = persistent_instance.end_time - persistent_instance.start_time
             try:
                 if traceback is None:
-                    persistent_instance.experiment_completed = True  # type: ignore[assignment]
+                    persistent_instance.experiment_completed = True
                 running_session.commit()
                 return persistent_instance
             except Exception as e:
