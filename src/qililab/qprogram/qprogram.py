@@ -124,10 +124,12 @@ class QProgram(StructuredProgram):
         "measure_reset": "qp.qblox.measure_reset()",
     }
 
+    # if_trigger() is mutually exclusive with wait_trigger() and measure_reset() (checked both ways below).
+    # Class-level default so QPrograms deserialized without this field still have it.
+    _trigger_mode: str | None = None
+
     def __init__(self) -> None:
         super().__init__()
-        # if_trigger() is mutually exclusive with wait_trigger() and measure_reset() (checked both ways below).
-        self._trigger_mode: str | None = None
         self.qblox = self._QbloxInterface(self)
         self.quantum_machines = self._QuantumMachinesInterface(self)
         self.qdac = self._QdacInterface(self)
