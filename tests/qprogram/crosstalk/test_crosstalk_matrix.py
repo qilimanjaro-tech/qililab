@@ -338,7 +338,7 @@ class TestNonLinearCrosstalkMatrix:
 
     def test_set_non_linear_params_with_none(self, non_linear_crosstalk_matrix):
         non_linear_crosstalk_matrix.set_non_linear_params("flux_0", "flux_1", beta_c=-0.3, amplitude=-0.08)
-        non_linear_crosstalk_matrix.set_non_linear_params("flux_0", "flux_1", junction_asym=0.3)    
+        non_linear_crosstalk_matrix.set_non_linear_params("flux_0", "flux_1", junction_asym=0.3)
         non_linear_crosstalk_matrix.set_non_linear_params("flux_0", "flux_1", beta_c=None, amplitude=None, junction_asym=None)
         assert non_linear_crosstalk_matrix.beta_c_matrix["flux_0"]["flux_1"] == pytest.approx(None)
         assert non_linear_crosstalk_matrix.non_lin_amp_matrix["flux_0"]["flux_1"] == pytest.approx(None)
