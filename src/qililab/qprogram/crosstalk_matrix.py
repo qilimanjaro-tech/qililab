@@ -502,7 +502,7 @@ class NonLinearCrosstalkMatrix(CrosstalkMatrix):
         phi = np.asarray(flux, dtype=float) * 2 * np.pi
         result = np.zeros_like(phi, dtype=float)
         for k in range(1, k_max + 1):
-            result += (jv(k, k * beta) / (k * beta)) * np.sin(k * phi)
+            result += (jv(k, k * -beta) / (k * -beta)) * np.sin(k * phi)
         return 2 * result * amp
 
     def junction_asymmetry_correction(self, flux_x: float | np.ndarray, d: float) -> float | np.ndarray:
