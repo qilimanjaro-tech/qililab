@@ -1688,7 +1688,16 @@ class TestMethods:
         assert patched_open.call_count == 1
         assert generate_qua.call_count == 1
 
-    def test_execute_qprogram_with_qblox_distortions(self, platform: Platform):
+    @pytest.mark.parametrize(
+        "execute",
+        [
+            lambda platform, qprogram: platform.execute_qprogram(qprogram=qprogram),
+            lambda platform, qprogram: platform.execute_qprograms_parallel(qprograms=[qprogram]),
+        ],
+        ids=["execute_qprogram", "execute_qprograms_parallel"],
+    )
+    def test_execute_qprogram_with_qblox_distortions(self, platform: Platform, execute):
+        """Test that the bus distortions are applied only once, in both single and parallel execution."""
         drive_wf = Square(amplitude=1.0, duration=4)
         qprogram = QProgram()
         qprogram.play(bus="drive_line_q0_bus", waveform=drive_wf)
@@ -1705,7 +1714,7 @@ class TestMethods:
             patch.object(QbloxModule, "sync_sequencer"),
             patch.object(QbloxModule, "desync_sequencer"),
         ):
-            _ = platform.execute_qprogram(qprogram=qprogram)
+            _ = execute(platform, qprogram)
             assert test_waveforms_q0.to_dict() == upload.call_args_list[0].kwargs["qpysequence"]._waveforms.to_dict()
 
     @pytest.mark.qm
