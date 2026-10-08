@@ -1688,7 +1688,16 @@ class TestMethods:
         assert patched_open.call_count == 1
         assert generate_qua.call_count == 1
 
-    def test_execute_qprogram_with_qblox_distortions(self, platform: Platform):
+    @pytest.mark.parametrize(
+        "execute",
+        [
+            lambda platform, qprogram: platform.execute_qprogram(qprogram=qprogram),
+            lambda platform, qprogram: platform.execute_qprograms_parallel(qprograms=[qprogram]),
+        ],
+        ids=["execute_qprogram", "execute_qprograms_parallel"],
+    )
+    def test_execute_qprogram_with_qblox_distortions(self, platform: Platform, execute):
+        """Test that the bus distortions are applied only once, in both single and parallel execution."""
         drive_wf = Square(amplitude=1.0, duration=4)
         qprogram = QProgram()
         qprogram.play(bus="drive_line_q0_bus", waveform=drive_wf)
@@ -1705,8 +1714,37 @@ class TestMethods:
             patch.object(QbloxModule, "sync_sequencer"),
             patch.object(QbloxModule, "desync_sequencer"),
         ):
-            _ = platform.execute_qprogram(qprogram=qprogram)
+            _ = execute(platform, qprogram)
             assert test_waveforms_q0.to_dict() == upload.call_args_list[0].kwargs["qpysequence"]._waveforms.to_dict()
+
+    def test_execute_qprograms_parallel_with_qblox_distortions_and_bus_mapping(self, platform: Platform):
+        """Test that each parallel qprogram gets the distortions of the physical bus its logical bus is mapped to."""
+        qprogram = QProgram()
+        qprogram.play(bus="drive", waveform=Square(amplitude=1.0, duration=4))
+
+        distorted_waveforms = Waveforms()
+        distorted_waveforms.add(array=[0.5, 1.0, 0.5, 0.0], index=0)
+        distorted_waveforms.add(array=[0.0, 0.0, 0.0, 0.0], index=1)
+
+        undistorted_waveforms = Waveforms()
+        undistorted_waveforms.add(array=[1.0, 1.0, 1.0, 1.0], index=0)
+
+        with (
+            patch("builtins.open"),
+            patch.object(Bus, "upload_qpysequence") as upload,
+            patch.object(Bus, "run"),
+            patch.object(Bus, "acquire_qprogram_results"),
+            patch.object(QbloxModule, "sync_sequencer"),
+            patch.object(QbloxModule, "desync_sequencer"),
+        ):
+            _ = platform.execute_qprograms_parallel(
+                qprograms=[qprogram, qprogram],
+                bus_mappings=[{"drive": "drive_line_q0_bus"}, {"drive": "flux_line_q0_bus"}],
+            )
+            assert distorted_waveforms.to_dict() == upload.call_args_list[0].kwargs["qpysequence"]._waveforms.to_dict()
+            assert (
+                undistorted_waveforms.to_dict() == upload.call_args_list[1].kwargs["qpysequence"]._waveforms.to_dict()
+            )
 
     @pytest.mark.qm
     def test_execute_qprogram_with_quantum_machines(self, platform_quantum_machines: Platform):

@@ -1696,9 +1696,6 @@ class Platform:
         sequences_per_qprogram = [output.sequences for output in outputs]
         aquisitions_per_qprogram = [output.acquisitions for output in outputs]
         buses_per_qprogram = self._resolve_qblox_parallel_buses(sequences_per_qprogram=sequences_per_qprogram)
-        self._apply_qblox_distortions_parallel(
-            sequences_per_qprogram=sequences_per_qprogram, buses_per_qprogram=buses_per_qprogram
-        )
         self._apply_qblox_threshold_parallel(outputs=outputs, buses_per_qprogram=buses_per_qprogram)
 
         if debug:
@@ -1733,20 +1730,6 @@ class Platform:
             {bus_alias: self.buses.get(alias=bus_alias) for bus_alias in sequences}
             for sequences in sequences_per_qprogram
         ]
-
-    def _apply_qblox_distortions_parallel(
-        self,
-        sequences_per_qprogram: list[dict[str, Any]],
-        buses_per_qprogram: list[dict[str, Bus]],
-    ) -> None:
-        for qprogram_idx, buses in enumerate(buses_per_qprogram):
-            for bus_alias, bus in buses.items():
-                if bus.distortions:
-                    for distortion in bus.distortions:
-                        for waveform in sequences_per_qprogram[qprogram_idx][bus_alias]._waveforms._waveforms:
-                            sequences_per_qprogram[qprogram_idx][bus_alias]._waveforms.modify(
-                                waveform.name, distortion.apply(waveform.data)
-                            )
 
     def _apply_qblox_threshold_parallel(
         self,
