@@ -682,6 +682,7 @@ class QProgram(StructuredProgram):
                             element, bus, flux_vector, element_group, element_group_bus, elements
                         )
                         block.elements.insert(element_idx + additional_elements, operation)
+                        copied_qprogram.buses.add(bus)
                         if bus not in element_group_bus:
                             additional_elements += 1
             return block

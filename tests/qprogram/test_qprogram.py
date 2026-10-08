@@ -1287,6 +1287,24 @@ class TestQProgram(TestStructuredProgram):
         assert new_qp.body.elements[5].bus == "flux1"
         assert math.isclose(new_qp.body.elements[5].gain, 0.4)
 
+    def test_with_crosstalk_qblox_adds_corrected_buses(self):
+            """Test with_crosstalk_qblox keeps each offset group's value when offsets are set again without a wait."""
+            inverse_xtalk_array = np.linalg.inv([[1, 0.5], [0.5, 1]])
+            crosstalk = CrosstalkMatrix().from_array(["flux1", "flux2"], inverse_xtalk_array)
+    
+            qp = QProgram()
+            qp.set_offset(bus="flux1", offset_path0=0.15)
+            qp.wait(bus="flux1", duration=50)
+    
+            new_qp = qp.with_crosstalk_qblox(crosstalk)
+            assert new_qp.buses == {"flux1", "flux2"}
+
+            qp = QProgram()
+            qp.play(bus="flux1", waveform=Square(0.1, 50))
+    
+            new_qp = qp.with_crosstalk_qblox(crosstalk)
+            assert new_qp.buses == {"flux1", "flux2"}
+
     @staticmethod
     def _for_loop_steps(block):
         """All ForLoop step values (including those inside Parallel blocks) reachable from ``block``."""
