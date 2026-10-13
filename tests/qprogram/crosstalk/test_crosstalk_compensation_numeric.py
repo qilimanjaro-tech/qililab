@@ -9,6 +9,7 @@ import pytest
 
 from qililab.core.variables import Domain
 from qililab.qprogram import QProgram
+from qililab.qprogram.blocks import ForLoop
 from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
 from qililab.qprogram.qblox_compiler import QbloxCompiler
 from qililab.waveforms import Square
@@ -120,6 +121,42 @@ def inner_loop_sweeps_the_same_bus_again():
     return qp
 
 
+def inner_loop_sweeps_the_same_bus_again_with_more_points():
+    qp = QProgram()
+    x = qp.variable("x", Domain.Voltage)
+    y = qp.variable("y", Domain.Voltage)
+    with qp.for_loop(x, 0, 0.2, 0.1):
+        qp.set_offset("flux1", x)
+        with qp.for_loop(y, 0, 0.5, 0.1):
+            qp.set_offset("flux1", y)
+            qp.wait("flux1", 100)
+    return qp
+
+
+def inner_loop_sweeps_the_same_bus_again_with_fewer_points():
+    qp = QProgram()
+    x = qp.variable("x", Domain.Voltage)
+    y = qp.variable("y", Domain.Voltage)
+    with qp.for_loop(x, 0, 0.2, 0.1):
+        qp.set_offset("flux1", x)
+        with qp.for_loop(y, 0, 0.1, 0.1):
+            qp.set_offset("flux1", y)
+            qp.wait("flux1", 100)
+    return qp
+
+
+def inner_parallel_sweeps_the_same_bus_again_with_more_points():
+    qp = QProgram()
+    x = qp.variable("x", Domain.Voltage)
+    y = qp.variable("y", Domain.Voltage)
+    with qp.for_loop(x, 0, 0.2, 0.1):
+        qp.set_offset("flux1", x)
+        with qp.parallel([ForLoop(y, 0, 0.5, 0.1)]):
+            qp.set_offset("flux1", y)
+            qp.wait("flux1", 100)
+    return qp
+
+
 def park_then_nested_sweep():
     qp = QProgram()
     x = qp.variable("x", Domain.Voltage)
@@ -144,6 +181,9 @@ def park_then_nested_sweep():
         fixed_flux_on_another_bus_then_sweep,
         reset_after_a_sweep,
         inner_loop_sweeps_the_same_bus_again,
+        inner_loop_sweeps_the_same_bus_again_with_more_points,
+        inner_loop_sweeps_the_same_bus_again_with_fewer_points,
+        inner_parallel_sweeps_the_same_bus_again_with_more_points,
         park_then_nested_sweep,
     ],
 )

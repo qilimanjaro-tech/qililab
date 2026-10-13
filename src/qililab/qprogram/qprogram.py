@@ -431,7 +431,7 @@ class QProgram(StructuredProgram):
         return copied_qprogram
 
     @staticmethod
-    def _flux_offset_value(operation: "SetOffset | SetGain"):
+    def _flux_offset_value(operation: "SetOffset | SetGain") -> int | float | Variable:
         """The variable/scalar value carried by a SetOffset (path0) or SetGain."""
         return operation.offset_path0 if isinstance(operation, SetOffset) else operation.gain
 
@@ -642,8 +642,11 @@ class QProgram(StructuredProgram):
                             "Parameters of the ForLoop not assigned correctly. Please check start, stop and step values."
                         )
             envelope_is_array = isinstance(envelope, np.ndarray) and envelope.ndim > 0
+            # The bus being set is replaced, so its previous value doesn't count.
             existing_arrays = [
-                value for value in flux_vector.flux_vector.values() if isinstance(value, np.ndarray) and value.ndim > 0
+                value
+                for bus, value in flux_vector.flux_vector.items()
+                if bus != element.bus and isinstance(value, np.ndarray) and value.ndim > 0
             ]
             ragged = (
                 isinstance(element, (SetOffset, SetGain))
