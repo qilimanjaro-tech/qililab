@@ -45,7 +45,7 @@ class StreamArray:
 
     Args:
         shape (list | tuple): Shape of the results array.
-        loops (Mapping[str, np.ndarray | InputLoopData]): dictionary of loops with the name of the loop and either the array or a
+        loops (Mapping[str, np.ndarray | InputLoopData | LoopData]): dictionary of loops with the name of the loop and either the array or a
             ``InputLoopData`` dictionary with the array and its ``units``, ``bus`` and ``parameter`` metadata.
         platform (Platform): platform where the experiment was executed
         experiment_name (str): Name of the experiment.

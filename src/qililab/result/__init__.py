@@ -26,6 +26,7 @@ Classes
     Result
     MeasurementResult
     QbloxMeasurementResult
+    InputLoopData
     LoopData
 
 

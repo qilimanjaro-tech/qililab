@@ -19,12 +19,13 @@ from typing import TypedDict
 
 import h5py
 import numpy as np
+import numpy.typing as npt
 
 
 class InputLoopData(TypedDict):
     """Loop values and metadata, more permissive version reflecting :meth:`StreamArray.__init__` handling"""
 
-    array: np.typing.ArrayLike
+    array: npt.ArrayLike
     units: str
     bus: str
     parameter: str
