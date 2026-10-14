@@ -843,12 +843,13 @@ class TestStreamArrayDeprecated:
     @pytest.mark.parametrize("autocalibration", [True, False])
     def test_stream_array_autocalibration_flag_is_deprecated(self, autocalibration: bool):
         """Passing the autocalibration flag, True or False, raises a FutureWarning."""
+        db_manager = MagicMock()
         with pytest.warns(FutureWarning, match="`autocalibration` is deprecated"):
             StreamArray(
                 shape=(2, 2),
                 loops={"test_amp_loop": AMP_VALUES},
                 experiment_name="test_stream_array",
-                db_manager=MagicMock(),
+                db_manager=db_manager,
                 autocalibration=autocalibration,
             )
 

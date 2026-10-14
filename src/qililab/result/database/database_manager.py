@@ -13,10 +13,11 @@
 # limitations under the License.
 
 import datetime as dt
+import functools
 import os
 import warnings
 from configparser import ConfigParser
-from typing import TYPE_CHECKING, Any, Literal, TypeGuard, TypeVar, get_args, overload
+from typing import TYPE_CHECKING, Any, Callable, Literal, TypeGuard, TypeVar, get_args, overload
 
 import h5py
 import numpy as np
@@ -51,6 +52,24 @@ def _is_database_schema(value: object) -> TypeGuard[DatabaseSchema]:
     return value in _DATABASE_SCHEMAS
 
 
+def _requires_schema(expected: DatabaseSchema) -> Callable[[Callable], Callable]:
+    """Raise if the manager's ``database_schema`` is not ``expected``."""
+
+    def decorator(func: Callable) -> Callable:
+        @functools.wraps(func)
+        def wrapper(self, *args, **kwargs):
+            if self.database_schema != expected:
+                raise ValueError(
+                    f"`{func.__name__}` needs a DatabaseManager with database_schema='{expected}', "
+                    f"this one uses '{self.database_schema}'."
+                )
+            return func(self, *args, **kwargs)
+
+        return wrapper
+
+    return decorator
+
+
 class DatabaseManager:
     """Database manager for measurements results and metadata"""
 
@@ -83,7 +102,8 @@ class DatabaseManager:
         elif config_schema is not None and config_schema != database_schema:
             warnings.warn(
                 f"'database_schema' is '{database_schema}' but the config section '{database_name}' declares "
-                f"'{config_schema}'. Using '{database_schema}'."
+                f"'{config_schema}'. Using '{database_schema}'.",
+                stacklevel=3,
             )
         if not _is_database_schema(schema):
             raise ValueError(f"'{schema}' is not a valid 'database_schema'. Valid values: {sorted(_DATABASE_SCHEMAS)}")
@@ -104,6 +124,7 @@ class DatabaseManager:
             self.base_path_share = config["base_path_shared"]
             self.folder_path = config["data_write_folder"]
 
+    @_requires_schema("measurements")
     def set_sample_and_cooldown(self, sample: str, cooldown: str | None = None):
         """Set sample and cooldown of the database
 
@@ -111,7 +132,6 @@ class DatabaseManager:
             sample (str): Sample name, mandatory parameter as allways needed unlike cooldown
             cooldown (str | None, optional): Cooldown name, contains multiple sample instances. Defaults to None.
         """
-        self._check_database_schema("measurements", "set_sample_and_cooldown")
         with self.session() as running_session:
             sample_exists = running_session.query(exists().where(Sample.sample_name == sample)).scalar()
             if sample_exists:
@@ -135,6 +155,7 @@ class DatabaseManager:
                 return
             warnings.warn(f"Set current sample to {sample}")
 
+    @_requires_schema("measurements")
     def add_cooldown(self, cooldown: str, fridge: str, date: dt.date = dt.date.today()):
         """Add cooldown to metadata
 
@@ -143,7 +164,6 @@ class DatabaseManager:
             fridge (str): Cooldown fridge.
             date (datetime.date, optional): Date of cooldown. Defaults to datetime.date.today().
         """
-        self._check_database_schema("measurements", "add_cooldown")
         cooldown_obj = Cooldown(cooldown=cooldown, date=date, fridge=fridge)
         with self.session() as running_session:
             running_session.add(cooldown_obj)
@@ -153,6 +173,7 @@ class DatabaseManager:
                 running_session.rollback()
                 raise e
 
+    @_requires_schema("measurements")
     def add_sample(
         self,
         sample_name: str,
@@ -176,7 +197,6 @@ class DatabaseManager:
             n_qubits_per_device (list[int]): Number of Qbits inside the sample.
             additional_info (str | None, optional): Optional additional information. Defaults to None.
         """
-        self._check_database_schema("measurements", "add_sample")
         sample_obj = Sample(
             sample_name=sample_name,
             manufacturer=manufacturer,
@@ -195,6 +215,7 @@ class DatabaseManager:
                 running_session.rollback()
                 raise e
 
+    @_requires_schema("measurements")
     def add_sequence_run(
         self, sequence_name: str, sequence_tree: dict, sample_name: str, cooldown: str | None = None
     ) -> SequenceRun:
@@ -206,7 +227,6 @@ class DatabaseManager:
             sample_name (str): Sample id.
             cooldown (str | None, optional): Cooldown id. Defaults to None.
         """
-        self._check_database_schema("measurements", "add_sequence_run")
         sequence_obj = SequenceRun(
             sequence_name=sequence_name,
             start_time=dt.datetime.now(),
@@ -226,13 +246,13 @@ class DatabaseManager:
                 running_session.rollback()
                 raise e
 
+    @_requires_schema("autocal")
     def add_calibration_run(self, calibration_tree: dict, sample_name: str, cooldown: str) -> CalibrationRun:
         """Add autocalibration metadata.
 
         Args:
             calibration_tree (dict): Full calibration tree of the run.
         """
-        self._check_database_schema("autocal", "add_calibration_run")
         calibration_obj = CalibrationRun(
             date=dt.datetime.now(),
             calibration_tree=calibration_tree,
@@ -266,6 +286,7 @@ class DatabaseManager:
             id (int): measurement_id value given by the database.
         """
 
+    @_requires_schema("measurements")
     def load_by_id(self, id: int | list[int]):
         """Load measurements by their measurement_id. Needs a manager with the ``"measurements"`` schema.
 
@@ -281,7 +302,6 @@ class DatabaseManager:
             ValueError: if the manager's ``database_schema`` is not ``"measurements"``.
             IndexError: if any of the ids does not exist.
         """
-        self._check_database_schema("measurements", "load_by_id")
         return self._load_by_id(Measurement, id)
 
     @overload
@@ -339,6 +359,7 @@ class DatabaseManager:
             return self._add_autocal_fitting(id, path, parameters)
         raise ValueError(f"Fitting information cannot be stored in the '{self.database_schema}' database schema.")
 
+    @_requires_schema("measurements")
     def load_sequence_by_id(self, id: int | list[int]) -> list[Measurement] | None:
         """Load measurement by its measurement_id.
 
@@ -347,7 +368,6 @@ class DatabaseManager:
         Returns:
             list[Measurement] | None: returns the list of measurements or None if no sequence could be found.
         """
-        self._check_database_schema("measurements", "load_sequence_by_id")
         with self.session() as running_session:
             measurement_by_id_list = (
                 running_session.query(Measurement)
@@ -359,6 +379,7 @@ class DatabaseManager:
                 self._rewrite_result_path(meas)
             return measurement_by_id_list
 
+    @_requires_schema("autocal")
     def load_calibration_by_id(self, id: int) -> AutocalMeasurement:
         """Load autocalibration measurement by its measurement_id. Needs a manager with the ``"autocal"`` schema.
 
@@ -369,9 +390,9 @@ class DatabaseManager:
             ValueError: if the manager's ``database_schema`` is not ``"autocal"``.
             IndexError: if the id does not exist.
         """
-        self._check_database_schema("autocal", "load_calibration_by_id")
         return self._load_by_id(AutocalMeasurement, id)
 
+    @_requires_schema("autocal")
     def add_calibration_fitting(
         self, id: int, path: str | None = None, parameters: dict[str, Any] | None = None
     ) -> AutocalMeasurement:
@@ -391,9 +412,9 @@ class DatabaseManager:
             FutureWarning,
             stacklevel=2,
         )
-        self._check_database_schema("autocal", "add_calibration_fitting")
         return self._add_autocal_fitting(id, path, parameters)
 
+    @_requires_schema("qaas")
     def load_experiment_by_id(self, id: int) -> QaaS_Experiment:
         """Load QaaS measurement by its experiment_id. Needs a manager with the ``"qaas"`` schema.
 
@@ -404,16 +425,7 @@ class DatabaseManager:
             ValueError: if the manager's ``database_schema`` is not ``"qaas"``.
             IndexError: if the id does not exist.
         """
-        self._check_database_schema("qaas", "load_experiment_by_id")
         return self._load_by_id(QaaS_Experiment, id)
-
-    def _check_database_schema(self, expected: DatabaseSchema, method: str) -> None:
-        """Raise if the manager's ``database_schema`` is not the one ``method`` works with."""
-        if self.database_schema != expected:
-            raise ValueError(
-                f"`{method}` needs a DatabaseManager with database_schema='{expected}', "
-                f"this one uses '{self.database_schema}'."
-            )
 
     def _rewrite_result_path(self, entry: Measurement | AutocalMeasurement | QaaS_Experiment) -> None:
         """Point ``result_path`` to the shared base path when the local file does not exist."""
@@ -457,6 +469,7 @@ class DatabaseManager:
         measurement = self._load_by_id(AutocalMeasurement, id)
         return measurement.add_fitting(self, path, parameters)
 
+    @_requires_schema("measurements")
     def tail(
         self,
         exp_name: str | None = None,
@@ -476,7 +489,6 @@ class DatabaseManager:
             light_read (bool, optional): If True, load only a subset of the columns. Replace heavy columns Platform and Qprogram by True or False. Defaults to False.
             since_id (int | None, optional): If provided, only load measurements with measurement_id greater than since_id. Defaults to None.
         """
-        self._check_database_schema("measurements", "tail")
         with self.engine.connect() as con:
             query = self.session().query(Measurement)
 
@@ -524,6 +536,7 @@ class DatabaseManager:
                 return read_sql(query.statement, con=con)
             return query.all()
 
+    @_requires_schema("measurements")
     def head(
         self,
         exp_name: str | None = None,
@@ -543,7 +556,6 @@ class DatabaseManager:
             light_read (bool, optional): If True, load only a subset of the columns. Replace heavy columns Platform and Qprogram by True or False. Defaults to False.
             before_id (int | None, optional): If provided, only load measurements with measurement_id lower than since_id. Defaults to None.
         """
-        self._check_database_schema("measurements", "head")
         with self.engine.connect() as con:
             query = self.session().query(Measurement)
 
@@ -591,6 +603,7 @@ class DatabaseManager:
                 return read_sql(query.statement, con=con)
             return query.all()
 
+    @_requires_schema("measurements")
     def get_qprogram(self, measurement_id: int) -> str:
         """Get QProgram of a measurement by its measurement_id.
         To be used when you have light loaded measurements
@@ -598,7 +611,6 @@ class DatabaseManager:
         Args:
             measurement_id (int): measurement_id value given by the database.
         """
-        self._check_database_schema("measurements", "get_qprogram")
         with self.session() as running_session:
             return (
                 running_session.query(Measurement.qprogram)
@@ -606,6 +618,7 @@ class DatabaseManager:
                 .scalar()
             )
 
+    @_requires_schema("measurements")
     def get_calibration(self, measurement_id: int) -> str:
         """Get Calibration of a measurement by its measurement_id.
         To be used when you have light loaded measurements
@@ -613,7 +626,6 @@ class DatabaseManager:
         Args:
             measurement_id (int): measurement_id value given by the database.
         """
-        self._check_database_schema("measurements", "get_calibration")
         with self.session() as running_session:
             return (
                 running_session.query(Measurement.calibration)
@@ -621,6 +633,7 @@ class DatabaseManager:
                 .scalar()
             )
 
+    @_requires_schema("measurements")
     def get_platform(self, measurement_id: int) -> dict:
         """Get Platform of a measurement by its measurement_id.
         To be used when you have light loaded measurements
@@ -628,7 +641,6 @@ class DatabaseManager:
         Args:
             measurement_id (int): measurement_id value given by the database.
         """
-        self._check_database_schema("measurements", "get_platform")
         with self.session() as running_session:
             return (
                 running_session.query(Measurement.platform)
@@ -636,6 +648,7 @@ class DatabaseManager:
                 .scalar()
             )
 
+    @_requires_schema("measurements")
     def get_debug(self, measurement_id: int) -> str:
         """Get Debug of a measurement by its measurement_id.
         To be used when you have light loaded measurements
@@ -643,7 +656,6 @@ class DatabaseManager:
         Args:
             measurement_id (int): measurement_id value given by the database.
         """
-        self._check_database_schema("measurements", "get_debug")
         with self.session() as running_session:
             return (
                 running_session.query(Measurement.debug_file)
@@ -651,6 +663,7 @@ class DatabaseManager:
                 .scalar()
             )
 
+    @_requires_schema("measurements")
     def get_dc_offsets(self, measurement_id: int) -> str:
         """Get DC offsets of a measurement by its measurement_id.
         To be used when you have light loaded measurements
@@ -658,7 +671,6 @@ class DatabaseManager:
         Args:
             measurement_id (int): measurement_id value given by the database.
         """
-        self._check_database_schema("measurements", "get_dc_offsets")
         with self.session() as running_session:
             return (
                 running_session.query(Measurement.dc_offsets)
@@ -666,10 +678,11 @@ class DatabaseManager:
                 .scalar()
             )
 
+    @_requires_schema("autocal")
     def add_autocal_measurement(
         self,
         experiment_name: str,
-        qubit_idx: int | str,
+        qubit_idx: str,
         calibration: "Calibration",
         platform: "Platform | None" = None,
         qprogram: "QProgram | None" = None,
@@ -680,14 +693,13 @@ class DatabaseManager:
 
         Args:
             experiment_name (str): Experiment name.
-            qubit_idx (int | str): Index of the measured qubit, stored in the ``qbit_idx`` column.
+            qubit_idx (str): Index of the measured qubit, stored in the ``qbit_idx`` column.
             calibration (Calibration): Experiment calibration parameters.
             platform (Platform, optional): Platform used on the experiment. Defaults to None.
             qprogram (QProgram | None, optional): Qprogram used on the experiment. Defaults to None.
             parameters (list[str] | None, optional): Parameters used on the experiment. Defaults to None.
             data_shape (np.ndarray | None, optional): Shape of the results array. Defaults to None.
         """
-        self._check_database_schema("autocal", "add_autocal_measurement")
         start_time = dt.datetime.now()
 
         with self.session() as running_session:
@@ -709,7 +721,7 @@ class DatabaseManager:
         self.calibration_measurement = AutocalMeasurement(
             experiment_name=experiment_name,
             calibration_id=calibration_id,
-            qbit_idx=qubit_idx,
+            qbit_idx=str(qubit_idx) if isinstance(qubit_idx, int) else qubit_idx,
             result_path=result_path,
             fitting_path=base_path,
             experiment_completed=False,
@@ -729,15 +741,16 @@ class DatabaseManager:
                 running_session.rollback()
                 raise e
 
+    @_requires_schema("autocal")
     def update_platform(self, platform: "Platform"):
         """Update calibration platform after fitting
 
         Args:
             platform (Platform): New platform to be set at the platform_after column from `AutocalMeasurement`.
         """
-        self._check_database_schema("autocal", "update_platform")
         self.calibration_measurement.update_platform(self.session, platform)
 
+    @_requires_schema("qaas")
     def add_experiment(
         self,
         job_id: int,
@@ -755,7 +768,6 @@ class DatabaseManager:
             cooldown (str): Cooldown id.
             sample_name (str): Sample id.
         """
-        self._check_database_schema("qaas", "add_experiment")
         start_time = dt.datetime.now()
 
         measurement = QaaS_Experiment(
@@ -776,6 +788,7 @@ class DatabaseManager:
                 running_session.rollback()
                 raise e
 
+    @_requires_schema("measurements")
     def add_measurement(
         self,
         experiment_name: str,
@@ -821,7 +834,6 @@ class DatabaseManager:
             secondary_source (np.ndarray | None, optional): Secondary source buses list. Defaults to None.
             bus_mapping (dict[str, str] | None, optional): Bus map of the qprogram. Defaults to None.
         """
-        self._check_database_schema("measurements", "add_measurement")
         if sample_name is None:
             if self.current_sample:
                 sample_name = self.current_sample
@@ -881,6 +893,7 @@ class DatabaseManager:
                 running_session.rollback()
                 raise e
 
+    @_requires_schema("measurements")
     def add_results(
         self,
         experiment_name: str,
@@ -910,7 +923,6 @@ class DatabaseManager:
             calibration (Calibration | None, optional): Calibration used on the experiment. Defaults to None.
             parameters (list[str] | None, optional): Parameters used on the experiment. Defaults to None.
         """
-        self._check_database_schema("measurements", "add_results")
         if sample_name is None:
             if self.current_sample:
                 sample_name = self.current_sample

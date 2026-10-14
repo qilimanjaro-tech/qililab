@@ -1274,9 +1274,21 @@ class Testdatabase:
 
         assert qprogram == mock_session.query(Measurement.dc_offsets).filter(Measurement.measurement_id == 123).scalar()
 
+    @pytest.mark.parametrize(
+        ("qubit_idx", "expected_qbit_idx", "expected_target"),
+        [(0, "0", ["0"]), ("1", "1", ["1"]), (None, None, None)],
+    )
     @patch("qililab.result.database.database_manager.os.makedirs")
     @patch("qililab.result.database.database_manager.dt")
-    def test_add_autocal_measurement(self, mock_datetime, mock_makedirs, db_manager_autocal: DatabaseManager):
+    def test_add_autocal_measurement(
+        self,
+        mock_datetime,
+        mock_makedirs,
+        db_manager_autocal: DatabaseManager,
+        qubit_idx,
+        expected_qbit_idx,
+        expected_target,
+    ):
         # Setup
         mock_calibration_id = MagicMock()
         mock_query = MagicMock()
@@ -1295,12 +1307,15 @@ class Testdatabase:
         calibration.parameters = {"sample_name": "sampleA", "cooldown": "cdX", "data_folder": "/shared_test/"}
         # Act
         measurement = db_manager_autocal.add_autocal_measurement(
-            experiment_name="exp1", qubit_idx=0, calibration=calibration
+            experiment_name="exp1", qubit_idx=qubit_idx, calibration=calibration
         )
 
         # Assert
         expected_path = "/shared_test/exp1.h5"
         assert measurement.result_path == expected_path
+        # int indexes are stored as str, so target matches Measurement.target
+        assert measurement.qbit_idx == expected_qbit_idx
+        assert measurement.target == expected_target
         db_manager_autocal._mock_session.add.assert_called_once()
         db_manager_autocal._mock_session.commit.assert_called_once()
         mock_makedirs.assert_called_once_with("/shared_test/")
@@ -1674,9 +1689,11 @@ class TestDeprecated:
     )
     def test_deprecated_loaders_warn(self, db_manager: DatabaseManager, method, kwargs, schema, private):
         db_manager.database_schema = schema
+        method_to_call = getattr(db_manager, method)
         with patch.object(db_manager, private, return_value="entry") as mock_private:
             with pytest.warns(FutureWarning, match=f"`{method}` is deprecated"):
-                assert getattr(db_manager, method)(123, **kwargs) == "entry"
+                result = method_to_call(123, **kwargs)
+        assert result == "entry"
         mock_private.assert_called_once()
 
     @pytest.mark.parametrize(
@@ -1687,9 +1704,10 @@ class TestDeprecated:
     )
     def test_deprecated_loaders_raise_error_on_other_schema(self, db_manager: DatabaseManager, method, kwargs, private):
         # fixture manager uses the measurements schema
+        method_to_call = getattr(db_manager, method)
         with patch.object(db_manager, private) as mock_private:
-            with pytest.warns(FutureWarning), pytest.raises(ValueError, match=f"`{method}` needs a DatabaseManager"):
-                getattr(db_manager, method)(123, **kwargs)
+            with pytest.raises(ValueError, match=f"`{method}` needs a DatabaseManager"):
+                method_to_call(123, **kwargs)
         mock_private.assert_not_called()
 
     def test_add_calibration_fitting(self, db_manager: DatabaseManager):
@@ -1721,6 +1739,8 @@ class TestDeprecated:
     def test_add_calibration_fitting_raises_exception_measurement_not_found(self, db_manager: DatabaseManager):
         db_manager.database_schema = "autocal"
         db_manager._mock_session.query.return_value.filter.return_value.all.return_value = []
-        with pytest.raises(IndexError, match=r"AutocalMeasurement entry \[123\] does not exist."):
-            with pytest.warns(FutureWarning):
-                db_manager.add_calibration_fitting(123, path="/test/fit.h5")
+        with (
+            pytest.raises(IndexError, match=r"AutocalMeasurement entry \[123\] does not exist."),
+            pytest.warns(FutureWarning),
+        ):
+            db_manager.add_calibration_fitting(123, path="/test/fit.h5")
