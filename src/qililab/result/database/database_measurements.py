@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import datetime
+import datetime as dt
 from typing import TYPE_CHECKING, Any, ClassVar
 
 from pandas import read_hdf
@@ -49,7 +49,7 @@ class Cooldown(_MeasurementsBase):
     __tablename__ = "cooldowns"
 
     cooldown: Mapped[str] = mapped_column(primary_key=True)
-    date: Mapped[datetime.date | None]
+    date: Mapped[dt.date | None]
     fridge: Mapped[str | None]
     active: Mapped[bool | None] = mapped_column(server_default=text("true"))
 
@@ -82,9 +82,9 @@ class SequenceRun(_MeasurementsBase):
 
     sequence_id: Mapped[int] = mapped_column(primary_key=True)
     sequence_name: Mapped[str]
-    start_time: Mapped[datetime.datetime]
-    end_time: Mapped[datetime.datetime | None]
-    run_length: Mapped[datetime.timedelta | None]
+    start_time: Mapped[dt.datetime]
+    end_time: Mapped[dt.datetime | None]
+    run_length: Mapped[dt.timedelta | None]
     sequence_tree: Mapped[dict[str, Any] | None] = mapped_column(default=JSONB.NULL)
     sequence_completed: Mapped[bool]
     cooldown: Mapped[str | None] = mapped_column(ForeignKey(Cooldown.cooldown), index=True)
@@ -97,7 +97,7 @@ class SequenceRun(_MeasurementsBase):
         with session() as running_session:
             # Merge the detached instance into the current session
             persistent_instance = running_session.merge(self)
-            persistent_instance.end_time = datetime.datetime.now()
+            persistent_instance.end_time = dt.datetime.now()
             persistent_instance.run_length = persistent_instance.end_time - persistent_instance.start_time
             self.end_time = persistent_instance.end_time
             self.run_length = persistent_instance.run_length
@@ -123,9 +123,9 @@ class Measurement(_MeasurementsBase):
     measurement_id: Mapped[int] = mapped_column(primary_key=True)
     experiment_name: Mapped[str]
     optional_identifier: Mapped[str | None]
-    start_time: Mapped[datetime.datetime]
-    end_time: Mapped[datetime.datetime | None]
-    run_length: Mapped[datetime.timedelta | None]
+    start_time: Mapped[dt.datetime]
+    end_time: Mapped[dt.datetime | None]
+    run_length: Mapped[dt.timedelta | None]
     experiment_completed: Mapped[bool]
     sample_name: Mapped[str] = mapped_column(ForeignKey(Sample.sample_name))
     cooldown: Mapped[str | None] = mapped_column(ForeignKey(Cooldown.cooldown), index=True)
@@ -155,7 +155,7 @@ class Measurement(_MeasurementsBase):
         with session() as running_session:
             # Merge the detached instance into the current session
             persistent_instance = running_session.merge(self)
-            persistent_instance.end_time = datetime.datetime.now()
+            persistent_instance.end_time = dt.datetime.now()
             persistent_instance.run_length = persistent_instance.end_time - persistent_instance.start_time
             try:
                 if traceback is None:

@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import datetime
+import datetime as dt
 from typing import TYPE_CHECKING, Any, ClassVar
 
 from sqlalchemy import ARRAY, ForeignKey, Integer, String
@@ -40,7 +40,7 @@ class CalibrationRun(_AutocalBase):
     __tablename__ = "calibration_run"
 
     calibration_id: Mapped[int] = mapped_column(primary_key=True)
-    date: Mapped[datetime.datetime | None]
+    date: Mapped[dt.datetime | None]
     calibration_tree: Mapped[dict[str, Any] | None] = mapped_column(default=JSONB.NULL)
     calibration_completed: Mapped[bool]
     cooldown: Mapped[str | None] = mapped_column(index=True)
@@ -73,9 +73,9 @@ class AutocalMeasurement(_AutocalBase):
 
     measurement_id: Mapped[int] = mapped_column(primary_key=True)
     experiment_name: Mapped[str]
-    start_time: Mapped[datetime.datetime]
-    end_time: Mapped[datetime.datetime | None]
-    run_length: Mapped[datetime.timedelta | None]
+    start_time: Mapped[dt.datetime]
+    end_time: Mapped[dt.datetime | None]
+    run_length: Mapped[dt.timedelta | None]
     experiment_completed: Mapped[bool]
     calibration_id: Mapped[int] = mapped_column(ForeignKey(CalibrationRun.calibration_id))
     result_path: Mapped[str] = mapped_column(unique=True)
@@ -97,7 +97,7 @@ class AutocalMeasurement(_AutocalBase):
             # Merge the detached instance into the current session
             persistent_instance = running_session.merge(self)
 
-            persistent_instance.end_time = datetime.datetime.now()
+            persistent_instance.end_time = dt.datetime.now()
             persistent_instance.run_length = persistent_instance.end_time - persistent_instance.start_time
             self.end_time = persistent_instance.end_time
             self.run_length = persistent_instance.run_length

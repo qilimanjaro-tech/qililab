@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import datetime
+import datetime as dt
 
 from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column, sessionmaker
 
@@ -31,9 +31,9 @@ class QaaS_Experiment(_QaasBase):
     experiment_id: Mapped[int] = mapped_column(primary_key=True)
     job_id: Mapped[int | None]
     experiment_name: Mapped[str | None]
-    start_time: Mapped[datetime.datetime]
-    end_time: Mapped[datetime.datetime | None]
-    run_length: Mapped[datetime.timedelta | None]
+    start_time: Mapped[dt.datetime]
+    end_time: Mapped[dt.datetime | None]
+    run_length: Mapped[dt.timedelta | None]
     experiment_completed: Mapped[bool]
     cooldown: Mapped[str | None] = mapped_column(index=True)
     sample_name: Mapped[str]
@@ -46,7 +46,7 @@ class QaaS_Experiment(_QaasBase):
         with session() as running_session:
             # Merge the detached instance into the current session
             persistent_instance = running_session.merge(self)
-            persistent_instance.end_time = datetime.datetime.now()
+            persistent_instance.end_time = dt.datetime.now()
             persistent_instance.run_length = persistent_instance.end_time - persistent_instance.start_time
             try:
                 if traceback is None:
