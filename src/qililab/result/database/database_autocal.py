@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import datetime
+import datetime as dt
 from typing import TYPE_CHECKING, Any
 
 from sqlalchemy import ARRAY, Boolean, Column, DateTime, ForeignKey, Integer, Interval, String
@@ -138,7 +138,7 @@ class AutocalMeasurement(base):  # type: ignore
             # Merge the detached instance into the current session
             persistent_instance = running_session.merge(self)
 
-            persistent_instance.end_time = datetime.datetime.now()  # type: ignore[assignment]
+            persistent_instance.end_time = dt.datetime.now()  # type: ignore[assignment]
             persistent_instance.run_length = persistent_instance.end_time - persistent_instance.start_time  # type: ignore[assignment]
             self.end_time = persistent_instance.end_time
             self.run_length = persistent_instance.run_length
