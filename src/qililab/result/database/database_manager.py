@@ -682,7 +682,7 @@ class DatabaseManager:
     def add_autocal_measurement(
         self,
         experiment_name: str,
-        qubit_idx: str,
+        qubit_idx: int | str | None,
         calibration: "Calibration",
         platform: "Platform | None" = None,
         qprogram: "QProgram | None" = None,
