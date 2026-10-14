@@ -85,7 +85,7 @@ class SequenceRun(_MeasurementsBase):
     start_time: Mapped[datetime.datetime]
     end_time: Mapped[datetime.datetime | None]
     run_length: Mapped[datetime.timedelta | None]
-    sequence_tree: Mapped[dict[str, Any] | None]
+    sequence_tree: Mapped[dict[str, Any] | None] = mapped_column(default=JSONB.NULL)
     sequence_completed: Mapped[bool]
     cooldown: Mapped[str | None] = mapped_column(ForeignKey(Cooldown.cooldown), index=True)
     sample_name: Mapped[str] = mapped_column(ForeignKey(Sample.sample_name))
@@ -130,20 +130,20 @@ class Measurement(_MeasurementsBase):
     sample_name: Mapped[str] = mapped_column(ForeignKey(Sample.sample_name))
     cooldown: Mapped[str | None] = mapped_column(ForeignKey(Cooldown.cooldown), index=True)
     sequence_id: Mapped[int | None]
-    dc_offsets: Mapped[dict[str, Any] | None]
-    flux_offsets: Mapped[dict[str, Any] | None]
+    dc_offsets: Mapped[dict[str, Any] | None] = mapped_column(default=JSONB.NULL)
+    flux_offsets: Mapped[dict[str, Any] | None] = mapped_column(default=JSONB.NULL)
     target: Mapped[list[str] | None]
     secondary_source: Mapped[list[str] | None]
     result_path: Mapped[str] = mapped_column(unique=True)
-    platform: Mapped[dict[str, Any] | None]
-    experiment: Mapped[dict[str, Any] | None]
-    qprogram: Mapped[dict[str, Any] | None]
-    bus_mapping: Mapped[dict[str, Any] | None]
-    calibration: Mapped[dict[str, Any] | None]
-    parameters: Mapped[dict[str, Any] | None]
+    platform: Mapped[dict[str, Any] | None] = mapped_column(default=JSONB.NULL)
+    experiment: Mapped[dict[str, Any] | None] = mapped_column(default=JSONB.NULL)
+    qprogram: Mapped[str | None] = mapped_column(JSONB, default=JSONB.NULL)
+    bus_mapping: Mapped[dict[str, Any] | None] = mapped_column(default=JSONB.NULL)
+    calibration: Mapped[str | None] = mapped_column(JSONB, default=JSONB.NULL)
+    parameters: Mapped[list[str] | None] = mapped_column(JSONB)
     data_shape: Mapped[list[int] | None]
     fitting_path: Mapped[str | None]
-    fitting_parameters: Mapped[dict[str, Any] | None]
+    fitting_parameters: Mapped[dict[str, Any] | None] = mapped_column(default=JSONB.NULL)
     debug_file: Mapped[str | None] = mapped_column(Text)
     created_by: Mapped[str | None] = mapped_column(server_default=text("current_user"))
     # TODO: add error_report = Column("error_report", String, nullable=True)

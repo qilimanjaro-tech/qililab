@@ -41,7 +41,7 @@ class CalibrationRun(_AutocalBase):
 
     calibration_id: Mapped[int] = mapped_column(primary_key=True)
     date: Mapped[datetime.datetime | None]
-    calibration_tree: Mapped[dict[str, Any] | None]
+    calibration_tree: Mapped[dict[str, Any] | None] = mapped_column(default=JSONB.NULL)
     calibration_completed: Mapped[bool]
     cooldown: Mapped[str | None] = mapped_column(index=True)
     sample_name: Mapped[str]
@@ -80,13 +80,13 @@ class AutocalMeasurement(_AutocalBase):
     calibration_id: Mapped[int] = mapped_column(ForeignKey(CalibrationRun.calibration_id))
     result_path: Mapped[str] = mapped_column(unique=True)
     fitting_path: Mapped[str | None]
-    fitting_parameters: Mapped[dict[str, Any] | None]
+    fitting_parameters: Mapped[dict[str, Any] | None] = mapped_column(default=JSONB.NULL)
     qbit_idx: Mapped[str | None]
-    platform_after: Mapped[dict[str, Any] | None]
-    platform_before: Mapped[dict[str, Any] | None]
-    qprogram: Mapped[dict[str, Any] | None]
-    calibration: Mapped[dict[str, Any] | None]
-    parameters: Mapped[dict[str, Any] | None]
+    platform_after: Mapped[dict[str, Any] | None] = mapped_column(default=JSONB.NULL)
+    platform_before: Mapped[dict[str, Any] | None] = mapped_column(default=JSONB.NULL)
+    qprogram: Mapped[str | None] = mapped_column(JSONB, default=JSONB.NULL)
+    calibration: Mapped[str | None] = mapped_column(JSONB, default=JSONB.NULL)
+    parameters: Mapped[str | None] = mapped_column(JSONB)
     data_shape: Mapped[list[int] | None]
 
     def end_experiment(self, session: sessionmaker[Session], traceback: str | None = None):
