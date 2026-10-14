@@ -124,7 +124,7 @@ def fixture_qaas_measurement():
 class TestMeasurement:
     """Test Measurement class"""
 
-    @patch("qililab.result.database.database_measurements.datetime")
+    @patch("qililab.result.database.database_measurements.dt")
     def test_end_experiment(self, mock_datetime, measurement):
         fixed_now = datetime.datetime(2023, 1, 1, 12, 0, 0)
         mock_datetime.datetime.now.return_value = fixed_now
@@ -141,7 +141,7 @@ class TestMeasurement:
         assert result.run_length == fixed_now - measurement.start_time
         mock_session.commit.assert_called_once()
 
-    @patch("qililab.result.database.database_manager.datetime")
+    @patch("qililab.result.database.database_manager.dt")
     def test_end_experiment_raises_exception(self, mock_datetime, measurement):
         fixed_now = datetime.datetime(2023, 1, 1, 12, 0, 0)
         mock_datetime.datetime.now.return_value = fixed_now
@@ -202,7 +202,7 @@ class TestMeasurement:
 
         mock_session.rollback.assert_called_once()
 
-    @patch("qililab.result.database.database_autocal.datetime")
+    @patch("qililab.result.database.database_autocal.dt")
     def test_autocalibration_update_platform(self, mock_datetime, autocalibration_measurement):
         fixed_now = datetime.datetime(2023, 1, 1, 12, 0, 0)
         mock_datetime.datetime.now.return_value = fixed_now
@@ -219,7 +219,7 @@ class TestMeasurement:
         assert result.platform_after == mock_platform.to_dict()
         mock_session.commit.assert_called_once()
 
-    @patch("qililab.result.database.database_autocal.datetime")
+    @patch("qililab.result.database.database_autocal.dt")
     def test_autocalibration_update_platform_raises_exception(self, mock_datetime, autocalibration_measurement):
         fixed_now = datetime.datetime(2023, 1, 1, 12, 0, 0)
         mock_datetime.datetime.now.return_value = fixed_now
@@ -237,7 +237,7 @@ class TestMeasurement:
 
         mock_session.rollback.assert_called_once()
 
-    @patch("qililab.result.database.database_autocal.datetime")
+    @patch("qililab.result.database.database_autocal.dt")
     def test_autocalibration_end_experiment(self, mock_datetime, autocalibration_measurement):
         fixed_now = datetime.datetime(2023, 1, 1, 12, 0, 0)
         mock_datetime.datetime.now.return_value = fixed_now
@@ -254,7 +254,7 @@ class TestMeasurement:
         assert result.run_length == fixed_now - autocalibration_measurement.start_time
         mock_session.commit.assert_called_once()
 
-    @patch("qililab.result.database.database_autocal.datetime")
+    @patch("qililab.result.database.database_autocal.dt")
     def test_autocalibration_end_experiment_raises_exception(self, mock_datetime, autocalibration_measurement):
         fixed_now = datetime.datetime(2023, 1, 1, 12, 0, 0)
         mock_datetime.datetime.now.return_value = fixed_now
@@ -329,7 +329,7 @@ class TestMeasurement:
 
         mock_session.rollback.assert_called_once()
 
-    @patch("qililab.result.database.database_autocal.datetime")
+    @patch("qililab.result.database.database_autocal.dt")
     def test_autocalibration_end_calibration(self, mock_datetime, calibration_tree):
         fixed_now = datetime.datetime(2023, 1, 1, 12, 0, 0)
         mock_datetime.datetime.now.return_value = fixed_now
@@ -345,7 +345,7 @@ class TestMeasurement:
         assert result.calibration_completed is True
         mock_session.commit.assert_called_once()
 
-    @patch("qililab.result.database.database_autocal.datetime")
+    @patch("qililab.result.database.database_autocal.dt")
     def test_autocalibration_end_calibration_raises_exception(self, mock_datetime, calibration_tree):
         fixed_now = datetime.datetime(2023, 1, 1, 12, 0, 0)
         mock_datetime.datetime.now.return_value = fixed_now
@@ -361,7 +361,7 @@ class TestMeasurement:
 
         mock_session.rollback.assert_called_once()
 
-    @patch("qililab.result.database.database_qaas.datetime")
+    @patch("qililab.result.database.database_qaas.dt")
     def test_qaas_end_experiment(self, mock_datetime, qaas_measurement):
         fixed_now = datetime.datetime(2023, 1, 1, 12, 0, 0)
         mock_datetime.datetime.now.return_value = fixed_now
@@ -378,7 +378,7 @@ class TestMeasurement:
         assert result.run_length == fixed_now - qaas_measurement.start_time
         mock_session.commit.assert_called_once()
 
-    @patch("qililab.result.database.database_qaas.datetime")
+    @patch("qililab.result.database.database_qaas.dt")
     def test_qaas_end_experiment_raises_exception(self, mock_datetime, qaas_measurement):
         fixed_now = datetime.datetime(2023, 1, 1, 12, 0, 0)
         mock_datetime.datetime.now.return_value = fixed_now
@@ -701,7 +701,7 @@ class Testdatabase:
 
         mock_session.rollback.assert_called_once()
 
-    @patch("qililab.result.database.database_measurements.datetime")
+    @patch("qililab.result.database.database_measurements.dt")
     def test_end_sequence(self, mock_datetime, sequence_run):
         fixed_now = datetime.datetime(2023, 1, 1, 12, 0, 0)
         mock_datetime.datetime.now.return_value = fixed_now
@@ -716,7 +716,7 @@ class Testdatabase:
         assert result.end_time == fixed_now
         assert result.sequence_completed is True
 
-    @patch("qililab.result.database.database_measurements.datetime")
+    @patch("qililab.result.database.database_measurements.dt")
     def test_end_sequence_raises_exception(self, mock_datetime, sequence_run):
         fixed_now = datetime.datetime(2023, 1, 1, 12, 0, 0)
         mock_datetime.datetime.now.return_value = fixed_now
@@ -1086,7 +1086,7 @@ class Testdatabase:
         assert qprogram == mock_session.query(Measurement.dc_offsets).filter(Measurement.measurement_id == 123).scalar()
 
     @patch("qililab.result.database.database_manager.os.makedirs")
-    @patch("qililab.result.database.database_manager.datetime")
+    @patch("qililab.result.database.database_manager.dt")
     def test_add_autocal_measurement(self, mock_datetime, mock_makedirs, db_manager: DatabaseManager):
         # Setup
         mock_calibration_id = MagicMock()
@@ -1115,7 +1115,7 @@ class Testdatabase:
         mock_makedirs.assert_called_once_with("/shared_test/")
 
     @patch("qililab.result.database.database_manager.os.makedirs")
-    @patch("qililab.result.database.database_manager.datetime")
+    @patch("qililab.result.database.database_manager.dt")
     def test_add_autocal_measurement_raises_exception(self, mock_datetime, mock_makedirs, db_manager: DatabaseManager):
 
         fixed_time = datetime.datetime(2023, 1, 1, 12, 0, 0)
@@ -1160,7 +1160,7 @@ class Testdatabase:
         db_manager._mock_session.add.assert_called_once()
         db_manager._mock_session.commit.assert_called()
 
-    @patch("qililab.result.database.database_manager.datetime")
+    @patch("qililab.result.database.database_manager.dt")
     def test_add_experiment(self, mock_datetime, db_manager: DatabaseManager):
 
         fixed_time = datetime.datetime(2023, 1, 1, 12, 0, 0)
@@ -1178,7 +1178,7 @@ class Testdatabase:
         db_manager._mock_session.add.assert_called_once()
         db_manager._mock_session.commit.assert_called_once()
 
-    @patch("qililab.result.database.database_manager.datetime")
+    @patch("qililab.result.database.database_manager.dt")
     def test_add_experiment_raises_exception(self, mock_datetime, db_manager: DatabaseManager):
 
         fixed_time = datetime.datetime(2023, 1, 1, 12, 0, 0)
@@ -1206,7 +1206,7 @@ class Testdatabase:
         mock_session.rollback.assert_called_once()
 
     @patch("qililab.result.database.database_manager.os.makedirs")
-    @patch("qililab.result.database.database_manager.datetime")
+    @patch("qililab.result.database.database_manager.dt")
     def test_add_measurement(self, mock_datetime, mock_makedirs, db_manager: DatabaseManager):
         # Setup
         db_manager.current_sample = "sampleA"
@@ -1228,7 +1228,7 @@ class Testdatabase:
         mock_makedirs.assert_called_once_with("/shared_test/measurement_folder/sampleA/cdX/2023-01-01/12_00_00_000000")
 
     @patch("qililab.result.database.database_manager.os.makedirs")
-    @patch("qililab.result.database.database_manager.datetime")
+    @patch("qililab.result.database.database_manager.dt")
     def test_add_measurement_bus_mapping(self, mock_datetime, mock_makedirs, db_manager: DatabaseManager):
         # Setup
         db_manager.current_sample = "sampleA"
@@ -1252,7 +1252,7 @@ class Testdatabase:
         mock_makedirs.assert_called_once_with("/shared_test/measurement_folder/sampleA/cdX/2023-01-01/12_00_00_000000")
 
     @patch("qililab.result.database.database_manager.os.makedirs")
-    @patch("qililab.result.database.database_manager.datetime")
+    @patch("qililab.result.database.database_manager.dt")
     def test_add_measurement_flux_offsets(self, mock_datetime, mock_makedirs, db_manager: DatabaseManager):
         # Setup
         db_manager.current_sample = "sampleA"
@@ -1280,7 +1280,7 @@ class Testdatabase:
             db_manager.add_measurement(experiment_name="exp1", experiment_completed=True)
 
     @patch("qililab.result.database.database_manager.os.makedirs")
-    @patch("qililab.result.database.database_manager.datetime")
+    @patch("qililab.result.database.database_manager.dt")
     def test_add_measurement_raises_exception(self, mock_datetime, mock_makedirs, db_manager: DatabaseManager):
         db_manager.current_sample = "sampleA"
         db_manager.current_cd = "cdX"
@@ -1304,7 +1304,7 @@ class Testdatabase:
     @patch("qililab.result.database.database_manager.h5py.File")
     @patch("qililab.result.database.database_manager.os.makedirs")
     @patch("qililab.result.database.database_manager.os.path.isdir")
-    @patch("qililab.result.database.database_manager.datetime")
+    @patch("qililab.result.database.database_manager.dt")
     def test_add_results(self, mock_datetime, mock_isdir, mock_makedirs, mock_h5py_file, db_manager: DatabaseManager):
         db_manager.current_sample = "sampleA"
         db_manager.current_cd = "cdX"
@@ -1351,7 +1351,7 @@ class Testdatabase:
     @patch("qililab.result.database.database_manager.h5py.File")
     @patch("qililab.result.database.database_manager.os.makedirs")
     @patch("qililab.result.database.database_manager.os.path.isdir")
-    @patch("qililab.result.database.database_manager.datetime")
+    @patch("qililab.result.database.database_manager.dt")
     def test_add_results_raises_exception(
         self, mock_datetime, mock_isdir, mock_makedirs, mock_h5py_file, db_manager: DatabaseManager
     ):
