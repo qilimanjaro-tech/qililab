@@ -115,7 +115,9 @@ jobs:
         with:
           use_pypi: true
           fail_ci_if_error: true
-          token: ${{ secrets.CODECOV_TOKEN }}
+          # Dependabot-triggered runs can't read Actions secrets, so upload via OIDC
+          # instead of CODECOV_TOKEN (the job already has id-token: write).
+          use_oidc: true
           flags: "unittests"
 
   all-tests:
