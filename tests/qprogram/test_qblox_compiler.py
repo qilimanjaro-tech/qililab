@@ -1557,7 +1557,7 @@ class TestQBloxCompiler:
                 )
 
         compiler = QbloxCompiler()
-        sequences, _ = compiler.compile(qprogram=qp, qblox_buses=["readout"])
+        sequences, _ = compiler.compile(qprogram=qp, qblox_buses=["readout"], ext_trigger=True)
 
         readout_str = """
             setup:
@@ -1598,7 +1598,7 @@ class TestQBloxCompiler:
                 )
 
         compiler = QbloxCompiler()
-        sequences, _ = compiler.compile(qprogram=qp, qblox_buses=["readout"])
+        sequences, _ = compiler.compile(qprogram=qp, qblox_buses=["readout"], ext_trigger=True)
 
         assert compiler._buses["readout"].expected_trigger_wait_time == 3000
 
@@ -1643,7 +1643,7 @@ class TestQBloxCompiler:
                 )
 
         compiler = QbloxCompiler()
-        sequences, _ = compiler.compile(qprogram=qp, qblox_buses=["readout"])
+        sequences, _ = compiler.compile(qprogram=qp, qblox_buses=["readout"], ext_trigger=True)
 
         readout_str = """
             setup:
@@ -1692,7 +1692,7 @@ class TestQBloxCompiler:
                 qp.play(bus="readout", waveform=Square(amplitude=1.0, duration=250))
 
         compiler = QbloxCompiler()
-        sequences, _ = compiler.compile(qprogram=qp, qblox_buses=["readout"])
+        sequences, _ = compiler.compile(qprogram=qp, qblox_buses=["readout"], ext_trigger=True)
 
         readout_str = """
             setup:
@@ -1738,7 +1738,7 @@ class TestQBloxCompiler:
                 "set_trigger(position='step') + play(dwell=...) in this QProgram to derive it from."
             ),
         ):
-            compiler.compile(qprogram=qp, qblox_buses=["readout"])
+            compiler.compile(qprogram=qp, qblox_buses=["readout"], ext_trigger=True)
 
     def test_if_trigger_qdac_settrigger_without_preceding_dwell_raises_error(self):
         qp = QProgram()
@@ -1755,7 +1755,7 @@ class TestQBloxCompiler:
                 "qp.qdac.play(bus='qdac_flux', dwell=...) in this QProgram to derive its wait time from."
             ),
         ):
-            compiler.compile(qprogram=qp, qblox_buses=["readout"])
+            compiler.compile(qprogram=qp, qblox_buses=["readout"], ext_trigger=True)
 
     def test_if_trigger_second_block_raises_error(self):
         """Only one qp.if_trigger() block is supported per QProgram."""
@@ -1769,7 +1769,7 @@ class TestQBloxCompiler:
 
         compiler = QbloxCompiler()
         with pytest.raises(NotImplementedError, match="Only one qp.if_trigger\\(\\) block is supported per QProgram."):
-            compiler.compile(qprogram=qp, qblox_buses=["readout"])
+            compiler.compile(qprogram=qp, qblox_buses=["readout"], ext_trigger=True)
 
     def test_if_trigger_without_real_time_instructions_raises_error(self):
         qp = QProgram()
@@ -1778,7 +1778,7 @@ class TestQBloxCompiler:
 
         compiler = QbloxCompiler()
         with pytest.raises(ValueError, match="Conditional block must contain at least one real-time instruction."):
-            compiler.compile(qprogram=qp, qblox_buses=["readout"])
+            compiler.compile(qprogram=qp, qblox_buses=["readout"], ext_trigger=True)
 
     def test_if_trigger_multiple_buses_raises_error(self):
         qp = QProgram()
@@ -1791,7 +1791,7 @@ class TestQBloxCompiler:
         with pytest.raises(
             NotImplementedError, match="Conditional instructions based on a trigger can only be associated with one bus for now."
         ):
-            compiler.compile(qprogram=qp, qblox_buses=["readout", "readout2"])
+            compiler.compile(qprogram=qp, qblox_buses=["readout", "readout2"], ext_trigger=True)
 
     def test_if_trigger_dynamic_wait_duration_raises_error(self):
         qp = QProgram()
@@ -1810,7 +1810,7 @@ class TestQBloxCompiler:
                 "variable comes from."
             ),
         ):
-            compiler.compile(qprogram=qp, qblox_buses=["readout"])
+            compiler.compile(qprogram=qp, qblox_buses=["readout"], ext_trigger=True)
 
     def test_if_trigger_nested_parallel_block_raises_error(self):
         """Only qp.average(...)/qp.for_loop(...) can nest inside qp.if_trigger(); a qp.parallel(...) cannot."""
@@ -1826,7 +1826,7 @@ class TestQBloxCompiler:
                 "Parallel block cannot be nested inside qp.if_trigger() (only qp.average(...)/qp.for_loop(...) can be)."
             ),
         ):
-            compiler.compile(qprogram=qp, qblox_buses=["readout"])
+            compiler.compile(qprogram=qp, qblox_buses=["readout"], ext_trigger=True)
 
     def test_if_trigger_nested_plain_block_raises_error(self):
         qp = QProgram()
@@ -1841,7 +1841,7 @@ class TestQBloxCompiler:
                 "Block block cannot be nested inside qp.if_trigger() (only qp.average(...)/qp.for_loop(...) can be)."
             ),
         ):
-            compiler.compile(qprogram=qp, qblox_buses=["readout"])
+            compiler.compile(qprogram=qp, qblox_buses=["readout"], ext_trigger=True)
 
     def test_if_trigger_nested_inside_if_trigger_raises_error(self):
         """A qp.if_trigger() block cannot nest directly inside another one either."""
@@ -1857,7 +1857,7 @@ class TestQBloxCompiler:
                 "Conditional block cannot be nested inside qp.if_trigger() (only qp.average(...)/qp.for_loop(...) can be)."
             ),
         ):
-            compiler.compile(qprogram=qp, qblox_buses=["readout"])
+            compiler.compile(qprogram=qp, qblox_buses=["readout"], ext_trigger=True)
 
     def test_if_trigger_instruction_outside_block_on_same_bus_raises_error(self):
         qp = QProgram()
@@ -1874,7 +1874,7 @@ class TestQBloxCompiler:
                 "outside the conditional, which would break the synchronisation."
             ),
         ):
-            compiler.compile(qprogram=qp, qblox_buses=["readout"])
+            compiler.compile(qprogram=qp, qblox_buses=["readout"], ext_trigger=True)
 
     def test_if_trigger_non_realtime_instruction_outside_block_on_same_bus_is_allowed(self):
         """qp.set_frequency() (and set_phase/set_gain/set_offset/set_markers) carry no real-time duration,
@@ -1886,7 +1886,7 @@ class TestQBloxCompiler:
         qp.set_frequency(bus="readout", frequency=1e6)
 
         compiler = QbloxCompiler()
-        compiler.compile(qprogram=qp, qblox_buses=["readout"])
+        compiler.compile(qprogram=qp, qblox_buses=["readout"], ext_trigger=True)
 
     def test_if_trigger_expected_wait_time_too_small_raises_error(self):
         qp = QProgram()
@@ -1902,7 +1902,7 @@ class TestQBloxCompiler:
                 "otherwise syncing cannot be maintained."
             ),
         ):
-            compiler.compile(qprogram=qp, qblox_buses=["readout"])
+            compiler.compile(qprogram=qp, qblox_buses=["readout"], ext_trigger=True)
 
     def test_if_trigger_qdac_settrigger_wrong_position_raises_error(self):
         qp = QProgram()
@@ -1919,7 +1919,7 @@ class TestQBloxCompiler:
                 "qp.if_trigger() requires qp.set_trigger(bus='qdac_flux', position='step'); got position='start'."
             ),
         ):
-            compiler.compile(qprogram=qp, qblox_buses=["readout"])
+            compiler.compile(qprogram=qp, qblox_buses=["readout"], ext_trigger=True)
 
     def test_if_trigger_no_qblox_bus_raises_error(self):
         qp = QProgram()
@@ -1931,7 +1931,7 @@ class TestQBloxCompiler:
             ValueError,
             match=re.escape("qp.if_trigger()'s body must contain at least one instruction on a qblox bus to gate."),
         ):
-            compiler.compile(qprogram=qp, qblox_buses=["readout"])
+            compiler.compile(qprogram=qp, qblox_buses=["readout"], ext_trigger=True)
 
     def test_if_trigger_padding_too_small_raises_error(self):
         qp = QProgram()
@@ -1947,7 +1947,7 @@ class TestQBloxCompiler:
                 "network's propagation delay."
             ),
         ):
-            compiler.compile(qprogram=qp, qblox_buses=["readout"])
+            compiler.compile(qprogram=qp, qblox_buses=["readout"], ext_trigger=True)
 
     def test_if_trigger_sync_outside_block_on_same_bus_raises_error(self):
         qp = QProgram()
@@ -1963,6 +1963,17 @@ class TestQBloxCompiler:
                 "Bus 'readout' cannot have instructions outside its qp.if_trigger() block: found Sync "
                 "outside the conditional, which would break the synchronisation."
             ),
+        ):
+            compiler.compile(qprogram=qp, qblox_buses=["readout"], ext_trigger=True)
+
+    def test_if_trigger_without_ext_trigger_raises_error(self):
+        qp = QProgram()
+        with qp.if_trigger(expected_wait_time_ns=2252):
+            qp.qblox.acquire(bus="readout", weights=IQPair(I=Square(1, 100), Q=Square(0, 100)))
+
+        compiler = QbloxCompiler()
+        with pytest.raises(
+            AttributeError, match="External trigger has not been set as True inside runcard's instrument controllers."
         ):
             compiler.compile(qprogram=qp, qblox_buses=["readout"])
 

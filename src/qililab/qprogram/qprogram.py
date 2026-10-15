@@ -1670,7 +1670,7 @@ class QProgram(StructuredProgram):
                 to: for a QDAC-driven bus, in seconds (passed straight through to the QDAC-II driver's
                 ``width_s``, minimum 4e-9 s); for a Qblox-driven bus, in nanoseconds (minimum 4 ns).
             outputs (list[int] | int | None, optional): Port channel/s of the trigger output. Defaults to None.
-            position (str, optional): Trigger position relative to the pulse location, either ``"start"`` or ``"end"``. Defaults to ``"start"``.
+            position (str, optional): Trigger position relative to the pulse location: ``"start"``, ``"end"``, ``"step"`` or ``"end_step"``. Only QDAC buses use it. Defaults to ``"start"``.
         """
         operation = SetTrigger(bus=bus, outputs=outputs, duration=_to_scalar(duration), position=position)
         self._active_block.append(operation)
