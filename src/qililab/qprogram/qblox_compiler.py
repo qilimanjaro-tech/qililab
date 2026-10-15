@@ -279,7 +279,6 @@ class QbloxCompiler:
         times_of_flight: dict[str, int] | None = None,
         delays: dict[str, int] | None = None,
         markers: dict[str, str] | None = None,
-        ext_trigger: bool = False,
         qblox_buses: list[str] | None = None,
         single_channel: list[str] | None = None,
         bus_distortions: dict[str, list["PulseDistortion"]] | None = None,
@@ -366,7 +365,6 @@ class QbloxCompiler:
 
         self._sync_counter = 0
         self._buses = self._populate_buses()
-        self._ext_trigger = ext_trigger
         self._single_channel = single_channel if single_channel is not None else []
         self._acquisition_metadata = {}
 
@@ -1190,8 +1188,6 @@ class QbloxCompiler:
 
         Raises:
             ValueError: If `element.duration` is a Variable.
-            AttributeError: If external trigger has not been enabled in the runcard's instrument
-                controllers.
         """
         if element.bus not in self._qblox_buses:
             return
@@ -1200,9 +1196,6 @@ class QbloxCompiler:
             raise ValueError("Wait trigger duration cannot be a Variable, it must be an int.")
 
         element.duration = QbloxCompiler._clamp_duration(element.duration, label="wait_trigger")
-
-        if not self._ext_trigger:
-            raise AttributeError("External trigger has not been set as True inside runcard's instrument controllers.")
 
         # Flush any pending upd_param before the sync, so every bus reaches the trigger aligned and
         # waits on it with the same plain wait_trigger.
