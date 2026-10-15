@@ -45,7 +45,7 @@ jobs:
           fetch-depth: 1
 
       - name: Install uv
-        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7  # v10.2.0
+        uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884  # v10.3.0
         with:
           python-version: ${{ matrix.python-version }}
           enable-cache: true
@@ -115,7 +115,9 @@ jobs:
         with:
           use_pypi: true
           fail_ci_if_error: true
-          token: ${{ secrets.CODECOV_TOKEN }}
+          # Dependabot-triggered runs can't read Actions secrets, so upload via OIDC
+          # instead of CODECOV_TOKEN (the job already has id-token: write).
+          use_oidc: true
           flags: "unittests"
 
   all-tests:

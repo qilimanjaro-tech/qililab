@@ -280,6 +280,12 @@ class QBLOXCONSTANTS:
     EXT_TRIGGER_ADDRESS = 15
 
 
+class QDACCONSTANTS:
+    """Qdac Constants"""
+
+    DEFAULT_DWELL_US = 2
+
+
 class AWGTypes:
     """Typings from AWG Types"""
 
