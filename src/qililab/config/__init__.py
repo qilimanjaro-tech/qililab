@@ -14,6 +14,6 @@
 
 """configuration module"""
 
-from .config import logger
+from .config import logger, warn_once
 
-__all__ = ["logger"]
+__all__ = ["logger", "warn_once"]
