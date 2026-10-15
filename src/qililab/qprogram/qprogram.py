@@ -685,6 +685,7 @@ class QProgram(StructuredProgram):
                             element, bus, flux_vector, element_group, element_group_bus, elements
                         )
                         block.elements.insert(element_idx + additional_elements, operation)
+                        copied_qprogram.buses.add(bus)
                         if bus not in element_group_bus:
                             additional_elements += 1
             return block
@@ -1084,6 +1085,7 @@ class QProgram(StructuredProgram):
                         for bus in flux_vector_buses:
                             corrected_offsets = offsets[state.offsets_index][bus][loop_coord]
                             corrected_elements.append(SetOffset(bus, corrected_offsets))
+                            copied_qprogram.buses.add(bus)
 
                 elif isinstance(element, Play) and element.bus in flux_vector_buses:
                     if not state.play_bus_list or element.bus in state.play_bus_list:
@@ -1109,6 +1111,7 @@ class QProgram(StructuredProgram):
                                 element.stepped,
                             )
                             corrected_elements.append(play)
+                            copied_qprogram.buses.add(bus)
                         state.on_play(element.bus)
 
                 elif isinstance(element, Wait) and element.bus in flux_vector_buses:
