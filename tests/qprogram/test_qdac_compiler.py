@@ -1,4 +1,5 @@
 import logging
+import re
 from unittest.mock import MagicMock, patch
 
 import numpy as np
@@ -961,6 +962,38 @@ class TestQdacCompiler:
         qp = QProgram()
         with qp.block():
             qp.qdac.play(bus="flux1", waveform=pulse_wf, dwell=dwell_us)
+
+        compiler = QdacCompiler()
+        compiler.compile(qprogram=qp, qdacs=[qdac], qdac_buses=[flux1], qdac_offsets=[0])
+
+        assert qdac_bus.upload_voltage_list.call_count == 1
+
+    def test_conditional_qdac_op_inside_if_trigger_raises_error(self, qdac: QDevilQDac2, flux1: Bus):
+        """A QDAC-bus operation cannot be placed inside qp.if_trigger(): QDAC generates the external trigger
+        and has no way to conditionally gate on whether that same trigger was received on the Qblox side."""
+        qp = QProgram()
+        with qp.if_trigger(expected_wait_time_ns=1000):
+            qp.qdac.play(bus="flux1", waveform=Square(1.0, 100))
+
+        compiler = QdacCompiler()
+        with pytest.raises(
+            NotImplementedError,
+            match=re.escape(
+                "Play on QDAC bus 'flux1' cannot be used inside qp.if_trigger(): QDAC has no way to conditionally "
+                "gate on the external trigger it generates."
+            ),
+        ):
+            compiler.compile(qprogram=qp, qdacs=[qdac], qdac_buses=[flux1], qdac_offsets=[0])
+
+    def test_bare_sync_inside_if_trigger_is_allowed(self, qdac: QDevilQDac2, flux1: Bus):
+        """A qp.sync() without buses inside qp.if_trigger() doesn't target any QDAC bus, so it must not raise."""
+        qdac_bus = flux1.instruments[0]
+
+        qp = QProgram()
+        qp.qdac.play(bus="flux1", waveform=Square(1.0, 100), dwell=2)
+        with qp.if_trigger(expected_wait_time_ns=1000):
+            qp.qblox.acquire(bus="readout", weights=IQPair(I=Square(1.0, 100), Q=Square(0.0, 100)))
+            qp.sync()
 
         compiler = QdacCompiler()
         compiler.compile(qprogram=qp, qdacs=[qdac], qdac_buses=[flux1], qdac_offsets=[0])
