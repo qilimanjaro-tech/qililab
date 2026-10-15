@@ -971,6 +971,7 @@ class QProgram(StructuredProgram):
             if isinstance(element, Block) and element.elements:
                 return ends_in_conditional(element.elements[-1])
             return False
+
         def assemble_flux_operations(
             block: Block,
             carried: dict[tuple[type, str], list[Variable]],
