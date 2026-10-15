@@ -15,7 +15,13 @@
 """Tools for building and manipulating :class:`~qililab.qprogram.qprogram.QProgram` instances."""
 
 from .calibration import Calibration
-from .crosstalk_matrix import CrosstalkMatrix, NonLinearCrosstalkMatrix
+from .crosstalk_matrix import (
+    PHI_0_WB,
+    CrosstalkMatrix,
+    NonLinearCrosstalkMatrix,
+    convert_pH_to_phi0_per_volt,
+    convert_phi0_per_volt_to_pH,
+)
 from .experiment import Experiment
 from .flux_vector import FluxVector, NonLinearFluxVector
 from .qblox_compiler import QbloxCompilationOutput, QbloxCompiler
@@ -24,6 +30,7 @@ from .qprogram import QProgram, QProgramCompilationOutput
 from .utils_crosstalk import CrosstalkElements, NonLinearFlagState
 
 __all__ = [
+    "PHI_0_WB",
     "Calibration",
     "CrosstalkElements",
     "CrosstalkMatrix",
@@ -38,4 +45,6 @@ __all__ = [
     "QbloxCompiler",
     "QdacCompilationOutput",
     "QdacCompiler",
+    "convert_pH_to_phi0_per_volt",
+    "convert_phi0_per_volt_to_pH",
 ]
