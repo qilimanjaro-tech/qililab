@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import datetime
+import datetime as dt
 import os
 import warnings
 from configparser import ConfigParser
@@ -102,7 +102,7 @@ class DatabaseManager:
                 return
             warnings.warn(f"Set current sample to {sample}")
 
-    def add_cooldown(self, cooldown: str, fridge: str, date: datetime.date = datetime.date.today()):
+    def add_cooldown(self, cooldown: str, fridge: str, date: dt.date = dt.date.today()):
         """Add cooldown to metadata
 
         Args:
@@ -173,7 +173,7 @@ class DatabaseManager:
         """
         sequence_obj = SequenceRun(
             sequence_name=sequence_name,
-            start_time=datetime.datetime.now(),
+            start_time=dt.datetime.now(),
             sequence_tree=sequence_tree,
             sequence_completed=False,
             sample_name=sample_name,
@@ -197,7 +197,7 @@ class DatabaseManager:
             calibration_tree (dict): Full calibration tree of the run.
         """
         calibration_obj = CalibrationRun(
-            date=datetime.datetime.now(),
+            date=dt.datetime.now(),
             calibration_tree=calibration_tree,
             calibration_completed=False,
             sample_name=sample_name,
@@ -558,7 +558,7 @@ class DatabaseManager:
             data_shape (np.ndarray | None, optional): Shape of the results array. Defaults to None.
         """
 
-        start_time = datetime.datetime.now()
+        start_time = dt.datetime.now()
 
         with self.session() as running_session:
             calibration_id = (
@@ -625,7 +625,7 @@ class DatabaseManager:
             sample_name (str): Sample id.
         """
 
-        start_time = datetime.datetime.now()
+        start_time = dt.datetime.now()
 
         measurement = QaaS_Experiment(
             job_id=job_id,
@@ -652,7 +652,7 @@ class DatabaseManager:
         cooldown: str | None = None,
         sample_name: str | None = None,
         optional_identifier: str | None = None,
-        end_time: datetime.datetime | None = None,
+        end_time: dt.datetime | None = None,
         run_length: float | None = None,
         platform: "Platform" = None,  # type: ignore
         experiment: "Experiment" = None,  # type: ignore
@@ -698,7 +698,7 @@ class DatabaseManager:
         if cooldown is None:
             cooldown = self.current_cd
 
-        start_time = datetime.datetime.now()
+        start_time = dt.datetime.now()
         formatted_time = start_time.strftime("%Y-%m-%d/%H_%M_%S_%f")
 
         base_path = f"{self.base_path_local}{self.folder_path}"
@@ -786,7 +786,7 @@ class DatabaseManager:
         if cooldown is None:
             cooldown = self.current_cd
 
-        start_time = datetime.datetime.now()
+        start_time = dt.datetime.now()
 
         base_path = f"{self.base_path_local}{self.folder_path}"
         if not os.path.isdir(base_path):
@@ -817,7 +817,7 @@ class DatabaseManager:
             start_time=start_time,
             cooldown=cooldown,
             optional_identifier=optional_identifier,
-            end_time=datetime.datetime.now(),
+            end_time=dt.datetime.now(),
             platform=platform,
             experiment=experiment,
             qprogram=qprogram,
