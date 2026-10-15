@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import datetime
+import datetime as dt
 
 from sqlalchemy import Boolean, Column, DateTime, Integer, Interval, String
 from sqlalchemy.ext.declarative import declarative_base
@@ -65,7 +65,7 @@ class QaaS_Experiment(base):  # type: ignore
         with session() as running_session:
             # Merge the detached instance into the current session
             persistent_instance = running_session.merge(self)
-            persistent_instance.end_time = datetime.datetime.now()  # type: ignore[assignment]
+            persistent_instance.end_time = dt.datetime.now()  # type: ignore[assignment]
             persistent_instance.run_length = persistent_instance.end_time - persistent_instance.start_time  # type: ignore[assignment]
             try:
                 if traceback is None:
