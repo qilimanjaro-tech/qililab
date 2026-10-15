@@ -1299,8 +1299,9 @@ class QProgram(StructuredProgram):
                 trigger, to cover the propagation delay of the trigger network between the module sending
                 it and the module gated by ``qp.if_trigger()``. Defaults to, and cannot be set lower than,
                 the trigger network's own propagation delay.
-            expected_wait_time_ns (int | None, optional): How long to wait for the trigger, in ns. If not
-                given, it is derived from the QDAC bus driving the trigger in this QProgram (its ``dwell``,
+            expected_wait_time_ns (int | None, optional): The trigger period, i.e. the time between two
+                consecutive triggers, in ns. Each pass through the block is padded to exactly this duration
+                so the bus stays in step with the trigger. If not given, it is derived from the QDAC bus driving the trigger in this QProgram (its ``dwell``,
                 when ``qp.set_trigger(..., position="step")`` is used). Compiling raises if neither an
                 explicit value nor a derivable QDAC dwell is available.
 

@@ -53,23 +53,12 @@ class QdacCompilationOutput:
     Attributes:
         sequences (Sequence): A dictionary with the buses participating in the QProgram as keys and the corresponding Sequence as values.
         acquisitions (Acquisitions): A dictionary with the buses participating in the acquisitions as keys and the corresponding Acquisitions as values.
-        dwell_us_by_bus (dict[str, int]): Each QDAC-driven bus's resolved ``dwell`` (microseconds, with
-            unset/zero already defaulted), as actually used to compile this QProgram. Lets other compilers
-            (e.g. ``QbloxCompiler`` deriving ``qp.if_trigger()``'s wait time) reuse this instead of
-            independently re-resolving the same defaulting logic.
     """
 
-    def __init__(
-        self,
-        qprogram: QProgram,
-        qdacs: list[QDevilQDac2],
-        trigger_position: str | None,
-        dwell_us_by_bus: dict[str, int],
-    ):
+    def __init__(self, qprogram: QProgram, qdacs: list[QDevilQDac2], trigger_position: str | None):
         self.qprogram = qprogram
         self.qdacs = qdacs
         self.trigger_position = trigger_position
-        self.dwell_us_by_bus = dwell_us_by_bus
 
 
 class QdacBusCompilationInfo:
@@ -119,7 +108,6 @@ class QdacCompiler:
         self._loop_repetitions: dict[str, int] = {}
         self._infinite_loop: bool = False
         self._play_params: dict[str, Any] = {}
-        self._dwell_us_by_bus: dict[str, int] = {}
 
         self._trigger_hashes: dict[str, str] = {}
         self._trigger_position: str | None = None
@@ -163,11 +151,7 @@ class QdacCompiler:
                     # based on whether that same trigger was received in time on the Qblox side, so a
                     # QDAC-bus operation placed inside qp.if_trigger() would compile and execute
                     # unconditionally, silently ignoring the "only if trigger received" semantics.
-                    buses = (
-                        (element.buses or self._qdac_buses_alias)
-                        if isinstance(element, Sync)
-                        else [getattr(element, "bus", None)]
-                    )
+                    buses = (element.buses or []) if isinstance(element, Sync) else [getattr(element, "bus", None)]
                     offending_bus = next((bus for bus in buses if bus in self._qdac_buses_alias), None)
                     if offending_bus is not None:
                         raise NotImplementedError(
@@ -216,10 +200,7 @@ class QdacCompiler:
             self._handle_simultaneous_qdacs()
 
         return QdacCompilationOutput(
-            qprogram=self._qprogram,
-            qdacs=self._qdacs,
-            trigger_position=self._trigger_position,
-            dwell_us_by_bus=self._dwell_us_by_bus,
+            qprogram=self._qprogram, qdacs=self._qdacs, trigger_position=self._trigger_position
         )
 
     def _populate_qdac_buses(self):
@@ -429,8 +410,6 @@ class QdacCompiler:
                 return
             if not element.dwell:
                 element.dwell = self._dc_dwell
-            if element.bus not in self._dwell_us_by_bus:
-                self._dwell_us_by_bus[element.bus] = element.dwell
             if not element.delay:
                 element.delay = self._dc_delay
             if not element.stepped:

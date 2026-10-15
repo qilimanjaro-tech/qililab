@@ -1871,7 +1871,7 @@ class TestQBloxCompiler:
             NotImplementedError,
             match=re.escape(
                 "Bus 'readout' cannot have instructions outside its qp.if_trigger() block: found Wait "
-                "outside the conditional, which would break the syncronisation."
+                "outside the conditional, which would break the synchronisation."
             ),
         ):
             compiler.compile(qprogram=qp, qblox_buses=["readout"])
@@ -1961,7 +1961,7 @@ class TestQBloxCompiler:
             NotImplementedError,
             match=re.escape(
                 "Bus 'readout' cannot have instructions outside its qp.if_trigger() block: found Sync "
-                "outside the conditional, which would break the syncronisation."
+                "outside the conditional, which would break the synchronisation."
             ),
         ):
             compiler.compile(qprogram=qp, qblox_buses=["readout"])

@@ -1192,6 +1192,7 @@ class TestQProgram(TestStructuredProgram):
         assert isinstance(new_qp.body.elements[7], SetOffset)
         assert isinstance(new_qp.body.elements[13], Conditional)
         assert new_qp.body.elements[13].expected_wait_time_ns == 2252
+
     def test_with_crosstalk_linear_repeated_bus_restarts_flux_vector(self):
         """Test with_crosstalk_qblox restarts the flux vector when a bus is played again on the linear path."""
         inverse_xtalk_array = np.linalg.inv([[1, 0.5], [0.5, 1]])
