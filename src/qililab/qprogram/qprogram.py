@@ -1444,7 +1444,8 @@ class QProgram(StructuredProgram):
 
         Args:
             bus (str): Unique identifier of the bus.
-            duration (int): Duration of the delay after the trigger is received. Minimum of 4 ns.
+            duration (int): Duration of the delay after the trigger is received, in ns. Minimum of 4 ns. Ignored on
+                QDAC-driven buses.
             port (optional, int | None): Trigger input port. Only used by the QDACII compiler.
                 Qblox buses always wait on the cluster's external trigger address. Defaults to None.
 
@@ -1646,12 +1647,16 @@ class QProgram(StructuredProgram):
     @requires_domain("offset_path0", Domain.Voltage)
     @requires_domain("offset_path1", Domain.Voltage)
     def set_offset(self, bus: str, offset_path0: float, offset_path1: float | None = None):
-        """Set the gain of the AWG associated with bus.
+        """Set the DC offset of the bus.
+
+        The unit depends on which instrument the bus maps to: for a Qblox-driven bus, the offset of the AWG, normalised
+        between -1 and 1; for a QDAC-driven bus, the DC voltage of the channel, in volts.
 
         Args:
             bus (str): Unique identifier of the bus.
-            offset_path0 (float): The new offset of the AWG for path0.
-            offset_path1 (float): The new offset of the AWG for path1.
+            offset_path0 (float): The new offset for path0.
+            offset_path1 (float | None, optional): The new offset for path1. On a Qblox-driven bus, ``None`` uses the
+                offset of path0. Ignored on QDAC-driven buses. Defaults to None.
         """
         operation = SetOffset(
             bus=bus,
@@ -1669,7 +1674,7 @@ class QProgram(StructuredProgram):
             bus (str): Unique identifier of the bus.
             duration (float): Duration of the trigger pulse. Unit depends on which instrument the bus maps
                 to: for a QDAC-driven bus, in seconds (passed straight through to the QDAC-II driver's
-                ``width_s``, minimum 4e-9 s); for a Qblox-driven bus, in nanoseconds (minimum 4 ns).
+                ``width_s``, from 1e-6 s to 3600 s); for a Qblox-driven bus, in nanoseconds (minimum 4 ns).
             outputs (list[int] | int | None, optional): Port channel/s of the trigger output. Defaults to None.
             position (str, optional): Trigger position relative to the pulse location: ``"start"``, ``"end"``, ``"step"`` or ``"end_step"``. Only QDAC buses use it. Defaults to ``"start"``.
         """
@@ -2061,7 +2066,7 @@ class QProgram(StructuredProgram):
             bus: str,
             waveform: Waveform | IQWaveform,
             dwell: int | None = None,
-            delay: int | None = None,
+            delay: float | None = None,
             repetitions: int | None = None,
             stepped: bool | None = None,
         ) -> None:
@@ -2070,8 +2075,8 @@ class QProgram(StructuredProgram):
             Args:
                 bus (str): Unique identifier of the bus.
                 waveform (Waveform | IQWaveform): A single waveform or an I/Q pair of waveforms
-                dwell (int | None, optional): Resolution un us of the QDACII pulse with a minimum of 2 us. Defaults to 2 inside QDACII compiler.
-                delay (int | None, optional): Delay of the QDACII pulse. Defaults to 0 inside QDACII compiler.
+                dwell (int | None, optional): Time spent on each voltage of the list, in us. Minimum of 2 us. Defaults to 2 inside QDACII compiler.
+                delay (float | None, optional): Delay from the trigger until the QDACII starts the list, in seconds. Defaults to 0 inside QDACII compiler.
                 repetitions (int | None, optional): Number of pulse repetitions. Defaults to the default repetitions inside QDACII compiler.
                 stepped (bool | None, optional): Defining if the ramp will have a stair shape. Defaults to False.
             """
@@ -2082,7 +2087,7 @@ class QProgram(StructuredProgram):
             bus: str,
             waveform: str,
             dwell: int | None = None,
-            delay: int | None = None,
+            delay: float | None = None,
             repetitions: int | None = None,
             stepped: bool | None = None,
         ) -> None:
@@ -2091,8 +2096,8 @@ class QProgram(StructuredProgram):
             Args:
                 bus (str): Unique identifier of the bus.
                 waveform (str): An identifier of a named waveform.
-                dwell (int | None, optional): Resolution un us of the QDACII pulse with a minimum of 2 us. Defaults to 2 inside QDACII compiler.
-                delay (int | None, optional): Delay of the QDACII pulse. Defaults to 0 inside QDACII compiler.
+                dwell (int | None, optional): Time spent on each voltage of the list, in us. Minimum of 2 us. Defaults to 2 inside QDACII compiler.
+                delay (float | None, optional): Delay from the trigger until the QDACII starts the list, in seconds. Defaults to 0 inside QDACII compiler.
                 repetitions (int | None, optional): Number of pulse repetitions. Defaults to the default repetitions inside QDACII compiler.
                 stepped (bool | None, optional): Defining if the ramp will have a stair shape. Defaults to False.
             """
@@ -2102,7 +2107,7 @@ class QProgram(StructuredProgram):
             bus: str,
             waveform: Waveform | IQWaveform | str,
             dwell: int | None = None,
-            delay: int | None = None,
+            delay: float | None = None,
             repetitions: int | None = None,
             stepped: bool | None = None,
         ) -> None:
@@ -2114,8 +2119,8 @@ class QProgram(StructuredProgram):
             Args:
                 bus (str): Unique identifier of the bus.
                 waveform (Waveform | IQWaveform | str): The waveform, IQWaveform, or alias of named waveform to play.
-                dwell (int | None, optional): Resolution un us of the QDACII pulse with a minimum of 2 us. Defaults to 2 inside QDACII compiler.
-                delay (int | None, optional): Delay of the QDACII pulse. Defaults to 0 inside QDACII compiler.
+                dwell (int | None, optional): Time spent on each voltage of the list, in us. Minimum of 2 us. Defaults to 2 inside QDACII compiler.
+                delay (float | None, optional): Delay from the trigger until the QDACII starts the list, in seconds. Defaults to 0 inside QDACII compiler.
                 repetitions (int | None, optional): Number of pulse repetitions. Defaults to the default repetitions inside QDACII compiler.
                 stepped (bool | None, optional): Defining if the ramp will have a stair shape. Defaults to False inside QDACII compiler.
             """
