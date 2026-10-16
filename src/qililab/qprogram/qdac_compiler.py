@@ -103,7 +103,7 @@ class QdacCompiler:
         self._out_instrument: QDevilQDac2 | None
 
         self._dc_dwell: int = QDACCONSTANTS.DEFAULT_DWELL_US
-        self._dc_delay: int = 0
+        self._dc_delay: float = 0.0
         self._dc_stepped: bool = False
         self._loop_repetitions: dict[str, int] = {}
         self._infinite_loop: bool = False
