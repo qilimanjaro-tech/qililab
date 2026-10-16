@@ -16,8 +16,9 @@ import datetime as dt
 import functools
 import os
 import warnings
+from collections.abc import Callable
 from configparser import ConfigParser
-from typing import TYPE_CHECKING, Any, Callable, Literal, TypeGuard, TypeVar, get_args, overload
+from typing import TYPE_CHECKING, Any, Literal, TypeGuard, TypeVar, get_args, overload
 
 import h5py
 import numpy as np
@@ -693,7 +694,7 @@ class DatabaseManager:
 
         Args:
             experiment_name (str): Experiment name.
-            qubit_idx (str): Index of the measured qubit, stored in the ``qbit_idx`` column.
+            qubit_idx (int | str | None): Index of the measured qubit, stored in the ``qbit_idx`` column.
             calibration (Calibration): Experiment calibration parameters.
             platform (Platform, optional): Platform used on the experiment. Defaults to None.
             qprogram (QProgram | None, optional): Qprogram used on the experiment. Defaults to None.

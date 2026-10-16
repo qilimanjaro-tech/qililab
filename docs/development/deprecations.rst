@@ -15,6 +15,10 @@ Pending deprecations
     - Deprecated in an upcoming release (`#1193 <https://github.com/qilimanjaro-tech/qililab/pull/1193>`_)
     - No removal version set yet
 
+- `add_calibration_fitting` method (on `DatabaseManager`) is deprecated; please use `add_fitting` and set the field `database_schema="autocal"` to do the same operation.
+    - Deprecated in an upcoming release (`#1223 <https://github.com/qilimanjaro-tech/qililab/pull/1223>`_)
+    - No removal version set yet
+
 Completed deprecation cycles
 -----------------------------
 - The `path` argument in `qililab.build_platform` was changed to `runcard`, since it not only accepts a path to the YAML file but also the dictionary directly.
