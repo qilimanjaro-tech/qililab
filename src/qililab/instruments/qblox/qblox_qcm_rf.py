@@ -66,26 +66,13 @@ class QbloxQCMRF(QbloxQCM):
     settings: QbloxQCMRFSettings
     # TODO: We should separate instrument settings and instrument parameters, such that the user can quickly get
     # al the settable parameters of an instrument.
-    parameters: ClassVar[set[Parameter]] = {
-        Parameter.OUT0_LO_FREQ,
-        Parameter.OUT0_LO_EN,
-        Parameter.OUT0_ATT,
-        Parameter.OUT0_OFFSET_PATH0,
-        Parameter.OUT0_OFFSET_PATH1,
-        Parameter.OUT1_LO_FREQ,
-        Parameter.OUT1_LO_EN,
-        Parameter.OUT1_ATT,
-        Parameter.OUT1_OFFSET_PATH0,
-        Parameter.OUT1_OFFSET_PATH1,
-        Parameter.OUT0_LO_FREQ_CAL_TYPE_DEFAULT,
-        Parameter.OUT1_LO_FREQ_CAL_TYPE_DEFAULT,
-    }
-    # Explicit order in which `initial_setup` applies the RF parameters. Iterating `parameters` (a set of
-    # `str, Enum` members) is hash-seed dependent, which made setup non-deterministic (see QHC-1654): the LO
-    # frequency could be set before the cal-type default (so runcard auto-calibration never ran), or the runcard
-    # DC offsets after it (overwriting the calibration result). Per output we apply, in order: attenuation, LO
-    # enable, the runcard offsets, the cal-type default, and finally the LO frequency, so that when auto-calibration
-    # is enabled it runs last, on the final configuration, and is not overwritten by any runcard value.
+    # Explicit order in which `initial_setup` applies the RF parameters, and the single source of truth for the
+    # set of settable parameters (`parameters` is derived from it below). Iterating a set of `str, Enum` members is
+    # hash-seed dependent, which made setup non-deterministic (see QHC-1654): the LO frequency could be set before
+    # the cal-type default (so runcard auto-calibration never ran), or the runcard DC offsets after it (overwriting
+    # the calibration result). Per output we apply, in order: attenuation, LO enable, the runcard offsets, the
+    # cal-type default, and finally the LO frequency, so that when auto-calibration is enabled it runs last, on the
+    # final configuration, and is not overwritten by any runcard value.
     _initial_setup_order: ClassVar[tuple[Parameter, ...]] = (
         Parameter.OUT0_ATT,
         Parameter.OUT0_LO_EN,
@@ -100,6 +87,7 @@ class QbloxQCMRF(QbloxQCM):
         Parameter.OUT1_LO_FREQ_CAL_TYPE_DEFAULT,
         Parameter.OUT1_LO_FREQ,
     )
+    parameters: ClassVar[set[Parameter]] = set(_initial_setup_order)
 
     @check_device_initialized
     def initial_setup(self):
