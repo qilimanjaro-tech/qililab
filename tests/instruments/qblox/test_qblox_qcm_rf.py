@@ -1,5 +1,10 @@
 """Tests for the Qblox Module class."""
 
+import json
+import os
+import subprocess
+import sys
+from pathlib import Path
 from typing import cast
 from unittest.mock import MagicMock
 
@@ -15,6 +20,25 @@ from qililab.platform import Platform
 from qililab.typings import Parameter
 
 MAX_ATTENUATION = 30
+
+RUNCARD = "tests/instruments/qblox/qblox_runcard.yaml"
+
+# Exact order in which `initial_setup` must apply the RF parameters on the device: per output, attenuation,
+# LO enable, the runcard offsets, the cal-type default, then the LO frequency last (QHC-1654).
+EXPECTED_INITIAL_SETUP_ORDER = [
+    "out0_att",
+    "out0_lo_en",
+    "out0_offset_path0",
+    "out0_offset_path1",
+    "out0_lo_freq_cal_type_default",
+    "out0_lo_freq",
+    "out1_att",
+    "out1_lo_en",
+    "out1_offset_path0",
+    "out1_offset_path1",
+    "out1_lo_freq_cal_type_default",
+    "out1_lo_freq",
+]
 
 
 @pytest.fixture(name="platform")
@@ -267,6 +291,37 @@ class TestQbloxQCMRF:
         qcm_rf.device.disconnect_outputs.assert_called_once()
         for sequencer in qcm_rf.awg_sequencers:
             qcm_rf.device.sequencers[sequencer.identifier].sync_en.assert_called_with(False)
+
+    def test_initial_setup_order_covers_all_parameters(self):
+        """The ordered `initial_setup` tuple must apply every settable parameter exactly once."""
+        order = QbloxQCMRF._initial_setup_order
+        assert set(order) == QbloxQCMRF.parameters
+        assert len(order) == len(QbloxQCMRF.parameters)  # no duplicates
+
+    def test_initial_setup_parameter_order(self, qcm_rf: QbloxQCMRF):
+        """`initial_setup` must apply the RF parameters in the explicit, documented order (QHC-1654)."""
+        qcm_rf.initial_setup()
+
+        applied = [call.args[0] for call in qcm_rf.device.set.call_args_list]
+        assert applied == EXPECTED_INITIAL_SETUP_ORDER
+
+    def test_initial_setup_order_is_hashseed_independent(self):
+        """`initial_setup` must apply parameters in the same order under any `PYTHONHASHSEED` (QHC-1654)."""
+        helper = Path(__file__).with_name("hashseed_initial_setup.py")
+        orders = []
+        for seed in ("0", "1", "2", "42", "123"):
+            env = {**os.environ, "PYTHONHASHSEED": seed}
+            result = subprocess.run(
+                [sys.executable, str(helper), "qcm", RUNCARD],
+                capture_output=True,
+                text=True,
+                check=True,
+                env=env,
+            )
+            orders.append(json.loads(result.stdout.strip().splitlines()[-1]))
+
+        for order in orders:
+            assert order == EXPECTED_INITIAL_SETUP_ORDER
 
     def test_run(self, qcm_rf: QbloxQCMRF):
         """Test running the QCM module."""

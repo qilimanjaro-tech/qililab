@@ -65,6 +65,21 @@ class QbloxQRMRF(QbloxQRM):
         Parameter.OUT0_OFFSET_PATH1,
         Parameter.OUT0_IN0_LO_FREQ_CAL_TYPE_DEFAULT,
     }
+    # Explicit order in which `initial_setup` applies the RF parameters. Iterating `parameters` (a set of
+    # `str, Enum` members) is hash-seed dependent, which made setup non-deterministic (see QHC-1654): the LO
+    # frequency could be set before the cal-type default (so runcard auto-calibration never ran), or the runcard
+    # DC offsets after it (overwriting the calibration result). We apply, in order: attenuations, LO enable, the
+    # runcard offsets, the cal-type default, and finally the LO frequency, so that when auto-calibration is enabled
+    # it runs last, on the final configuration, and is not overwritten by any runcard value.
+    _initial_setup_order: ClassVar[tuple[Parameter, ...]] = (
+        Parameter.OUT0_ATT,
+        Parameter.IN0_ATT,
+        Parameter.OUT0_IN0_LO_EN,
+        Parameter.OUT0_OFFSET_PATH0,
+        Parameter.OUT0_OFFSET_PATH1,
+        Parameter.OUT0_IN0_LO_FREQ_CAL_TYPE_DEFAULT,
+        Parameter.OUT0_IN0_LO_FREQ,
+    )
 
     settings: QbloxQRMRFSettings
 
@@ -72,7 +87,7 @@ class QbloxQRMRF(QbloxQRM):
     def initial_setup(self):
         """Initial setup"""
         super().initial_setup()
-        for parameter in self.parameters:
+        for parameter in self._initial_setup_order:
             self.set_parameter(parameter, getattr(self.settings, parameter.value))
 
     def _map_connections(self):
