@@ -13,12 +13,12 @@
 # limitations under the License.
 from collections.abc import Sequence
 from copy import deepcopy
-from typing import TYPE_CHECKING, overload
+from typing import TYPE_CHECKING, ClassVar, overload
 
 import numpy as np
 
 from qililab.core.variables import Domain, Variable, requires_domain
-from qililab.qprogram.blocks import Block, ForLoop, Parallel
+from qililab.qprogram.blocks import Block, Conditional, ForLoop, Parallel
 from qililab.qprogram.calibration import Calibration
 from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix, NonLinearCrosstalkMatrix
 from qililab.qprogram.flux_vector import FluxVector, NonLinearFluxVector
@@ -118,11 +118,34 @@ class QProgram(StructuredProgram):
 
     """
 
+    _TRIGGER_MODE_DISPLAY_NAMES: ClassVar[dict[str, str]] = {
+        "wait_trigger": "wait_trigger",
+        "if_trigger": "if_trigger()",
+        "measure_reset": "qp.qblox.measure_reset()",
+    }
+
+    # if_trigger() is mutually exclusive with wait_trigger() and measure_reset() (checked both ways below).
+    # Class-level default so QPrograms deserialized without this field still have it.
+    _trigger_mode: str | None = None
+
     def __init__(self) -> None:
         super().__init__()
         self.qblox = self._QbloxInterface(self)
         self.quantum_machines = self._QuantumMachinesInterface(self)
         self.qdac = self._QdacInterface(self)
+
+    def _reject_conflicting_trigger_mode(self, this_op: str, conflicting_modes: tuple[str, ...]) -> None:
+        """Raise if ``_trigger_mode`` is already set to one of ``conflicting_modes``.
+
+        Only one hardware-trigger mechanism (``wait_trigger()``, ``if_trigger()``,
+        ``qp.qblox.measure_reset()``) can gate real-time execution per QProgram; ``if_trigger()`` is
+        mutually exclusive with the other two, which aren't mutually exclusive with each other.
+        """
+        if self._trigger_mode in conflicting_modes:
+            raise NotImplementedError(
+                f"{this_op} cannot be used together with {self._TRIGGER_MODE_DISPLAY_NAMES[self._trigger_mode]} "
+                "in the same QProgram."
+            )
 
     def __str__(self) -> str:
         def traverse(block: Block):
@@ -438,6 +461,18 @@ class QProgram(StructuredProgram):
         copied_qprogram.qblox._weight_duration = resolved
         return copied_qprogram
 
+    @staticmethod
+    def _flux_offset_value(operation: "SetOffset | SetGain") -> int | float | Variable:
+        """The variable/scalar value carried by a SetOffset (path0) or SetGain."""
+        return operation.offset_path0 if isinstance(operation, SetOffset) else operation.gain
+
+    @staticmethod
+    def _set_flux_offset_value(operation: "SetOffset | SetGain", value) -> None:
+        if isinstance(operation, SetOffset):
+            operation.offset_path0 = value
+        else:
+            operation.gain = value
+
     def with_crosstalk_qblox(self, crosstalk: CrosstalkMatrix):
         """Apply crosstalk compensation to the qprogram flux buses.
 
@@ -451,11 +486,20 @@ class QProgram(StructuredProgram):
         Returns:
             QProgram: A new instance of QProgram with calibrated crosstalk.
         """
+        from .qblox_compiler import QbloxCompiler
+
         self._bus_variable_map: dict[tuple[Variable | float | None, str], Variable] = {}
         self._block_variables: dict[Variable | float | None, list[Variable]] = {}
         self._parallel_loops: dict[Variable, list[ForLoop]] = {}
         self._active_loops: list[ForLoop | Parallel] = []
         self._loop_depths: list[int] = []
+        self._bus_loop_depth: dict[str, int] = {}
+        self._constant_bus_variables: set[Variable] = set()
+        # Compensated SetOffset/SetGain (by id) -> (own loop terms, constant bias, buses the user set in its group).
+        # The final value is assembled by `assemble_flux_operations` once every block has been rewritten.
+        self._flux_terms: dict[int, tuple[list[Variable], float, set[str]]] = {}
+        # (operation class, loop variable) -> crosstalk buses that variable sweeps.
+        self._variable_buses: dict[tuple[type, Variable], set[str]] = {}
 
         non_lin_flux_vector: NonLinearFluxVector | None = None
         if isinstance(crosstalk, NonLinearCrosstalkMatrix):
@@ -604,8 +648,23 @@ class QProgram(StructuredProgram):
             if isinstance(envelope, Variable):
                 variable_loop = next((loop for loop in self._active_loops[::-1] if loop.variable == envelope), None)
                 if variable_loop:
+                    depth = next(
+                        (d for loop, d in zip(self._active_loops, self._loop_depths) if loop is variable_loop), None
+                    )
+                    if depth is not None:
+                        self._bus_loop_depth[element.bus] = depth
+                    self._variable_buses.setdefault((type(element), envelope), set()).add(element.bus)
                     envelope = (
-                        np.arange(variable_loop.start, variable_loop.stop, variable_loop.step)
+                        np.linspace(
+                            variable_loop.start,
+                            variable_loop.stop,
+                            max(
+                                QbloxCompiler._calculate_iterations(
+                                    variable_loop.start, variable_loop.stop, variable_loop.step
+                                ),
+                                0,
+                            ),
+                        )
                         if isinstance(variable_loop, ForLoop)
                         else variable_loop
                     )
@@ -613,7 +672,24 @@ class QProgram(StructuredProgram):
                         raise ValueError(
                             "Parameters of the ForLoop not assigned correctly. Please check start, stop and step values."
                         )
-            flux_vector[element.bus] = envelope
+            envelope_is_array = isinstance(envelope, np.ndarray) and envelope.ndim > 0
+            # The bus being set is replaced, so its previous value doesn't count.
+            existing_arrays = [
+                value
+                for bus, value in flux_vector.flux_vector.items()
+                if bus != element.bus and isinstance(value, np.ndarray) and value.ndim > 0
+            ]
+            ragged = (
+                isinstance(element, (SetOffset, SetGain))
+                and envelope_is_array
+                and any(value.shape != envelope.shape for value in existing_arrays)
+            )
+            if ragged:
+                flux_vector.flux_vector[element.bus] = envelope
+                if flux_vector.crosstalk:
+                    flux_vector.bias_vector[element.bus] = envelope
+            else:
+                flux_vector[element.bus] = envelope
             return flux_vector
 
         def handle_crosstalk_element(block: Block, crosstalk_elements: CrosstalkElements):
@@ -640,6 +716,7 @@ class QProgram(StructuredProgram):
                             element, bus, flux_vector, element_group, element_group_bus, elements
                         )
                         block.elements.insert(element_idx + additional_elements, operation)
+                        copied_qprogram.buses.add(bus)
                         if bus not in element_group_bus:
                             additional_elements += 1
             return block
@@ -659,94 +736,76 @@ class QProgram(StructuredProgram):
             if all(isinstance(elements[element], (SetOffset, SetGain)) for element in element_group):
                 _, variable_list = handle_flux_v_flux(elements, flux_vector, element_group, element_group_bus)
 
-            if isinstance(element, SetOffset):
-                operation = handle_offset(element, bus, bias_vector, element_group, variable_list, elements)  # type: ignore [arg-type]
-            if isinstance(element, SetGain):
-                operation = handle_gain(element, bus, bias_vector, element_group, variable_list, elements)  # type: ignore [arg-type]
+            if isinstance(element, (SetOffset, SetGain)):
+                operation, terms = handle_offset_or_gain(
+                    element,
+                    bus,
+                    bias_vector,
+                    element_group,
+                    variable_list,
+                    elements,  # type: ignore [arg-type]
+                )
+                self._flux_terms[id(operation)] = (terms, flux_constant(flux_vector)[bus], set(element_group_bus))
             if isinstance(element, Play):
                 operation = handle_play(bus, bias_vector, element_group, elements)  # type: ignore [arg-type]
             return operation
 
-        def handle_offset(
-            element: SetOffset,
+        def handle_offset_or_gain(
+            element: SetOffset | SetGain,
             bus: str,
             bias_vector: float | list[float] | np.ndarray,
             element_group: list[int],
             variable_list: list[Variable],
-            elements: dict[int, SetOffset],
-        ):
+            elements: dict[int, SetOffset | SetGain],
+        ) -> tuple[SetOffset | SetGain, list[Variable]]:
             """
-            Modifies SetOffset by compensating the bias vector or modifying the variables.
+            Builds the compensated SetOffset or SetGain on `bus` and returns it with its loop terms.
+
+            The operation only holds the loop terms. Its constant part is added by `assemble_flux_operations`.
             """
+            terms: list[Variable] = []
             if isinstance(bias_vector, np.ndarray):
+                value = QProgram._flux_offset_value(element)
                 variable = (
-                    element.offset_path0
-                    if isinstance(element.offset_path0, Variable)
+                    value
+                    if isinstance(value, Variable)
                     else next(
                         (
-                            elements[element_id].offset_path0  # type: ignore [misc]
+                            QProgram._flux_offset_value(elements[element_id])
                             for element_id in element_group
-                            if isinstance(elements[element_id].offset_path0, Variable)
+                            if isinstance(QProgram._flux_offset_value(elements[element_id]), Variable)
                         ),
-                        None,  # type: ignore [arg-type]
+                        None,
                     )
                 )
                 bus_variable = self._bus_variable_map[variable, bus]
-                self._block_variables[variable].append(bus_variable)
+                if bus_variable not in self._constant_bus_variables:
+                    terms.append(bus_variable)
+                    self._block_variables[variable].append(bus_variable)
 
-                summed_variable = bus_variable
                 if len(variable_list) > 1 and variable in variable_list:
                     for var in variable_list:
                         if isinstance(variable, Variable) and var.label != variable.label:
+                            cross_variable = self._bus_variable_map[var, bus]
+                            if cross_variable in self._constant_bus_variables:
+                                # This loop doesn't change the bias on this bus: no term and no loop.
+                                continue
                             # Only added if there are more than one loop with different variables.
-                            summed_variable = summed_variable + self._bus_variable_map[var, bus]
-                            self._block_variables[var].append(self._bus_variable_map[var, bus])
+                            terms.append(cross_variable)
+                            self._block_variables[var].append(cross_variable)
 
-                offset = SetOffset(bus, summed_variable)
-            elif isinstance(bias_vector, float):
-                offset = SetOffset(bus, bias_vector)
+            return type(element)(bus, terms[0] if terms else 0.0), terms
 
-            return offset
-
-        def handle_gain(
-            element: SetGain,
-            bus: str,
-            bias_vector: float | list[float] | np.ndarray,
-            element_group: list[int],
-            variable_list: list[Variable],
-            elements: dict[int, SetGain],
-        ):
+        def flux_constant(flux_vector: FluxVector) -> dict[str, float]:
             """
-            Modifies SetGain by compensating the bias vector or modifying the variables.
+            Bias with every swept bus at 0, i.e. M⁻¹ · (fixed flux - flux_offsets): the part of the bias that doesn't
+            change with any loop.
             """
-            if isinstance(bias_vector, np.ndarray):
-                variable = (
-                    element.gain
-                    if isinstance(element.gain, Variable)
-                    else next(
-                        (
-                            elements[element_id].gain  # type: ignore [misc]
-                            for element_id in element_group
-                            if isinstance(elements[element_id].gain, Variable)
-                        ),
-                        None,  # type: ignore [arg-type]
-                    )
-                )
-                bus_variable = self._bus_variable_map[variable, bus]
-                self._block_variables[variable].append(bus_variable)
-
-                summed_variable = bus_variable
-                if len(variable_list) > 1 and variable in variable_list:
-                    for var in variable_list:
-                        if isinstance(variable, Variable) and var.label != variable.label:
-                            # Only added if there are more than one loop with different variables.
-                            summed_variable = summed_variable + self._bus_variable_map[var, bus]
-                            self._block_variables[var].append(self._bus_variable_map[var, bus])
-
-                gain = SetGain(bus, summed_variable)
-            elif isinstance(bias_vector, float):
-                gain = SetGain(bus, bias_vector)
-            return gain
+            fixed = {
+                bus: 0.0 if isinstance(flux, np.ndarray) and flux.ndim > 0 else flux
+                for bus, flux in flux_vector.flux_vector.items()
+            }
+            return FluxVector.from_dict(fixed).set_crosstalk(crosstalk)  # type: ignore [return-value]
 
         def handle_play(
             bus: str,
@@ -825,14 +884,19 @@ class QProgram(StructuredProgram):
                     for_loop_list = []
                     list_fluxes, _ = handle_flux_v_flux(elements, flux_vector, element_group, element_group_bus)
 
-                    if len(list_fluxes) > 1:
-                        for bus in crosstalk.matrix.keys():
-                            bias_vector = list_fluxes[element.bus].bias_vector[bus]
-                            for_loop_list.append(make_for_loop(variable, bus, bias_vector))
+                    if _flux_loops_are_nested(flux_vector) and element.bus in list_fluxes:
+                        # Nested flux-vs-flux loops: use this bus's per-variable decomposition so each
+                        # loop level contributes only its own crosstalk term; the other levels are
+                        # carried in later by assemble_flux_operations.
+                        source = list_fluxes[element.bus]
                     else:
-                        for bus in crosstalk.matrix.keys():
-                            bias_vector = flux_vector.bias_vector[bus]
-                            for_loop_list.append(make_for_loop(variable, bus, bias_vector))  # type: ignore [arg-type]
+                        # Lockstep (parallel/single) loops: use the combined compensated bias.
+                        source = flux_vector
+                    # The compensated loops sweep only the part of the bias that changes with the loop. The constant
+                    # part is added once per operation by assemble_flux_operations.
+                    constant = flux_constant(source)
+                    for bus in crosstalk.matrix.keys():
+                        for_loop_list.append(make_for_loop(variable, bus, source.bias_vector[bus] - constant[bus]))  # type: ignore [arg-type, operator]
 
                     self._parallel_loops[variable] = for_loop_list
 
@@ -861,7 +925,24 @@ class QProgram(StructuredProgram):
                         used_loop_indices.add(loop_idx)
                         bus_list.append(element_group_bus[ii])
                         variable_list.append(variable)
+            if _flux_loops_are_nested(flux_vector):
+                reduced = FluxVector.from_dict(
+                    {bus: (flux if bus in bus_list else 0) for bus, flux in flux_vector.flux_vector.items()}
+                )
+                reduced.crosstalk = flux_vector.crosstalk
+                return reduced.get_decomposed_vector(bus_list), variable_list
             return flux_vector.get_decomposed_vector(bus_list), variable_list
+
+        def _flux_loops_are_nested(flux_vector: FluxVector) -> bool:
+            """True when the array-valued flux buses are swept by loops at different nesting depths
+            (a flux-vs-flux sweep across levels), as opposed to a single lockstep parallel/loop."""
+            depths = {
+                self._bus_loop_depth.get(bus)
+                for bus, flux in flux_vector.flux_vector.items()
+                if isinstance(flux, np.ndarray) and flux.ndim > 0
+            }
+            depths.discard(None)
+            return len(depths) > 1
 
         def get_element_variable(element: Play | SetGain | SetOffset) -> Variable | None:
             """
@@ -877,13 +958,126 @@ class QProgram(StructuredProgram):
             """
             Creates a for loop for a given variable with the bus and bias vector.
             """
+            if len(bias_vector) < 2:
+                raise NotImplementedError("Single point loops are not supported.")
             if (variable, bus) not in self._bus_variable_map:
                 self._bus_variable_map[variable, bus] = Variable(label=f"{bus}_{variable}", domain=Domain.Voltage)
 
             start, stop = bias_vector[0], bias_vector[-1]
             step = bias_vector[1] - bias_vector[0]
 
+            if abs(step) < 1e-12:
+                # This loop doesn't change the bias on this bus: no compensated loop and no term.
+                self._constant_bus_variables.add(self._bus_variable_map[variable, bus])
+
             return ForLoop(variable=self._bus_variable_map[variable, bus], start=start, stop=stop, step=step)
+
+        def ends_in_conditional(element: Block | Operation) -> bool:
+            """Whether `element` is a Conditional, or a Block whose own last element does (recursively)."""
+            if isinstance(element, Conditional):
+                return True
+            if isinstance(element, Block) and element.elements:
+                return ends_in_conditional(element.elements[-1])
+            return False
+
+        def assemble_flux_operations(
+            block: Block,
+            carried: dict[tuple[type, str], list[Variable]],
+            ancestors: list[Block],
+            shifted_loops: dict[tuple[Variable, float], Variable],
+        ) -> None:
+            """
+            Sets the final value of every compensated SetOffset/SetGain: its own loop terms, plus the loop terms of
+            enclosing blocks that are still active, plus its constant bias.
+
+            Operations are followed in program order, as the hardware runs them. A loop's terms stop being carried once
+            the buses it sweeps are set again, so a later operation replaces an earlier one. Constants are never
+            carried: each operation's constant already includes every fixed flux set before it.
+            """
+            ancestors = [*ancestors, block]
+            current = {key: list(terms) for key, terms in carried.items()}
+            # (operation class, loop variable) whose buses have been set again in this block.
+            replaced: set[tuple[type, Variable]] = set()
+            for element in block.elements:
+                if isinstance(element, Block):
+                    active = {
+                        (cls, bus): [term for term in terms if (cls, bus_variable_origin[term]) not in replaced]
+                        for (cls, bus), terms in current.items()
+                    }
+                    assemble_flux_operations(element, active, ancestors, shifted_loops)
+                    continue
+                if not isinstance(element, (SetOffset, SetGain)) or id(element) not in self._flux_terms:
+                    continue
+
+                own_terms, constant, group_buses = self._flux_terms.pop(id(element))
+                operation_class = type(element)
+                for (cls, _), terms in carried.items():
+                    if cls is not operation_class:
+                        continue
+                    for term in terms:
+                        variable = bus_variable_origin[term]
+                        swept = self._variable_buses.get((operation_class, variable), set())
+                        reset = swept & group_buses
+                        if swept and reset == swept:
+                            replaced.add((operation_class, variable))
+                        elif reset:
+                            raise NotImplementedError(
+                                f"Crosstalk compensation can't set only some of the buses an outer loop sweeps "
+                                f"together: loop variable {variable.label!r} sweeps {sorted(swept)}, and an inner "
+                                f"block sets {sorted(reset)} again. Set all of them in the inner block, or none."
+                            )
+
+                key = (operation_class, element.bus)
+                inherited = [
+                    term
+                    for term in carried.get(key, [])
+                    if (operation_class, bus_variable_origin[term]) not in replaced and term not in own_terms
+                ]
+                terms = own_terms + inherited
+                QProgram._set_flux_offset_value(element, combine_terms(terms, constant, ancestors, shifted_loops))
+                current[key] = terms
+
+        def combine_terms(
+            terms: list[Variable],
+            constant: float,
+            ancestors: list[Block],
+            shifted_loops: dict[tuple[Variable, float], Variable],
+        ) -> float | Variable:
+            """
+            Writes `sum(terms) + constant` as a value the Qblox compiler accepts: a VariableExpression allows a single
+            binary operation, so `var + var + constant` is written as `var + shifted_var`, where `shifted_var` is a
+            copy of the innermost compensated loop with its range moved by the constant.
+            """
+            constant = float(constant) if abs(constant) >= 1e-12 else 0.0
+            if not terms:
+                return constant
+            if len(terms) > 2:
+                raise NotImplementedError(
+                    "Crosstalk compensation supports at most two loops sweeping flux at the same time on one bus."
+                )
+            if len(terms) == 1:
+                return terms[0] + constant if constant else terms[0]
+            if not constant:
+                return terms[0] + terms[1]
+
+            parallel, loop = next(
+                (block, loop)
+                for block in reversed(ancestors)
+                if isinstance(block, Parallel)
+                for loop in block.loops
+                if loop.variable in terms
+            )
+            other = next(term for term in terms if term != loop.variable)
+            key = (loop.variable, round(constant, 12))
+            if key not in shifted_loops:
+                shifted = Variable(label=f"{loop.variable.label}{constant:+g}", domain=Domain.Voltage)
+                parallel.loops = [
+                    *parallel.loops,
+                    ForLoop(variable=shifted, start=loop.start + constant, stop=loop.stop + constant, step=loop.step),  # type: ignore [union-attr]
+                ]
+                copied_qprogram._variables[shifted] = VariableInfo()
+                shifted_loops[key] = shifted
+            return other + shifted_loops[key]
 
         def handle_non_linear(
             elements: list[Block | Operation],
@@ -930,6 +1124,7 @@ class QProgram(StructuredProgram):
                         for bus in flux_vector_buses:
                             corrected_offsets = offsets[state.offsets_index][bus][loop_coord]
                             corrected_elements.append(SetOffset(bus, corrected_offsets))
+                            copied_qprogram.buses.add(bus)
 
                 elif isinstance(element, Play) and element.bus in flux_vector_buses:
                     if not state.play_bus_list or element.bus in state.play_bus_list:
@@ -955,6 +1150,7 @@ class QProgram(StructuredProgram):
                                 element.stepped,
                             )
                             corrected_elements.append(play)
+                            copied_qprogram.buses.add(bus)
                         state.on_play(element.bus)
 
                 elif isinstance(element, Wait) and element.bus in flux_vector_buses:
@@ -999,8 +1195,17 @@ class QProgram(StructuredProgram):
                 else:
                     corrected_elements.append(element)
 
-            # Needs to sync at the end of every loop for the unpack to work with non-flux buses
-            if corrected_elements and not isinstance(corrected_elements[-1], Sync):
+            # Needs to sync at the end of every loop for the unpack to work with non-flux buses.
+            # Skipped when the tail ends in a Conditional (possibly wrapped in ForLoop/Parallel/etc.):
+            # a qp.if_trigger() block already self-times its own exit (see
+            # QbloxCompiler._handle_conditional_trigger_epilogue), and appending a Sync right after it
+            # would touch the conditional's gated bus outside the block, which
+            # QbloxCompiler._validate_conditional_bus_isolation forbids.
+            if (
+                corrected_elements
+                and not isinstance(corrected_elements[-1], Sync)
+                and not ends_in_conditional(corrected_elements[-1])
+            ):
                 corrected_elements.append(Sync())
             return corrected_elements, state
 
@@ -1014,6 +1219,13 @@ class QProgram(StructuredProgram):
                 non_lin_play_waveforms,
             )
             copied_qprogram.body.elements = corrected_elements
+        else:
+            bus_variable_origin: dict[Variable, Variable] = {
+                bus_variable: variable
+                for (variable, _), bus_variable in self._bus_variable_map.items()
+                if isinstance(variable, Variable)
+            }
+            assemble_flux_operations(copied_qprogram.body, {}, [], {})
         return copied_qprogram
 
     def with_crosstalk_qdac(
@@ -1240,15 +1452,73 @@ class QProgram(StructuredProgram):
 
         Args:
             bus (str): Unique identifier of the bus.
-            duration (int): Duration of the delay after the trigger is received. Minimum of 4 ns.
+            duration (int): Duration of the delay after the trigger is received, in ns. Minimum of 4 ns. Ignored on
+                QDAC-driven buses.
             port (optional, int | None): Trigger input port. Only used by the QDACII compiler.
                 Qblox buses always wait on the cluster's external trigger address. Defaults to None.
+
+        Raises:
+            NotImplementedError: If ``qp.if_trigger()`` is also used in this QProgram.
         """
         # qblox-only external_trigger bus
         self.qblox.external_trigger.append(bus)
+        self._reject_conflicting_trigger_mode("wait_trigger", ("if_trigger",))
+        self._trigger_mode = "wait_trigger"
         operation = WaitTrigger(bus=bus, duration=_to_scalar(duration), port=port)
         self._active_block.append(operation)
         self._buses.add(bus)
+
+    def if_trigger(self, trigger_padding_ns: int | None = None, expected_wait_time_ns: int | None = None):
+        """Define a block that only executes if the external trigger was received in time.
+
+        Guards a block so it only runs if the external trigger the bus is waiting on arrived in time;
+        otherwise the block is skipped so its bus moves on to the next bin (recorded as NaN) instead of
+        hanging on a missed trigger.
+
+        Blocks need to open a scope.
+
+        Args:
+            trigger_padding_ns (int | None, optional): Extra wait, in ns, inserted before checking the
+                trigger, to cover the propagation delay of the trigger network between the module sending
+                it and the module gated by ``qp.if_trigger()``. Defaults to, and cannot be set lower than,
+                the trigger network's own propagation delay.
+            expected_wait_time_ns (int | None, optional): The trigger period, i.e. the time between two
+                consecutive triggers, in ns. Each pass through the block is padded to exactly this duration
+                so the bus stays in step with the trigger. If not given, it is derived from the QDAC bus driving the trigger in this QProgram (its ``dwell``,
+                when ``qp.set_trigger(..., position="step")`` is used). Compiling raises if neither an
+                explicit value nor a derivable QDAC dwell is available.
+
+        Returns:
+            Conditional: The conditional block.
+
+        Raises:
+            NotImplementedError: If ``qp.wait_trigger`` or ``qp.qblox.measure_reset`` is also used in this
+                QProgram.
+            ValueError: If ``trigger_padding_ns`` is given and is lower than the trigger network's own
+                propagation delay.
+
+        Examples:
+
+            >>> with qp.if_trigger():
+            >>> # operations that shall be executed if the trigger was received
+        """
+        self._reject_conflicting_trigger_mode("if_trigger()", ("wait_trigger", "measure_reset"))
+        self._trigger_mode = "if_trigger"
+        return QProgram._ConditionalContext(
+            program=self, trigger_padding_ns=trigger_padding_ns, expected_wait_time_ns=expected_wait_time_ns
+        )
+
+    class _ConditionalContext(StructuredProgram._BlockContext):
+        program: "QProgram"
+
+        def __init__(self, program: "QProgram", trigger_padding_ns: int | None, expected_wait_time_ns: int | None):
+            self.program = program
+            self.block: Conditional = Conditional(
+                trigger_padding_ns=trigger_padding_ns, expected_wait_time_ns=expected_wait_time_ns
+            )
+
+        def __enter__(self) -> "Conditional":
+            return super().__enter__()
 
     @overload
     def measure(self, bus: str, waveform: IQWaveform, weights: IQWaveform, save_adc: bool = False):
@@ -1387,12 +1657,16 @@ class QProgram(StructuredProgram):
     @requires_domain("offset_path0", Domain.Voltage)
     @requires_domain("offset_path1", Domain.Voltage)
     def set_offset(self, bus: str, offset_path0: float, offset_path1: float | None = None):
-        """Set the gain of the AWG associated with bus.
+        """Set the DC offset of the bus.
+
+        The unit depends on which instrument the bus maps to: for a Qblox-driven bus, the offset of the AWG, normalised
+        between -1 and 1; for a QDAC-driven bus, the DC voltage of the channel, in volts.
 
         Args:
             bus (str): Unique identifier of the bus.
-            offset_path0 (float): The new offset of the AWG for path0.
-            offset_path1 (float): The new offset of the AWG for path1.
+            offset_path0 (float): The new offset for path0.
+            offset_path1 (float | None, optional): The new offset for path1. On a Qblox-driven bus, ``None`` uses the
+                offset of path0. Ignored on QDAC-driven buses. Defaults to None.
         """
         operation = SetOffset(
             bus=bus,
@@ -1403,13 +1677,16 @@ class QProgram(StructuredProgram):
         self._buses.add(bus)
 
     @requires_domain("duration", Domain.Time)
-    def set_trigger(self, bus: str, duration: int, outputs: list[int] | int | None = None, position: str = "start"):
+    def set_trigger(self, bus: str, duration: float, outputs: list[int] | int | None = None, position: str = "start"):
         """Set the trigger output for a given instrument.
+
         Args:
             bus (str): Unique identifier of the bus.
-            duration (int): Duration of the trigger pulse. Minimum of 4 ns.
-            outputs(optional, list[int] | int | None): Port channel/s of the trigger output. Defaults to None.
-            outputs(optional, str): Trigger position in respective to the pulse location, it can be either `start` or `end. Defaults to start.
+            duration (float): Duration of the trigger pulse. Unit depends on which instrument the bus maps
+                to: for a QDAC-driven bus, in seconds (passed straight through to the QDAC-II driver's
+                ``width_s``, from 1e-6 s to 3600 s); for a Qblox-driven bus, in nanoseconds (minimum 4 ns).
+            outputs (list[int] | int | None, optional): Port channel/s of the trigger output. Defaults to None.
+            position (str, optional): Trigger position relative to the pulse location: ``"start"``, ``"end"``, ``"step"`` or ``"end_step"``. Only QDAC buses use it. Defaults to ``"start"``.
         """
         operation = SetTrigger(bus=bus, outputs=outputs, duration=_to_scalar(duration), position=position)
         self._active_block.append(operation)
@@ -1578,7 +1855,12 @@ class QProgram(StructuredProgram):
                 reset_pulse (IQWaveform | str): Pulse used for active reset.
                 trigger_address (int, optional): Trigger address for synchronization. Defaults to 1.
                 save_adc (bool, optional): Whether to save ADC data. Defaults to False.
+
+            Raises:
+                NotImplementedError: If ``qp.if_trigger()`` is also used in this QProgram.
             """
+            self.qprogram._reject_conflicting_trigger_mode("qp.qblox.measure_reset()", ("if_trigger",))
+            self.qprogram._trigger_mode = "measure_reset"
             operation: MeasureReset | MeasureResetCalibrated
             if (
                 isinstance(waveform, IQWaveform)
@@ -1795,7 +2077,7 @@ class QProgram(StructuredProgram):
             bus: str,
             waveform: Waveform | IQWaveform,
             dwell: int | None = None,
-            delay: int | None = None,
+            delay: float | None = None,
             repetitions: int | None = None,
             stepped: bool | None = None,
         ) -> None:
@@ -1804,8 +2086,8 @@ class QProgram(StructuredProgram):
             Args:
                 bus (str): Unique identifier of the bus.
                 waveform (Waveform | IQWaveform): A single waveform or an I/Q pair of waveforms
-                dwell (int | None, optional): Resolution un us of the QDACII pulse with a minimum of 2 us. Defaults to 2 inside QDACII compiler.
-                delay (int | None, optional): Delay of the QDACII pulse. Defaults to 0 inside QDACII compiler.
+                dwell (int | None, optional): Time spent on each voltage of the list, in us. Minimum of 2 us. Defaults to 2 inside QDACII compiler.
+                delay (float | None, optional): Delay from the trigger until the QDACII starts the list, in seconds. Defaults to 0 inside QDACII compiler.
                 repetitions (int | None, optional): Number of pulse repetitions. Defaults to the default repetitions inside QDACII compiler.
                 stepped (bool | None, optional): Defining if the ramp will have a stair shape. Defaults to False.
             """
@@ -1816,7 +2098,7 @@ class QProgram(StructuredProgram):
             bus: str,
             waveform: str,
             dwell: int | None = None,
-            delay: int | None = None,
+            delay: float | None = None,
             repetitions: int | None = None,
             stepped: bool | None = None,
         ) -> None:
@@ -1825,8 +2107,8 @@ class QProgram(StructuredProgram):
             Args:
                 bus (str): Unique identifier of the bus.
                 waveform (str): An identifier of a named waveform.
-                dwell (int | None, optional): Resolution un us of the QDACII pulse with a minimum of 2 us. Defaults to 2 inside QDACII compiler.
-                delay (int | None, optional): Delay of the QDACII pulse. Defaults to 0 inside QDACII compiler.
+                dwell (int | None, optional): Time spent on each voltage of the list, in us. Minimum of 2 us. Defaults to 2 inside QDACII compiler.
+                delay (float | None, optional): Delay from the trigger until the QDACII starts the list, in seconds. Defaults to 0 inside QDACII compiler.
                 repetitions (int | None, optional): Number of pulse repetitions. Defaults to the default repetitions inside QDACII compiler.
                 stepped (bool | None, optional): Defining if the ramp will have a stair shape. Defaults to False.
             """
@@ -1836,7 +2118,7 @@ class QProgram(StructuredProgram):
             bus: str,
             waveform: Waveform | IQWaveform | str,
             dwell: int | None = None,
-            delay: int | None = None,
+            delay: float | None = None,
             repetitions: int | None = None,
             stepped: bool | None = None,
         ) -> None:
@@ -1848,8 +2130,8 @@ class QProgram(StructuredProgram):
             Args:
                 bus (str): Unique identifier of the bus.
                 waveform (Waveform | IQWaveform | str): The waveform, IQWaveform, or alias of named waveform to play.
-                dwell (int | None, optional): Resolution un us of the QDACII pulse with a minimum of 2 us. Defaults to 2 inside QDACII compiler.
-                delay (int | None, optional): Delay of the QDACII pulse. Defaults to 0 inside QDACII compiler.
+                dwell (int | None, optional): Time spent on each voltage of the list, in us. Minimum of 2 us. Defaults to 2 inside QDACII compiler.
+                delay (float | None, optional): Delay from the trigger until the QDACII starts the list, in seconds. Defaults to 0 inside QDACII compiler.
                 repetitions (int | None, optional): Number of pulse repetitions. Defaults to the default repetitions inside QDACII compiler.
                 stepped (bool | None, optional): Defining if the ramp will have a stair shape. Defaults to False inside QDACII compiler.
             """

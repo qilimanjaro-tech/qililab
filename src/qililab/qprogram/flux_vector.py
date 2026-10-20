@@ -15,7 +15,6 @@
 from __future__ import annotations
 
 import math
-from copy import deepcopy
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, cast
 
@@ -41,7 +40,20 @@ class FluxVector:
         self.flux_vector: dict[str, float | list[float] | np.ndarray] = {}
         self.bias_vector: dict[str, float | list[float] | np.ndarray] = {}
         self.crosstalk: CrosstalkMatrix | None = None
-        self.crosstalk_inverse: CrosstalkMatrix | None = None
+        self._crosstalk_inverse: CrosstalkMatrix | None = None
+
+    @property
+    def crosstalk_inverse(self) -> "CrosstalkMatrix | None":
+        """Inverse of the attached crosstalk matrix, computed lazily on first access."""
+        if self._crosstalk_inverse is None and self.crosstalk is not None:
+            inverse = self.crosstalk.inverse()
+            inverse.flux_offsets = self.crosstalk.flux_offsets
+            self._crosstalk_inverse = inverse
+        return self._crosstalk_inverse
+
+    @crosstalk_inverse.setter
+    def crosstalk_inverse(self, value: "CrosstalkMatrix | None") -> None:
+        self._crosstalk_inverse = value
 
     def __getitem__(self, bus: str) -> float | list[float] | np.ndarray:
         """Given a bus, returns its corresponding flux
@@ -92,8 +104,7 @@ class FluxVector:
                 inputs produce array bias outputs.
         """
         self.crosstalk = crosstalk
-        self.crosstalk_inverse = crosstalk.inverse()
-        self.crosstalk_inverse.flux_offsets = self.crosstalk.flux_offsets
+        self._crosstalk_inverse = None
 
         for bus in self.crosstalk.matrix.keys():
             if bus not in self.flux_vector:
@@ -132,14 +143,23 @@ class FluxVector:
         if not self.bias_vector:
             self.bias_vector = self.flux_vector.copy()
 
-        for bus_1 in self.crosstalk.matrix.keys():
-            self.flux_vector[bus_1] = (
-                sum(
-                    (self.bias_vector[bus_2] * self.crosstalk.matrix[bus_1][bus_2])  # type: ignore
-                    for bus_2 in self.crosstalk.matrix[bus_1].keys()
-                )
-                + self.crosstalk.flux_offsets[bus_1]
-            )
+        buses = crosstalk._sorted_buses()
+        matrix = crosstalk.to_array()
+        offsets = np.array([crosstalk.flux_offsets.get(bus, 0.0) for bus in buses])
+        bias_values = [self.bias_vector[bus] for bus in buses]
+
+        # Scalar Flux
+        if all(isinstance(value, (int, float, np.number)) for value in bias_values):
+            flux = matrix @ np.array(bias_values, dtype=float) + offsets
+            for bus, value in zip(buses, flux):
+                self.flux_vector[bus] = float(value)
+        # Array Flux
+        else:
+            length = max(np.asarray(value).size for value in bias_values)
+            bias_stack = np.stack([np.broadcast_to(np.asarray(value, dtype=float), length) for value in bias_values])
+            flux = matrix @ bias_stack + offsets[:, np.newaxis]
+            for bus, vector in zip(buses, flux):
+                self.flux_vector[bus] = vector
 
         return self.flux_vector
 
@@ -164,17 +184,22 @@ class FluxVector:
         Returns:
             dict[str, FluxVector]: Dictionary containing different flux vectors for each bus.
         """
-        list_fluxes = {}
-        if self.crosstalk:
-            for bus in self.crosstalk.matrix.keys():
-                flux_vector_copy = deepcopy(self)
-                for zero_flux in self.crosstalk.matrix.keys():
-                    if (bus_list is not None and bus in bus_list and zero_flux in bus_list and zero_flux != bus) or (
-                        bus_list is None and zero_flux != bus
-                    ):
-                        flux_vector_copy[zero_flux] = 0
-                if (bus_list is not None and bus in bus_list) or bus_list is None:
-                    list_fluxes[bus] = flux_vector_copy
+        list_fluxes: dict[str, "FluxVector"] = {}
+        if not self.crosstalk:
+            return list_fluxes
+
+        buses = list(self.crosstalk.matrix.keys())
+        for bus in buses:
+            if bus_list is not None and bus not in bus_list:
+                continue
+            decomposed_flux = dict(self.flux_vector)
+            for zero_flux in buses:
+                if zero_flux != bus and (bus_list is None or zero_flux in bus_list):
+                    decomposed_flux[zero_flux] = 0
+            decomposed = FluxVector.from_dict(decomposed_flux)
+            # Share the crosstalk matrix (read-only here) rather than deep-copying it per bus.
+            decomposed.set_crosstalk(self.crosstalk)
+            list_fluxes[bus] = decomposed
         return list_fluxes
 
     @classmethod
@@ -574,13 +599,23 @@ class NonLinearFluxVector:
         """
         self.set_crosstalk(crosstalk)
         crosstalk = cast("CrosstalkMatrix", self.crosstalk)
-        for bus_1 in crosstalk.matrix.keys():
-            self.offset[bus_1] = (
-                sum(
-                    (bias_vector[bus_2] * crosstalk.matrix[bus_1][bus_2])  # type: ignore
-                    for bus_2 in crosstalk.matrix[bus_1].keys()
-                )
-                + crosstalk.flux_offsets[bus_1]
-            )
+
+        buses = crosstalk._sorted_buses()
+        matrix = crosstalk.to_array()
+        offsets = np.array([crosstalk.flux_offsets.get(bus, 0.0) for bus in buses])
+        bias_values = [bias_vector[bus] for bus in buses]
+
+        # Scalar Flux
+        if all(isinstance(value, (int, float, np.number)) for value in bias_values):
+            flux = matrix @ np.array(bias_values, dtype=float) + offsets
+            for bus, value in zip(buses, flux):
+                self.offset[bus] = float(value)
+        # Array Flux
+        else:
+            length = max(np.asarray(value).size for value in bias_values)
+            bias_stack = np.stack([np.broadcast_to(np.asarray(value, dtype=float), length) for value in bias_values])
+            flux = matrix @ bias_stack + offsets[:, np.newaxis]
+            for bus, vector in zip(buses, flux):
+                self.offset[bus] = vector
 
         return self.offset

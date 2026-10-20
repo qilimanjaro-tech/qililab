@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import datetime
+import datetime as dt
 from typing import TYPE_CHECKING, Any
 
 from pandas import read_hdf
@@ -142,7 +142,7 @@ class SequenceRun(base):  # type: ignore
         with session() as running_session:
             # Merge the detached instance into the current session
             persistent_instance = running_session.merge(self)
-            persistent_instance.end_time = datetime.datetime.now()  # type: ignore[assignment]
+            persistent_instance.end_time = dt.datetime.now()  # type: ignore[assignment]
             persistent_instance.run_length = persistent_instance.end_time - persistent_instance.start_time  # type: ignore[assignment]
             self.end_time = persistent_instance.end_time
             self.run_length = persistent_instance.run_length
@@ -176,6 +176,7 @@ class Measurement(base):  # type: ignore
     cooldown: Column = Column("cooldown", ForeignKey(Cooldown.cooldown), index=True)
     sequence_id: Column = Column("sequence_id", Integer)
     dc_offsets: Column = Column("dc_offsets", JSONB)
+    flux_offsets: Column = Column("flux_offsets", JSONB)
     target: Column = Column("target", ARRAY(String))
     secondary_source: Column = Column("secondary_source", ARRAY(String))
     result_path: Column = Column("result_path", String, unique=True, nullable=False)
@@ -199,7 +200,7 @@ class Measurement(base):  # type: ignore
         with session() as running_session:
             # Merge the detached instance into the current session
             persistent_instance = running_session.merge(self)
-            persistent_instance.end_time = datetime.datetime.now()  # type: ignore[assignment]
+            persistent_instance.end_time = dt.datetime.now()  # type: ignore[assignment]
             persistent_instance.run_length = persistent_instance.end_time - persistent_instance.start_time  # type: ignore[assignment]
             try:
                 if traceback is None:
@@ -300,6 +301,7 @@ class Measurement(base):  # type: ignore
         data_shape=None,
         debug_file=None,
         dc_offsets=None,
+        flux_offsets=None,
         target=None,
         secondary_source=None,
         bus_mapping=None,
@@ -325,6 +327,7 @@ class Measurement(base):  # type: ignore
         self.data_shape = data_shape
         self.debug_file = debug_file
         self.dc_offsets = dc_offsets
+        self.flux_offsets = flux_offsets
         self.target = target
         self.secondary_source = secondary_source
         self.bus_mapping = bus_mapping
