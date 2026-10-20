@@ -2297,7 +2297,7 @@ class TestMethods:
     def test_calibrate_mixers(self, platform: Platform):
         """Test calibrating the Qblox mixers."""
         channel_id = 0
-        cal_type = "lo"
+        cal_type = "lo only"
         alias_drive_bus = "drive_line_q1_bus"
         alias_readout_bus = "feedline_input_output_bus_1"
         drive_bus = platform.get_element(alias=alias_drive_bus)
@@ -2314,7 +2314,7 @@ class TestMethods:
         platform.calibrate_mixers(alias=alias_readout_bus, cal_type=cal_type, channel_id=channel_id)
         qrm_rf.calibrate_mixers.assert_called_with(cal_type, channel_id)
 
-        cal_type = "lo_and_sidebands"
+        cal_type = "lo and sidebands"
 
         platform.calibrate_mixers(alias=alias_drive_bus, cal_type=cal_type, channel_id=channel_id)
         qcm_rf.calibrate_mixers.assert_called_with(cal_type, channel_id)
@@ -2322,7 +2322,13 @@ class TestMethods:
         platform.calibrate_mixers(alias=alias_readout_bus, cal_type=cal_type, channel_id=channel_id)
         qrm_rf.calibrate_mixers.assert_called_with(cal_type, channel_id)
 
-        cal_type = "lo"
+        # Omitting `channel_id` must raise instead of silently doing nothing (QHC-1655).
+        qcm_rf.calibrate_mixers.reset_mock()
+        with pytest.raises(ValueError, match="channel_id"):
+            platform.calibrate_mixers(alias=alias_drive_bus, cal_type=cal_type, channel_id=None)
+        qcm_rf.calibrate_mixers.assert_not_called()
+
+        cal_type = "lo only"
         non_rf_drive_bus = "drive_line_q0_bus"
         non_rf_readout_bus = "feedline_input_output_bus"
 

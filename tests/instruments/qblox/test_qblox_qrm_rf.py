@@ -103,6 +103,8 @@ def fixture_qrm(platform: Platform):
     qrm_rf.device.mock_add_spec(module_mock_spec)
     qrm_rf.device._get_max_out_att_0 = MagicMock(return_value=MAX_ATTENUATION)
     qrm_rf.device._run_mixer_lo_calib = MagicMock()
+    # Public LO-calibration method for the out0/in0 LO (what `calibrate_mixers` must call, QHC-1655).
+    qrm_rf.device.out0_in0_lo_cal = MagicMock()
 
     qrm_rf.device.sequencers = {0: MagicMock(), 1: MagicMock()}
 
@@ -335,23 +337,57 @@ class TestQbloxQRMRF:
         assert qrm_rf.cache == {}
         assert qrm_rf.sequences == {}
 
-    def test_calibrate_mixers(self, qrm_rf: QbloxQRMRF):
-        """Test calibrating the QRM mixers."""
-        channel_id = 0
-        cal_type = "lo"
+    def test_calibrate_mixers_lo_only_uses_public_method(self, qrm_rf: QbloxQRMRF):
+        """`lo only` calibrates the out0/in0 LO via the public method, not the private
+        `_run_mixer_lo_calib`, and runs no sideband calibration (QHC-1655)."""
+        qrm_rf.calibrate_mixers(cal_type="lo only", channel_id=0)
 
-        qrm_rf.calibrate_mixers(cal_type=cal_type, channel_id=channel_id)
-        qrm_rf.device._run_mixer_lo_calib.assert_called_with(channel_id)
-
-        cal_type = "lo_and_sidebands"
-
-        qrm_rf.calibrate_mixers(cal_type=cal_type, channel_id=channel_id)
-        qrm_rf.device._run_mixer_lo_calib.assert_called_with(channel_id)
-
+        qrm_rf.device.out0_in0_lo_cal.assert_called_once_with()
+        qrm_rf.device._run_mixer_lo_calib.assert_not_called()
         for sequencer in qrm_rf.device.sequencers:
-            qrm_rf.device.sequencers[sequencer].sideband_cal.assert_called()
+            qrm_rf.device.sequencers[sequencer].sideband_cal.assert_not_called()
 
-        cal_type = "oh hi Mark!"
+    def test_calibrate_mixers_sidebands_only_target_sequencer(self, qrm_rf: QbloxQRMRF):
+        """`lo and sidebands` calibrates the LO and runs `sideband_cal` only on the targeted sequencer,
+        not on every sequencer of the module (QHC-1655)."""
+        qrm_rf.calibrate_mixers(cal_type="lo and sidebands", channel_id=0)
 
-        with pytest.raises(Exception):
-            qrm_rf.calibrate_mixers(cal_type=cal_type, channel_id=channel_id)
+        qrm_rf.device.out0_in0_lo_cal.assert_called_once_with()
+        qrm_rf.device.sequencers[0].sideband_cal.assert_called_once_with()
+        qrm_rf.device.sequencers[1].sideband_cal.assert_not_called()
+
+    def test_calibrate_mixers_none_channel_raises(self, qrm_rf: QbloxQRMRF):
+        """Omitting `channel_id` raises instead of silently doing nothing (QHC-1655)."""
+        with pytest.raises(ValueError, match="channel_id"):
+            qrm_rf.calibrate_mixers(cal_type="lo only", channel_id=None)
+        qrm_rf.device.out0_in0_lo_cal.assert_not_called()
+
+    def test_calibrate_mixers_invalid_cal_type_raises(self, qrm_rf: QbloxQRMRF):
+        """An unknown cal type raises a ValueError (QHC-1655)."""
+        with pytest.raises(ValueError, match="oh hi Mark!"):
+            qrm_rf.calibrate_mixers(cal_type="oh hi Mark!", channel_id=0)
+
+    def test_calibrate_mixers_off_is_noop(self, qrm_rf: QbloxQRMRF):
+        """`off` matches the runcard vocabulary and performs no calibration (QHC-1655)."""
+        qrm_rf.calibrate_mixers(cal_type="off", channel_id=0)
+        qrm_rf.device.out0_in0_lo_cal.assert_not_called()
+        qrm_rf.device._run_mixer_lo_calib.assert_not_called()
+        qrm_rf.device.sequencers[0].sideband_cal.assert_not_called()
+
+    @pytest.mark.parametrize(
+        "deprecated, canonical_sideband",
+        [("lo", False), ("lo_and_sidebands", True)],
+    )
+    def test_calibrate_mixers_deprecated_vocab_warns(
+        self, qrm_rf: QbloxQRMRF, deprecated: str, canonical_sideband: bool
+    ):
+        """The old `lo`/`lo_and_sidebands` spellings still work but warn, mapping to the runcard vocabulary
+        (QHC-1655)."""
+        with pytest.warns(DeprecationWarning):
+            qrm_rf.calibrate_mixers(cal_type=deprecated, channel_id=0)
+
+        qrm_rf.device.out0_in0_lo_cal.assert_called_once_with()
+        if canonical_sideband:
+            qrm_rf.device.sequencers[0].sideband_cal.assert_called_once_with()
+        else:
+            qrm_rf.device.sequencers[0].sideband_cal.assert_not_called()
