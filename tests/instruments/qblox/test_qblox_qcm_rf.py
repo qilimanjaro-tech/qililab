@@ -293,9 +293,8 @@ class TestQbloxQCMRF:
             qcm_rf.device.sequencers[sequencer.identifier].sync_en.assert_called_with(False)
 
     def test_initial_setup_order_covers_all_parameters(self):
-        """`parameters` is derived from the ordered tuple, which must list each parameter exactly once."""
-        order = QbloxQCMRF._initial_setup_order
-        assert set(order) == QbloxQCMRF.parameters  # derived, so this holds by construction
+        """`parameters` is the ordered tuple of settable RF parameters and must list each one exactly once."""
+        order = QbloxQCMRF.parameters
         assert len(order) == len(set(order))  # guards against a duplicate slipping into the tuple
 
     def test_initial_setup_parameter_order(self, qcm_rf: QbloxQCMRF):

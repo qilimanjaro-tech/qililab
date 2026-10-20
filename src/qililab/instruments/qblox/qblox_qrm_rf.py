@@ -56,14 +56,14 @@ class QbloxQRMRF(QbloxQRM):
 
     # TODO: We should separate instrument settings and instrument parameters, such that the user can quickly get
     # al the settable parameters of an instrument.
-    # Explicit order in which `initial_setup` applies the RF parameters, and the single source of truth for the
-    # set of settable parameters (`parameters` is derived from it below). Iterating a set of `str, Enum` members is
-    # hash-seed dependent, which made setup non-deterministic (see QHC-1654): the LO frequency could be set before
-    # the cal-type default (so runcard auto-calibration never ran), or the runcard DC offsets after it (overwriting
-    # the calibration result). We apply, in order: attenuations, LO enable, the runcard offsets, the cal-type
-    # default, and finally the LO frequency, so that when auto-calibration is enabled it runs last, on the final
-    # configuration, and is not overwritten by any runcard value.
-    _initial_setup_order: ClassVar[tuple[Parameter, ...]] = (
+    # Settable RF parameters, in the explicit order in which `initial_setup` applies them. This tuple is also the
+    # single source of truth for the membership (`in`) checks in `set_parameter`/`get_parameter`. The order matters:
+    # iterating a *set* of `str, Enum` members is hash-seed dependent, which made setup non-deterministic (see
+    # QHC-1654): the LO frequency could be set before the cal-type default (so runcard auto-calibration never ran),
+    # or the runcard DC offsets after it (overwriting the calibration result). We apply, in order: attenuations, LO
+    # enable, the runcard offsets, the cal-type default, and finally the LO frequency, so that when auto-calibration
+    # is enabled it runs last, on the final configuration, and is not overwritten by any runcard value.
+    parameters: ClassVar[tuple[Parameter, ...]] = (
         Parameter.OUT0_ATT,
         Parameter.IN0_ATT,
         Parameter.OUT0_IN0_LO_EN,
@@ -72,7 +72,6 @@ class QbloxQRMRF(QbloxQRM):
         Parameter.OUT0_IN0_LO_FREQ_CAL_TYPE_DEFAULT,
         Parameter.OUT0_IN0_LO_FREQ,
     )
-    parameters: ClassVar[set[Parameter]] = set(_initial_setup_order)
 
     settings: QbloxQRMRFSettings
 
@@ -80,7 +79,7 @@ class QbloxQRMRF(QbloxQRM):
     def initial_setup(self):
         """Initial setup"""
         super().initial_setup()
-        for parameter in self._initial_setup_order:
+        for parameter in self.parameters:
             self.set_parameter(parameter, getattr(self.settings, parameter.value))
 
     def _map_connections(self):
