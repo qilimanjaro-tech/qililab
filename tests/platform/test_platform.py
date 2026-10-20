@@ -1588,7 +1588,7 @@ class TestMethods:
         mock_output.qprogram = MagicMock(spec=QProgram)
         mock_output.qprogram.qblox = MagicMock(spec=QProgram._QbloxInterface)
         mock_output.qprogram.qblox.trigger_network_required = []
-        mock_output.qprogram.qblox.external_trigger_required = False
+        mock_output.qprogram.qblox.external_trigger = []
 
         return mock_output, mock_qdac_output, mock_qdac, mock_bus
 
@@ -1640,7 +1640,7 @@ class TestMethods:
         mock_output.qprogram = MagicMock(spec=QProgram)
         mock_output.qprogram.qblox = MagicMock(spec=QProgram._QbloxInterface)
         mock_output.qprogram.qblox.trigger_network_required = []
-        mock_output.qprogram.qblox.external_trigger_required = True
+        mock_output.qprogram.qblox.external_trigger = ["bus1"]
 
         mock_module = MagicMock()
         mock_module.alias = "module_qrm"

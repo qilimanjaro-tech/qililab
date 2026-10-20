@@ -551,10 +551,10 @@ class TestQProgram(TestStructuredProgram):
         assert qp._body.elements[1].duration == 100
         assert qp._body.elements[1].port == 1
 
-        assert qp.qblox.external_trigger_required is True
+        assert qp.qblox.external_trigger == ["flux_1", "flux_2"]
 
     def test_wait_trigger_method_with_bus_mapping(self):
-        """Test wait trigger method with bus mapping keeps the external trigger requirement."""
+        """Test wait trigger method with bus mapping remaps the external trigger buses."""
         qp = QProgram()
         qp.wait_trigger(bus="flux_1", duration=100)
         qp.wait_trigger(bus="flux_2", duration=100, port=1)
@@ -572,7 +572,7 @@ class TestQProgram(TestStructuredProgram):
         assert new_qp._body.elements[1].duration == 100
         assert new_qp._body.elements[1].port == 1
 
-        assert new_qp.qblox.external_trigger_required is True
+        assert new_qp.qblox.external_trigger == ["flux_x", "flux_z"]
 
     def test_measure_method(self):
         """Test measure method"""
@@ -1872,7 +1872,7 @@ class TestQProgram(TestStructuredProgram):
         assert isinstance(conditional, Conditional)
         assert conditional.expected_wait_time_ns == 2252
         assert len(conditional.elements) == 1
-        assert qp.qblox.external_trigger_required is True
+        assert qp.qblox.external_trigger == ["readout"]
 
     def test_if_trigger_default_expected_wait_time_is_none(self):
         qp = QProgram()

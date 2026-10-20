@@ -292,6 +292,11 @@ class QProgram(StructuredProgram):
                 copied_qprogram.buses.remove(bus)
                 copied_qprogram.buses.add(bus_mapping[bus])
 
+        # Apply the mapping to the buses requiring the external trigger
+        copied_qprogram.qblox.external_trigger = [
+            bus_mapping.get(bus, bus) for bus in copied_qprogram.qblox.external_trigger
+        ]
+
         # Apply the mapping to weight_duration keys, merging entries when multiple source buses map onto
         # the same target bus (e.g. multiplexed readout) instead of one overwriting the other
         remapped_weight_duration: dict[str, list[int | str]] = {}
@@ -1454,7 +1459,8 @@ class QProgram(StructuredProgram):
         """
         self._reject_conflicting_trigger_mode("wait_trigger", ("if_trigger",))
         self._trigger_mode = "wait_trigger"
-        self.qblox.external_trigger_required = True
+        if bus not in self.qblox.external_trigger:
+            self.qblox.external_trigger.append(bus)
         operation = WaitTrigger(bus=bus, duration=_to_scalar(duration), port=port)
         self._active_block.append(operation)
         self._buses.add(bus)
@@ -1495,7 +1501,6 @@ class QProgram(StructuredProgram):
         """
         self._reject_conflicting_trigger_mode("if_trigger()", ("wait_trigger", "measure_reset"))
         self._trigger_mode = "if_trigger"
-        self.qblox.external_trigger_required = True
         return QProgram._ConditionalContext(
             program=self, trigger_padding_ns=trigger_padding_ns, expected_wait_time_ns=expected_wait_time_ns
         )
@@ -1511,6 +1516,25 @@ class QProgram(StructuredProgram):
 
         def __enter__(self) -> "Conditional":
             return super().__enter__()
+
+        def __exit__(self, exc_type, exc_value, exc_tb):
+            super().__exit__(exc_type, exc_value, exc_tb)
+            for bus in self._get_block_buses(self.block):
+                if bus not in self.program.qblox.external_trigger:
+                    self.program.qblox.external_trigger.append(bus)
+
+        @staticmethod
+        def _get_block_buses(block: Block) -> list[str]:
+            """Buses of every operation inside ``block``, including the ones in nested blocks."""
+            buses: list[str] = []
+            for element in block.elements:
+                if isinstance(element, Block):
+                    buses.extend(QProgram._ConditionalContext._get_block_buses(element))
+                    continue
+                bus = getattr(element, "bus", None)
+                if isinstance(bus, str):
+                    buses.append(bus)
+            return buses
 
     @overload
     def measure(self, bus: str, waveform: IQWaveform, weights: IQWaveform, save_adc: bool = False):
@@ -1691,7 +1715,8 @@ class QProgram(StructuredProgram):
             self.disable_autosync: bool = False
             self.latch_enabled: list[str] = []
             self.trigger_network_required: dict[str, int] = {}
-            self.external_trigger_required: bool = False
+            # TODO: move the external trigger detection to a compiler prepass in the new QProgram
+            self.external_trigger: list[str] = []
             self._weight_duration: dict[str, list[int | str]] = {}
 
         @property
