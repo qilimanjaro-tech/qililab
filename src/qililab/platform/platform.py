@@ -1293,20 +1293,17 @@ class Platform:
 
     def _execute_qblox_compilation_output(self, output: QProgramCompilationOutput, debug: bool = False):
         try:
-            if output.qblox.qprogram.qblox.external_trigger:  # type: ignore[union-attr]
-                trigger_instrument_aliases = {
-                    instrument.alias
-                    for bus in self.buses.elements
-                    if bus.alias in output.qblox.qprogram.qblox.external_trigger  # type: ignore[union-attr]
-                    for instrument in bus.instruments
-                }
-                for controller in self.instrument_controllers.elements:
-                    if isinstance(controller, QbloxClusterController) and any(
-                        module.alias in trigger_instrument_aliases for module in controller.modules
-                    ):
-                        controller.set_ext_trigger()
             sequences, acquisitions = output.qblox.sequences, output.qblox.acquisitions  # type: ignore[union-attr]
             buses = {bus_alias: self.buses.get(alias=bus_alias) for bus_alias in sequences}
+
+            # The compiler makes every qblox bus wait on the external trigger, so enable it on every cluster in use
+            if output.qblox.qprogram.qblox.external_trigger_required:  # type: ignore[union-attr]
+                module_aliases = {instrument.alias for bus in buses.values() for instrument in bus.instruments}
+                for controller in self.instrument_controllers.elements:
+                    if isinstance(controller, QbloxClusterController) and any(
+                        module.alias in module_aliases for module in controller.modules
+                    ):
+                        controller.set_ext_trigger()
 
             weight_durations = output.qblox.qprogram.qblox.weight_duration  # type: ignore[union-attr]
             for bus_alias, bus in buses.items():

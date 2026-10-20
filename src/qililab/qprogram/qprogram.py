@@ -271,14 +271,6 @@ class QProgram(StructuredProgram):
                     bus = getattr(element, "bus")
                     if isinstance(bus, str) and bus in bus_mapping:
                         setattr(block.elements[index], "bus", bus_mapping[bus])
-                    if isinstance(element, WaitTrigger):
-                        new_external_trigger = []
-                        for bus in copied_qprogram.qblox.external_trigger:
-                            if bus in bus_mapping:
-                                new_external_trigger.append(bus_mapping[bus])
-                            else:
-                                new_external_trigger.append(bus)
-                        copied_qprogram.qblox.external_trigger = new_external_trigger
                 elif hasattr(element, "buses"):
                     buses = getattr(element, "buses")
                     if isinstance(buses, list):
@@ -1460,10 +1452,9 @@ class QProgram(StructuredProgram):
         Raises:
             NotImplementedError: If ``qp.if_trigger()`` is also used in this QProgram.
         """
-        # qblox-only external_trigger bus
-        self.qblox.external_trigger.append(bus)
         self._reject_conflicting_trigger_mode("wait_trigger", ("if_trigger",))
         self._trigger_mode = "wait_trigger"
+        self.qblox.external_trigger_required = True
         operation = WaitTrigger(bus=bus, duration=_to_scalar(duration), port=port)
         self._active_block.append(operation)
         self._buses.add(bus)
@@ -1504,6 +1495,7 @@ class QProgram(StructuredProgram):
         """
         self._reject_conflicting_trigger_mode("if_trigger()", ("wait_trigger", "measure_reset"))
         self._trigger_mode = "if_trigger"
+        self.qblox.external_trigger_required = True
         return QProgram._ConditionalContext(
             program=self, trigger_padding_ns=trigger_padding_ns, expected_wait_time_ns=expected_wait_time_ns
         )
@@ -1699,7 +1691,7 @@ class QProgram(StructuredProgram):
             self.disable_autosync: bool = False
             self.latch_enabled: list[str] = []
             self.trigger_network_required: dict[str, int] = {}
-            self.external_trigger: list[str] = []
+            self.external_trigger_required: bool = False
             self._weight_duration: dict[str, list[int | str]] = {}
 
         @property

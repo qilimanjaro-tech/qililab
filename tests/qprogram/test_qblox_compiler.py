@@ -1538,7 +1538,6 @@ class TestQBloxCompiler:
         compiler = QbloxCompiler()
         with pytest.raises(ValueError, match="Wait trigger duration cannot be a Variable, it must be an int."):
             compiler.compile(qprogram=qp)
-    
 
     def test_if_trigger_explicit_wait_time(self):
         qp = QProgram()
@@ -1591,7 +1590,7 @@ class TestQBloxCompiler:
                 )
 
         compiler = QbloxCompiler()
-        sequences, _ = compiler.compile(qprogram=qp, qblox_buses=["readout"], ext_trigger=True)
+        sequences, _ = compiler.compile(qprogram=qp, qblox_buses=["readout"])
 
         assert compiler._buses["readout"].expected_trigger_wait_time == 3000
 
@@ -1956,17 +1955,6 @@ class TestQBloxCompiler:
                 "Bus 'readout' cannot have instructions outside its qp.if_trigger() block: found Sync "
                 "outside the conditional, which would break the synchronisation."
             ),
-        ):
-            compiler.compile(qprogram=qp, qblox_buses=["readout"])
-
-    def test_if_trigger_without_ext_trigger_raises_error(self):
-        qp = QProgram()
-        with qp.if_trigger(expected_wait_time_ns=2252):
-            qp.qblox.acquire(bus="readout", weights=IQPair(I=Square(1, 100), Q=Square(0, 100)))
-
-        compiler = QbloxCompiler()
-        with pytest.raises(
-            AttributeError, match="External trigger has not been set as True inside runcard's instrument controllers."
         ):
             compiler.compile(qprogram=qp, qblox_buses=["readout"])
 
@@ -5173,7 +5161,7 @@ class TestQBloxCompiler:
         qp.wait_trigger(bus="drive", duration=100, port=7)
         compiler = QbloxCompiler()
         with caplog.at_level(logging.WARNING):
-            sequences, _ = compiler.compile(qprogram=qp, ext_trigger=True)
+            sequences, _ = compiler.compile(qprogram=qp)
         assert "wait_trigger port is ignored on Qblox buses" in caplog.text
         expected = """
             setup:
@@ -5194,7 +5182,7 @@ class TestQBloxCompiler:
         qp.wait_trigger(bus="drive", duration=100)
         compiler = QbloxCompiler()
         with caplog.at_level(logging.WARNING):
-            compiler.compile(qprogram=qp, ext_trigger=True)
+            compiler.compile(qprogram=qp)
         assert "wait_trigger port is ignored on Qblox buses" not in caplog.text
 
     def test_wait_trigger_single_bus_with_pending_upd_param_skips_wait_sync(self):

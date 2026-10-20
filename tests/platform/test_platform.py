@@ -1588,7 +1588,7 @@ class TestMethods:
         mock_output.qprogram = MagicMock(spec=QProgram)
         mock_output.qprogram.qblox = MagicMock(spec=QProgram._QbloxInterface)
         mock_output.qprogram.qblox.trigger_network_required = []
-        mock_output.qprogram.qblox.external_trigger = []
+        mock_output.qprogram.qblox.external_trigger_required = False
 
         return mock_output, mock_qdac_output, mock_qdac, mock_bus
 
@@ -1610,9 +1610,8 @@ class TestMethods:
         assert mock_bus.run.call_count == 4
 
     def test_execute_qprogram_with_qblox_output_ext_trigger_true(self, platform_qblox_qdac: Platform):
-        """Test that the execute_qprogram method executes controller.set_ext_trigger 
-        when QbloxClusterController has external_trigger set as True (there is a wait trigger in the qprogram)
-        """
+        """Test that executing a QProgram that requires the external trigger calls set_ext_trigger only on the
+        clusters owning one of its buses."""
 
         # Setup mock QbloxCompilationOutput and QdacCompilationOutput
         mock_output = MagicMock(spec=QbloxCompilationOutput)
@@ -1637,25 +1636,30 @@ class TestMethods:
         platform_qblox_qdac.buses.get = MagicMock(return_value=mock_bus)
         platform_qblox_qdac._qpy_sequence_cache = {}
         platform_qblox_qdac.trigger_runs = 0
-        platform_qblox_qdac.buses.elements = [mock_bus]
 
         mock_output.qprogram = MagicMock(spec=QProgram)
         mock_output.qprogram.qblox = MagicMock(spec=QProgram._QbloxInterface)
         mock_output.qprogram.qblox.trigger_network_required = []
-        mock_output.qprogram.qblox.external_trigger = ["bus1"]
+        mock_output.qprogram.qblox.external_trigger_required = True
 
         mock_module = MagicMock()
         mock_module.alias = "module_qrm"
-
         mock_controller = MagicMock(spec=QbloxClusterController)
         mock_controller.modules = [mock_module]
-        platform_qblox_qdac.instrument_controllers.elements = [mock_controller]
+
+        unused_module = MagicMock()
+        unused_module.alias = "unused_module"
+        unused_controller = MagicMock(spec=QbloxClusterController)
+        unused_controller.modules = [unused_module]
+
+        platform_qblox_qdac.instrument_controllers.elements = [mock_controller, unused_controller]
 
         platform_qblox_qdac._execute_qblox_compilation_output(
             output=QProgramCompilationOutput(qblox=mock_output, qdac=mock_qdac_output), debug=False
         )
 
         mock_controller.set_ext_trigger.assert_called_once()
+        unused_controller.set_ext_trigger.assert_not_called()
 
     def test_execute_qprogram_with_qblox_and_qdac_timeout_error_wrong_bus(self, platform_qblox_qdac: Platform):
         """Test that the execute_qprogram method retries correctly when the timed-out bus is not the one with timeout config."""

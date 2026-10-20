@@ -27,3 +27,4 @@ instrument_controllers:
       - alias: qcm
         slot_id: 0
     reset: False
+    ext_trigger: True

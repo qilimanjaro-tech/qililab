@@ -442,9 +442,6 @@ class QbloxCompiler:
                 f"qp.if_trigger() only supports compiling a single qblox bus for now; got {sorted(self._qblox_buses)}."
             )
 
-        if not self._ext_trigger:
-            raise AttributeError("External trigger has not been set as True inside runcard's instrument controllers.")
-
         bus = next(iter(conditional_bus))
         expected_wait_time_ns = element.expected_wait_time_ns
         if expected_wait_time_ns is None:
