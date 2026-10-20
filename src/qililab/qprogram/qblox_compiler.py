@@ -105,12 +105,21 @@ class QbloxCompilationOutput:
     Attributes:
         sequences (Sequence): A dictionary with the buses participating in the QProgram as keys and the corresponding Sequence as values.
         acquisitions (Acquisitions): A dictionary with the buses participating in the acquisitions as keys and the corresponding Acquisitions as values.
+        requires_external_trigger (bool): Whether the compiled sequences wait on the cluster's external trigger, i.e. the
+            QProgram has a ``wait_trigger`` on a Qblox bus or an ``if_trigger`` block.
     """
 
-    def __init__(self, qprogram: QProgram, sequences: Sequences, acquisitions: Acquisitions):
+    def __init__(
+        self,
+        qprogram: QProgram,
+        sequences: Sequences,
+        acquisitions: Acquisitions,
+        requires_external_trigger: bool = False,
+    ):
         self.qprogram = qprogram
         self.sequences = sequences
         self.acquisitions = acquisitions
+        self.requires_external_trigger = requires_external_trigger
 
     def __iter__(self):
         """Allows the class to be unpacked as a tuple (program, config, measurements)."""
@@ -279,6 +288,7 @@ class QbloxCompiler:
         self._conditional_leaf_range: tuple[int, int] = (0, 0)
         self._pending_conditional: tuple[Conditional, int, int] | None = None
         self._single_channel: list[str] = []
+        self._requires_external_trigger: bool = False
 
     def _prepass_qprogram_tree(
         self, block: Block, depth: int = 0, inside_conditional: bool = False, leaves: list | None = None
@@ -460,6 +470,7 @@ class QbloxCompiler:
 
         self._conditional_bus = bus
         self._conditional_leaf_range = leaf_range
+        self._requires_external_trigger = True
         self._buses[bus].expected_trigger_wait_time = expected_wait_time_ns
         self._buses[bus].trigger_padding_ns = (
             element.trigger_padding_ns if element.trigger_padding_ns is not None else WAIT_TRIGGER_NETWORK_EXT_TRIGGER
@@ -606,6 +617,8 @@ class QbloxCompiler:
         self._acquisition_metadata = {}
         self._conditional_bus = ""
         self._conditional_leaf_range = (0, 0)
+        # TODO: move the external trigger detection to the Qblox pre-pass in the new QProgram
+        self._requires_external_trigger = False
 
         # Pre-processing: Update time of flight
         if times_of_flight is not None:
@@ -784,7 +797,12 @@ class QbloxCompiler:
         # Return a dictionary with bus names as keys and the compiled Sequence as values.
         sequences = {bus: bus_info.qpy_sequence for bus, bus_info in self._buses.items()}
         acquisitions = {bus: bus_info.acquisitions for bus, bus_info in self._buses.items()}
-        return QbloxCompilationOutput(qprogram=self._qprogram, sequences=sequences, acquisitions=acquisitions)
+        return QbloxCompilationOutput(
+            qprogram=self._qprogram,
+            sequences=sequences,
+            acquisitions=acquisitions,
+            requires_external_trigger=self._requires_external_trigger,
+        )
 
     def _populate_buses(self) -> dict[str, BusCompilationInfo]:
         """Map each bus in the QProgram to a BusCompilationInfo instance.
@@ -1449,6 +1467,7 @@ class QbloxCompiler:
             raise ValueError("Wait trigger duration cannot be a Variable, it must be an int.")
 
         element.duration = QbloxCompiler._clamp_duration(element.duration, label="wait_trigger")
+        self._requires_external_trigger = True
 
         # Flush any pending upd_param before the sync, so every bus reaches the trigger aligned and
         # waits on it with the same plain wait_trigger.

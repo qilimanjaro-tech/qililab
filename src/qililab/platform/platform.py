@@ -1296,10 +1296,8 @@ class Platform:
             sequences, acquisitions = output.qblox.sequences, output.qblox.acquisitions  # type: ignore[union-attr]
             buses = {bus_alias: self.buses.get(alias=bus_alias) for bus_alias in sequences}
 
-            # A wait_trigger/if_trigger on a qblox bus makes every qblox bus wait on the external trigger,
-            # so enable it on every cluster in use
-            external_trigger = output.qblox.qprogram.qblox.external_trigger  # type: ignore[union-attr]
-            if any(bus_alias in buses for bus_alias in external_trigger):
+            # The compiler makes every qblox bus wait on the external trigger, so enable it on every cluster in use
+            if output.qblox.requires_external_trigger:  # type: ignore[union-attr]
                 module_aliases = {instrument.alias for bus in buses.values() for instrument in bus.instruments}
                 for controller in self.instrument_controllers.elements:
                     if isinstance(controller, QbloxClusterController) and any(

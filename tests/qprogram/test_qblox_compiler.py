@@ -1457,6 +1457,26 @@ class TestQBloxCompiler:
         assert is_q1asm_equal(sequences["drive"], drive_str)
         assert is_q1asm_equal(sequences["readout"], readout_str)
 
+    def test_requires_external_trigger(self):
+        """The output requires the external trigger only for a wait_trigger on a qblox bus or an if_trigger."""
+        qp = QProgram()
+        qp.play(bus="drive", waveform=Square(amplitude=1.0, duration=100))
+        assert QbloxCompiler().compile(qprogram=qp).requires_external_trigger is False
+
+        qp_wait_trigger = QProgram()
+        qp_wait_trigger.play(bus="drive", waveform=Square(amplitude=1.0, duration=100))
+        qp_wait_trigger.wait_trigger(bus="flux", duration=100)
+        assert QbloxCompiler().compile(qprogram=qp_wait_trigger, qblox_buses=["drive"]).requires_external_trigger is False
+        assert (
+            QbloxCompiler().compile(qprogram=qp_wait_trigger, qblox_buses=["drive", "flux"]).requires_external_trigger
+            is True
+        )
+
+        qp_if_trigger = QProgram()
+        with qp_if_trigger.if_trigger(expected_wait_time_ns=2252):
+            qp_if_trigger.qblox.acquire(bus="readout", weights=IQPair(I=Square(1, 100), Q=Square(0, 100)))
+        assert QbloxCompiler().compile(qprogram=qp_if_trigger, qblox_buses=["readout"]).requires_external_trigger is True
+
     def test_wait_trigger_extends_bus_without_pending_upd_param_to_match_upd_param_floor(
         self, wait_trigger_upd_param_extension: QProgram
     ):
