@@ -71,6 +71,8 @@ from qililab.typings import ChannelID, DistortionState, InstrumentName, OutputID
 from qililab.utils.serialization import deserialize_from
 
 if TYPE_CHECKING:
+    from collections.abc import Mapping
+
     import numpy as np
 
     from qililab.instrument_controllers.instrument_controller import InstrumentController
@@ -78,6 +80,7 @@ if TYPE_CHECKING:
     from qililab.instruments.qblox.qblox_adc_sequencer import QbloxADCSequencer
     from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
     from qililab.result.database import DatabaseManager
+    from qililab.result.result_management import LoopData
     from qililab.settings import Runcard
 
 
@@ -749,7 +752,7 @@ class Platform:
                         output_id=output_id,
                     )
 
-    def _set_bias_from_element(self, element: Bus | InstrumentController | Instrument | None):  # type: ignore[union-attr]
+    def _set_bias_from_element(self, element: Bus | InstrumentController | Instrument | None):
         """Sets the right parameter depending on the instrument defined inside the element.
         This is used in the crosstalk correction.
         The instruments included in this function are: QM, QBlox, SPI and QDevil.
@@ -1955,7 +1958,7 @@ class Platform:
         self,
         experiment_name: str,
         results: np.ndarray,
-        loops: dict[str, np.ndarray] | dict[str, dict[str, Any]],
+        loops: Mapping[str, np.ndarray | LoopData],
         qprogram: QProgram | None = None,
         description: str | None = None,
     ):
@@ -1988,7 +1991,7 @@ class Platform:
         Args:
             experiment_name (str): Name of the experiment.
             results (np.ndarray): Experiment data.
-            loops (dict[str, np.ndarray]): Dictionary of loops with the name of the loop and the array.
+            loops (Mapping[str, np.ndarray | LoopData]): Dictionary of loops with the name of the loop and the array or its LoopData.
             qprogram (QProgram | None, optional): Qprogram of the experiment, if there is no Qprogram related to the results it is not mandatory. Defaults to None.
             description (str | None, optional): String containing a description or any relevant information about the experiment. Defaults to None.
         """
@@ -2006,9 +2009,9 @@ class Platform:
         for iteration, (loop_name, loop_array) in enumerate(loops.items()):
             if isinstance(loop_array, dict):
                 loop_array = loop_array["array"]
-            if loop_array.shape[0] != shape[iteration] - 1:  # type: ignore
+            if loop_array.shape[0] != shape[iteration] - 1:
                 raise ValueError(
-                    f"Loops dimensions must be the same than the array introduced, {loop_name} as {loop_array.shape[0]} != {shape[iteration]}"  # type: ignore
+                    f"Loops dimensions must be the same than the array introduced, {loop_name} as {loop_array.shape[0]} != {shape[iteration]}"
                 )
 
         stream_array = StreamArray(
@@ -2023,5 +2026,5 @@ class Platform:
 
         with stream_array:
             for index in range(shape[0]):
-                stream_array[index,] = results[index, ...]  # type: ignore
+                stream_array[index,] = results[index, ...]
         return stream_array.path

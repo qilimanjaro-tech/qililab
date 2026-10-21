@@ -146,7 +146,7 @@ class ExperimentResults:
         Returns:
             str: The YAML string of the executed experiment.
         """
-        return self._file[ExperimentResults.EXPERIMENT_PATH][()].decode("utf-8")  # type: ignore[index]
+        return self._file[ExperimentResults.EXPERIMENT_PATH][()].decode("utf-8")
 
     @property
     def platform(self) -> str:

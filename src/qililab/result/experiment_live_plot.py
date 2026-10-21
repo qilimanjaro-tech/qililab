@@ -76,7 +76,7 @@ class ExperimentLivePlot:
             self.live_plot_dict[coordinates] = n
 
         for n, dim in enumerate(dims_dict.values()):
-            dims_0 = DimensionInfo(labels=dim[0].label.split(","), values=[values[()] for values in dim[0].values()])  # type: ignore[operator]
+            dims_0 = DimensionInfo(labels=dim[0].label.split(","), values=[values[()] for values in dim[0].values()])
             x_labels, x_values = dims_0.labels, dims_0.values
             x_edges = np.linspace(x_values[0].min(), x_values[0].max(), len(x_values[0]) + 1)
 
@@ -91,7 +91,7 @@ class ExperimentLivePlot:
             elif n_dimensions == 2:
                 dims_1 = DimensionInfo(
                     labels=dim[1].label.split(","),
-                    values=[values[()] for values in dim[1].values()],  # type: ignore[operator]
+                    values=[values[()] for values in dim[1].values()],
                 )
                 y_labels, y_values = dims_1.labels, dims_1.values
                 y_edges = np.linspace(y_values[0].min(), y_values[0].max(), len(y_values[0]) + 1)
