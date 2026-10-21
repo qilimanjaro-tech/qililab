@@ -1057,6 +1057,7 @@ class TestMethods:
 
         # Mock database manager
         mock_database = MagicMock()
+        mock_database.database_schema = "qaas"
         platform.db_manager = mock_database
         platform.save_experiment_results_in_database = True
 
@@ -1128,6 +1129,25 @@ class TestMethods:
                         mock_executor_instance.execute.return_value = expected_results_path
 
                         platform.execute_experiment(experiment=mock_experiment)
+
+    def test_execute_experiment_loads_qaas_db_manager(self, override_settings):
+        """Test that execute_experiment loads a 'qaas' database manager when none is loaded."""
+        platform = create_autospec(Platform, instance=True)
+        platform.execute_experiment = MethodType(Platform.execute_experiment, platform)
+        platform.db_manager = None
+
+        mock_experiment = create_autospec(Experiment)
+
+        with override_settings(
+            experiment_results_save_in_database=True,
+            experiment_live_plot_enabled=False,
+            experiment_live_plot_on_slurm=False,
+        ):
+            with patch.object(platform, "load_db_manager") as mock_load_db_manager:
+                with patch("qililab.platform.platform.ExperimentExecutor"):
+                    platform.execute_experiment(experiment=mock_experiment, job_id=1, sample="sample", cooldown="cd")
+
+        mock_load_db_manager.assert_called_once_with(database_schema="qaas")
 
     def test_execute_qprogram_with_qblox(self, platform: Platform):
         """Test that the execute method compiles the qprogram, calls the buses to run and return the results."""
@@ -2413,7 +2433,17 @@ class TestMethods:
 
         _ = platform.load_db_manager(path)
 
-        mock_get_db_manager.assert_called_once_with(path)
+        mock_get_db_manager.assert_called_once_with(path=path)
+
+    @patch("qililab.platform.platform.get_db_manager")
+    def test_load_db_manager_forwards_all_arguments(self, mock_get_db_manager, platform: Platform):
+        """Test load_db_manager passes path, database_name and database_schema to get_db_manager"""
+        db_manager = platform.load_db_manager("~/database_test.ini", database_name="qaas_db", database_schema="qaas")
+
+        mock_get_db_manager.assert_called_once_with(
+            path="~/database_test.ini", database_name="qaas_db", database_schema="qaas"
+        )
+        assert db_manager is platform.db_manager is mock_get_db_manager.return_value
 
     @patch("qililab.platform.platform.get_db_manager")
     @patch("qililab.result.database.database_manager._load_config")
@@ -2442,6 +2472,7 @@ class TestMethods:
         loops = {"test_amp_loop": np.arange(0, 2)}
         experiment_name = "test_db_real_time_saving"
         mock_database = MagicMock()
+        mock_database.database_schema = "measurements"
         platform.db_manager = mock_database
         description = "description"
 
@@ -2487,6 +2518,7 @@ class TestMethods:
         results = np.array([[1.0, 1.0], [1.0, 1.0]])
 
         mock_database = MagicMock()
+        mock_database.database_schema = "measurements"
         platform.db_manager = mock_database
         description = "description"
 
@@ -2509,6 +2541,7 @@ class TestMethods:
         results = np.array([[1.0, 1.0], [1.0, 1.0]])
 
         mock_database = MagicMock()
+        mock_database.database_schema = "measurements"
         platform.db_manager = mock_database
         description = "description"
 
@@ -2529,6 +2562,7 @@ class TestMethods:
         results = np.array([[1.0, 1.0], [1.0, 1.0]])
 
         mock_database = MagicMock()
+        mock_database.database_schema = "measurements"
         platform.db_manager = mock_database
         description = "description"
 
@@ -2549,6 +2583,7 @@ class TestMethods:
         results = np.array([[1.0, 1.0], [1.0, 1.0]])
 
         mock_database = MagicMock()
+        mock_database.database_schema = "measurements"
         platform.db_manager = mock_database
         description = "description"
 
