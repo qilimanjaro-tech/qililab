@@ -32,7 +32,7 @@ dependencies = [
     "psycopg2-binary>=2.9.10",
     "pydantic-settings>=2.11.0",
     "pyvisa-py>=0.7.2",
-    "qblox-instruments==0.16.0",
+    "qblox-instruments==1.0.3",
     "qcodes==0.51.0",
     "qcodes-contrib-drivers>=0.23.0",
     "qibo==0.2.15",
