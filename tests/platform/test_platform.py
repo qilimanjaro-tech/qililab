@@ -8,7 +8,7 @@ from builtins import ExceptionGroup
 from pathlib import Path
 from queue import Queue
 from types import MethodType, SimpleNamespace
-from unittest.mock import ANY, MagicMock, create_autospec, patch
+from unittest.mock import ANY, MagicMock, call, create_autospec, patch
 import logging
 
 import numpy as np
@@ -27,7 +27,7 @@ from tests.data import (
     SauronYokogawa,
 )
 
-from tests.test_utils import build_platform, compare_objects
+from tests.test_utils import build_platform, compare_objects, is_q1asm_equal
 
 
 from qililab import save_platform
@@ -48,7 +48,7 @@ from qililab.result.qprogram.qblox_measurement_result import QbloxMeasurementRes
 from qililab.settings import AnalogCompilationSettings, DigitalCompilationSettings, Runcard
 from qililab.settings.digital.gate_event import GateEvent
 from qililab.typings.enums import InstrumentName, Parameter
-from qililab.waveforms import Chained, IQPair, Ramp, Square
+from qililab.waveforms import Arbitrary, Chained, IQDrag, IQPair, Ramp, Square
 
 @pytest.fixture(name="platform")
 def fixture_platform():
@@ -1396,6 +1396,265 @@ class TestMethods:
 
         # assure only one debug was called
         assert patched_open.call_count == 1
+
+    def test_compile_and_execute_qprogram_with_qdac_triggering_qblox_wait_trigger(self, platform_qblox_qdac: Platform):
+        """The QDAC fires a trigger the Qblox buses wait on: the compiled Q1ASM and QDAC calls (identical when the
+        same QProgram is compiled again), the external trigger enabled on the cluster, and the QDAC started after
+        the Qblox buses run."""
+        drive_wf = IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
+        readout_wf = IQPair(I=Square(amplitude=1.0, duration=120), Q=Square(amplitude=0.0, duration=120))
+        ramp_wf = Arbitrary(samples=np.array([0.0, 0.1, 0.2, 0.3, 0.2, 0.1, 0.0]))
+        qprogram = QProgram()
+        qprogram.qdac.play(bus="qdac_bus_1", waveform=ramp_wf, dwell=2)
+        qprogram.set_trigger(bus="qdac_bus_1", duration=10e-6, outputs=1, position="start")
+        qprogram.set_offset(bus="qdac_bus_2", offset_path0=0.1)
+        with qprogram.average(10):
+            qprogram.wait_trigger(bus="drive", duration=100)
+            qprogram.play(bus="drive", waveform=drive_wf)
+            qprogram.sync()
+            qprogram.measure(bus="resonator", waveform=readout_wf, weights=readout_wf)
+
+        with (
+            patch.object(QDevilQDac2, "upload_voltage_list") as upload_voltage_list,
+            patch.object(QDevilQDac2, "set_start_marker_external_trigger") as set_start_marker_external_trigger,
+            patch.object(QDevilQDac2, "set_parameter") as set_parameter,
+        ):
+            output = platform_qblox_qdac.compile_qprogram(qprogram=qprogram)
+            second_output = platform_qblox_qdac.compile_qprogram(qprogram=qprogram)
+
+        drive_str = """
+            setup:
+                            wait_sync        4
+                            set_mrk          0
+                            upd_param        4
+
+            main:
+                            move             10, R0
+            avg_0:
+                            wait_trigger     15, 100
+                            play             0, 1, 40
+                            wait             160
+                            loop             R0, @avg_0
+                            set_mrk          0
+                            upd_param        4
+                            stop
+        """
+        resonator_str = """
+            setup:
+                            wait_sync        4
+                            set_mrk          0
+                            upd_param        4
+
+            main:
+                            move             10, R0
+            avg_0:
+                            wait_trigger     15, 100
+                            wait             40
+                            play             0, 1, 40
+                            acquire_weighed  0, 0, 0, 1, 120
+                            loop             R0, @avg_0
+                            set_mrk          0
+                            upd_param        4
+                            stop
+        """
+        for compiled in (output, second_output):
+            assert is_q1asm_equal(compiled.qblox.sequences["drive"], drive_str)
+            assert is_q1asm_equal(compiled.qblox.sequences["resonator"], resonator_str)
+            assert compiled.qblox.requires_external_trigger is True
+            assert compiled.qdac.trigger_position == "front"
+        assert upload_voltage_list.call_args_list == 2 * [
+            call(waveform=ramp_wf, channel_id=1, dwell_us=2, sync_delay_s=0, repetitions=1, stepped=False)
+        ]
+        assert set_start_marker_external_trigger.call_args_list == 2 * [
+            call(channel_id=1, out_port=1, trigger="trigger_qdac_bus_1_1_start", width_s=10e-6)
+        ]
+        assert set_parameter.call_args_list == 2 * [call(parameter=Parameter.VOLTAGE, value=0.1, channel_id=2)]
+
+        with (
+            patch.object(Bus, "upload_qpysequence"),
+            patch.object(Bus, "run") as run,
+            patch.object(Bus, "acquire_qprogram_results", return_value=[]),
+            patch.object(QbloxModule, "sync_sequencer"),
+            patch.object(QbloxModule, "desync_sequencer"),
+            patch.object(QDevilQDac2, "start") as start,
+            patch.object(QbloxClusterController, "set_ext_trigger") as set_ext_trigger,
+        ):
+            execution = MagicMock()
+            execution.attach_mock(run, "run")
+            execution.attach_mock(start, "start")
+            platform_qblox_qdac.execute_compilation_output(output)
+
+        set_ext_trigger.assert_called_once()
+        assert execution.mock_calls == [call.run(), call.run(), call.start()]
+
+    def test_compile_and_execute_qprogram_with_qdac_triggering_qblox_if_trigger(self, platform_qblox_qdac: Platform):
+        """The QDAC steps a voltage list and fires a trigger per step, gating a Qblox qp.if_trigger() whose wait time
+        comes from the QDAC dwell: compiled Q1ASM and QDAC calls, external trigger, QDAC started after the run."""
+        ramp_wf = Arbitrary(samples=np.array([0.0, 0.1, 0.2, 0.3, 0.2, 0.1, 0.0]))
+        qprogram = QProgram()
+        qprogram.qdac.play(bus="qdac_bus_1", waveform=ramp_wf, dwell=3)
+        qprogram.set_trigger(bus="qdac_bus_1", duration=100e-6, outputs=1, position="step")
+        with qprogram.if_trigger():
+            with qprogram.average(shots=10):
+                qprogram.qblox.acquire(
+                    bus="resonator",
+                    weights=IQPair(I=Square(amplitude=1.0, duration=100), Q=Square(amplitude=0.0, duration=100)),
+                )
+
+        with (
+            patch.object(QDevilQDac2, "upload_voltage_list") as upload_voltage_list,
+            patch.object(QDevilQDac2, "set_start_marker_external_trigger") as set_start_marker_external_trigger,
+        ):
+            output = platform_qblox_qdac.compile_qprogram(qprogram=qprogram)
+            second_output = platform_qblox_qdac.compile_qprogram(qprogram=qprogram)
+
+        resonator_str = """
+            setup:
+                            set_latch_en     1, 4
+                            wait_sync        4
+                            set_mrk          0
+                            upd_param        4
+                            wait_trigger     15, 4
+
+            main:
+                            wait             252
+                            set_cond         1, 16384, 0, 4 # trigger condition met
+                            move             10, R0
+            avg_0:
+                            acquire_weighed  0, 0, 0, 1, 100
+                            loop             R0, @avg_0
+                            set_cond         0, 0, 0, 4
+                            set_cond         1, 16384, 1, 4 # trigger condition not met
+                            wait             964
+                            set_cond         0, 0, 1, 4
+                            latch_rst        4
+                            wait             1740
+                            set_mrk          0
+                            upd_param        4
+                            stop
+        """
+        for compiled in (output, second_output):
+            assert list(compiled.qblox.sequences) == ["resonator"]
+            assert is_q1asm_equal(compiled.qblox.sequences["resonator"], resonator_str)
+            assert compiled.qblox.requires_external_trigger is True
+            assert compiled.qdac.trigger_position == "front"
+        assert upload_voltage_list.call_args_list == 2 * [
+            call(waveform=ramp_wf, channel_id=1, dwell_us=3, sync_delay_s=0, repetitions=1, stepped=False)
+        ]
+        assert set_start_marker_external_trigger.call_args_list == 2 * [
+            call(channel_id=1, out_port=1, trigger="trigger_qdac_bus_1_1_step", width_s=100e-6, step=True)
+        ]
+
+        with (
+            patch.object(Bus, "upload_qpysequence"),
+            patch.object(Bus, "run") as run,
+            patch.object(Bus, "acquire_qprogram_results", return_value=[]),
+            patch.object(QbloxModule, "sync_sequencer"),
+            patch.object(QbloxModule, "desync_sequencer"),
+            patch.object(QDevilQDac2, "start") as start,
+            patch.object(QbloxClusterController, "set_ext_trigger") as set_ext_trigger,
+        ):
+            execution = MagicMock()
+            execution.attach_mock(run, "run")
+            execution.attach_mock(start, "start")
+            platform_qblox_qdac.execute_compilation_output(output)
+
+        set_ext_trigger.assert_called_once()
+        assert execution.mock_calls == [call.run(), call.start()]
+
+    def test_compile_and_execute_qprogram_with_measure_reset_bus_mapping_and_calibration(
+        self, platform_qblox_qdac: Platform
+    ):
+        """Active reset written on logical buses: the latch is enabled on the mapped control bus, and executing sets
+        up the trigger network, with its trigger address, on the mapped measurement bus."""
+        readout_wf = IQPair(I=Square(amplitude=1.0, duration=120), Q=Square(amplitude=0.0, duration=120))
+        calibration = Calibration()
+        calibration.add_waveform(bus="resonator", name="readout", waveform=readout_wf)
+        calibration.add_weights(bus="resonator", name="weights", weights=readout_wf)
+        calibration.add_waveform(
+            bus="drive", name="drag_reset", waveform=IQDrag(amplitude=0.5, duration=40, num_sigmas=4, drag_coefficient=0.5)
+        )
+        qprogram = QProgram()
+        with qprogram.average(10):
+            qprogram.qblox.measure_reset(
+                bus="readout_bus",
+                waveform="readout",
+                weights="weights",
+                control_bus="drive_bus",
+                reset_pulse="drag_reset",
+                trigger_address=3,
+            )
+        bus_mapping = {"readout_bus": "resonator", "drive_bus": "drive"}
+
+        output = platform_qblox_qdac.compile_qprogram(qprogram=qprogram, bus_mapping=bus_mapping, calibration=calibration)
+        second_output = platform_qblox_qdac.compile_qprogram(
+            qprogram=qprogram, bus_mapping=bus_mapping, calibration=calibration
+        )
+
+        drive_str = """
+            setup:
+                            set_latch_en     1, 4
+                            wait_sync        4
+                            set_mrk          0
+                            upd_param        4
+
+            main:
+                            move             10, R0
+            avg_0:
+                            latch_rst        4
+                            wait             156
+                            wait             400
+                            set_cond         1, 4, 0, 40
+                            play             0, 1, 40
+                            set_cond         0, 0, 0, 4
+                            loop             R0, @avg_0
+                            set_mrk          0
+                            upd_param        4
+                            stop
+        """
+        resonator_str = """
+            setup:
+                            wait_sync        4
+                            set_mrk          0
+                            upd_param        4
+
+            main:
+                            move             10, R0
+            avg_0:
+                            play             0, 1, 40
+                            acquire_weighed  0, 0, 0, 1, 120
+                            wait             440
+                            loop             R0, @avg_0
+                            set_mrk          0
+                            upd_param        4
+                            stop
+        """
+        for compiled in (output, second_output):
+            assert is_q1asm_equal(compiled.qblox.sequences["drive"], drive_str)
+            assert is_q1asm_equal(compiled.qblox.sequences["resonator"], resonator_str)
+            assert compiled.qblox.requires_external_trigger is False
+            assert compiled.qdac is None
+
+        controller = next(
+            controller
+            for controller in platform_qblox_qdac.instrument_controllers.elements
+            if isinstance(controller, QbloxClusterController)
+        )
+        with (
+            patch.object(controller, "device", create=True) as device,
+            patch.object(Bus, "_setup_trigger_network", autospec=True) as setup_trigger_network,
+            patch.object(Bus, "upload_qpysequence"),
+            patch.object(Bus, "run"),
+            patch.object(Bus, "acquire_qprogram_results", return_value=[]),
+            patch.object(QbloxModule, "sync_sequencer"),
+            patch.object(QbloxModule, "desync_sequencer"),
+            patch.object(QbloxClusterController, "set_ext_trigger") as set_ext_trigger,
+        ):
+            platform_qblox_qdac.execute_compilation_output(output)
+
+        setup_trigger_network.assert_called_once_with(platform_qblox_qdac.buses.get(alias="resonator"), trigger_address=3)
+        device.reset_trigger_monitor_count.assert_called_once_with(address=3)
+        set_ext_trigger.assert_not_called()
 
     def test_execute_qprogram_with_qblox_and_qdac_no_crosstalk(self, platform_qblox_qdac: Platform, calibration:Calibration):
         """Test that the execute method compiles the qprogram, calls the buses to run and return the results."""

@@ -1,6 +1,6 @@
 import logging
 import re
-from unittest.mock import MagicMock, patch
+from unittest.mock import ANY, MagicMock, call, patch
 
 import numpy as np
 import pytest
@@ -16,6 +16,7 @@ from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix, NonLinearCrosstal
 from qililab.qprogram.operations import Play
 from qililab.qprogram.qdac_compiler import QdacCompilationOutput
 from qililab.core.variables import Domain
+from qililab.typings.enums import Parameter
 from qililab.waveforms import Square
 from qililab.waveforms.arbitrary import Arbitrary
 from qililab.waveforms.iq_pair import IQPair
@@ -1038,3 +1039,355 @@ class TestQdacCompiler:
             compiler.compile(
                 qprogram=qp, qdacs=[qdac], qdac_buses=[flux1, flux2], qdac_offsets=[0, 0], crosstalk=crosstalk
             )
+
+    @pytest.mark.parametrize(
+        "position, outputs, method, kwargs, trigger_position",
+        [
+            ("start", 1, "set_start_marker_external_trigger", {"out_port": 1, "trigger": "trigger_flux1_1_start", "width_s": 10e-6}, "front"),
+            ("end", 1, "set_end_marker_external_trigger", {"out_port": 1, "trigger": "trigger_flux1_1_end", "width_s": 10e-6}, "front"),
+            ("step", 1, "set_start_marker_external_trigger", {"out_port": 1, "trigger": "trigger_flux1_1_step", "width_s": 10e-6, "step": True}, "front"),
+            ("end_step", 1, "set_end_marker_external_trigger", {"out_port": 1, "trigger": "trigger_flux1_1_end_step", "width_s": 10e-6, "step": True}, "front"),
+            ("start", None, "set_start_marker_internal_trigger", {"trigger": "trigger_flux1_None_start"}, None),
+            ("end", None, "set_end_marker_internal_trigger", {"trigger": "trigger_flux1_None_end"}, None),
+            ("step", None, "set_start_marker_internal_trigger", {"trigger": "trigger_flux1_None_step", "step": True}, None),
+            ("end_step", None, "set_end_marker_internal_trigger", {"trigger": "trigger_flux1_None_end_step", "step": True}, None),
+        ],
+    )
+    def test_play_and_set_trigger_call_arguments(
+        self, qdac: QDevilQDac2, flux1: Bus, flux2: Bus, position, outputs, method, kwargs, trigger_position
+    ):
+        """The arguments of the voltage lists and of the trigger set-up, for every set_trigger position, external
+        and internal."""
+        qdac_bus = flux1.instruments[0]
+        pulse_wf = Square(1.0, 100)
+        ramp_wf = Arbitrary(samples=np.array([0.0, 0.1, 0.2, 0.3, 0.2, 0.1, 0.0]))
+        qp = QProgram()
+        qp.qdac.play(bus="flux1", waveform=pulse_wf, dwell=2)
+        qp.qdac.play(bus="flux2", waveform=ramp_wf, dwell=4, delay=1e-6, stepped=True)
+        qp.set_trigger(bus="flux1", duration=10e-6, outputs=outputs, position=position)
+
+        compiler = QdacCompiler()
+        output = compiler.compile(qprogram=qp, qdacs=[qdac], qdac_buses=[flux1, flux2], qdac_offsets=[0, 0])
+
+        assert output.trigger_position == trigger_position
+        assert qdac_bus.upload_voltage_list.call_args_list == [
+            call(waveform=pulse_wf, channel_id=1, dwell_us=2, sync_delay_s=0, repetitions=1, stepped=False),
+            call(waveform=ramp_wf, channel_id=2, dwell_us=4, sync_delay_s=1e-6, repetitions=1, stepped=True),
+        ]
+        getattr(qdac_bus, method).assert_called_once_with(channel_id=1, **kwargs)
+
+    def test_set_offset_and_wait_trigger_call_arguments(self, qdac: QDevilQDac2, flux1: Bus, flux2: Bus):
+        """The voltage set by set_offset, and wait_trigger on an external port or on the internal trigger."""
+        qdac_bus = flux1.instruments[0]
+        pulse_wf = Square(1.0, 100)
+        qp = QProgram()
+        qp.set_offset(bus="flux2", offset_path0=0.3)
+        qp.qdac.play(bus="flux1", waveform=pulse_wf, dwell=2)
+        qp.wait_trigger(bus="flux1", duration=10e-6, port=1)
+
+        compiler = QdacCompiler()
+        output = compiler.compile(qprogram=qp, qdacs=[qdac], qdac_buses=[flux1, flux2], qdac_offsets=[0, 0])
+
+        assert output.trigger_position == "back"
+        qdac_bus.set_parameter.assert_called_once_with(parameter=Parameter.VOLTAGE, value=0.3, channel_id=2)
+        qdac_bus.set_in_external_trigger.assert_called_once_with(channel_id=1, in_port=1)
+
+        qp = QProgram()
+        qp.qdac.play(bus="flux1", waveform=pulse_wf, dwell=2)
+        qp.set_offset(bus="flux2", offset_path0=-0.2)
+        qp.set_trigger(bus="flux1", duration=10e-6, position="start")
+        qp.wait_trigger(bus="flux2", duration=10e-6)
+
+        compiler = QdacCompiler()
+        output = compiler.compile(qprogram=qp, qdacs=[qdac], qdac_buses=[flux1, flux2], qdac_offsets=[0, 0])
+
+        assert output.trigger_position is None
+        qdac_bus.set_parameter.assert_called_with(parameter=Parameter.VOLTAGE, value=-0.2, channel_id=2)
+        qdac_bus.set_in_internal_trigger.assert_called_once_with(channel_id=2, trigger="trigger_flux1_None_start")
+
+    def test_loops_repetitions_per_bus(self, qdac: QDevilQDac2, flux1: Bus, flux2: Bus):
+        """Repetitions of a for loop whose step divides the range or not (descending), and of two buses in nested
+        loops: a bus count restarts after its own play, and explicit repetitions win."""
+        qdac_bus = flux1.instruments[0]
+        wf = Square(1.0, 100)
+        ramp_wf = Arbitrary(samples=np.array([0.0, 0.1, 0.2, 0.3, 0.2, 0.1, 0.0]))
+
+        qp = QProgram()
+        loop_variable = qp.variable("test", Domain.Time)
+        with qp.for_loop(loop_variable, 0, 10, 1):
+            qp.qdac.play(bus="flux1", waveform=wf, dwell=2)
+        QdacCompiler().compile(qprogram=qp, qdacs=[qdac], qdac_buses=[flux1], qdac_offsets=[0])
+        qdac_bus.upload_voltage_list.assert_called_with(
+            waveform=wf, channel_id=1, dwell_us=2, sync_delay_s=0, repetitions=12, stepped=False
+        )
+
+        qp = QProgram()
+        loop_variable = qp.variable("test", Domain.Voltage)
+        with qp.for_loop(loop_variable, 0.5, 0.0, -0.15):
+            qp.qdac.play(bus="flux1", waveform=wf, dwell=2)
+        QdacCompiler().compile(qprogram=qp, qdacs=[qdac], qdac_buses=[flux1], qdac_offsets=[0])
+        qdac_bus.upload_voltage_list.assert_called_with(
+            waveform=wf, channel_id=1, dwell_us=2, sync_delay_s=0, repetitions=6, stepped=False
+        )
+
+        qdac_bus.upload_voltage_list.reset_mock()
+        qp = QProgram()
+        loop_variable = qp.variable("test", Domain.Time)
+        with qp.average(3):
+            qp.qdac.play(bus="flux1", waveform=wf, dwell=2)
+            with qp.for_loop(loop_variable, 0, 4, 1):
+                qp.qdac.play(bus="flux2", waveform=ramp_wf, dwell=2)
+                qp.qdac.play(bus="flux1", waveform=wf, dwell=2, repetitions=7)
+        QdacCompiler().compile(qprogram=qp, qdacs=[qdac], qdac_buses=[flux1, flux2], qdac_offsets=[0, 0])
+        assert qdac_bus.upload_voltage_list.call_args_list == [
+            call(waveform=wf, channel_id=1, dwell_us=2, sync_delay_s=0, repetitions=4, stepped=False),
+            call(waveform=ramp_wf, channel_id=2, dwell_us=2, sync_delay_s=0, repetitions=24, stepped=False),
+            call(waveform=wf, channel_id=1, dwell_us=2, sync_delay_s=0, repetitions=7, stepped=False),
+        ]
+
+    def test_crosstalk_compensation_voltages(self, qdac: QDevilQDac2, flux1: Bus, flux2: Bus):
+        """The compensated voltage lists, and which matrix is used: an explicit one, the calibration's DC matrix,
+        an explicit one over the calibration's, and none for a calibration with only an AC matrix."""
+        qdac_bus = flux1.instruments[0]
+        flux_wf = Arbitrary(samples=np.array([0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.4, 0.3, 0.2, 0.1, 0]))
+        crosstalk = CrosstalkMatrix.from_buses(
+            buses={"flux1": {"flux1": 1.0, "flux2": 0.5}, "flux2": {"flux1": 0.1, "flux2": 1.0}}
+        )
+        other_crosstalk = CrosstalkMatrix.from_buses(
+            buses={"flux1": {"flux1": 1.0, "flux2": -0.3}, "flux2": {"flux1": 0.2, "flux2": 1.0}}
+        )
+        dc_calibration = Calibration()
+        dc_calibration.crosstalk_matrix = crosstalk
+        ac_calibration = Calibration()
+        ac_calibration.crosstalk_matrix_ac = crosstalk
+
+        def compile_program(**kwargs) -> list[np.ndarray]:
+            qp = QProgram()
+            freq = qp.variable(label="frequency", domain=Domain.Frequency)
+            with qp.average(10):
+                qp.set_offset(bus="flux2", offset_path0=0.3)
+                with qp.for_loop(variable=freq, start=10e6, stop=100e6, step=10e6):
+                    qp.qdac.play(bus="flux1", waveform=flux_wf, dwell=2)
+                    qp.set_offset(bus="flux2", offset_path0=-0.2)
+                    qp.set_trigger(bus="flux1", duration=10e-6, outputs=1, position="start")
+
+            qdac_bus.upload_voltage_list.reset_mock()
+            qdac_bus.set_parameter.reset_mock()
+            QdacCompiler().compile(qprogram=qp, qdacs=[qdac], qdac_buses=[flux1, flux2], qdac_offsets=[0, 0], **kwargs)
+            return [upload.kwargs["waveform"].envelope() for upload in qdac_bus.upload_voltage_list.call_args_list]
+
+        compensated_flux1 = [
+            0.10526315789473684, 0.21052631578947367, 0.3157894736842105, 0.42105263157894735, 0.5263157894736842,
+            0.631578947368421, 0.5263157894736842, 0.42105263157894735, 0.3157894736842105, 0.21052631578947367,
+            0.10526315789473684,
+        ]
+        compensated_flux2 = [
+            -0.21052631578947367, -0.22105263157894736, -0.23157894736842105, -0.24210526315789474,
+            -0.25263157894736843, -0.2631578947368421, -0.25263157894736843, -0.24210526315789474,
+            -0.23157894736842105, -0.22105263157894736, -0.21052631578947367,
+        ]
+        uploads = [
+            call(waveform=ANY, channel_id=2, dwell_us=2, sync_delay_s=0, repetitions=121, stepped=False),
+            call(waveform=ANY, channel_id=1, dwell_us=2, sync_delay_s=0, repetitions=121, stepped=False),
+        ]
+
+        for kwargs in ({"crosstalk": crosstalk}, {"calibration": dc_calibration}):
+            flux2_voltages, flux1_voltages = compile_program(**kwargs)
+            assert qdac_bus.upload_voltage_list.call_args_list == uploads
+            assert flux1_voltages == pytest.approx(compensated_flux1, rel=1e-9, abs=1e-12)
+            assert flux2_voltages == pytest.approx(compensated_flux2, rel=1e-9, abs=1e-12)
+            assert qdac_bus.set_parameter.call_count == 0
+
+        flux2_voltages, flux1_voltages = compile_program(calibration=dc_calibration, crosstalk=other_crosstalk)
+        assert qdac_bus.upload_voltage_list.call_args_list == uploads
+        assert flux1_voltages == pytest.approx(
+            [
+                -0.05660377358490565, 0.03773584905660379, 0.13207547169811323, 0.22641509433962265,
+                0.3207547169811321, 0.41509433962264153, 0.3207547169811321, 0.22641509433962265,
+                0.13207547169811323, 0.03773584905660379, -0.05660377358490565,
+            ],
+            rel=1e-9,
+            abs=1e-12,
+        )
+        assert flux2_voltages == pytest.approx(
+            [
+                -0.18867924528301885, -0.20754716981132074, -0.22641509433962262, -0.2452830188679245,
+                -0.2641509433962264, -0.2830188679245283, -0.2641509433962264, -0.2452830188679245,
+                -0.22641509433962262, -0.20754716981132074, -0.18867924528301885,
+            ],
+            rel=1e-9,
+            abs=1e-12,
+        )
+
+        (flux1_voltages,) = compile_program(calibration=ac_calibration)
+        assert qdac_bus.upload_voltage_list.call_args_list == [uploads[1]]
+        assert flux1_voltages == pytest.approx(flux_wf.envelope(), rel=1e-9, abs=1e-12)
+        assert qdac_bus.set_parameter.call_args_list == [
+            call(parameter=Parameter.VOLTAGE, value=0.3, channel_id=2),
+            call(parameter=Parameter.VOLTAGE, value=-0.2, channel_id=2),
+        ]
+
+    def test_crosstalk_compensation_IQPair_voltages(self, qdac: QDevilQDac2, flux1: Bus, flux2: Bus):
+        """The compensated voltage lists when the QDAC play is an IQPair: only I is used."""
+        qdac_bus = flux1.instruments[0]
+        crosstalk = CrosstalkMatrix.from_buses(
+            buses={"flux1": {"flux1": 1.0, "flux2": 0.5}, "flux2": {"flux1": 0.1, "flux2": 1.0}}
+        )
+        flux_wf = Arbitrary(samples=np.array([0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.4, 0.3, 0.2, 0.1, 0]))
+        qp = QProgram()
+        with qp.average(10):
+            qp.qdac.play(bus="flux1", waveform=IQPair(flux_wf, flux_wf), dwell=2)
+            qp.set_trigger(bus="flux1", duration=10e-6, outputs=1, position="start")
+
+        compiler = QdacCompiler()
+        compiler.compile(qprogram=qp, qdacs=[qdac], qdac_buses=[flux1, flux2], qdac_offsets=[0, 0], crosstalk=crosstalk)
+
+        assert qdac_bus.upload_voltage_list.call_args_list == [
+            call(waveform=ANY, channel_id=2, dwell_us=2, sync_delay_s=0, repetitions=11, stepped=False),
+            call(waveform=ANY, channel_id=1, dwell_us=2, sync_delay_s=0, repetitions=11, stepped=False),
+        ]
+        flux2_voltages, flux1_voltages = (
+            upload.kwargs["waveform"].envelope() for upload in qdac_bus.upload_voltage_list.call_args_list
+        )
+        assert flux1_voltages == pytest.approx(
+            [
+                0.0, 0.10526315789473684, 0.21052631578947367, 0.3157894736842105, 0.42105263157894735,
+                0.5263157894736842, 0.42105263157894735, 0.3157894736842105, 0.21052631578947367,
+                0.10526315789473684, 0.0,
+            ],
+            rel=1e-9,
+            abs=1e-12,
+        )
+        assert flux2_voltages == pytest.approx(
+            [
+                0.0, -0.010526315789473684, -0.021052631578947368, -0.03157894736842105, -0.042105263157894736,
+                -0.05263157894736842, -0.042105263157894736, -0.03157894736842105, -0.021052631578947368,
+                -0.010526315789473684, 0.0,
+            ],
+            rel=1e-9,
+            abs=1e-12,
+        )
+
+    def test_play_bus_mapping_and_calibration_call_arguments(self, calibration: Calibration, qdac: QDevilQDac2, flux1: Bus):
+        """A named waveform resolved through a bus mapping and then a calibration, inside an average."""
+        qdac_bus = flux1.instruments[0]
+        qp = QProgram()
+        with qp.average(4):
+            qp.play(bus="flux", waveform="Xpi")
+
+        compiler = QdacCompiler()
+        compiler.compile(
+            qprogram=qp,
+            qdacs=[qdac],
+            qdac_buses=[flux1],
+            qdac_offsets=[0],
+            bus_mapping={"flux": "flux1"},
+            calibration=calibration,
+        )
+
+        qdac_bus.upload_voltage_list.assert_called_once_with(
+            waveform=ANY, channel_id=1, dwell_us=2, sync_delay_s=0, repetitions=5, stepped=False
+        )
+        np.testing.assert_array_equal(
+            qdac_bus.upload_voltage_list.call_args.kwargs["waveform"].envelope(),
+            calibration.get_waveform(bus="flux1", name="Xpi").envelope(),
+        )
+
+    def test_two_qdacs_call_arguments(
+        self, qdac: QDevilQDac2, qdac_2: QDevilQDac2, flux_qdac1: Bus, flux_qdac2: Bus
+    ):
+        """With two QDACs, a set_trigger on a bus of the second one synthesises a constant voltage list (at the
+        runcard voltage) on the trigger bus, and the output QDAC triggers the other one."""
+        ramp_wf = Arbitrary(samples=np.array([0.0, 0.1, 0.2, 0.3, 0.2, 0.1, 0.0]))
+        qdac.device.name = "qdac"
+        qdac._cache_dc = {}
+
+        qp = QProgram()
+        qp.qdac.play(bus="flux_qdac2", waveform=ramp_wf, dwell=3, repetitions=2)
+        qp.set_trigger(bus="flux_qdac2", duration=10e-6, outputs=1, position="start")
+
+        compiler = QdacCompiler()
+        output = compiler.compile(
+            qprogram=qp,
+            qdacs=[qdac, qdac_2],
+            qdac_buses=[flux_qdac1, flux_qdac2],
+            qdac_offsets=[0, 0],
+            out_instrument=qdac,
+        )
+
+        assert output.qdacs == [qdac_2, qdac]
+        assert output.trigger_position == "front"
+        qdac_2.upload_voltage_list.assert_called_once_with(
+            waveform=ramp_wf, channel_id=1, dwell_us=3, sync_delay_s=0, repetitions=2, stepped=False
+        )
+        qdac.upload_voltage_list.assert_called_once_with(
+            waveform=ANY, channel_id=1, dwell_us=3, sync_delay_s=0, repetitions=2, stepped=False
+        )
+        np.testing.assert_array_equal(qdac.upload_voltage_list.call_args.kwargs["waveform"].envelope(), np.full(7, 0.5))
+        qdac.set_start_marker_external_trigger.assert_called_once_with(
+            channel_id=1, out_port=1, trigger="trigger_flux_qdac2_1_start", width_s=10e-6
+        )
+        qdac.set_out_external_trigger.assert_called_once_with(channel_id=1, out_port=1, trigger="qdac_external_trigger")
+        qdac_2.set_in_external_trigger.assert_called_once_with(channel_id=1, in_port=1)
+
+    def test_if_trigger_program_call_arguments(self, qdac: QDevilQDac2, flux1: Bus):
+        """The QDAC side of a program where the QDAC triggers a Qblox qp.if_trigger() once per voltage step."""
+        qdac_bus = flux1.instruments[0]
+        ramp_wf = Arbitrary(samples=np.array([0.0, 0.1, 0.2, 0.3, 0.2, 0.1, 0.0]))
+        qp = QProgram()
+        qp.qdac.play(bus="flux1", waveform=ramp_wf, dwell=3)
+        qp.set_trigger(bus="flux1", duration=100e-6, outputs=1, position="step")
+        with qp.if_trigger():
+            with qp.average(shots=10):
+                qp.qblox.acquire(bus="readout", weights=IQPair(I=Square(1.0, 100), Q=Square(0.0, 100)))
+
+        compiler = QdacCompiler()
+        output = compiler.compile(qprogram=qp, qdacs=[qdac], qdac_buses=[flux1], qdac_offsets=[0])
+
+        assert output.trigger_position == "front"
+        qdac_bus.upload_voltage_list.assert_called_once_with(
+            waveform=ramp_wf, channel_id=1, dwell_us=3, sync_delay_s=0, repetitions=1, stepped=False
+        )
+        qdac_bus.set_start_marker_external_trigger.assert_called_once_with(
+            channel_id=1, out_port=1, trigger="trigger_flux1_1_step", width_s=100e-6, step=True
+        )
+
+    def test_qblox_operation_on_qdac_bus_raises_error(self, qdac: QDevilQDac2, flux1: Bus):
+        """A Qblox-only operation such as qp.wait() on a QDAC bus raises an error."""
+        qp = QProgram()
+        qp.qdac.play(bus="flux1", waveform=Square(1.0, 100), dwell=2)
+        qp.wait(bus="flux1", duration=100)
+
+        compiler = QdacCompiler()
+        with pytest.raises(
+            NotImplementedError, match=re.escape("<class 'qililab.qprogram.operations.wait.Wait'> is not supported in QDACII.")
+        ):
+            compiler.compile(qprogram=qp, qdacs=[qdac], qdac_buses=[flux1], qdac_offsets=[0])
+
+    def test_unmapped_named_operation_with_crosstalk_raises_error(self, qdac: QDevilQDac2, flux1: Bus, flux2: Bus):
+        """With a crosstalk matrix, a named waveform missing from the calibration still raises the unmapped
+        operations error."""
+        crosstalk = CrosstalkMatrix.from_buses(
+            buses={"flux1": {"flux1": 1.0, "flux2": 0.5}, "flux2": {"flux1": 0.1, "flux2": 1.0}}
+        )
+        qp = QProgram()
+        qp.play(bus="flux1", waveform="Xpi")
+
+        compiler = QdacCompiler()
+        with pytest.raises(RuntimeError, match="contains named operations that are not mapped"):
+            compiler.compile(
+                qprogram=qp, qdacs=[qdac], qdac_buses=[flux1, flux2], qdac_offsets=[0, 0], crosstalk=crosstalk
+            )
+
+    def test_compile_writes_play_defaults_into_qprogram(self, qdac: QDevilQDac2, flux1: Bus):
+        """Without bus mapping, calibration or crosstalk, compiling writes the default dwell, delay and stepped,
+        and the loop repetitions, into the play operation of the compiled QProgram."""
+        qp = QProgram()
+        with qp.average(3):
+            qp.qdac.play(bus="flux1", waveform=Square(1.0, 100))
+        play = qp.body.elements[0].elements[0]
+
+        compiler = QdacCompiler()
+        compiler.compile(qprogram=qp, qdacs=[qdac], qdac_buses=[flux1], qdac_offsets=[0])
+
+        assert (play.dwell, play.delay, play.stepped, play.repetitions) == (2, 0.0, False, 4)
