@@ -202,6 +202,7 @@ class TestBus:
         qdac = MagicMock(spec=QDevilQDac2)
         type(qdac).alias = property(lambda self: "qdac")
         settings = {"alias": "flux_bus", "instruments": ["qdac"], "channels": [1], "delay": 20}
+        instruments = Instruments(elements=[qdac])
 
         with pytest.raises(
             ValueError,
@@ -210,10 +211,10 @@ class TestBus:
                 "runcard and set the QDAC-II delay in each play with qp.qdac.play(delay=...)."
             ),
         ):
-            _ = Bus(settings=settings, platform_instruments=Instruments(elements=[qdac]))
+            _ = Bus(settings=settings, platform_instruments=instruments)
 
         settings["delay"] = 0
-        assert Bus(settings=settings, platform_instruments=Instruments(elements=[qdac])).get_parameter(Parameter.DELAY) == 0
+        assert Bus(settings=settings, platform_instruments=instruments).get_parameter(Parameter.DELAY) == 0
 
     def test_check_recurrent_timeout(self, bus, mock_instruments):
         """Test that get recurrent timeout is retrieved correctly"""

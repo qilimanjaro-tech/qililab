@@ -123,7 +123,10 @@ def prepare_qblox(
         QbloxPrepassResult: The QProgram with only Qblox operations, and what the compiler needs to know about it.
 
     Raises:
-        ValueError: If a ``qp.qblox.measure_reset()`` measures or resets on a bus that isn't a Qblox bus.
+        ValueError: If a ``qp.qblox.measure_reset()`` measures or resets on a bus that isn't a Qblox bus, or if a
+            ``qp.if_trigger()`` block has no operation on a Qblox bus, no wait time given or derivable from a QDAC
+            ``set_trigger(position='step')`` + ``play(dwell=...)``, or a ``trigger_padding_ns`` below the trigger
+            network's propagation delay.
         NotImplementedError: If ``qp.if_trigger()`` is used in a way that isn't supported.
     """
     if calibration is not None:

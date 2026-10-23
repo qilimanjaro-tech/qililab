@@ -49,8 +49,8 @@ def prepare_qdac(
             the flux of buses without a target flux.
         calibration (Calibration, optional): Calibration holding the DC crosstalk matrix. Defaults to None.
         crosstalk (CrosstalkMatrix, optional): Crosstalk matrix, used instead of the calibration's. Defaults to None.
-        target_fluxes (dict[str, float], optional): Known target flux per bus, to seed the crosstalk compensation.
-            Defaults to None.
+        target_fluxes (dict[str, float | list[float] | np.ndarray], optional): Known target flux per bus, to seed the
+            crosstalk compensation. Defaults to None.
 
     Returns:
         QProgram: A copy of the transformed QProgram with only the operations on QDAC buses.
