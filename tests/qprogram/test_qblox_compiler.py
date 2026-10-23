@@ -1612,7 +1612,7 @@ class TestQBloxCompiler:
         compiler = QbloxCompiler()
         sequences, _ = compiler.compile(qprogram=qp, qblox_buses=["readout"])
 
-        assert compiler._buses["readout"].expected_trigger_wait_time == 3000
+        assert compiler._conditional.expected_wait_time_ns == 3000
 
         readout_str = """
             setup:

@@ -60,6 +60,9 @@ def keep_operations_on_buses(qprogram: QProgram, buses: set[str]) -> QProgram:
     Every block is kept, even when it ends up empty, so all instruments run the same loops. Operations without a bus
     (``qp.sync()``) are kept too: each compiler checks the buses they name.
 
+    The compilers write into the operations they compile (e.g. the QDAC-II default dwell and repetitions, Qblox
+    durations clamped to 4 ns): this copy is what keeps the caller's QProgram unchanged.
+
     Args:
         qprogram (QProgram): The QProgram to filter. It is not modified.
         buses (set[str]): The buses whose operations are kept.

@@ -143,13 +143,14 @@ def prepare_qblox(
         qprogram = qprogram.with_distortions(bus_distortions=bus_distortions)
 
     qblox_buses = qblox_buses or list(qprogram.buses)
+    qblox_bus_set = set(qblox_buses)
     leaves, acquisition_metadata, conditional_block = _walk_tree(qprogram.body, qblox_buses)
 
     conditional = None
     if conditional_block is not None:
         element, start, end = conditional_block
         conditional = _validate_conditional_trigger(element, (start, end), leaves, qblox_buses)
-        _validate_conditional_bus_isolation(conditional.bus, (start, end), leaves, qprogram.buses & set(qblox_buses))
+        _validate_conditional_bus_isolation(conditional.bus, (start, end), leaves, qprogram.buses & qblox_bus_set)
 
     measure_resets = [leaf for leaf in leaves if isinstance(leaf, MeasureReset)]
     for measure_reset in measure_resets:
@@ -160,7 +161,7 @@ def prepare_qblox(
             )
 
     return QbloxPrepassResult(
-        qprogram=keep_operations_on_buses(qprogram, set(qblox_buses)),
+        qprogram=keep_operations_on_buses(qprogram, qblox_bus_set),
         acquisition_metadata=acquisition_metadata,
         conditional=conditional,
         requires_external_trigger=conditional is not None
