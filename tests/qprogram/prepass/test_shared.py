@@ -27,9 +27,10 @@ class TestPrepareQProgram:
     def test_unmapped_named_operation_raises_error(self):
         qp = QProgram()
         qp.play(bus="drive", waveform="Xpi")
+        calibration = Calibration()
 
         with pytest.raises(RuntimeError, match="contains named operations that are not mapped"):
-            prepare_qprogram(qp, bus_mapping={"drive": "drive_q0"}, calibration=Calibration())
+            prepare_qprogram(qp, bus_mapping={"drive": "drive_q0"}, calibration=calibration)
 
 
 class TestKeepOperationsOnBuses:

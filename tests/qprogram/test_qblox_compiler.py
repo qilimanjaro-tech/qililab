@@ -5124,6 +5124,8 @@ class TestQBloxCompiler:
         with caplog.at_level(logging.WARNING):
             sequences, _ = compiler.compile(qprogram=qp)
         assert "wait duration 2 ns is below the Q1ASM minimum (4 ns), clamping to 4 ns." in caplog.text
+        # The compiler clamps its own copy: the caller's wait is unchanged
+        assert qp.body.elements[0].duration == 2
         expected = """
             setup:
                 wait_sync        4
@@ -5144,6 +5146,8 @@ class TestQBloxCompiler:
         with caplog.at_level(logging.WARNING):
             sequences, _ = compiler.compile(qprogram=qp)
         assert "wait_trigger duration 0 ns is below the Q1ASM minimum (4 ns), clamping to 4 ns." in caplog.text
+        # The compiler clamps its own copy: the caller's wait_trigger is unchanged
+        assert qp.body.elements[0].duration == 0
         expected = """
             setup:
                 wait_sync        4

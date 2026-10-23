@@ -380,10 +380,11 @@ class QbloxCompiler:
         self._buses = self._populate_buses()
         self._single_channel = single_channel if single_channel is not None else []
         self._acquisition_metadata = prepass.acquisition_metadata
-        self._conditional_bus = prepass.conditional.bus if prepass.conditional is not None else ""
+        self._conditional_bus = ""
         if prepass.conditional is not None:
-            self._buses[prepass.conditional.bus].expected_trigger_wait_time = prepass.conditional.expected_wait_time_ns
-            self._buses[prepass.conditional.bus].trigger_padding_ns = prepass.conditional.trigger_padding_ns
+            self._conditional_bus = prepass.conditional.bus
+            self._buses[self._conditional_bus].expected_trigger_wait_time = prepass.conditional.expected_wait_time_ns
+            self._buses[self._conditional_bus].trigger_padding_ns = prepass.conditional.trigger_padding_ns
 
         # Pre-processing: Update time of flight
         if times_of_flight is not None:
