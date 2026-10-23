@@ -193,7 +193,6 @@ class TestQdacCompiler:
         output = compiler.compile(qprogram=qp, qdacs=[qdac], qdac_buses=[flux1, flux2], qdac_offsets=[0, 0])
 
         assert isinstance(output, QdacCompilationOutput)
-        assert compiler._qprogram == qp
         assert compiler._qdacs == [qdac]
         assert compiler._trigger_position == "front"
 
@@ -210,7 +209,6 @@ class TestQdacCompiler:
         output = compiler.compile(qprogram=qp, qdacs=[qdac], qdac_buses=[flux1, flux2], qdac_offsets=[0, 0])
 
         assert isinstance(output, QdacCompilationOutput)
-        assert compiler._qprogram == qp
         assert compiler._qdacs == [qdac]
         assert compiler._trigger_position == "front"
 
@@ -227,7 +225,6 @@ class TestQdacCompiler:
         output = compiler.compile(qprogram=qp, qdacs=[qdac], qdac_buses=[flux1, flux2], qdac_offsets=[0, 0])
 
         assert isinstance(output, QdacCompilationOutput)
-        assert compiler._qprogram == qp
         assert compiler._qdacs == [qdac]
         assert compiler._trigger_position == "front"
 
@@ -244,7 +241,6 @@ class TestQdacCompiler:
         output = compiler.compile(qprogram=qp, qdacs=[qdac], qdac_buses=[flux1, flux2], qdac_offsets=[0, 0])
 
         assert isinstance(output, QdacCompilationOutput)
-        assert compiler._qprogram == qp
         assert compiler._qdacs == [qdac]
         assert compiler._trigger_position == "front"
 
@@ -261,7 +257,6 @@ class TestQdacCompiler:
         output = compiler.compile(qprogram=qp, qdacs=[qdac], qdac_buses=[flux1, flux2], qdac_offsets=[0, 0])
 
         assert isinstance(output, QdacCompilationOutput)
-        assert compiler._qprogram == qp
         assert compiler._qdacs == [qdac]
         assert compiler._trigger_position == None
 
@@ -278,7 +273,6 @@ class TestQdacCompiler:
         output = compiler.compile(qprogram=qp, qdacs=[qdac], qdac_buses=[flux1, flux2], qdac_offsets=[0, 0])
 
         assert isinstance(output, QdacCompilationOutput)
-        assert compiler._qprogram == qp
         assert compiler._qdacs == [qdac]
         assert compiler._trigger_position == None
 
@@ -296,7 +290,6 @@ class TestQdacCompiler:
         output = compiler.compile(qprogram=qp, qdacs=[qdac], qdac_buses=[flux1, flux2], qdac_offsets=[0, 0])
 
         assert isinstance(output, QdacCompilationOutput)
-        assert compiler._qprogram == qp
         assert compiler._qdacs == [qdac]
         assert compiler._trigger_position == None
 
@@ -313,7 +306,6 @@ class TestQdacCompiler:
         output = compiler.compile(qprogram=qp, qdacs=[qdac], qdac_buses=[flux1, flux2], qdac_offsets=[0, 0])
 
         assert isinstance(output, QdacCompilationOutput)
-        assert compiler._qprogram == qp
         assert compiler._qdacs == [qdac]
         assert compiler._trigger_position == None
 
@@ -411,7 +403,6 @@ class TestQdacCompiler:
         )
 
         assert isinstance(output, QdacCompilationOutput)
-        assert compiler._qprogram == qp
         assert compiler._qdacs == [qdac_2, qdac]
         assert compiler._trigger_position == None
 
@@ -926,7 +917,6 @@ class TestQdacCompiler:
         output = compiler.compile(qprogram=qp, qdacs=[qdac], qdac_buses=[flux1, flux2], qdac_offsets=[0, 0])
 
         assert isinstance(output, QdacCompilationOutput)
-        assert compiler._qprogram == qp
         assert compiler._qdacs == [qdac]
         assert compiler._trigger_position == "back"
 
@@ -944,7 +934,6 @@ class TestQdacCompiler:
         output = compiler.compile(qprogram=qp, qdacs=[qdac], qdac_buses=[flux1, flux2], qdac_offsets=[0, 0])
 
         assert isinstance(output, QdacCompilationOutput)
-        assert compiler._qprogram == qp
         assert compiler._qdacs == [qdac]
         assert compiler._trigger_position == None
 
@@ -1345,6 +1334,9 @@ class TestQdacCompiler:
         output = compiler.compile(qprogram=qp, qdacs=[qdac], qdac_buses=[flux1], qdac_offsets=[0])
 
         assert output.trigger_position == "front"
+        # The output QProgram only holds the QDAC operations: the Qblox acquire is left out, its blocks are kept
+        assert output.qprogram.buses == {"flux1"}
+        assert output.qprogram.body.elements[2].elements[0].elements == []
         qdac_bus.upload_voltage_list.assert_called_once_with(
             waveform=ramp_wf, channel_id=1, dwell_us=3, sync_delay_s=0, repetitions=1, stepped=False
         )
@@ -1379,15 +1371,20 @@ class TestQdacCompiler:
                 qprogram=qp, qdacs=[qdac], qdac_buses=[flux1, flux2], qdac_offsets=[0, 0], crosstalk=crosstalk
             )
 
-    def test_compile_writes_play_defaults_into_qprogram(self, qdac: QDevilQDac2, flux1: Bus):
-        """Without bus mapping, calibration or crosstalk, compiling writes the default dwell, delay and stepped,
-        and the loop repetitions, into the play operation of the compiled QProgram."""
+    def test_compile_does_not_modify_qprogram(self, qdac: QDevilQDac2, flux1: Bus):
+        """The default dwell, delay and stepped, and the loop repetitions, are sent to the QDAC without being written
+        into the play operation of the caller's QProgram."""
+        qdac_bus = flux1.instruments[0]
+        wf = Square(1.0, 100)
         qp = QProgram()
         with qp.average(3):
-            qp.qdac.play(bus="flux1", waveform=Square(1.0, 100))
+            qp.qdac.play(bus="flux1", waveform=wf)
         play = qp.body.elements[0].elements[0]
 
         compiler = QdacCompiler()
         compiler.compile(qprogram=qp, qdacs=[qdac], qdac_buses=[flux1], qdac_offsets=[0])
 
-        assert (play.dwell, play.delay, play.stepped, play.repetitions) == (2, 0.0, False, 4)
+        qdac_bus.upload_voltage_list.assert_called_once_with(
+            waveform=wf, channel_id=1, dwell_us=2, sync_delay_s=0, repetitions=4, stepped=False
+        )
+        assert (play.dwell, play.delay, play.stepped, play.repetitions) == (None, None, None, None)

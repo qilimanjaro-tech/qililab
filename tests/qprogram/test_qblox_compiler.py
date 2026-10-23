@@ -4964,7 +4964,8 @@ class TestQBloxCompiler:
             sequences, _ = compiler.compile(qprogram=qp)
 
         assert "Wait duration 0 ns is below the Q1ASM minimum (4 ns), clamping to 4 ns." in caplog.text
-        assert duration_loop.start == 4
+        # The compiler clamps its own copy: the caller's loops are unchanged
+        assert duration_loop.start == 0
         assert gain_loop.start == 0
 
         expected = """
@@ -5007,8 +5008,9 @@ class TestQBloxCompiler:
             sequences, _ = compiler.compile(qprogram=qp)
 
         assert "Wait duration 0 ns is below the Q1ASM minimum (4 ns), clamping to 4 ns." in caplog.text
+        # The compiler clamps its own copy: the caller's loop is unchanged
         assert duration_loop.start == 100
-        assert duration_loop.stop == 4
+        assert duration_loop.stop == 0
 
         expected = """
             setup:
@@ -5044,8 +5046,9 @@ class TestQBloxCompiler:
             sequences, _ = compiler.compile(qprogram=qp)
 
         assert "Wait duration 0 ns is below the Q1ASM minimum (4 ns), clamping to 4 ns." in caplog.text
+        # The compiler clamps its own copy: the caller's loop is unchanged
         assert loop.start == 100
-        assert loop.stop == 4
+        assert loop.stop == 0
 
         expected = """
             setup:
@@ -7310,10 +7313,13 @@ class TestQBloxCompiler:
         assert list(output.sequences) == ["drive_q0"]
         assert is_q1asm_equal(output.sequences["drive_q0"], drive_str)
         assert output.requires_external_trigger is False
+        # The output QProgram only holds the Qblox operations
+        assert output.qprogram.buses == {"drive_q0"}
+        assert [element.bus for element in output.qprogram.body.elements] == ["drive_q0", "drive_q0"]
 
-    def test_delay_is_inserted_at_first_play_of_block_even_on_qdac_bus(self):
-        """Bus delays are inserted at the first play of each block, whichever bus it is on: here a QDAC play comes
-        before a set_gain or set_phase on a Qblox bus."""
+    def test_delay_is_inserted_at_first_qblox_play_of_block(self):
+        """Bus delays are inserted at the first play on a Qblox bus of each block: a QDAC play earlier in the block
+        doesn't trigger them, so the delay comes after the set_gain or set_phase on the Qblox bus."""
         drive_wf = IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
         readout_wf = IQPair(I=Square(amplitude=1.0, duration=100), Q=Square(amplitude=0.0, duration=100))
         qp = QProgram()
@@ -7328,9 +7334,7 @@ class TestQBloxCompiler:
             qp.play(bus="readout", waveform=readout_wf)
 
         compiler = QbloxCompiler()
-        sequences, _ = compiler.compile(
-            qprogram=qp, qblox_buses=["drive", "readout"], delays={"drive": 20, "readout": -8}
-        )
+        sequences, _ = compiler.compile(qprogram=qp, qblox_buses=["drive", "readout"], delays={"drive": 20})
 
         drive_str = """
             setup:
@@ -7339,13 +7343,13 @@ class TestQBloxCompiler:
                             upd_param        4
 
             main:
-                            wait             28
                             set_awg_gain     16383, 16383
+                            upd_param        20
                             play             0, 1, 40
                             move             5, R0
             avg_0:
-                            wait             28
                             set_ph           15915494
+                            upd_param        20
                             play             0, 1, 40
                             wait             120
                             loop             R0, @avg_0
@@ -7370,7 +7374,7 @@ class TestQBloxCompiler:
             square_1:
                             play             0, 1, 100
                             loop             R2, @square_1
-                            wait             28
+                            wait             20
                             loop             R1, @avg_0
                             set_mrk          0
                             upd_param        4
@@ -7379,9 +7383,9 @@ class TestQBloxCompiler:
         assert is_q1asm_equal(sequences["drive"], drive_str)
         assert is_q1asm_equal(sequences["readout"], readout_str)
 
-    def test_loop_variable_only_used_on_qdac_bus_scales_qblox_loop_register(self):
-        """A loop whose variable is only used by a set_offset on a non-Qblox bus still scales the Qblox loop
-        register as an offset: the operation giving the scale is looked up over every bus."""
+    def test_loop_variable_only_used_on_qdac_bus_is_not_swept_on_qblox(self):
+        """A loop whose variable is only used by a set_offset on a non-Qblox bus doesn't sweep any Qblox register:
+        only operations on Qblox buses set how the loop register is scaled."""
         qp = QProgram()
         voltage = qp.variable(label="voltage", domain=Domain.Voltage)
         with qp.for_loop(variable=voltage, start=0.0, stop=0.5, step=0.1):
@@ -7402,7 +7406,6 @@ class TestQBloxCompiler:
                             move             6, R1
             loop_0:
                             play             0, 1, 40
-                            add              R0, 3276, R0
                             loop             R1, @loop_0
                             set_mrk          0
                             upd_param        4
@@ -7472,13 +7475,19 @@ class TestQBloxCompiler:
             compiler.compile(qprogram=qp, qblox_buses=["drive"])
 
     def test_measure_reset_on_bus_outside_qblox_buses_raises_error(self):
-        """qp.qblox.measure_reset() on a measurement bus left out of ``qblox_buses`` raises a KeyError."""
+        """qp.qblox.measure_reset() on a measurement bus left out of ``qblox_buses`` raises an error naming both buses."""
         wf = IQPair(I=Square(amplitude=1.0, duration=100), Q=Square(amplitude=0.0, duration=100))
         qp = QProgram()
         qp.qblox.measure_reset(bus="readout", waveform=wf, weights=wf, control_bus="drive", reset_pulse=wf)
 
         compiler = QbloxCompiler()
-        with pytest.raises(KeyError, match="readout"):
+        with pytest.raises(
+            ValueError,
+            match=re.escape(
+                "qp.qblox.measure_reset() measures on bus 'readout' and resets on bus 'drive', but both must be Qblox "
+                "buses; the Qblox buses are ['drive']."
+            ),
+        ):
             compiler.compile(qprogram=qp, qblox_buses=["drive"])
 
 

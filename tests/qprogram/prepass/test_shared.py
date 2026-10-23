@@ -69,3 +69,16 @@ class TestKeepOperationsOnBuses:
 
         assert isinstance(kept.body.elements[0], Block)
         assert kept.body.elements[0].uuid == qp.body.elements[0].uuid
+
+    def test_shares_waveforms(self):
+        """The copy reuses the waveform objects instead of duplicating their samples."""
+        waveform = IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
+        qp = QProgram()
+        with qp.average(10):
+            qp.play(bus="drive", waveform=waveform)
+
+        kept = keep_operations_on_buses(qp, {"drive"})
+
+        (play,) = kept.body.elements[0].elements
+        assert play is not qp.body.elements[0].elements[0]
+        assert play.waveform is waveform
