@@ -39,6 +39,7 @@ from qililab.qprogram.operations import (
     Wait,
     WaitTrigger,
 )
+from qililab.qprogram.prepass import prepare_qdac, prepare_qprogram
 from qililab.qprogram.qprogram import QProgram
 from qililab.typings.enums import Parameter
 from qililab.waveforms import Arbitrary
@@ -169,29 +170,20 @@ class QdacCompiler:
             for bus in self._buses and self._qdac_buses_alias:
                 self._buses[bus].qprogram_block_stack.pop()
 
-        self._qprogram = qprogram
         self._qdacs = qdacs
         self._out_instrument = out_instrument
         self._qdac_buses = qdac_buses
         self._qdac_buses_by_alias = {bus.alias: bus for bus in self._qdac_buses}
         self._qdac_buses_alias = [bus.alias for bus in self._qdac_buses]
-        # Hardware bias voltages, used as a fallback if no flux is given
-        qdac_buses_offset = dict(zip(self._qdac_buses_alias, qdac_offsets))
-        if bus_mapping is not None:
-            self._qprogram = self._qprogram.with_bus_mapping(bus_mapping=bus_mapping)
-        if calibration is not None:
-            self._qprogram = self._qprogram.with_calibration(calibration=calibration)
-            if calibration.crosstalk_matrix and crosstalk is None:
-                crosstalk = calibration.crosstalk_matrix
-        if crosstalk is not None:
-            self._qprogram = self._qprogram.with_crosstalk_qdac(
-                crosstalk=crosstalk, target_fluxes=target_fluxes, qdac_buses_offset=qdac_buses_offset
-            )
-
-        if self._qprogram.has_calibrated_waveforms_or_weights():
-            raise RuntimeError(
-                "Cannot compile to hardware-native instructions because QProgram contains named operations that are not mapped. Provide a calibration instance containing all necessary mappings."
-            )
+        self._qprogram = prepare_qdac(
+            prepare_qprogram(qprogram, bus_mapping=bus_mapping, calibration=calibration),
+            qdac_buses=self._qdac_buses_alias,
+            # Hardware bias voltages, used as a fallback if no flux is given
+            qdac_buses_offset=dict(zip(self._qdac_buses_alias, qdac_offsets)),
+            calibration=calibration,
+            crosstalk=crosstalk,
+            target_fluxes=target_fluxes,
+        )
 
         self._populate_qdac_buses()
         traverse(self._qprogram._body)

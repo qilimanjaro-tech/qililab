@@ -20,6 +20,7 @@ from copy import deepcopy
 from typing import TYPE_CHECKING
 
 from qililab.qprogram.blocks import Block
+from qililab.waveforms import IQWaveform, Waveform
 
 if TYPE_CHECKING:
     from qililab.qprogram.calibration import Calibration
@@ -64,9 +65,20 @@ def keep_operations_on_buses(qprogram: QProgram, buses: set[str]) -> QProgram:
         buses (set[str]): The buses whose operations are kept.
 
     Returns:
-        QProgram: The filtered copy, whose ``buses`` are those of ``qprogram`` that are in ``buses``.
+        QProgram: The filtered copy, whose ``buses`` are those of ``qprogram`` that are in ``buses``. It shares the
+        waveforms of ``qprogram``: the compilers never modify a waveform (they copy one before splitting it), so its
+        samples aren't duplicated.
     """
-    copied_qprogram = deepcopy(qprogram)
+
+    def waveforms(block: Block):
+        for element in block.elements:
+            if isinstance(element, Block):
+                yield from waveforms(element)
+            else:
+                yield from (value for value in vars(element).values() if isinstance(value, (Waveform, IQWaveform)))
+
+    # deepcopy returns the objects already in its memo as they are
+    copied_qprogram = deepcopy(qprogram, {id(waveform): waveform for waveform in waveforms(qprogram.body)})
 
     def traverse(block: Block) -> None:
         block.elements = [
