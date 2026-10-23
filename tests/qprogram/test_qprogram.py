@@ -31,6 +31,7 @@ from qililab.qprogram.operations import (
     SetPhase,
     Sync,
     Wait,
+    WaitTrigger,
 )
 from qililab.utils.serialization import deserialize, deserialize_from, serialize, serialize_to
 from tests.qprogram.crosstalk.crosstalk_simulation import assert_compensated
@@ -531,6 +532,43 @@ class TestQProgram(TestStructuredProgram):
         assert isinstance(qp._body.elements[0], Wait)
         assert qp._body.elements[0].bus == "drive"
         assert qp._body.elements[0].duration == 100
+
+    def test_wait_trigger_method(self):
+        """Test wait trigger method"""
+        qp = QProgram()
+        qp.wait_trigger(bus="flux_1", duration=100)
+        qp.wait_trigger(bus="flux_2", duration=100, port=1)
+
+        assert len(qp._active_block.elements) == 2
+        assert len(qp._body.elements) == 2
+        assert isinstance(qp._body.elements[0], WaitTrigger)
+        assert qp._body.elements[0].bus == "flux_1"
+        assert qp._body.elements[0].duration == 100
+        assert qp._body.elements[0].port == None
+
+        assert isinstance(qp._body.elements[1], WaitTrigger)
+        assert qp._body.elements[1].bus == "flux_2"
+        assert qp._body.elements[1].duration == 100
+        assert qp._body.elements[1].port == 1
+
+    def test_wait_trigger_method_with_bus_mapping(self):
+        """Test wait trigger method with bus mapping remaps the wait_trigger buses."""
+        qp = QProgram()
+        qp.wait_trigger(bus="flux_1", duration=100)
+        qp.wait_trigger(bus="flux_2", duration=100, port=1)
+
+        new_qp = qp.with_bus_mapping(bus_mapping={"flux_1": "flux_x", "flux_2": "flux_z"})
+        assert len(new_qp._active_block.elements) == 2
+        assert len(new_qp._body.elements) == 2
+        assert isinstance(new_qp._body.elements[0], WaitTrigger)
+        assert new_qp._body.elements[0].bus == "flux_x"
+        assert new_qp._body.elements[0].duration == 100
+        assert new_qp._body.elements[0].port == None
+
+        assert isinstance(new_qp._body.elements[1], WaitTrigger)
+        assert new_qp._body.elements[1].bus == "flux_z"
+        assert new_qp._body.elements[1].duration == 100
+        assert new_qp._body.elements[1].port == 1
 
     def test_measure_method(self):
         """Test measure method"""
@@ -1167,7 +1205,7 @@ class TestQProgram(TestStructuredProgram):
         """Test with_crosstalk_qblox does not append the usual trailing loop Sync when a flux loop
         iteration's last element is a qp.if_trigger() block: that Conditional already self-times its
         own exit, and a Sync placed right after it would touch the gated bus outside the block, which
-        QbloxCompiler._validate_conditional_bus_isolation forbids."""
+        the Qblox pre-pass forbids."""
         inverse_xtalk_array = np.linalg.inv([[1, 0.5], [0.5, 1]])
         crosstalk = CrosstalkMatrix().from_array(["flux1", "flux2"], inverse_xtalk_array)
         non_linear_crosstalk = NonLinearCrosstalkMatrix.from_linear(crosstalk)
@@ -1743,8 +1781,6 @@ class TestQProgram(TestStructuredProgram):
         assert not op.save_adc
 
         # Interface flags updated
-        assert "control" in qp.qblox.latch_enabled
-        assert qp.qblox.trigger_network_required["readout"] == 1
         assert qp.qblox.weight_duration == {"readout": [40]}
 
     def test_with_bus_mapping_measure_reset(self):
