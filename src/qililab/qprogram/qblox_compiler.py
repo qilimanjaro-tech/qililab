@@ -58,7 +58,7 @@ from qililab.waveforms import Arbitrary, FlatTop, IQWaveform, Square, Waveform
 
 if TYPE_CHECKING:
     from qililab.pulse_distortion.pulse_distortion import PulseDistortion
-    from qililab.qprogram.prepass.qblox import ConditionalTrigger
+    from qililab.qprogram.prepass.qblox_prepass import ConditionalTrigger
 
 # 2147483648 -> values >= this are "negative" in 2's complement (MSB = 1)
 SIGN_BIT = 2**31

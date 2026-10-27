@@ -4,7 +4,7 @@ import pytest
 from qililab import Calibration, IQPair, QProgram, Square
 from qililab.qprogram.blocks import Average, Block, ForLoop
 from qililab.qprogram.operations import Play, SetOffset, Sync, Wait
-from qililab.qprogram.prepass.shared import keep_operations_on_buses, prepare_qprogram
+from qililab.qprogram.prepass.shared_prepass import keep_instrument_operations, prepare_qprogram
 from qililab.core.variables import Domain
 
 
@@ -33,7 +33,7 @@ class TestPrepareQProgram:
             prepare_qprogram(qp, bus_mapping={"drive": "drive_q0"}, calibration=calibration)
 
 
-class TestKeepOperationsOnBuses:
+class TestKeepInstrumentOperations:
     def test_keeps_operations_on_buses_syncs_and_every_block(self):
         qp = QProgram()
         offset = qp.variable(label="offset", domain=Domain.Voltage)
@@ -45,7 +45,7 @@ class TestKeepOperationsOnBuses:
             with qp.for_loop(variable=offset, start=0.0, stop=0.5, step=0.1):
                 qp.set_offset(bus="qdac", offset_path0=offset)
 
-        kept = keep_operations_on_buses(qp, {"drive", "readout"})
+        kept = keep_instrument_operations(qp, {"drive", "readout"})
 
         assert kept.buses == {"drive"}
         (average,) = kept.body.elements
@@ -66,7 +66,7 @@ class TestKeepOperationsOnBuses:
         with qp.average(10):
             qp.wait(bus="qdac", duration=100)
 
-        kept = keep_operations_on_buses(qp, {"drive"})
+        kept = keep_instrument_operations(qp, {"drive"})
 
         assert isinstance(kept.body.elements[0], Block)
         assert kept.body.elements[0].uuid == qp.body.elements[0].uuid
@@ -78,7 +78,7 @@ class TestKeepOperationsOnBuses:
         with qp.average(10):
             qp.play(bus="drive", waveform=waveform)
 
-        kept = keep_operations_on_buses(qp, {"drive"})
+        kept = keep_instrument_operations(qp, {"drive"})
 
         (play,) = kept.body.elements[0].elements
         assert play is not qp.body.elements[0].elements[0]

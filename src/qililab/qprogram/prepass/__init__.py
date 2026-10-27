@@ -14,8 +14,8 @@
 
 """Pre-passes preparing a QProgram before the instrument compilers: one shared, then one per instrument."""
 
-from .qblox import ConditionalTrigger, QbloxPrepassResult, prepare_qblox
-from .qdac import prepare_qdac
-from .shared import prepare_qprogram
+from .qblox_prepass import ConditionalTrigger, QbloxPrepassResult, prepare_qblox
+from .qdac_prepass import prepare_qdac
+from .shared_prepass import prepare_qprogram
 
 __all__ = ["ConditionalTrigger", "QbloxPrepassResult", "prepare_qblox", "prepare_qdac", "prepare_qprogram"]

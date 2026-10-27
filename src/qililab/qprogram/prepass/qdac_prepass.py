@@ -18,7 +18,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from qililab.qprogram.prepass.shared import keep_operations_on_buses
+from qililab.qprogram.prepass.shared_prepass import keep_instrument_operations
 
 if TYPE_CHECKING:
     import numpy as np
@@ -61,4 +61,4 @@ def prepare_qdac(
         qprogram = qprogram.with_crosstalk_qdac(
             crosstalk=crosstalk, target_fluxes=target_fluxes, qdac_buses_offset=qdac_buses_offset
         )
-    return keep_operations_on_buses(qprogram, set(qdac_buses))
+    return keep_instrument_operations(qprogram, set(qdac_buses))

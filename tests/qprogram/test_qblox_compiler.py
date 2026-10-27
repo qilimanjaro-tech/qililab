@@ -7417,6 +7417,39 @@ class TestQBloxCompiler:
         """
         assert is_q1asm_equal(sequences["drive"], drive_str)
 
+    def test_loop_without_qblox_operation_compiles_to_an_empty_loop(self):
+        """A loop with no operation on a Qblox bus still compiles to a Qblox loop, with nothing inside."""
+        pulse = IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
+        qp = QProgram()
+        voltage = qp.variable(label="voltage", domain=Domain.Voltage)
+        qp.play(bus="drive", waveform=pulse)
+        with qp.for_loop(variable=voltage, start=0.0, stop=1.0, step=0.1):
+            qp.set_offset(bus="qdac_flux", offset_path0=voltage)
+        qp.play(bus="drive", waveform=pulse)
+
+        compiler = QbloxCompiler()
+        sequences, _ = compiler.compile(qprogram=qp, qblox_buses=["drive"])
+
+        drive_str = """
+            setup:
+                            wait_sync        4
+                            set_mrk          0
+                            upd_param        4
+
+            main:
+                            play             0, 1, 40
+                            move             0, R0
+                            move             11, R1
+                            nop
+            loop_0:
+                            loop             R1, @loop_0
+                            play             0, 1, 40
+                            set_mrk          0
+                            upd_param        4
+                            stop
+        """
+        assert is_q1asm_equal(sequences["drive"], drive_str)
+
     def test_if_trigger_with_bus_mapping(self):
         """qp.if_trigger() on mapped buses, its wait time derived from a mapped QDAC play(dwell=...)."""
         qp = QProgram()

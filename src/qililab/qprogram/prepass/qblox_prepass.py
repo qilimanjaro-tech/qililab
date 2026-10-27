@@ -40,7 +40,7 @@ from qililab.qprogram.operations import (
     Wait,
     WaitTrigger,
 )
-from qililab.qprogram.prepass.shared import keep_operations_on_buses
+from qililab.qprogram.prepass.shared_prepass import keep_instrument_operations
 
 if TYPE_CHECKING:
     from uuid import UUID
@@ -161,7 +161,7 @@ def prepare_qblox(
             )
 
     return QbloxPrepassResult(
-        qprogram=keep_operations_on_buses(qprogram, qblox_bus_set),
+        qprogram=keep_instrument_operations(qprogram, qblox_bus_set),
         acquisition_metadata=acquisition_metadata,
         conditional=conditional,
         requires_external_trigger=conditional is not None

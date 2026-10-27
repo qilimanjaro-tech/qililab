@@ -1344,6 +1344,23 @@ class TestQdacCompiler:
             channel_id=1, out_port=1, trigger="trigger_flux1_1_step", width_s=100e-6, step=True
         )
 
+    def test_loop_without_qdac_operation_multiplies_the_next_qdac_play_repetitions(self, qdac: QDevilQDac2, flux1: Bus):
+        """A loop with no QDAC operation still multiplies the repetitions of the QDAC play after it, as it always has:
+        the QDAC pre-pass keeps the blocks without QDAC operations."""
+        qdac_bus = flux1.instruments[0]
+        ramp_wf = Arbitrary(samples=np.array([0.0, 0.1, 0.2]))
+        qp = QProgram()
+        with qp.average(shots=10):
+            qp.qblox.acquire(bus="readout", weights=IQPair(I=Square(1.0, 100), Q=Square(0.0, 100)))
+        qp.qdac.play(bus="flux1", waveform=ramp_wf, dwell=3)
+
+        compiler = QdacCompiler()
+        compiler.compile(qprogram=qp, qdacs=[qdac], qdac_buses=[flux1], qdac_offsets=[0])
+
+        qdac_bus.upload_voltage_list.assert_called_once_with(
+            waveform=ramp_wf, channel_id=1, dwell_us=3, sync_delay_s=0, repetitions=11, stepped=False
+        )
+
     def test_qblox_operation_on_qdac_bus_raises_error(self, qdac: QDevilQDac2, flux1: Bus):
         """A Qblox-only operation such as qp.wait() on a QDAC bus raises an error."""
         qp = QProgram()

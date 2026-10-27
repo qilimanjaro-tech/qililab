@@ -1167,7 +1167,7 @@ class QProgram(StructuredProgram):
             # a qp.if_trigger() block already self-times its own exit (see
             # QbloxCompiler._handle_conditional_trigger_epilogue), and appending a Sync right after it
             # would touch the conditional's gated bus outside the block, which the Qblox pre-pass
-            # (qililab.qprogram.prepass.qblox) forbids.
+            # (qililab.qprogram.prepass.qblox_prepass) forbids.
             if (
                 corrected_elements
                 and not isinstance(corrected_elements[-1], Sync)
