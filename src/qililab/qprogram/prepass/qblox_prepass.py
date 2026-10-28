@@ -40,7 +40,7 @@ from qililab.qprogram.operations import (
     Wait,
     WaitTrigger,
 )
-from qililab.qprogram.prepass.shared_prepass import keep_instrument_operations
+from qililab.qprogram.prepass.utils_prepass import keep_instrument_operations
 
 if TYPE_CHECKING:
     from uuid import UUID
