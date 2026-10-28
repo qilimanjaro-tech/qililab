@@ -18,9 +18,6 @@ from copy import deepcopy
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Callable, cast
 
-if TYPE_CHECKING:
-    from uuid import UUID
-
 import numpy as np
 import qpysequence as QPy
 import qpysequence.program as QPyProgram
@@ -52,13 +49,13 @@ from qililab.qprogram.operations import (
     Wait,
     WaitTrigger,
 )
-from qililab.qprogram.prepass import prepare_qblox, prepare_qprogram
+from qililab.qprogram.prepass import prepare_qblox, prepare_shared
 from qililab.qprogram.qprogram import QProgram
 from qililab.waveforms import Arbitrary, FlatTop, IQWaveform, Square, Waveform
 
 if TYPE_CHECKING:
     from qililab.pulse_distortion.pulse_distortion import PulseDistortion
-    from qililab.qprogram.prepass.qblox_prepass import ConditionalTrigger
+    from qililab.qprogram.prepass.qblox_prepass import AcquisitionMetadata, ConditionalTrigger
 
 # 2147483648 -> values >= this are "negative" in 2's complement (MSB = 1)
 SIGN_BIT = 2**31
@@ -104,7 +101,7 @@ class QbloxCompilationOutput:
         acquisitions (Acquisitions): A dictionary with the buses participating in the acquisitions as keys and the corresponding Acquisitions as values.
         requires_external_trigger (bool): Whether the compiled sequences wait on the cluster's external trigger, i.e. the
             QProgram has a ``wait_trigger`` on a Qblox bus or an ``if_trigger`` block.
-        trigger_network_required (dict[str, int]): Buses that send their acquisition result on the trigger network,
+        trigger_network_addresses (dict[str, int]): Buses that send their acquisition result on the trigger network,
             with their trigger address, i.e. the measurement buses of ``qp.qblox.measure_reset()``.
     """
 
@@ -114,13 +111,13 @@ class QbloxCompilationOutput:
         sequences: Sequences,
         acquisitions: Acquisitions,
         requires_external_trigger: bool = False,
-        trigger_network_required: dict[str, int] | None = None,
+        trigger_network_addresses: dict[str, int] | None = None,
     ):
         self.qprogram = qprogram
         self.sequences = sequences
         self.acquisitions = acquisitions
         self.requires_external_trigger = requires_external_trigger
-        self.trigger_network_required = trigger_network_required if trigger_network_required is not None else {}
+        self.trigger_network_addresses = trigger_network_addresses if trigger_network_addresses is not None else {}
 
     def __iter__(self):
         """Allows the class to be unpacked as a tuple (program, config, measurements)."""
@@ -274,7 +271,7 @@ class QbloxCompiler:
         self._max_wait_dynamic: int = 0
         self._markers: dict[str, str] | None
         self._qblox_buses: list[str]
-        self._acquisition_metadata: dict[str, dict[UUID, tuple[int, int]]] = {}
+        self._acquisition_metadata: AcquisitionMetadata = {}
         self._conditional: ConditionalTrigger | None = None
         self._single_channel: list[str] = []
 
@@ -358,7 +355,7 @@ class QbloxCompiler:
                 self._buses[bus].first_acquire_of_block = True
 
         prepass = prepare_qblox(
-            prepare_qprogram(qprogram, bus_mapping=bus_mapping, calibration=calibration),
+            prepare_shared(qprogram, bus_mapping=bus_mapping, calibration=calibration),
             calibration=calibration,
             crosstalk=crosstalk,
             bus_distortions=bus_distortions,
@@ -366,7 +363,7 @@ class QbloxCompiler:
         )
         self._qprogram = prepass.qprogram
         # Every Qblox bus, not only those of the QProgram: a sync naming any other bus is rejected
-        self._qblox_buses = qblox_buses or list(self._qprogram.buses)
+        self._qblox_buses = prepass.qblox_buses
 
         self._sync_counter = 0
         self._buses = self._populate_buses()
@@ -391,7 +388,7 @@ class QbloxCompiler:
             mask = self._markers[bus] if self._markers is not None and bus in self._markers else "0000"
             # if qprogram.measure_reset is used, the bus using the conditional enables latching at the very top of the q1asm
             self._buses[bus].qpy_sequence._program.blocks[0].add(QPyInstructions.WaitSync(4))
-            if bus in prepass.latch_enabled or bus == conditional_bus:
+            if bus in prepass.latch_buses or bus == conditional_bus:
                 self._buses[bus].qpy_sequence._program.blocks[0].add(QPyInstructions.SetLatchEn(1, 4), insert_idx=0)
             self._buses[bus].qpy_sequence._program.blocks[0].add(QPyInstructions.SetMrk(int(mask, 2)))
             self._buses[bus].qpy_sequence._program.blocks[0].add(QPyInstructions.UpdParam(4))
@@ -548,7 +545,7 @@ class QbloxCompiler:
             sequences=sequences,
             acquisitions=acquisitions,
             requires_external_trigger=prepass.requires_external_trigger,
-            trigger_network_required=prepass.trigger_network_required,
+            trigger_network_addresses=prepass.trigger_network_addresses,
         )
 
     def _populate_buses(self) -> dict[str, BusCompilationInfo]:

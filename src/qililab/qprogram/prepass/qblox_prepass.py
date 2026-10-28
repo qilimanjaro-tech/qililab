@@ -18,6 +18,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
+from uuid import UUID
 
 from qililab.config import logger
 from qililab.constants import QDACCONSTANTS
@@ -43,8 +44,6 @@ from qililab.qprogram.operations import (
 from qililab.qprogram.prepass.utils_prepass import keep_instrument_operations
 
 if TYPE_CHECKING:
-    from uuid import UUID
-
     from qililab.pulse_distortion.pulse_distortion import PulseDistortion
     from qililab.qprogram.calibration import Calibration
     from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
@@ -56,6 +55,9 @@ WAIT_TRIGGER_NETWORK_EXT_TRIGGER = 252
 
 # Operations carrying no duration
 NON_REALTIME_OPERATIONS = (SetFrequency, SetPhase, ResetPhase, SetGain, SetOffset, SetMarkers)
+
+# Per Qblox bus and per block uuid: (acquisitions directly in the block, block nesting depth)
+AcquisitionMetadata = dict[str, dict[UUID, tuple[int, int]]]
 
 
 @dataclass(frozen=True)
@@ -79,7 +81,10 @@ class QbloxPrepassResult:
     qprogram: QProgram
     """The transformed QProgram, with only the operations on Qblox buses."""
 
-    acquisition_metadata: dict[str, dict[UUID, tuple[int, int]]]
+    qblox_buses: list[str]
+    """The Qblox buses: the given ones, else every bus of the QProgram."""
+
+    acquisition_metadata: AcquisitionMetadata
     """Per Qblox bus and per block: the number of acquisitions directly in the block, and the block's nesting depth."""
 
     conditional: ConditionalTrigger | None
@@ -89,10 +94,10 @@ class QbloxPrepassResult:
     """Whether the sequences wait on the cluster's external trigger: a ``wait_trigger`` on a Qblox bus, or an
     ``if_trigger``."""
 
-    latch_enabled: list[str]
+    latch_buses: list[str]
     """Qblox buses that need the trigger latch: the control buses of ``measure_reset``."""
 
-    trigger_network_required: dict[str, int]
+    trigger_network_addresses: dict[str, int]
     """Qblox buses that send on the trigger network, with their trigger address: the measurement buses of
     ``measure_reset``."""
 
@@ -162,19 +167,26 @@ def prepare_qblox(
 
     return QbloxPrepassResult(
         qprogram=keep_instrument_operations(qprogram, qblox_bus_set),
+        qblox_buses=qblox_buses,
         acquisition_metadata=acquisition_metadata,
         conditional=conditional,
         requires_external_trigger=conditional is not None
         or any(isinstance(leaf, WaitTrigger) and leaf.bus in qblox_buses for leaf in leaves),
-        latch_enabled=list(dict.fromkeys(measure_reset.control_bus for measure_reset in measure_resets)),
-        trigger_network_required={measure_reset.bus: measure_reset.trigger_address for measure_reset in measure_resets},
+        latch_buses=list(dict.fromkeys(measure_reset.control_bus for measure_reset in measure_resets)),
+        trigger_network_addresses={
+            measure_reset.bus: measure_reset.trigger_address for measure_reset in measure_resets
+        },
     )
 
 
 def _walk_tree(
     body: Block, qblox_buses: list[str]
-) -> tuple[list[Operation], dict[str, dict[UUID, tuple[int, int]]], tuple[Conditional, int, int] | None]:
+) -> tuple[list[Operation], AcquisitionMetadata, tuple[Conditional, int, int] | None]:
     """Walk the QProgram once, before the bus filter, since ``qp.if_trigger()`` needs the QDAC operations.
+
+    Args:
+        body (Block): The body of the QProgram.
+        qblox_buses (list[str]): The Qblox buses, the only ones whose acquisitions are counted.
 
     Returns:
         tuple: The flat, document-order list of every non-``Block`` operation (the leaves); the acquisition metadata of
@@ -186,7 +198,7 @@ def _walk_tree(
             ``qp.if_trigger()``, or if there is more than one ``qp.if_trigger()`` block.
     """
     leaves: list[Operation] = []
-    acquisition_metadata: dict[str, dict[UUID, tuple[int, int]]] = {}
+    acquisition_metadata: AcquisitionMetadata = {}
     conditional_block: tuple[Conditional, int, int] | None = None
 
     def traverse(block: Block, depth: int, inside_conditional: bool) -> None:
@@ -213,14 +225,21 @@ def _walk_tree(
 
 
 def _count_acquisition(
-    acquisition_metadata: dict[str, dict[UUID, tuple[int, int]]],
+    acquisition_metadata: AcquisitionMetadata,
     element: Operation,
     block: Block,
     depth: int,
     qblox_buses: list[str],
 ) -> None:
-    """Count ``element``, directly in ``block`` at ``depth``, in the acquisition metadata if it is an acquisition on a
-    Qblox bus."""
+    """Count an acquisition on a Qblox bus in the acquisition metadata of the block holding it.
+
+    Args:
+        acquisition_metadata (AcquisitionMetadata): The acquisition metadata being collected, updated in place.
+        element (Operation): The operation. Only an ``Acquire``, ``Measure`` or ``MeasureReset`` on a Qblox bus counts.
+        block (Block): The block directly holding ``element``.
+        depth (int): The nesting depth of ``block``.
+        qblox_buses (list[str]): The Qblox buses.
+    """
     if isinstance(element, (Acquire, Measure, MeasureReset)) and element.bus in qblox_buses:
         block_metadata = acquisition_metadata.setdefault(element.bus, {})
         count, _ = block_metadata.get(block.uuid, (0, depth))
@@ -231,6 +250,17 @@ def _validate_conditional_trigger(
     element: Conditional, leaf_range: tuple[int, int], all_leaves: list[Operation], qblox_buses: list[str]
 ) -> ConditionalTrigger:
     """Validate a ``qp.if_trigger()`` block and resolve the bus it gates and its wait time.
+
+    Args:
+        element (Conditional): The ``qp.if_trigger()`` block.
+        leaf_range (tuple[int, int]): ``(start, end)`` indices, within ``all_leaves``, of the operations nested in the
+            block at any depth. Which blocks may be nested in it is already checked by ``_walk_tree``.
+        all_leaves (list[Operation]): Every non-``Block`` operation of the QProgram, in document order. Used to derive
+            the wait time when ``expected_wait_time_ns`` isn't given.
+        qblox_buses (list[str]): The Qblox buses.
+
+    Returns:
+        ConditionalTrigger: The bus the block gates, its wait time and its trigger padding.
 
     Raises:
         NotImplementedError: If the block contains a ``qp.wait(duration=<variable>)``, touches more than one Qblox
@@ -295,6 +325,13 @@ def _derive_expected_wait_time_from_qdac(leaves: list[Operation], qblox_buses: l
     equals that step's ``dwell`` (set via ``qp.qdac.play(bus, ..., dwell=...)``, in microseconds). Returns ``None`` if
     no such trigger is found, e.g. the trigger source isn't a QDAC modeled in this QProgram.
 
+    Args:
+        leaves (list[Operation]): Every non-``Block`` operation of the QProgram, in document order.
+        qblox_buses (list[str]): The Qblox buses, whose plays are never taken for QDAC plays.
+
+    Returns:
+        int | None: The wait time in ns, or ``None`` if there is no such trigger.
+
     Raises:
         NotImplementedError: If a ``qp.set_trigger()`` on a QDAC-driven bus has a ``position`` other than ``"step"``,
             or if more than one bus has a ``qp.set_trigger(position="step")``: which one is wired to the trigger
@@ -344,6 +381,14 @@ def _validate_conditional_bus_isolation(
     The epilogue's padding only balances the time spent inside the ``Conditional`` block; a real-time instruction on
     the same bus outside it would drift the sequencer out of phase with the QDAC's trigger cadence.
     ``NON_REALTIME_OPERATIONS`` (``qp.set_frequency()``, ``qp.set_offset()``, ...) add no duration, so are allowed.
+
+    Args:
+        bus (str): The bus the block gates.
+        leaf_range (tuple[int, int]): ``(start, end)`` indices, within ``all_leaves``, of the operations nested in the
+            block at any depth.
+        all_leaves (list[Operation]): Every non-``Block`` operation of the QProgram, in document order.
+        qblox_buses_in_qprogram (set[str]): The Qblox buses of the QProgram: those a ``qp.sync()`` naming no bus
+            synchronises.
 
     Raises:
         NotImplementedError: If a real-time instruction on ``bus`` is outside the block.

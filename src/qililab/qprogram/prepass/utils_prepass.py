@@ -68,5 +68,7 @@ def keep_instrument_operations(qprogram: QProgram, instrument_buses: set[str]) -
                 traverse(element)
 
     traverse(copied_qprogram.body)
+    # QProgram has no public way to set its buses, and this filter is part of compiling for an instrument, not a
+    # QProgram transform like with_bus_mapping(): it stays out of QProgram and writes the attribute from here
     copied_qprogram._buses = {bus for bus in copied_qprogram.buses if bus in instrument_buses}
     return copied_qprogram

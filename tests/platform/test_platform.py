@@ -1866,7 +1866,7 @@ class TestMethods:
 
         mock_output.qprogram = MagicMock(spec=QProgram)
         mock_output.qprogram.qblox = MagicMock(spec=QProgram._QbloxInterface)
-        mock_output.trigger_network_required = {}
+        mock_output.trigger_network_addresses = {}
         mock_output.requires_external_trigger = False
 
         return mock_output, mock_qdac_output, mock_qdac, mock_bus
@@ -1918,7 +1918,7 @@ class TestMethods:
 
         mock_output.qprogram = MagicMock(spec=QProgram)
         mock_output.qprogram.qblox = MagicMock(spec=QProgram._QbloxInterface)
-        mock_output.trigger_network_required = {}
+        mock_output.trigger_network_addresses = {}
         mock_output.requires_external_trigger = True
 
         mock_module = MagicMock()
@@ -2868,7 +2868,7 @@ class TestMethods:
         # Build a fake compilation output with one bus “b” → trigger 5
         output = QProgramCompilationOutput()
         output.qblox = QbloxCompilationOutput(
-            qprogram=QProgram(), sequences={"b": None}, acquisitions={"b": []}, trigger_network_required={"b": 5}
+            qprogram=QProgram(), sequences={"b": None}, acquisitions={"b": []}, trigger_network_addresses={"b": 5}
         )
 
         # Stub the bus and controller

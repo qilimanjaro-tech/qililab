@@ -23,7 +23,7 @@ if TYPE_CHECKING:
     from qililab.qprogram.qprogram import QProgram
 
 
-def prepare_qprogram(
+def prepare_shared(
     qprogram: QProgram, *, bus_mapping: dict[str, str] | None = None, calibration: Calibration | None = None
 ) -> QProgram:
     """Apply the bus mapping and the calibration, then check that every named operation is mapped.

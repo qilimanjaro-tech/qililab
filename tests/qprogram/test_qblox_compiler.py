@@ -6843,7 +6843,6 @@ class TestQBloxCompiler:
         """
         assert is_q1asm_equal(sequences["drive"], drive_str)
 
-
     def test_play_uploads_waveform_samples(self):
         """The samples uploaded for Gaussian, DRAG, FlatTop (short, chunked, and through qp.qblox.play), Square and
         Arbitrary waveforms on an IQ bus."""
@@ -7338,6 +7337,7 @@ class TestQBloxCompiler:
             qp.play(bus="readout", waveform=readout_wf)
 
         compiler = QbloxCompiler()
+        # No negative delay on readout: with one, the Q1ASM depends on PYTHONHASHSEED (QHC-1672)
         sequences, _ = compiler.compile(qprogram=qp, qblox_buses=["drive", "readout"], delays={"drive": 20})
 
         drive_str = """

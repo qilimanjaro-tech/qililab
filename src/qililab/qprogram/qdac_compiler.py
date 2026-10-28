@@ -39,7 +39,7 @@ from qililab.qprogram.operations import (
     Wait,
     WaitTrigger,
 )
-from qililab.qprogram.prepass import prepare_qdac, prepare_qprogram
+from qililab.qprogram.prepass import prepare_qdac, prepare_shared
 from qililab.qprogram.qprogram import QProgram
 from qililab.typings.enums import Parameter
 from qililab.waveforms import Arbitrary
@@ -180,7 +180,7 @@ class QdacCompiler:
         self._qdac_buses_by_alias = {bus.alias: bus for bus in self._qdac_buses}
         self._qdac_buses_alias = [bus.alias for bus in self._qdac_buses]
         self._qprogram = prepare_qdac(
-            prepare_qprogram(qprogram, bus_mapping=bus_mapping, calibration=calibration),
+            prepare_shared(qprogram, bus_mapping=bus_mapping, calibration=calibration),
             qdac_buses=self._qdac_buses_alias,
             # Hardware bias voltages, used as a fallback if no flux is given
             qdac_buses_offset=dict(zip(self._qdac_buses_alias, qdac_offsets)),

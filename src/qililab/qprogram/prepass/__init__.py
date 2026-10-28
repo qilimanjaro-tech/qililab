@@ -16,6 +16,6 @@
 
 from .qblox_prepass import ConditionalTrigger, QbloxPrepassResult, prepare_qblox
 from .qdac_prepass import prepare_qdac
-from .shared_prepass import prepare_qprogram
+from .shared_prepass import prepare_shared
 
-__all__ = ["ConditionalTrigger", "QbloxPrepassResult", "prepare_qblox", "prepare_qdac", "prepare_qprogram"]
+__all__ = ["ConditionalTrigger", "QbloxPrepassResult", "prepare_qblox", "prepare_qdac", "prepare_shared"]

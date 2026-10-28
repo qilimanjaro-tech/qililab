@@ -9,7 +9,7 @@ from qililab.pulse_distortion import ExponentialCorrection
 from qililab.qprogram.blocks import Average
 from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
 from qililab.qprogram.operations import Acquire, Play, Sync
-from qililab.qprogram.prepass import ConditionalTrigger, prepare_qblox, prepare_qprogram
+from qililab.qprogram.prepass import ConditionalTrigger, prepare_qblox, prepare_shared
 
 DRIVE_WF = IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
 WEIGHTS = IQPair(I=Square(amplitude=1.0, duration=100), Q=Square(amplitude=0.0, duration=100))
@@ -36,6 +36,7 @@ class TestPrepareQblox:
 
         result = prepare_qblox(qp, qblox_buses=["drive", "readout"])
 
+        assert result.qblox_buses == ["drive", "readout"]
         assert result.qprogram.buses == {"drive", "readout"}
         (average,) = result.qprogram.body.elements
         assert isinstance(average, Average)
@@ -49,6 +50,7 @@ class TestPrepareQblox:
 
         result = prepare_qblox(qp)
 
+        assert sorted(result.qblox_buses) == ["drive", "flux"]
         assert result.qprogram.buses == {"drive", "flux"}
         assert len(result.qprogram.body.elements) == 2
 
@@ -146,12 +148,12 @@ class TestPrepareQblox:
             qp.qblox.measure_reset(
                 bus="readout", waveform=WEIGHTS, weights=WEIGHTS, control_bus="drive", reset_pulse=DRIVE_WF, trigger_address=3
             )
-        qp = prepare_qprogram(qp, bus_mapping={"readout": "readout_q0", "drive": "drive_q0"})
+        qp = prepare_shared(qp, bus_mapping={"readout": "readout_q0", "drive": "drive_q0"})
 
         result = prepare_qblox(qp, qblox_buses=["readout_q0", "drive_q0"])
 
-        assert result.latch_enabled == ["drive_q0"]
-        assert result.trigger_network_required == {"readout_q0": 3}
+        assert result.latch_buses == ["drive_q0"]
+        assert result.trigger_network_addresses == {"readout_q0": 3}
         assert result.requires_external_trigger is False
 
     @pytest.mark.parametrize("qblox_buses", [["drive"], ["readout"]])
