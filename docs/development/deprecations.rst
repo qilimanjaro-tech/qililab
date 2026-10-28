@@ -19,6 +19,10 @@ Pending deprecations
     - Deprecated in an upcoming release (`#1223 <https://github.com/qilimanjaro-tech/qililab/pull/1223>`_)
     - No removal version set yet
 
+- The runcard's `ext_trigger` field (on instrument controllers) is deprecated; the Qblox cluster's external trigger is now enabled automatically when a QProgram uses `wait_trigger` or `if_trigger`.
+    - Deprecated in an upcoming release (`#1112 <https://github.com/qilimanjaro-tech/qililab/pull/1112>`_)
+    - No removal version set yet
+
 Completed deprecation cycles
 -----------------------------
 - The `path` argument in `qililab.build_platform` was changed to `runcard`, since it not only accepts a path to the YAML file but also the dictionary directly.
