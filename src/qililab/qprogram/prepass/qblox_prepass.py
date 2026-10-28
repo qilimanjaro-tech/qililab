@@ -206,13 +206,25 @@ def _walk_tree(
                     conditional_block = (element, start, len(leaves))
             else:
                 leaves.append(element)
-                if isinstance(element, (Acquire, Measure, MeasureReset)) and element.bus in qblox_buses:
-                    block_metadata = acquisition_metadata.setdefault(element.bus, {})
-                    count, _ = block_metadata.get(block.uuid, (0, depth))
-                    block_metadata[block.uuid] = (count + 1, depth)
+                _count_acquisition(acquisition_metadata, element, block, depth, qblox_buses)
 
     traverse(body, 0, False)
     return leaves, acquisition_metadata, conditional_block
+
+
+def _count_acquisition(
+    acquisition_metadata: dict[str, dict[UUID, tuple[int, int]]],
+    element: Operation,
+    block: Block,
+    depth: int,
+    qblox_buses: list[str],
+) -> None:
+    """Count ``element``, directly in ``block`` at ``depth``, in the acquisition metadata if it is an acquisition on a
+    Qblox bus."""
+    if isinstance(element, (Acquire, Measure, MeasureReset)) and element.bus in qblox_buses:
+        block_metadata = acquisition_metadata.setdefault(element.bus, {})
+        count, _ = block_metadata.get(block.uuid, (0, depth))
+        block_metadata[block.uuid] = (count + 1, depth)
 
 
 def _validate_conditional_trigger(
