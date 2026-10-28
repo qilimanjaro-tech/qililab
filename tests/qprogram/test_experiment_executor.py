@@ -435,7 +435,8 @@ class TestExperimentExecutor:
         result dataset, just like a Measure, so the acquired data can be read back."""
         qp = QProgram()
         frequency = qp.variable(label="frequency", domain=Domain.Frequency)
-        with qp.for_loop(frequency, 0, 10, 1):  # 11 points
+        # 11 points
+        with qp.for_loop(frequency, 0, 10, 1):
             qp.qblox.acquire(bus="readout_bus", weights=IQPair(Square(1.0, 100), Square(1.0, 100)))
 
         experiment = Experiment(label="acquire_experiment")
@@ -465,7 +466,8 @@ class TestExperimentExecutor:
         measurement dataset per operation, in order of appearance."""
         qp = QProgram()
         frequency = qp.variable(label="frequency", domain=Domain.Frequency)
-        with qp.for_loop(frequency, 0, 10, 1):  # 11 points
+        # 11 points
+        with qp.for_loop(frequency, 0, 10, 1):
             qp.measure(
                 "readout_bus",
                 waveform=IQPair(Square(1.0, 40), Square(1.0, 40)),
@@ -477,7 +479,8 @@ class TestExperimentExecutor:
         experiment.execute_qprogram(qp)
 
         qprogram_results = QProgramResults()
-        for _ in range(2):  # one result per measurement op: the measure and the acquire
+        # one result per measurement op: the measure and the acquire
+        for _ in range(2):
             qprogram_results.append_result("readout_bus", make_qblox_result(np.arange(0, 11), np.arange(100, 111)))
         platform = make_platform_returning(qprogram_results)
 
@@ -555,7 +558,8 @@ class TestExperimentExecutor:
     def test_inclusive_range(self):
         """Test correct behavior and consistency of loop generation inside inclusive range."""
 
-        int_result = ExperimentExecutor._inclusive_range(None, 0, 1000, 11)  # Mock passing self as None
+        # Mock passing self as None
+        int_result = ExperimentExecutor._inclusive_range(None, 0, 1000, 11)
         int_check = np.array([   0,   11,   22,   33,   44,   55,   66,   77,   88,   99,  110,
             121,  132,  143,  154,  165,  176,  187,  198,  209,  220,  231,
             242,  253,  264,  275,  286,  297,  308,  319,  330,  341,  352,

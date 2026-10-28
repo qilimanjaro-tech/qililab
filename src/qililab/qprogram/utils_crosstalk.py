@@ -11,6 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from copy import deepcopy
+
 from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
 from qililab.qprogram.flux_vector import FluxVector
 from qililab.qprogram.operations import Play, SetGain, SetOffset
@@ -60,9 +62,12 @@ class CrosstalkElements:
         """
         operation = str(element.__class__)
         if operation not in self.flux_vector_bus.keys() or element.bus in self.flux_vector_bus[operation]:
-            self.restart_flux_vector(operation, check_after_loop=True)
+            bus_reused = isinstance(element, Play) and element.bus in self.flux_vector_bus.get(operation, [])
+            self.restart_flux_vector(operation, check_after_loop=True, bus_reused=bus_reused)
 
-    def restart_flux_vector(self, operation: str | None = None, check_after_loop: bool = False):
+    def restart_flux_vector(
+        self, operation: str | None = None, check_after_loop: bool = False, bus_reused: bool = False
+    ):
         """Function create or overwrite empty dictionary entries for each operation given.
         If no operations given it does it for every element in those dictionaries.
 
@@ -70,23 +75,29 @@ class CrosstalkElements:
             operation (str | None, optional): Class of the element to be restarted.
                                                 Defaults to None implying restarting all operations in the dictionaries.
             check_after_loop (bool, optional): Trigger to avoid restarting the flux vector after starting a new loop. Defaults to False.
+            bus_reused (bool, optional): Trigger to force a fresh flux vector when a play reuses a bus. Defaults to False.
         """
 
         if operation is not None:
             self.element[operation] = []
             self.element_group[operation] = []
             self.flux_vector_bus[operation] = []
-            if operation not in self.flux_vector or not check_after_loop:
+            if operation not in self.flux_vector or not check_after_loop or bus_reused:
                 self.flux_vector[operation] = FluxVector()
                 self.flux_vector[operation].set_crosstalk(self.crosstalk)
+            else:
+                self.flux_vector[operation] = deepcopy(self.flux_vector[operation])
         else:
             for operation in self.element_group.keys():
                 self.element[operation] = []
                 self.element_group[operation] = []
                 self.flux_vector_bus[operation] = []
                 if operation not in self.flux_vector or not check_after_loop:
-                    self.flux_vector[operation] = FluxVector()
-                    self.flux_vector[operation].set_crosstalk(self.crosstalk)
+                    if operation == str(Play) or operation not in self.flux_vector:
+                        self.flux_vector[operation] = FluxVector()
+                        self.flux_vector[operation].set_crosstalk(self.crosstalk)
+                    else:
+                        self.flux_vector[operation] = deepcopy(self.flux_vector[operation])
 
 
 class NonLinearFlagState:
@@ -104,32 +115,46 @@ class NonLinearFlagState:
     def on_offset(self):
         """Modify offset flags after set_offset is called."""
         if self.wait_defined or self.plays_defined or self.block_defined:
-            self.offsets_index += 1  # A new offset index is used every time the offset is modified
-        self.last_appended_offset = self.offsets_index  # This prevents repeating offsets when no time has passed
-        self.offset_defined = True  # Flag for on_wait and on_block
+            # A new offset index is used every time the offset is modified
+            self.offsets_index += 1
+        # This prevents repeating offsets when no time has passed
+        self.last_appended_offset = self.offsets_index
+        # Flag for on_wait and on_block
+        self.offset_defined = True
 
     def on_play(self, bus: str):
         """Modify play and offset flags after play is called."""
-        self.play_bus_list.append(bus)  # bus explicitly used for play
-        self.plays_index += 1  # A new play index is used every time there is a new play for used buses
-        self.plays_defined = True  # Flag for on_block (wait is not relevant for a play)
-        self.offset_defined = True  # Flag for on_wait and on_block
+        # bus explicitly used for play
+        self.play_bus_list.append(bus)
+        # A new play index is used every time there is a new play for used buses
+        self.plays_index += 1
+        # Flag for on_block (wait is not relevant for a play)
+        self.plays_defined = True
+        # Flag for on_wait and on_block
+        self.offset_defined = True
 
     def on_wait(self):
         """Modify wait flags after wait is called."""
         if self.offset_defined and not self.wait_defined:
-            self.wait_defined = True  # Used to modify the offset index after a wait
-            self.last_appended_offset = -1  # Reset last_appended_offset after every wait
+            # Used to modify the offset index after a wait
+            self.wait_defined = True
+            # Reset last_appended_offset after every wait
+            self.last_appended_offset = -1
 
     def on_block(self):
         """Modify offset and wait flags after a loo block is created."""
         if self.offset_defined and (self.wait_defined or self.plays_defined or self.block_defined):
-            self.block_defined = False  # Every block has its own block state
-            self.wait_defined = False  # Every block has its own wait state
-            self.offsets_index += 1  # A new block implies a new offset index
-            self.last_appended_offset = -1  # Reset last_appended_offset after every loop
+            # Every block has its own block state
+            self.block_defined = False
+            # Every block has its own wait state
+            self.wait_defined = False
+            # A new block implies a new offset index
+            self.offsets_index += 1
+            # Reset last_appended_offset after every loop
+            self.last_appended_offset = -1
 
     def after_block(self):
         """Modify block defined flag after a block is traversed."""
         self.block_defined = True
-        self.last_appended_offset = -1  # Reset last_appended_offset after every loop
+        # Reset last_appended_offset after every loop
+        self.last_appended_offset = -1

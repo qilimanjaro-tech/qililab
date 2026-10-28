@@ -54,7 +54,8 @@ class QbloxDraw:
             param["classical_time_counter"] += int(wait_duration)
             real_wait = wait_duration - param["real_time_counter"]
             if real_wait <= 0:
-                param["real_time_counter"] = param["real_time_counter"] - wait_duration  # update the real time counter
+                # update the real time counter
+                param["real_time_counter"] = param["real_time_counter"] - wait_duration
             else:
                 data_draw = self._handle_wait_draw(data_draw, param, real_wait)
                 param["real_time_counter"] = max(0, param["real_time_counter"] - wait_duration)
@@ -159,7 +160,8 @@ class QbloxDraw:
                 if dynamic_off == 0 and ac_off == 0
                 else (param["max_voltage"] / (np.sqrt(2)), param["max_voltage"])
             )
-        return (param["max_voltage"], param["max_voltage"])  # (scaling factor, max voltage)
+        # (scaling factor, max voltage)
+        return (param["max_voltage"], param["max_voltage"])
 
     def _handle_play_draw(self, data_draw, program_line, waveform_seq, param):
         """Play a waveform by appending the stored data list.
@@ -176,7 +178,8 @@ class QbloxDraw:
         """
         output_path1, output_path2, classical_duration_play = map(int, program_line[1].split(","))
         # modify and store the wf data
-        wf_found = 0  # tracker to avoid looping for the entirety of the waveform dictionary but rather stop when both I and Q have been found
+        # tracker to avoid looping for the entirety of the waveform dictionary but rather stop when both I and Q have been found
+        wf_found = 0
         for idx, output_path in enumerate([output_path1, output_path2]):
             for _, waveform_value in waveform_seq:
                 index = waveform_value["index"]
@@ -220,7 +223,8 @@ class QbloxDraw:
             Appended data_draw considering the wait and the offset.
             And appended the IF and phase keys of the param dictionary. Each of these is a np array where 1 data point represents 1 ns (same as the waveforms).
         """
-        y_wait = np.linspace(0, 0, int(time))  # add a clock cycle - used for acquisitions
+        # add a clock cycle - used for acquisitions
+        y_wait = np.linspace(0, 0, int(time))
         data_draw[0] = np.append(data_draw[0], (y_wait))
         data_draw[1] = np.append(data_draw[1], (y_wait))
 
@@ -405,7 +409,8 @@ class QbloxDraw:
         """
 
         seq_parsed_program = {}
-        for bus in sequences:  # Iterate through the bus of the sequences
+        # Iterate through the bus of the sequences
+        for bus in sequences:
             sequence = sequences[bus].to_dict()
             program_line = sequence["program"].split("\n")
             processed_lines = []
@@ -421,13 +426,16 @@ class QbloxDraw:
                     processed_lines.append(stripped_line)
             line_data = "\n".join(processed_lines)
             pattern = r"(\w+):|(\w+)(?:\s+([^\n]*))?"
-            matches = re.findall(pattern, line_data)  # (section/loop, instruction, numerical value)
+            # (section/loop, instruction, numerical value)
+            matches = re.findall(pattern, line_data)
 
             program_parsed = {
                 "setup": [],
                 "main": [],
-            }  # each section is a list of tuples (instruction, numerical value, (tuple of loop label), index)
-            index = 0  # Track execution order
+                # each section is a list of tuples (instruction, numerical value, (tuple of loop label), index)
+            }
+            # Track execution order
+            index = 0
             # Create a list of the program section made of tuples (command, args, index)
             loop_label = ()
             for section, instruction, numerical_value in matches:
@@ -439,24 +447,25 @@ class QbloxDraw:
                         current_section = section
                         index = 0
                     elif section not in ["setup", "main"]:
-                        loop_label += (section,)  # add the label of the loop
+                        # add the label of the loop
+                        loop_label += (section,)
                 elif instruction:
                     numerical_value = numerical_value if numerical_value else ""
                     program_parsed[current_section].append(
                         (instruction, numerical_value, loop_label, index)
-                    )  # Store index
-                    index += 1  # Increment order index
-                    for la in loop_label:  # remove the @, eg: Q1ASM has @loop_0 and we want loop_0
+                        # Store index
+                    )
+                    # Increment order index
+                    index += 1
+                    # remove the @, eg: Q1ASM has @loop_0 and we want loop_0
+                    for la in loop_label:
                         if ("@" + la) in numerical_value:
                             loop_label = tuple(l for l in loop_label if l != la)
                 sequence["program"] = program_parsed
-            del sequence[
-                "program"
-            ][
-                "main"
-            ][
+            del sequence["program"]["main"][
                 -3:
-            ]  # delete the last 3 lines of the Q1ASM that are always hardcoded - tempers with the _new flag later on if not removed here
+                # delete the last 3 lines of the Q1ASM that are always hardcoded - tempers with the _new flag later on if not removed here
+            ]
             seq_parsed_program[bus] = sequence
         return seq_parsed_program
 
@@ -489,15 +498,18 @@ class QbloxDraw:
         self.acquisition_showing = acquisition_showing
         Q1ASM_ordered = self._parse_program(
             sequencer.sequences.copy()
-        )  # (instruction, value, label of the loops, index)
+            # (instruction, value, label of the loops, index)
+        )
         data_draw = {}
         parameters = {}
         for bus, _ in Q1ASM_ordered.items():
             # Load data from the runcard or create the keys of the dict containing all paraemters (frequency, phase, offsets, gains, etc...)
             if runcard_data is not None:
                 parameters[bus] = {
-                    key: runcard_data[bus][key] for key in runcard_data[bus]
-                }  # retrieve runcard data if the qblox draw is called when a platform has been built
+                    key: runcard_data[bus][key]
+                    for key in runcard_data[bus]
+                    # retrieve runcard data if the qblox draw is called when a platform has been built
+                }
                 IF = parameters[bus]["intermediate_frequency"] * 4
                 parameters[bus]["intermediate_frequency"] = [IF]
                 parameters[bus]["sequencer_runcard_offset_i"] = parameters[bus]["offset_i"]
@@ -506,14 +518,16 @@ class QbloxDraw:
                     parameters[bus]["max_voltage"] = 2.5
                 elif parameters[bus]["instrument_name"] in {"QRM", "QRM-RF"}:
                     parameters[bus]["max_voltage"] = 0.5
-            else:  # no runcard uploaded- running qp directly
+            # no runcard uploaded- running qp directly
+            else:
                 parameters[bus] = {}
                 parameters[bus]["intermediate_frequency"] = [0]
                 parameters[bus]["sequencer_runcard_offset_i"] = [0]
                 parameters[bus]["sequencer_runcard_offset_q"] = [0]
                 parameters[bus]["dac_offset_i"] = [0]
                 parameters[bus]["dac_offset_q"] = [0]
-                parameters[bus]["hardware_modulation"] = True  # if plotting directly from qp, plot i and q
+                # if plotting directly from qp, plot i and q
+                parameters[bus]["hardware_modulation"] = True
                 parameters[bus]["max_voltage"] = 1
                 parameters[bus]["instrument_name"] = "QProgram"
             parameters[bus]["q1asm_offset_i"] = [0]
@@ -536,9 +550,11 @@ class QbloxDraw:
             wf1: list[float] = []
             wf2: list[float] = []
             param = parameters[bus]
-            instructions_ran = []  # keep track of the instructions that have been done
+            # keep track of the instructions that have been done
+            instructions_ran = []
             data_draw[bus] = [wf1, wf2]
-            label_done = []  # list to keep track of the label once they have been looped over
+            # list to keep track of the label once they have been looped over
+            label_done = []
             wf = Q1ASM_ordered[bus]["waveforms"].items()
 
             # Loop through the program to store the register and have the information on the loops
@@ -577,11 +593,14 @@ class QbloxDraw:
                             wf = Q1ASM_ordered[bus]["waveforms"].items()
                             _, value, label, _ = item
                             for la in label:
-                                if la not in label_done:  # nested loop
+                                # nested loop
+                                if la not in label_done:
                                     new_label = la
                                     result = next(
-                                        (element for element in sorted_labels if element[0] == new_label), None
-                                    )  # retrieve the start/end/variable of the new label
+                                        (element for element in sorted_labels if element[0] == new_label),
+                                        None,
+                                        # retrieve the start/end/variable of the new label
+                                    )
                                     current_idx = process_loop(result, current_idx)
                                     if parameters[bus]["time_reached"] is True:
                                         return current_idx
@@ -610,15 +629,18 @@ class QbloxDraw:
 
                 if (
                     q1asm_line[2] and q1asm_line[-1] not in instructions_ran
-                ):  # if there is a loop label and if the index has not been ran before
+                    # if there is a loop label and if the index has not been ran before
+                ):
                     index = 0
                     for x in sorted_labels:
                         if x[0] == q1asm_line[2][0]:
                             input_recursive = x
-                            break  # Stop as soon as the first match is found
+                            # Stop as soon as the first match is found
+                            break
                     process_loop(input_recursive, index)
 
-                elif q1asm_line[-1] not in instructions_ran:  # run if no loop label
+                # run if no loop label
+                elif q1asm_line[-1] not in instructions_ran:
                     self._call_handlers(q1asm_line, param, register, data_draw[bus], wf)
                     if time_window is not None and len(data_draw[bus][0]) >= time_window:
                         parameters[bus]["time_reached"] = True
@@ -700,7 +722,8 @@ class QbloxDraw:
 
             base_color = colorscale[idx]
 
-            if not parameters[key]["hardware_modulation"]:  # if hardware modulation is disabled, do not plot Q
+            # if hardware modulation is disabled, do not plot Q
+            if not parameters[key]["hardware_modulation"]:
                 sequencer_runcard_offset_i = parameters[key]["sequencer_runcard_offset_i"] * volt_bounds
                 waveform_flux = np.clip(
                     (np.array(data_draw[key][0]) + q1asm_offset_i + sequencer_runcard_offset_i + dac_offset_i),
@@ -717,7 +740,8 @@ class QbloxDraw:
                     parameters[key]["sequencer_runcard_offset_q"] * volt_bounds / np.sqrt(2),
                 )
                 wf1, wf2 = data_draw[key][0], data_draw[key][1]
-                fs = 1e9  # sampling frequency of the qblox
+                # sampling frequency of the qblox
+                fs = 1e9
                 t = np.arange(0, len(wf1)) / fs
 
                 # make freq and phase np arrays and convert from qblox values

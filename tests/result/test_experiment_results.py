@@ -13,7 +13,8 @@ import pytest
 from qililab.result.experiment_results import DimensionInfo, ExperimentResults
 from qililab.result.experiment_results_writer import ExperimentMetadata, ExperimentResultsWriter
 
-mpl.use("Agg")  # Use non-interactive backend for testing
+# Use non-interactive backend for testing
+mpl.use("Agg")
 
 
 # Dummy path for testing
@@ -150,7 +151,8 @@ class TestExperimentResults:
         experiment_results.plot_S21 = MethodType(ExperimentResults.plot_S21, experiment_results)
 
         # Mock the get method to return 1D data
-        data = np.random.rand(100, 2)  # 100 data points, real and imaginary parts
+        # 100 data points, real and imaginary parts
+        data = np.random.rand(100, 2)
         dims = [
             DimensionInfo(labels=["Frequency (Hz)"], values=[np.linspace(1e6, 1e7, 100)]),
             DimensionInfo(labels=["I/Q"], values=[]),
@@ -174,7 +176,8 @@ class TestExperimentResults:
         assert ax1.get_ylabel() == r"$|S_{21}|$"
 
         lines = ax1.get_lines()
-        assert len(lines) == 1  # Should have one line plotted
+        # Should have one line plotted
+        assert len(lines) == 1
 
         # Verify the data plotted
         x_plotted = lines[0].get_xdata()
@@ -213,7 +216,8 @@ class TestExperimentResults:
         experiment_results.plot_S21 = MethodType(ExperimentResults.plot_S21, experiment_results)
 
         # Mock the get method to return 1D data with secondary axis data
-        data = np.random.rand(100, 2)  # 100 data points, real and imaginary parts
+        # 100 data points, real and imaginary parts
+        data = np.random.rand(100, 2)
         dims = [
             DimensionInfo(
                 labels=["Frequency (Hz)", "Time (s)"], values=[np.linspace(1e6, 1e7, 100), np.linspace(0, 1, 100)]
@@ -270,7 +274,8 @@ class TestExperimentResults:
         experiment_results.plot_S21 = MethodType(ExperimentResults.plot_S21, experiment_results)
 
         # Mock the get method to return 2D data
-        data = np.random.rand(50, 50, 2)  # 50x50 data points, real and imaginary parts
+        # 50x50 data points, real and imaginary parts
+        data = np.random.rand(50, 50, 2)
         dims = [
             DimensionInfo(labels=["Frequency (Hz)"], values=[np.linspace(1e6, 1e7, 50)]),
             DimensionInfo(labels=["Voltage (V)"], values=[np.linspace(0, 1, 50)]),
@@ -341,7 +346,8 @@ class TestExperimentResults:
         experiment_results.plot_S21 = MethodType(ExperimentResults.plot_S21, experiment_results)
 
         # Mock the get method to return 2D data with secondary axis data
-        data = np.random.rand(50, 50, 2)  # 50x50 data points, real and imaginary parts
+        # 50x50 data points, real and imaginary parts
+        data = np.random.rand(50, 50, 2)
         dims = [
             DimensionInfo(
                 labels=["Frequency (Hz)", "Wavelength (m)"],
@@ -470,7 +476,8 @@ class TestExperimentResults:
         assert ax1.get_ylabel() == r"$|S_{21}|$"
 
         lines = ax1.get_lines()
-        assert len(lines) == 1  # Should have one line plotted
+        # Should have one line plotted
+        assert len(lines) == 1
 
         # Verify the data plotted
         x_plotted = lines[0].get_xdata()
@@ -516,7 +523,8 @@ class TestExperimentResultsWriter:
                 db_metadata=None,
                 db_manager=None,
             ):
-                pass  # Just initializing should create the file structure
+                # Just initializing should create the file structure
+                pass
 
         assert mock_h5file.called
         mock_h5file.assert_called_with("mock_path", mode="w", libver="latest")
@@ -574,7 +582,8 @@ class TestExperimentResultsWriter:
     @patch("qililab.result.experiment_live_plot.ExperimentLivePlot.live_plot_figures")
     def test_setitem_calls_live_plot(self, mock_figures, mock_live_plot, metadata, override_settings):
         """Test that __setitem__ calls results_liveplot.live_plot when live_plot is True"""
-        path = "test_live_plot_writer.h5"  # ✅ temp path
+        # ✅ temp path
+        path = "test_live_plot_writer.h5"
 
         with override_settings(experiment_live_plot_enabled=True, experiment_live_plot_on_slurm=False):
             with ExperimentResultsWriter(

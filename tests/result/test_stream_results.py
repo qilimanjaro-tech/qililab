@@ -1,14 +1,16 @@
 """Test StreamArray"""
 
 import copy
+import warnings
 from unittest.mock import MagicMock, patch
 
 import numpy as np
 import pytest
 from tests.data import Galadriel, SauronQuantumMachines
 
+from qililab import Domain
 from qililab.data_management import build_platform
-from qililab.qprogram import Calibration, QProgram
+from qililab.qprogram import Calibration, CrosstalkMatrix, FluxVector, QProgram
 from qililab.result import stream_results
 from qililab.result.stream_results import RawStreamArray, StreamArray
 from qililab.typings.enums import Parameter
@@ -29,6 +31,7 @@ def fixture_stream_array():
     platform = build_platform(runcard=copy.deepcopy(Galadriel.runcard))
     experiment_name = "test_stream_array"
     mock_database = MagicMock()
+    mock_database.database_schema = "measurements"
     db_manager = mock_database
 
     qprogram = QProgram()
@@ -57,6 +60,7 @@ def fixture_stream_array_qubit_idx():
     platform = build_platform(runcard=copy.deepcopy(Galadriel.runcard))
     experiment_name = "test_stream_array"
     mock_database = MagicMock()
+    mock_database.database_schema = "measurements"
     db_manager = mock_database
     qubit_idx = 1
     secondary_idx = ["1", "2"]
@@ -89,6 +93,7 @@ def fixture_stream_array_qubit_idx_bus_map():
     platform = build_platform(runcard=copy.deepcopy(Galadriel.runcard))
     experiment_name = "test_stream_array"
     mock_database = MagicMock()
+    mock_database.database_schema = "measurements"
     db_manager = mock_database
     qubit_idx = 1
     secondary_idx = ["1", "2"]
@@ -124,6 +129,7 @@ def fixture_stream_array_bus_map():
     platform = build_platform(runcard=copy.deepcopy(Galadriel.runcard))
     experiment_name = "test_stream_array"
     mock_database = MagicMock()
+    mock_database.database_schema = "measurements"
     mock_database.add_measurement.return_value.bus_mapping = {"readout_q0": "feedline_input_output_bus"}
     mock_database.add_measurement.return_value.result_path = "some/mock/path"
     db_manager = mock_database
@@ -157,6 +163,7 @@ def fixture_stream_array_not_in_platform():
     platform = build_platform(runcard=copy.deepcopy(Galadriel.runcard))
     experiment_name = "test_stream_array"
     mock_database = MagicMock()
+    mock_database.database_schema = "measurements"
     db_manager = mock_database
 
     qprogram = QProgram()
@@ -188,6 +195,7 @@ def fixture_stream_array_qm():
     platform = build_platform(runcard=copy.deepcopy(SauronQuantumMachines.runcard))
     experiment_name = "test_stream_array_qm"
     mock_database = MagicMock()
+    mock_database.database_schema = "measurements"
     db_manager = mock_database
 
     qprogram = QProgram()
@@ -216,6 +224,7 @@ def fixture_stream_array_complex():
     platform = build_platform(runcard=copy.deepcopy(Galadriel.runcard))
     experiment_name = "test_stream_array_complex"
     mock_database = MagicMock()
+    mock_database.database_schema = "measurements"
     db_manager = mock_database
 
     return StreamArray(
@@ -235,6 +244,7 @@ def fixture_stream_array_dict_loops():
     platform = build_platform(runcard=copy.deepcopy(Galadriel.runcard))
     experiment_name = "test_stream_array"
     mock_database = MagicMock()
+    mock_database.database_schema = "measurements"
     db_manager = mock_database
 
     return StreamArray(
@@ -303,7 +313,8 @@ class TestStreamArray:
                 assert stream_array.loops == {"test_amp_loop": np.arange(0, 1, 2)}
                 assert stream_array._get_debug() == debug_q1asm
 
-                stream_array.platform.buses.elements = []  # Testing no qblox machines in buses
+                # Testing no qblox machines in buses
+                stream_array.platform.buses.elements = []
                 assert stream_array._get_debug() == "Non Qblox machine."
 
     def test_stream_array_instantiation_bus_map(self, stream_array_bus_map: StreamArray):
@@ -338,7 +349,7 @@ class TestStreamArray:
                 assert stream_array_qubit_idx_bus_map._get_debug() == debug_q1asm
                 assert stream_array_qubit_idx_bus_map._get_index_list(stream_array_qubit_idx_bus_map.qubit_idx) == ["1"]
                 assert stream_array_qubit_idx_bus_map._get_index_list(stream_array_qubit_idx_bus_map.second_idx) == ["1", "2"]
-    
+
     def test_stream_array_instantiation_qubit_idx_raises_debug_error(self, stream_array_qubit_idx: StreamArray):
         """Tests the instantiation of a StreamArray object with target and secondary indexes."""
         # Create mock for the file context
@@ -375,7 +386,7 @@ class TestStreamArray:
 
     def test_stream_array_autocalibration(self, stream_array: StreamArray):
         """Tests the instantiation of a StreamArray object."""
-        stream_array.autocalibration = True
+        stream_array.db_manager.database_schema = "autocal"
 
         calibration = Calibration()
         calibration.parameters = {"sample_name": "sampleA", "cooldown": "cdX", "base_path": "/shared_test/"}
@@ -411,7 +422,7 @@ class TestStreamArray:
     def test_stream_array_autocalibration_no_calibration_file_rises_error(self, stream_array: StreamArray):
         """Tests the instantiation of a StreamArray object."""
         # Create mock for the file context
-        stream_array.autocalibration = True
+        stream_array.db_manager.database_schema = "autocal"
 
         with patch("h5py.File") as mock_h5file:
             mock_file = MagicMock()
@@ -424,6 +435,40 @@ class TestStreamArray:
                     stream_array[0, 0] = [1]
         assert isinstance(excinfo.value.__cause__, ValueError)
         assert "For autocalibration a Calibration file is mandatory." in str(excinfo.value.__cause__)
+
+    def test_stream_array_autocal_schema_uses_autocal_measurement(self, stream_array: StreamArray):
+        """A db_manager with the autocal schema saves to the autocalibration table, without the deprecated flag."""
+        stream_array.db_manager.database_schema = "autocal"
+        calibration = Calibration()
+        calibration.parameters = {"sample_name": "sampleA", "cooldown": "cdX", "base_path": "/shared_test/"}
+        stream_array.calibration = calibration
+
+        with patch("h5py.File"):
+            with stream_array:
+                pass
+
+        stream_array.db_manager.add_autocal_measurement.assert_called_once()
+        stream_array.db_manager.add_measurement.assert_not_called()
+
+    def test_stream_array_measurements_schema_uses_measurement(self, stream_array: StreamArray):
+        """A db_manager with the measurements schema saves to the measurements table."""
+        with patch("h5py.File"):
+            with stream_array:
+                pass
+
+        stream_array.db_manager.add_measurement.assert_called_once()
+        stream_array.db_manager.add_autocal_measurement.assert_not_called()
+
+    def test_stream_array_qaas_schema_raises_error(self, stream_array: StreamArray):
+        """StreamArray cannot save to the qaas schema."""
+        stream_array.db_manager.database_schema = "qaas"
+
+        with patch("h5py.File"):
+            with pytest.raises(RuntimeError, match="An error occurred while creating the StreamArray.") as excinfo:
+                with stream_array:
+                    pass
+        assert isinstance(excinfo.value.__cause__, ValueError)
+        assert "cannot save to the 'qaas' database schema" in str(excinfo.value.__cause__)
 
     def test_stream_array_uses_platform_calibration_in_measurement(self, stream_array: StreamArray):
         """The platform-level calibration lands in the add_measurement entry without being passed to StreamArray."""
@@ -470,7 +515,7 @@ class TestStreamArray:
         calibration = Calibration()
         calibration.parameters = {"sample_name": "sampleA", "cooldown": "cdX", "base_path": "/shared_test/"}
         stream_array.platform.set_calibration(calibration)
-        stream_array.autocalibration = True
+        stream_array.db_manager.database_schema = "autocal"
         assert stream_array.calibration is None
 
         with patch("h5py.File") as mock_h5file:
@@ -579,7 +624,6 @@ class TestStreamArray:
                 assert 1.0 + 1.0j in stream_array_complex
                 assert (stream_array_complex[0] == 1.0 + 1.0j).all
 
-
     def test_add_fitting(self, stream_array: StreamArray):
         """Tests that add_fitting delegates to the measurement injecting the db session."""
         mock_measurement = MagicMock()
@@ -603,14 +647,140 @@ class TestStreamArray:
         ):
             stream_array.add_fitting(path="/test/fit.h5")
 
-    def test_add_fitting_raises_not_implemented_autocalibration(self, stream_array: StreamArray):
-        """Tests that add_fitting is not supported for autocalibration measurements."""
-        stream_array.measurement = MagicMock()
-        stream_array.autocalibration = True
-        with pytest.raises(
-            NotImplementedError, match="Autocalibration fitting management does not depend on StreamArray."
-        ):
-            stream_array.add_fitting(path="/test/fit.h5")
+    def test_add_fitting_autocalibration(self, stream_array: StreamArray):
+        """Tests that add_fitting delegates to the autocalibration measurement injecting the db session."""
+        mock_measurement = MagicMock()
+        updated_measurement = MagicMock()
+        mock_measurement.add_fitting.return_value = updated_measurement
+        stream_array.measurement = mock_measurement
+        stream_array.db_manager.database_schema = "autocal"
+
+        result = stream_array.add_fitting(path="/test/fit.h5", parameters={"a": 1.0})
+
+        mock_measurement.add_fitting.assert_called_once_with(stream_array.db_manager, "/test/fit.h5", {"a": 1.0})
+        assert stream_array.measurement == updated_measurement
+        assert result == updated_measurement
+
+
+def _calibration_with_crosstalk(buses: list[str]) -> Calibration:
+    """Calibration whose crosstalk matrix contains the given buses."""
+    crosstalk = CrosstalkMatrix()
+    crosstalk.matrix = {bus: {other: 1.0 for other in buses} for bus in buses}
+    calibration = Calibration()
+    calibration.crosstalk_matrix = crosstalk
+    return calibration
+
+
+def _qprogram_with_offsets(offsets: list[tuple[str, float]]) -> QProgram:
+    """QProgram with a constant ``set_offset`` per (bus, value) entry (duplicates allowed)."""
+    qprogram = QProgram()
+    for bus, value in offsets:
+        qprogram.set_offset(bus, value)
+    return qprogram
+
+
+class TestFluxOffsets:
+    """Test `_get_qprogram_flux_vector` and `_get_flux_offsets`."""
+
+    def test_qprogram_flux_vector_single_scalar_in_crosstalk(self, stream_array: StreamArray):
+        """Each crosstalk bus offset once by a scalar is returned as a float."""
+        stream_array.calibration = _calibration_with_crosstalk(["flux_q0", "flux_q1"])
+        stream_array.qprogram = _qprogram_with_offsets([("flux_q0", 0.15), ("flux_q1", 0)])
+
+        assert stream_array._get_qprogram_flux_vector() == {"flux_q0": 0.15, "flux_q1": 0.0}
+
+    def test_qprogram_flux_vector_reads_nested_blocks(self, stream_array: StreamArray):
+        """Offsets set inside nested blocks are collected."""
+        stream_array.calibration = _calibration_with_crosstalk(["flux_q0", "flux_q1"])
+        qprogram = QProgram()
+        qprogram.set_offset("flux_q0", 0.15)
+        with qprogram.average(shots=10):
+            qprogram.set_offset("flux_q1", 0.2)
+        stream_array.qprogram = qprogram
+
+        assert stream_array._get_qprogram_flux_vector() == {"flux_q0": 0.15, "flux_q1": 0.2}
+
+    def test_qprogram_flux_vector_duplicate_bus_returns_empty(self, stream_array: StreamArray):
+        """A crosstalk bus offset more than once makes the whole flux vector empty."""
+        stream_array.calibration = _calibration_with_crosstalk(["flux_q0", "flux_q1"])
+        stream_array.qprogram = _qprogram_with_offsets([("flux_q0", 0.15), ("flux_q0", 0.4), ("flux_q1", 0.2)])
+
+        assert stream_array._get_qprogram_flux_vector() == {}
+
+    def test_qprogram_flux_vector_ignores_non_crosstalk_bus(self, stream_array: StreamArray):
+        """Offsets on buses absent from the crosstalk matrix are ignored, even if duplicated."""
+        stream_array.calibration = _calibration_with_crosstalk(["flux_q0", "flux_q1"])
+        stream_array.qprogram = _qprogram_with_offsets([("flux_q0", 0.15), ("flux_q9", 1.0), ("flux_q9", 2.0)])
+
+        assert stream_array._get_qprogram_flux_vector() == {"flux_q0": 0.15}
+
+    def test_qprogram_flux_vector_excludes_swept_offset(self, stream_array: StreamArray):
+        """A bus offset by a swept variable is left out while scalar buses remain."""
+        stream_array.calibration = _calibration_with_crosstalk(["flux_q0", "flux_q1"])
+        qprogram = QProgram()
+        qprogram.set_offset("flux_q0", 0.15)
+        variable = qprogram.variable("amp", Domain.Voltage)
+        with qprogram.for_loop(variable=variable, start=0, stop=1, step=0.1):
+            qprogram.set_offset("flux_q1", variable)
+        stream_array.qprogram = qprogram
+
+        assert stream_array._get_qprogram_flux_vector() == {"flux_q0": 0.15}
+
+    def test_qprogram_flux_vector_no_crosstalk_matrix_returns_empty(self, stream_array: StreamArray):
+        """Without a crosstalk matrix the qprogram flux vector is empty."""
+        stream_array.calibration = Calibration()
+        stream_array.qprogram = _qprogram_with_offsets([("flux_q0", 0.15)])
+
+        assert stream_array._get_qprogram_flux_vector() == {}
+
+    def test_qprogram_flux_vector_no_calibration_returns_empty(self, stream_array: StreamArray):
+        """Without a calibration the qprogram flux vector is empty."""
+        stream_array.calibration = None
+        stream_array.qprogram = _qprogram_with_offsets([("flux_q0", 0.15)])
+
+        assert stream_array._get_qprogram_flux_vector() == {}
+
+    def test_flux_offsets_sums_platform_and_qprogram(self, stream_array: StreamArray):
+        """Platform and qprogram flux vectors are summed over the union of buses."""
+        stream_array.calibration = _calibration_with_crosstalk(["flux_q0", "flux_q1"])
+        stream_array.qprogram = _qprogram_with_offsets([("flux_q0", 0.15), ("flux_q1", 0.2)])
+        stream_array.platform.flux_vector = FluxVector.from_dict({"flux_q1": 0.05, "flux_q4": 0.5})
+
+        assert stream_array._get_flux_offsets() == {"flux_q0": 0.15, "flux_q1": 0.25, "flux_q4": 0.5}
+
+    def test_flux_offsets_does_not_mutate_platform_flux_vector(self, stream_array: StreamArray):
+        """Summing must not mutate the platform's flux vector dictionary."""
+        stream_array.calibration = _calibration_with_crosstalk(["flux_q1"])
+        stream_array.qprogram = _qprogram_with_offsets([("flux_q1", 0.2)])
+        stream_array.platform.flux_vector = FluxVector.from_dict({"flux_q1": 0.05})
+
+        stream_array._get_flux_offsets()
+
+        assert stream_array.platform.flux_vector.flux_vector == {"flux_q1": 0.05}
+
+    def test_flux_offsets_platform_only(self, stream_array: StreamArray):
+        """With no qualifying qprogram offsets the platform flux vector is returned as-is."""
+        stream_array.calibration = _calibration_with_crosstalk(["flux_q0"])
+        stream_array.qprogram = QProgram()
+        stream_array.platform.flux_vector = FluxVector.from_dict({"flux_q4": 0.5})
+
+        assert stream_array._get_flux_offsets() == {"flux_q4": 0.5}
+
+    def test_flux_offsets_qprogram_only(self, stream_array: StreamArray):
+        """With no platform flux vector the qprogram flux vector is returned."""
+        stream_array.calibration = _calibration_with_crosstalk(["flux_q0"])
+        stream_array.qprogram = _qprogram_with_offsets([("flux_q0", 0.15)])
+        stream_array.platform.flux_vector = None
+
+        assert stream_array._get_flux_offsets() == {"flux_q0": 0.15}
+
+    def test_flux_offsets_returns_none_when_both_empty(self, stream_array: StreamArray):
+        """None is returned when neither source contributes a flux offset."""
+        stream_array.calibration = _calibration_with_crosstalk(["flux_q0"])
+        stream_array.qprogram = QProgram()
+        stream_array.platform.flux_vector = None
+
+        assert stream_array._get_flux_offsets() is None
 
 
 class TestRawStreamArray:
@@ -665,3 +835,51 @@ class TestRawStreamArray:
         assert sum(1 for _ in iter(stream_results)) == 2
         assert str(stream_results) == "[[[1.+1.j]\n  [2.+2.j]]\n\n [[3.+3.j]\n  [4.+4.j]]]"
         assert (stream_results[0] == [1.0 + 1.0j, 2.0 + 2.0j]).all
+
+
+class TestStreamArrayDeprecated:
+    """Deprecated ``autocalibration`` flag, remove together with it."""
+
+    @pytest.mark.parametrize("autocalibration", [True, False])
+    def test_stream_array_autocalibration_flag_is_deprecated(self, autocalibration: bool):
+        """Passing the autocalibration flag, True or False, raises a FutureWarning."""
+        db_manager = MagicMock()
+        with pytest.warns(FutureWarning, match="`autocalibration` is deprecated"):
+            StreamArray(
+                shape=(2, 2),
+                loops={"test_amp_loop": AMP_VALUES},
+                experiment_name="test_stream_array",
+                db_manager=db_manager,
+                autocalibration=autocalibration,
+            )
+
+    def test_stream_array_without_autocalibration_flag_does_not_warn(self):
+        """Not passing the autocalibration flag raises no FutureWarning."""
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", FutureWarning)
+            stream_array = StreamArray(
+                shape=(2, 2),
+                loops={"test_amp_loop": AMP_VALUES},
+                experiment_name="test_stream_array",
+                db_manager=MagicMock(),
+            )
+        assert stream_array.autocalibration is None
+
+    @pytest.mark.parametrize(
+        ("autocalibration", "database_schema"), [(True, "measurements"), (False, "autocal")], ids=["true", "false"]
+    )
+    def test_stream_array_autocalibration_flag_mismatching_schema_raises_error(
+        self, stream_array: StreamArray, autocalibration: bool, database_schema: str
+    ):
+        """The deprecated flag must match the db_manager schema, it does not select the table."""
+        stream_array.db_manager.database_schema = database_schema
+        stream_array.autocalibration = autocalibration
+
+        with patch("h5py.File"):
+            with pytest.raises(RuntimeError, match="An error occurred while creating the StreamArray.") as excinfo:
+                with stream_array:
+                    pass
+        assert isinstance(excinfo.value.__cause__, ValueError)
+        assert f"needs a db_manager with database_schema=" in str(excinfo.value.__cause__)
+        stream_array.db_manager.add_measurement.assert_not_called()
+        stream_array.db_manager.add_autocal_measurement.assert_not_called()

@@ -218,11 +218,13 @@ class QuantumMachinesCluster(Instrument):
                 octaves[octave["name"]]["RF_inputs"] = {}
                 for rf_output in octave.get("rf_outputs", []):
                     octaves[octave["name"]]["RF_outputs"][rf_output["port"]] = {
-                        "LO_frequency": rf_output["lo_frequency"],  # Should be between 2 and 18 GHz.
+                        # Should be between 2 and 18 GHz.
+                        "LO_frequency": rf_output["lo_frequency"],
                         "LO_source": "internal",
                         "gain": rf_output["gain"] if "gain" in rf_output else 0.0,
                         "output_mode": "always_on",
-                        "input_attenuators": "OFF",  # can be: "OFF" / "ON". Default is "OFF".
+                        # can be: "OFF" / "ON". Default is "OFF".
+                        "input_attenuators": "OFF",
                     }
                     if "i_connection" in rf_output:
                         octaves[octave["name"]]["RF_outputs"][rf_output["port"]]["I_connection"] = (
@@ -248,8 +250,10 @@ class QuantumMachinesCluster(Instrument):
                     octaves[octave["name"]]["RF_inputs"][rf_input["port"]] = {
                         "RF_source": "RF_in",
                         "LO_frequency": rf_input["lo_frequency"],
-                        "LO_source": "internal",  # can be: "internal" / "external". Default is "internal".
-                        "IF_mode_I": "direct",  # can be: "direct" / "mixer" / "envelope" / "off". Default is "direct".
+                        # can be: "internal" / "external". Default is "internal".
+                        "LO_source": "internal",
+                        # can be: "direct" / "mixer" / "envelope" / "off". Default is "direct".
+                        "IF_mode_I": "direct",
                         "IF_mode_Q": "direct",
                     }
                 if "loopbacks" in octave:
@@ -421,7 +425,8 @@ class QuantumMachinesCluster(Instrument):
     settings: QuantumMachinesClusterSettings
     device: QMMDriver
     _qmm: QuantumMachinesManager
-    _qm: QuantumMachine  # TODO: Change private QM API to public when implemented.
+    # TODO: Change private QM API to public when implemented.
+    _qm: QuantumMachine
     _config: DictQuaConfig
     _octave_config: QmOctaveConfig | None = None
     _is_connected_to_qm: bool = False

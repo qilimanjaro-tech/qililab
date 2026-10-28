@@ -17,6 +17,5 @@
 from qprogram.exceptions import VariableAllocated
 
 from .data_unavailable import DataUnavailable
-from .exception_group import ExceptionGroup
 
-__all__ = ["DataUnavailable", "ExceptionGroup", "VariableAllocated"]
+__all__ = ["DataUnavailable", "VariableAllocated"]

@@ -12,7 +12,8 @@ import pytest
 from qililab.result.experiment_live_plot import ExperimentLivePlot
 from qililab.result.experiment_results_writer import ExperimentMetadata, ExperimentResultsWriter
 
-mpl.use("Agg")  # Use non-interactive backend for testing
+# Use non-interactive backend for testing
+mpl.use("Agg")
 
 
 # Dummy path for testing
@@ -249,7 +250,8 @@ class TestExperimentLivePlot:
             live_plot.live_plot(raw_data, "QProgram_0", "Measurement_0")
 
         assert heatmap.z is not None
-        assert heatmap.z.shape == (2, 2) or heatmap.z.T.shape == (2, 2)  # just to be safe
+        # just to be safe
+        assert heatmap.z.shape == (2, 2) or heatmap.z.T.shape == (2, 2)
 
         mock_write.assert_called_once()
 
@@ -268,7 +270,8 @@ class TestExperimentResultsWriterLivePlot:
                 db_metadata=None,
                 db_manager=None,
             ):
-                pass  # Just initializing should create the file structure
+                # Just initializing should create the file structure
+                pass
 
         # test ExperimentLivePlot call
         mocker_live_plot_figures.assert_called_once()

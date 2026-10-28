@@ -1,4 +1,5 @@
 import logging
+import re
 from unittest.mock import MagicMock, patch
 
 import numpy as np
@@ -8,11 +9,27 @@ from qililab.instruments import Instrument, Instruments
 from qililab.instruments.qdevil.qdevil_qdac2 import QDevilQDac2
 from qililab.platform import Bus
 from qililab.qprogram import Calibration, QdacCompiler, QProgram
-from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
-from qililab.qprogram.blocks import ForLoop, Loop
+from qililab.qprogram.blocks import Block, ForLoop, Loop
+from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix, NonLinearCrosstalkMatrix
+from qililab.qprogram.operations import Play
 from qililab.qprogram.qdac_compiler import QdacCompilationOutput
 from qililab.core import Domain
 from qililab.waveforms import Square, Arbitrary, IQPair
+
+
+def _collect_plays(block: Block) -> dict:
+    """Collect the (last) Play element per bus from a possibly nested compiled QProgram block."""
+    plays: dict = {}
+
+    def _walk(blk: Block) -> None:
+        for element in blk.elements:
+            if isinstance(element, Play):
+                plays[element.bus] = element
+            if isinstance(element, Block):
+                _walk(element)
+
+    _walk(block)
+    return plays
 
 
 @pytest.fixture(name="qdac_instrument")
@@ -261,7 +278,8 @@ class TestQdacCompiler:
         assert compiler._trigger_position == None
 
         assert qdac_bus.set_end_marker_internal_trigger.call_count == 1
-        assert qdac_bus.upload_voltage_list.call_count == 12  # accumulative with last calls
+        # accumulative with last calls
+        assert qdac_bus.upload_voltage_list.call_count == 12
 
         # Setting internal trigger at the beginning of each step
         qp = QProgram()
@@ -307,7 +325,8 @@ class TestQdacCompiler:
 
         # Simulate that flux1 (channel 1) already has a cached DC list on the instrument
         qdac.device.name = "qdac"
-        qdac._cache_dc = {"qdac_1": MagicMock()}  # "qdac_1" = device.name + "_" + channel of flux1
+        # "qdac_1" = device.name + "_" + channel of flux1
+        qdac._cache_dc = {"qdac_1": MagicMock()}
 
         qp = QProgram()
         qp.qdac.play(bus="flux1", waveform=pulse_wf, dwell=dwell_us)
@@ -540,6 +559,69 @@ class TestQdacCompiler:
 
         assert qdac_bus.upload_voltage_list.call_count == 2
         assert qdac_bus.set_parameter.call_count == 0
+
+    def test_crosstalk_compensation_target_fluxes(self, qdac: QDevilQDac2, flux1: Bus, flux2: Bus):
+        """Regression (QDAC-ramp double-count): the compiler seeds the parked point from
+        ``target_fluxes`` (not by inverting the hardware bias), so a non-swept bus's compensated
+        play equals the forward flux_to_bias of its true target — the nonlinear correction applied
+        exactly once. ``flux2`` is parked ONLY via target_fluxes (no operation in the program)."""
+        crosstalk = CrosstalkMatrix.from_array(["flux1", "flux2"], np.linalg.inv([[1, 0.5], [0.5, 1]]))
+        nonlinear = NonLinearCrosstalkMatrix.from_linear(crosstalk)
+        nonlinear.set_non_linear_params("flux2", "flux1", junction_asym=0.2)
+
+        ramp = np.array([0.0, 0.1, 0.2, 0.3, 0.2, 0.1, 0.0])
+        qp = QProgram()
+        with qp.average(10):
+            qp.qdac.play(bus="flux1", waveform=Arbitrary(ramp), dwell=2)  # swept bus
+            qp.set_trigger(bus="flux1", duration=10e-6, outputs=1, position="start")
+
+        compiler = QdacCompiler()
+        output = compiler.compile(
+            qprogram=qp,
+            qdacs=[qdac],
+            qdac_buses=[flux1, flux2],
+            qdac_offsets=[0, 0],
+            crosstalk=nonlinear,
+            target_fluxes={"flux1": 0.0, "flux2": 0.1},
+        )
+
+        plays = _collect_plays(output.qprogram.body)
+        assert {"flux1", "flux2"} <= set(plays)
+        got2 = np.asarray(plays["flux2"].waveform.envelope(), dtype=float)
+        for i, v in enumerate(ramp):
+            ref = nonlinear.flux_to_bias({"flux1": float(v), "flux2": 0.1})  # flux2 held at its target
+            assert got2[i] == pytest.approx(float(ref["flux2"]), rel=1e-9, abs=1e-12)
+
+    def test_crosstalk_compensation_target_fluxes_fallback_to_voltage(
+        self, qdac: QDevilQDac2, flux1: Bus, flux2: Bus
+    ):
+        """When no target flux is given, the compiler recovers the parked flux from the hardware
+        bias voltage (qdac_offsets) via the linear inversion (original behaviour)."""
+        crosstalk = CrosstalkMatrix.from_array(["flux1", "flux2"], np.linalg.inv([[1, 0.5], [0.5, 1]]))
+        # flux2 parked at 0.1 -> its bias voltage; qdac_offsets is ordered like qdac_buses [flux1, flux2]
+        bias = crosstalk.flux_to_bias({"flux1": 0.0, "flux2": 0.1})
+        qdac_offsets = [float(bias["flux1"]), float(bias["flux2"])]
+
+        ramp = np.array([0.0, 0.1, 0.2, 0.3, 0.2, 0.1, 0.0])
+        qp = QProgram()
+        with qp.average(10):
+            qp.qdac.play(bus="flux1", waveform=Arbitrary(ramp), dwell=2)  # swept bus
+            qp.set_trigger(bus="flux1", duration=10e-6, outputs=1, position="start")
+
+        compiler = QdacCompiler()
+        output = compiler.compile(
+            qprogram=qp,
+            qdacs=[qdac],
+            qdac_buses=[flux1, flux2],
+            qdac_offsets=qdac_offsets,
+            crosstalk=crosstalk,
+        )  # no target_fluxes -> fallback to voltage recovery
+
+        plays = _collect_plays(output.qprogram.body)
+        got2 = np.asarray(plays["flux2"].waveform.envelope(), dtype=float)
+        for i, v in enumerate(ramp):
+            ref = crosstalk.flux_to_bias({"flux1": float(v), "flux2": 0.1})  # flux2 recovered as 0.1 from its bias
+            assert got2[i] == pytest.approx(float(ref["flux2"]), rel=1e-9, abs=1e-12)
 
     def test_different_size_plays_raises_error(self, qdac: QDevilQDac2, flux1: Bus, flux2: Bus):
         """Test all possible combinations of play + set_trigger on the QDACII."""
@@ -876,6 +958,38 @@ class TestQdacCompiler:
         qp = QProgram()
         with qp.block():
             qp.qdac.play(bus="flux1", waveform=pulse_wf, dwell=dwell_us)
+
+        compiler = QdacCompiler()
+        compiler.compile(qprogram=qp, qdacs=[qdac], qdac_buses=[flux1], qdac_offsets=[0])
+
+        assert qdac_bus.upload_voltage_list.call_count == 1
+
+    def test_conditional_qdac_op_inside_if_trigger_raises_error(self, qdac: QDevilQDac2, flux1: Bus):
+        """A QDAC-bus operation cannot be placed inside qp.if_trigger(): QDAC generates the external trigger
+        and has no way to conditionally gate on whether that same trigger was received on the Qblox side."""
+        qp = QProgram()
+        with qp.if_trigger(expected_wait_time_ns=1000):
+            qp.qdac.play(bus="flux1", waveform=Square(1.0, 100))
+
+        compiler = QdacCompiler()
+        with pytest.raises(
+            NotImplementedError,
+            match=re.escape(
+                "Play on QDAC bus 'flux1' cannot be used inside qp.if_trigger(): QDAC has no way to conditionally "
+                "gate on the external trigger it generates."
+            ),
+        ):
+            compiler.compile(qprogram=qp, qdacs=[qdac], qdac_buses=[flux1], qdac_offsets=[0])
+
+    def test_bare_sync_inside_if_trigger_is_allowed(self, qdac: QDevilQDac2, flux1: Bus):
+        """A qp.sync() without buses inside qp.if_trigger() doesn't target any QDAC bus, so it must not raise."""
+        qdac_bus = flux1.instruments[0]
+
+        qp = QProgram()
+        qp.qdac.play(bus="flux1", waveform=Square(1.0, 100), dwell=2)
+        with qp.if_trigger(expected_wait_time_ns=1000):
+            qp.qblox.acquire(bus="readout", weights=IQPair(I=Square(1.0, 100), Q=Square(0.0, 100)))
+            qp.sync()
 
         compiler = QdacCompiler()
         compiler.compile(qprogram=qp, qdacs=[qdac], qdac_buses=[flux1], qdac_offsets=[0])

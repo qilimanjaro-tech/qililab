@@ -20,7 +20,6 @@ import numpy as np
 
 from qililab.qililab_settings import get_settings
 from qililab.result.database import DatabaseManager
-from qililab.result.experiment_live_plot import ExperimentLivePlot
 from qililab.result.experiment_results import ExperimentResults
 
 
@@ -171,7 +170,8 @@ class ExperimentResultsWriter(ExperimentResults):
                     label, values = variable["label"], variable["values"]
                     loop = qloop_group.create_dataset(label, data=values)
                     loop.dims[0].label = label
-                    loop.make_scale(label)  # Register as dimension scale
+                    # Register as dimension scale
+                    loop.make_scale(label)
 
                 # Write measurements
                 measurement_group = qgroup.create_group(ExperimentResults.MEASUREMENTS_PATH)
@@ -187,7 +187,8 @@ class ExperimentResultsWriter(ExperimentResults):
                         label, values = variable["label"], variable["values"]
                         loop = mloop_group.create_dataset(label, data=values)
                         loop.dims[0].label = label
-                        loop.make_scale(label)  # Register as dimension scale
+                        # Register as dimension scale
+                        loop.make_scale(label)
 
                     # Create the results dataset
                     results_ds = mgroup.create_dataset(ExperimentResults.RESULTS_PATH, shape=measurement_data["shape"])
@@ -211,6 +212,8 @@ class ExperimentResultsWriter(ExperimentResults):
 
             # Generate live plot figures
             if self._live_plot_true:
+                from qililab.result.experiment_live_plot import ExperimentLivePlot
+
                 self.results_liveplot = ExperimentLivePlot(self.path, self._slurm_execution, self._port_number)
                 self.results_liveplot.live_plot_figures(dims_dict)
 

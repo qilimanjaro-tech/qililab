@@ -555,7 +555,8 @@ def test_wait_for_averaging_raises_timeout(monkeypatch, e5080b):
     e5080b.device.operation_status.get.return_value = 0
 
     # 4) Make time.time() jump past the timeout on the first loop iteration
-    times = iter([0.0, 2.0])  # start_time = 0.0, then time.time() = 2.0 > timeout=1.0
+    # start_time = 0.0, then time.time() = 2.0 > timeout=1.0
+    times = iter([0.0, 2.0])
     monkeypatch.setattr(f"{MODULE_PATH}.time.time", lambda: next(times))
 
     # 5) Should raise a TimeoutError with the right message

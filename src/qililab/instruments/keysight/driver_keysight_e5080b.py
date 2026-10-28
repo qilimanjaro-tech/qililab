@@ -13,7 +13,6 @@
 # limitations under the License.
 
 # This file is meant to be qcode
-import time
 from typing import Any
 
 import numpy as np
@@ -27,9 +26,6 @@ class Driver_KeySight_E5080B(VisaInstrument):
     """
     This is the qcodes driver for the Keysight E5080B Vector Network Analyzer
     """
-
-    # Required sleep to ensure the instruments can start being queried - NOT HAPPY WITH THIS, does this wait every time or just at the connexion, needs to be tested
-    time.sleep(5)
 
     def __init__(self, name: str, address: str, **kwargs: Any) -> None:
         super().__init__(name, address, terminator="\n", **kwargs)
@@ -344,5 +340,6 @@ class Driver_KeySight_E5080B(VisaInstrument):
 
     def get_frequencies(self):
         """return freqpoints"""
-        self.format_data("REAL,64")  # recommended to avoid frequency rounding errors
+        # recommended to avoid frequency rounding errors
+        self.format_data("REAL,64")
         return np.array(self.visa_handle.query_binary_values("CALC:MEAS:X?"))

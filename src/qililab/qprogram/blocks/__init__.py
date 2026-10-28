@@ -14,8 +14,9 @@
 
 from qprogram.blocks import Average, Block, ForLoop
 
+from .conditional import Conditional
 from .infinite_loop import InfiniteLoop
 from .loop import Loop
 from .parallel import Parallel
 
-__all__ = ["Average", "Block", "ForLoop", "InfiniteLoop", "Loop", "Parallel"]
+__all__ = ["Average", "Block", "Conditional", "ForLoop", "InfiniteLoop", "Loop", "Parallel"]

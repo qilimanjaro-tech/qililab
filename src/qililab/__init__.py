@@ -29,7 +29,7 @@ from .config import logger
 from .data_management import build_platform, save_platform
 from .core import Domain
 from .qprogram import Calibration, CrosstalkMatrix, QProgram, Experiment, QbloxCompiler, QdacCompiler
-from .platform import Platform
+from .platform import Platform, Session
 from .result import ExperimentResults, load_by_id, stream_results
 from .typings import Parameter
 from .utils.serialization import serialize, serialize_to, deserialize, deserialize_from
@@ -47,13 +47,10 @@ from .waveforms import (
     Chained,
 )
 
-# moving circuit_transpiler module imports here because it has instruments module dependencies so circular imports can be avoided
-from .analog import AnnealingProgram
 from .result import Cooldown, DatabaseManager, Sample, get_db_manager, load_results, save_results, Measurement
 from .qililab_settings import get_settings
 
 __all__ = [
-    "AnnealingProgram",
     "Arbitrary",
     "Calibration",
     "Chained",
@@ -76,6 +73,7 @@ __all__ = [
     "QdacCompiler",
     "Ramp",
     "Sample",
+    "Session",
     "Square",
     "SuddenNetZero",
     "Waveform",

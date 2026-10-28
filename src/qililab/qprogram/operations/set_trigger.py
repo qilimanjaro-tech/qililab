@@ -21,10 +21,10 @@ from . import Operation
 @yaml.register_class
 class SetTrigger(Operation):
     def __init__(
-        self, bus: str, duration: int, outputs: list[int] | int | None = None, position: str = "start"
+        self, bus: str, duration: float, outputs: list[int] | int | None = None, position: str = "start"
     ) -> None:
         super().__init__()
         self.bus: str = bus
-        self.duration: int = duration
+        self.duration: float = duration
         self.outputs: list[int] | int | None = outputs
         self.position: str = position

@@ -1,6 +1,7 @@
 """Module containing utilities for the tests."""
 
 import copy
+import math
 from unittest.mock import MagicMock, patch
 
 import numpy as np
@@ -108,6 +109,82 @@ def compare_pair_of_arrays(
     path0_ok = all(np.isclose(pair_a[0], pair_b[0], atol=tolerance))
     path1_ok = all(np.isclose(pair_a[1], pair_b[1], atol=tolerance))
     return path0_ok and path1_ok
+
+
+def compare_objects(obj1, obj2, path="root", depth=0, max_depth=10) -> tuple[bool, list[str]]:
+    """Recursively compare two objects' properties up to a maximum depth.
+
+    Args:
+        obj1: First object.
+        obj2: Second object.
+        path (str): Path of the current branch, used to locate differences in the report.
+        depth (int): Current recursion depth.
+        max_depth (int): Depth beyond which branches are considered equal.
+
+    Returns:
+        tuple[bool, list[str]]: True if the objects are equal, and the list of differences found.
+    """
+    differences = []
+
+    if depth > max_depth:
+        return True, []
+
+    if type(obj1) is not type(obj2):
+        differences.append(f"{path}: type mismatch ({type(obj1).__name__} vs {type(obj2).__name__})")
+        return False, differences
+
+    # Numpy arrays would reach the fallback below as element-wise comparisons and raise on `!=`.
+    if isinstance(obj1, np.ndarray):
+        if obj1.dtype != obj2.dtype:
+            differences.append(f"{path}: dtype mismatch ({obj1.dtype} vs {obj2.dtype})")
+        if obj1.shape != obj2.shape:
+            differences.append(f"{path}: shape mismatch ({obj1.shape} vs {obj2.shape})")
+        elif not np.array_equal(obj1, obj2, equal_nan=np.issubdtype(obj1.dtype, np.floating)):
+            differences.append(f"{path}: {obj1!r} != {obj2!r}")
+        return len(differences) == 0, differences
+
+    if isinstance(obj1, (int, float, complex, str, bool, bytes, type(None))):
+        if isinstance(obj1, float) and math.isnan(obj1) and math.isnan(obj2):
+            return True, differences
+        if obj1 != obj2:
+            differences.append(f"{path}: {obj1!r} != {obj2!r}")
+        return obj1 == obj2, differences
+
+    if isinstance(obj1, (list, tuple)):
+        if len(obj1) != len(obj2):
+            differences.append(f"{path}: length mismatch ({len(obj1)} vs {len(obj2)})")
+        for i, (a, b) in enumerate(zip(obj1, obj2)):
+            _, diffs = compare_objects(a, b, path=f"{path}[{i}]", depth=depth + 1, max_depth=max_depth)
+            differences.extend(diffs)
+        return len(differences) == 0, differences
+
+    if isinstance(obj1, dict):
+        keys1, keys2 = set(obj1.keys()), set(obj2.keys())
+        for k in keys1 - keys2:
+            differences.append(f"{path}[{k!r}]: key only in first object")
+        for k in keys2 - keys1:
+            differences.append(f"{path}[{k!r}]: key only in second object")
+        for k in keys1 & keys2:
+            _, diffs = compare_objects(obj1[k], obj2[k], path=f"{path}[{k!r}]", depth=depth + 1, max_depth=max_depth)
+            differences.extend(diffs)
+        return len(differences) == 0, differences
+
+    if hasattr(obj1, "__dict__"):
+        attrs1, attrs2 = set(vars(obj1).keys()), set(vars(obj2).keys())
+        for attr in attrs1 - attrs2:
+            differences.append(f"{path}.{attr}: attribute only in first object")
+        for attr in attrs2 - attrs1:
+            differences.append(f"{path}.{attr}: attribute only in second object")
+        for attr in attrs1 & attrs2:
+            _, diffs = compare_objects(
+                getattr(obj1, attr), getattr(obj2, attr), path=f"{path}.{attr}", depth=depth + 1, max_depth=max_depth
+            )
+            differences.extend(diffs)
+        return len(differences) == 0, differences
+
+    if obj1 != obj2:
+        differences.append(f"{path}: {obj1!r} != {obj2!r}")
+    return obj1 == obj2, differences
 
 
 def complete_array(array: list[float], filler: float, final_length: int) -> list[float]:

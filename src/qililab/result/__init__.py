@@ -26,6 +26,8 @@ Classes
     Result
     MeasurementResult
     QbloxMeasurementResult
+    InputLoopData
+    LoopData
 
 
 Functions
@@ -40,10 +42,9 @@ Functions
 """
 
 # isort: skip_file
-from .experiment_live_plot import ExperimentLivePlot
 from .experiment_results import ExperimentResults
 from .result import Result
-from .result_management import load_results, save_results
+from .result_management import InputLoopData, LoopData, load_results, save_results
 
 # Moving database here to avoid circular imports
 from .database import (
@@ -51,6 +52,7 @@ from .database import (
     CalibrationRun,
     Cooldown,
     DatabaseManager,
+    DatabaseSchema,
     QaaS_Experiment,
     Measurement,
     Sample,
@@ -65,8 +67,11 @@ __all__ = [
     "CalibrationRun",
     "Cooldown",
     "DatabaseManager",
+    "DatabaseSchema",
     "ExperimentLivePlot",
     "ExperimentResults",
+    "InputLoopData",
+    "LoopData",
     "Measurement",
     "MeasurementResult",
     "QaaS_Experiment",
@@ -80,3 +85,13 @@ __all__ = [
     "save_results",
     "stream_results",
 ]
+
+
+def __getattr__(name: str):
+    # ExperimentLivePlot pulls in `dash`, which is only needed for the optional live-plotting
+    # feature, so it's imported lazily on first access instead of at package import time.
+    if name == "ExperimentLivePlot":
+        from .experiment_live_plot import ExperimentLivePlot
+
+        return ExperimentLivePlot
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

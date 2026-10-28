@@ -231,7 +231,7 @@ class QDevilQDac2(VoltageSource):
             channel_id (ChannelID): Channel id of the qdac.
             dwell_us (int, optional): Dwell of the pulse the minimum value is 2e-6 s and the maximum is 3.6e4 s (10 h).
                                         Defaults to 2 (2e-6 s).
-            sync_delay_s (float, optional): Delay of each pulse repetition. Defaults to 0.
+            sync_delay_s (float, optional): Delay from the trigger until the list starts, in seconds. Defaults to 0.
             repetitions (int, optional): Number of pulse repetitions. Defaults to 1.
             stepped (bool, optional): Trigger defining pulse shape,
                                         if True, instead of a ramp the qdac will show a staircase. Defaults to False.

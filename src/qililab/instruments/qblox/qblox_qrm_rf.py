@@ -40,15 +40,18 @@ class QbloxQRMRF(QbloxQRM):
 
         out0_in0_lo_freq: float
         out0_in0_lo_en: bool
-        out0_att: int  # must be a multiple of 2!
-        in0_att: int  # must be a multiple of 2!
+        # must be a multiple of 2!
+        out0_att: int
+        # must be a multiple of 2!
+        in0_att: int
         out0_offset_path0: float
         out0_offset_path1: float
         out_offsets: list[float] = field(init=False, default_factory=list)
         out0_in0_lo_freq_cal_type_default: Optional[str] = "off"
         filters: Sequence[QbloxFilter] = field(
             init=False,
-            default_factory=list,  # QRM-RF module doesn't have filters
+            # QRM-RF module doesn't have filters
+            default_factory=list,
         )
 
     # TODO: We should separate instrument settings and instrument parameters, such that the user can quickly get

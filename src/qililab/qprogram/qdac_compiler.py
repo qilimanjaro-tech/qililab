@@ -19,8 +19,9 @@ from typing import TYPE_CHECKING, Any, Callable
 import numpy as np
 
 from qililab.config import logger
+from qililab.constants import QDACCONSTANTS
 from qililab.instruments.qdevil import QDevilQDac2
-from qililab.qprogram.blocks import Average, Block, ForLoop, InfiniteLoop, Loop, Parallel
+from qililab.qprogram.blocks import Average, Block, Conditional, ForLoop, InfiniteLoop, Loop, Parallel
 from qililab.qprogram.calibration import Calibration
 from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
 from qililab.qprogram.operations import (
@@ -97,13 +98,12 @@ class QdacCompiler:
         self._qdac_buses: list["Bus"]
         self._qdac_buses_by_alias: dict[str, "Bus"]
         self._qdac_buses_alias: list[str]
-        self._qdac_buses_offset: dict[str, float]
         self._channels: dict[str, int]
         self._qdacs: list[QDevilQDac2]
         self._out_instrument: QDevilQDac2 | None
 
-        self._dc_dwell: int = 2
-        self._dc_delay: int = 0
+        self._dc_dwell: int = QDACCONSTANTS.DEFAULT_DWELL_US
+        self._dc_delay: float = 0.0
         self._dc_stepped: bool = False
         self._loop_repetitions: dict[str, int] = {}
         self._infinite_loop: bool = False
@@ -124,6 +124,7 @@ class QdacCompiler:
         calibration: Calibration | None = None,
         crosstalk: CrosstalkMatrix | None = None,
         out_instrument: QDevilQDac2 | None = None,
+        target_fluxes: dict[str, float | list[float] | np.ndarray] | None = None,
     ) -> QdacCompilationOutput:
         """Compile QProgram to qdac execution schedule.
 
@@ -136,19 +137,35 @@ class QdacCompiler:
             calibration (Calibration, optional): Optional calibration file. Defaults to None.
             crosstalk (CrosstalkMatrix, optional): Optional Crosstalk matrix. Defaults to None.
             out_instrument (QDevilQDac2, optional): Output trigger in case there is more than one qdac instruments. Defaults to None.
+            target_fluxes (dict[str, float], optional): Known target flux per bus for the parked
+                operating point, used to seed crosstalk compensation. Defaults to None.
         """
 
-        def traverse(block: Block):
+        def traverse(block: Block, inside_conditional: bool = False) -> None:
             for bus in self._buses and self._qdac_buses_alias:
                 self._buses[bus].qprogram_block_stack.append(block)
             for element in block.elements:
+                currently_conditional = inside_conditional or isinstance(element, Conditional)
+                if currently_conditional:
+                    # QDAC generates the external trigger; it has no way to conditionally skip an operation
+                    # based on whether that same trigger was received in time on the Qblox side, so a
+                    # QDAC-bus operation placed inside qp.if_trigger() would compile and execute
+                    # unconditionally, silently ignoring the "only if trigger received" semantics.
+                    buses = (element.buses or []) if isinstance(element, Sync) else [getattr(element, "bus", None)]
+                    offending_bus = next((bus for bus in buses if bus in self._qdac_buses_alias), None)
+                    if offending_bus is not None:
+                        raise NotImplementedError(
+                            f"{type(element).__name__} on QDAC bus '{offending_bus}' cannot be used inside "
+                            "qp.if_trigger(): QDAC has no way to conditionally gate on the external trigger "
+                            "it generates."
+                        )
                 handler = self._handlers.get(type(element))
                 if not handler:
                     self._handle_unknown(element)
                 else:
                     handler(element)
                 if isinstance(element, Block):
-                    traverse(element)
+                    traverse(element, inside_conditional=currently_conditional)
             for bus in self._buses and self._qdac_buses_alias:
                 self._buses[bus].qprogram_block_stack.pop()
 
@@ -158,7 +175,8 @@ class QdacCompiler:
         self._qdac_buses = qdac_buses
         self._qdac_buses_by_alias = {bus.alias: bus for bus in self._qdac_buses}
         self._qdac_buses_alias = [bus.alias for bus in self._qdac_buses]
-        self._qdac_buses_offset = dict(zip(self._qdac_buses_alias, qdac_offsets))
+        # Hardware bias voltages, used as a fallback if no flux is given
+        qdac_buses_offset = dict(zip(self._qdac_buses_alias, qdac_offsets))
         if bus_mapping is not None:
             self._qprogram = self._qprogram.with_bus_mapping(bus_mapping=bus_mapping)
         if calibration is not None:
@@ -167,7 +185,7 @@ class QdacCompiler:
                 crosstalk = calibration.crosstalk_matrix
         if crosstalk is not None:
             self._qprogram = self._qprogram.with_crosstalk_qdac(
-                crosstalk=crosstalk, qdac_buses_offset=self._qdac_buses_offset
+                crosstalk=crosstalk, target_fluxes=target_fluxes, qdac_buses_offset=qdac_buses_offset
             )
 
         if self._qprogram.has_calibrated_waveforms_or_weights():

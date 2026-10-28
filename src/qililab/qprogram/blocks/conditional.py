@@ -1,4 +1,4 @@
-# Copyright 2023 Qilimanjaro Quantum Tech
+# Copyright 2026 Qilimanjaro Quantum Tech
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,8 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from .annealing_program import AnnealingProgram
-from .fluqe_parameter import FluqeParameter
-from .one_qubit_transpiler import Qubit2LevelTranspiler
+from qprogram.blocks import Block
 
-__all__ = ["AnnealingProgram", "FluqeParameter", "Qubit2LevelTranspiler"]
+from qililab.yaml import yaml
+
+
+@yaml.register_class
+class Conditional(Block):
+    """Block whose elements only execute if the external trigger was received in time, e.g. ``qp.if_trigger()``."""
+
+    def __init__(self, trigger_padding_ns: int | None = None, expected_wait_time_ns: int | None = None) -> None:
+        super().__init__()
+        self.trigger_padding_ns = trigger_padding_ns
+        self.expected_wait_time_ns = expected_wait_time_ns

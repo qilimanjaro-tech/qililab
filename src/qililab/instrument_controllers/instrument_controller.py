@@ -82,11 +82,15 @@ class InstrumentController(BusElement, ABC):
     """
 
     name: InstrumentControllerName
-    settings: InstrumentControllerSettings  # a subtype of settings must be specified by the subclass
-    device: Device  # a subtype of device must be specified by the subclass
-    number_available_modules: int  # to be set by child classes
+    # a subtype of settings must be specified by the subclass
+    settings: InstrumentControllerSettings
+    # a subtype of device must be specified by the subclass
+    device: Device
+    # to be set by child classes
+    number_available_modules: int
     modules: Sequence[Instrument]
-    connected_modules_slot_ids: list[int]  # slot_id represents the number displayed in the cluster
+    # slot_id represents the number displayed in the cluster
+    connected_modules_slot_ids: list[int]
 
     class CheckConnected:
         """Property used to check if the connection has established with an instrument."""

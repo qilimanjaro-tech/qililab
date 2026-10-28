@@ -63,9 +63,12 @@ class TestBuildPlatformCornerCases:
         """Test platform serialization by building a platform, saving it and then load it back again twice. Starting from a given dict."""
         original_dict = copy.deepcopy(Galadriel.runcard)
         # Check that the new serialization with ruamel.yaml.YAML().dump works for different formats...
-        original_dict["digital"]["gates"]["Y(0)"][0]["phase"] = 1.6707963267948966  # Test long decimals
-        original_dict["instruments"][0]["awg_sequencers"][0]["intermediate_frequency"] = 100_000_000  # Test underscores
-        original_dict["instruments"][1]["awg_sequencers"][0]["sampling_rate"] = 7.24730e09  # Test scientific notation
+        # Test long decimals
+        original_dict["digital"]["gates"]["Y(0)"][0]["phase"] = 1.6707963267948966
+        # Test underscores
+        original_dict["instruments"][0]["awg_sequencers"][0]["intermediate_frequency"] = 100_000_000
+        # Test scientific notation
+        original_dict["instruments"][1]["awg_sequencers"][0]["sampling_rate"] = 7.24730e09
 
         original_platform = ql.build_platform(original_dict)
 
@@ -80,4 +83,5 @@ class TestBuildPlatformCornerCases:
         new_saved_platform_dict = new_saved_platform.to_dict()
 
         assert original_platform_dict == saved_platform_dict == new_saved_platform_dict
-        os.remove(path)  # Cleaning generated file
+        # Cleaning generated file
+        os.remove(path)

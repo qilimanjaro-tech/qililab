@@ -18,7 +18,6 @@ from datetime import datetime
 from typing import Any
 
 import h5py
-import matplotlib.pyplot as plt
 import numpy as np
 
 
@@ -52,7 +51,8 @@ class ExperimentResults:
             slurm_execution (bool): Flag that defines if the liveplot will be held through Dash or a notebook cell. Defaults to True.
         """
         self.path = path
-        self.data: dict[tuple[str, str], Any] = {}  # To hold links to the data of the results for in-memory access
+        # To hold links to the data of the results for in-memory access
+        self.data: dict[tuple[str, str], Any] = {}
         # To hold links to dimensions of the results for in-memory access
         self.dimensions: dict[tuple[str, str], Any] = {}
         self._file: h5py.File
@@ -146,7 +146,7 @@ class ExperimentResults:
         Returns:
             str: The YAML string of the executed experiment.
         """
-        return self._file[ExperimentResults.EXPERIMENT_PATH][()].decode("utf-8")  # type: ignore[index]
+        return self._file[ExperimentResults.EXPERIMENT_PATH][()].decode("utf-8")
 
     @property
     def platform(self) -> str:
@@ -188,6 +188,7 @@ class ExperimentResults:
         Raises:
             NotImplementedError: If the data has more than 2 dimensions.
         """
+        import matplotlib.pyplot as plt
 
         def decibels(s21: np.ndarray):
             """Convert result values from s21 into dB"""

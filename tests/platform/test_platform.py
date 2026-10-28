@@ -4,6 +4,7 @@ import copy
 import io
 import re
 import warnings
+from builtins import ExceptionGroup
 from pathlib import Path
 from queue import Queue
 from types import MethodType, SimpleNamespace
@@ -26,12 +27,11 @@ from tests.data import (
     SauronYokogawa,
 )
 
-from tests.test_utils import build_platform
+from tests.test_utils import build_platform, compare_objects
 
 
 from qililab import save_platform
 from qililab.constants import DEFAULT_PLATFORM_NAME
-from qililab.exceptions import ExceptionGroup
 from qililab.extra.quantum_machines import QuantumMachinesCluster, QuantumMachinesMeasurementResult
 from qililab.instrument_controllers import InstrumentControllers
 from qililab.instrument_controllers.qblox import QbloxClusterController
@@ -40,7 +40,7 @@ from qililab.instruments.instruments import Instruments
 from qililab.instruments.qblox import QbloxModule
 from qililab.instruments.qblox.qblox_qrm import QbloxQRM
 from qililab.instruments.qdevil import QDevilQDac2
-from qililab.platform import Bus, Buses, Platform
+from qililab.platform import Bus, Buses, Platform, Session
 from qililab.core import Domain
 from qililab.qprogram import Calibration, Experiment, QProgram, QbloxCompilationOutput
 from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
@@ -72,6 +72,11 @@ def fixture_platform_qblox_qdacs_no_trigger():
 @pytest.fixture(name="platform_qm_qdac")
 def fixture_platform_qm_qdac():
     return platform_build_platform(runcard="tests/runcards/qm_and_qdac.yml")
+
+
+@pytest.fixture(name="platform_rf_switch")
+def fixture_platform_rf_switch():
+    return platform_build_platform("tests/runcards/rf_switch_qcm_rohde.yml")
 
 
 @pytest.fixture(name="platform_quantum_machines")
@@ -257,71 +262,6 @@ def fixture_qp_quantum_machine() -> QProgram:
     qp.wait("drive_q0", 10)
     return qp
 
-def compare_platforms(obj1, obj2, path="root", depth=0, max_depth=10):
-    """
-    Recursively compare two objects' properties up to max_depth.
-    """
-    differences = []
-
-    if depth > max_depth:
-        return True, []
-
-    # Different types: report and stop recursing this branch
-    if type(obj1) is not type(obj2):
-        differences.append(f"{path}: type mismatch ({type(obj1).__name__} vs {type(obj2).__name__})")
-        return False, differences
-
-    # Primitives and non-inspectable types
-    if isinstance(obj1, (int, float, complex, str, bool, bytes, type(None))):
-        if obj1 != obj2:
-            differences.append(f"{path}: {obj1!r} != {obj2!r}")
-        return obj1 == obj2, differences
-
-    # Lists and tuples
-    if isinstance(obj1, (list, tuple)):
-        if len(obj1) != len(obj2):
-            differences.append(f"{path}: length mismatch ({len(obj1)} vs {len(obj2)})")
-            # Still compare up to the shorter length
-        for i, (a, b) in enumerate(zip(obj1, obj2)):
-            _, diffs = compare_platforms(a, b, path=f"{path}[{i}]", depth=depth + 1, max_depth=max_depth)
-            differences.extend(diffs)
-        return len(differences) == 0, differences
-
-    # Dicts
-    if isinstance(obj1, dict):
-        keys1, keys2 = set(obj1.keys()), set(obj2.keys())
-        for k in keys1 - keys2:
-            differences.append(f"{path}[{k!r}]: key only in first object")
-        for k in keys2 - keys1:
-            differences.append(f"{path}[{k!r}]: key only in second object")
-        for k in keys1 & keys2:
-            _, diffs = compare_platforms(obj1[k], obj2[k], path=f"{path}[{k!r}]", depth=depth + 1, max_depth=max_depth)
-            differences.extend(diffs)
-        return len(differences) == 0, differences
-
-    # Objects with __dict__ (dataclasses, custom classes, etc.)
-    if hasattr(obj1, "__dict__"):
-        attrs1 = set(vars(obj1).keys())
-        attrs2 = set(vars(obj2).keys())
-        for attr in attrs1 - attrs2:
-            differences.append(f"{path}.{attr}: attribute only in first object")
-
-        for attr in attrs2 - attrs1:
-            differences.append(f"{path}.{attr}: attribute only in second object")
-
-        for attr in attrs1 & attrs2:
-            _, diffs = compare_platforms(
-                getattr(obj1, attr), getattr(obj2, attr),
-                path=f"{path}.{attr}", depth=depth + 1, max_depth=max_depth
-            )
-            differences.extend(diffs)
-        return len(differences) == 0, differences
-
-    # Fallback: direct equality
-    if obj1 != obj2:
-        differences.append(f"{path}: {obj1!r} != {obj2!r}")
-    return obj1 == obj2, differences
-
 class TestPlatformInitialization:
     """Unit tests for the Platform class initialization"""
 
@@ -453,10 +393,16 @@ class TestPlatform:
 
     def test_set_flux_to_zero(self, platform: Platform):
         """Test set_flux_to_zero function."""
-        crosstalk_matrix = CrosstalkMatrix.from_buses(buses={"drive_line_q0_bus": {"drive_line_q0_bus": 0.1}})
+        crosstalk_matrix = CrosstalkMatrix.from_buses(
+            buses={
+                "drive_line_q0_bus": {"drive_line_q0_bus": 1.0, "flux_line_q1_bus": 0.1},
+                "flux_line_q1_bus": {"drive_line_q0_bus": 0.1, "flux_line_q1_bus": 1.0},
+            }
+        )
         platform.set_crosstalk(crosstalk_matrix)
         platform.set_flux_to_zero()
         assert platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.FLUX) == 0.0
+        assert platform.get_parameter(alias="flux_line_q1_bus", parameter=Parameter.FLUX) == 0.0
 
     def test_set_flux_to_zero_without_crosstalk_raises_error(self, platform: Platform):
         """Test set_flux_to_zero function error without crosstalk."""
@@ -466,10 +412,62 @@ class TestPlatform:
 
     def test_set_bias_to_zero(self, platform: Platform):
         """Test set_bias_to_zero function."""
-        crosstalk_matrix = CrosstalkMatrix.from_buses(buses={"drive_line_q0_bus": {"drive_line_q0_bus": 0.1}})
+        crosstalk_matrix = CrosstalkMatrix.from_buses(
+            buses={
+                "drive_line_q0_bus": {"drive_line_q0_bus": 1.0, "flux_line_q1_bus": 0.1},
+                "flux_line_q1_bus": {"drive_line_q0_bus": 0.1, "flux_line_q1_bus": 1.0},
+            }
+        )
         platform.set_crosstalk(crosstalk_matrix)
         platform.set_bias_to_zero()
         assert platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.OFFSET_OUT0) == 0.0
+        assert platform.get_parameter(alias="flux_line_q1_bus", parameter=Parameter.OFFSET_OUT1) == 0.0
+
+    def test_set_bias_to_zero_updates_tracked_flux(self, platform: Platform):
+        """set_bias_to_zero must reset the tracked Parameter.FLUX, not leave it stale."""
+        crosstalk_matrix = CrosstalkMatrix.from_buses(
+            buses={
+                "drive_line_q0_bus": {"drive_line_q0_bus": 1.0, "flux_line_q1_bus": 0.1},
+                "flux_line_q1_bus": {"drive_line_q0_bus": 0.1, "flux_line_q1_bus": 1.0},
+            }
+        )
+        platform.set_crosstalk(crosstalk_matrix)
+
+        # Set non-zero fluxes so the flux_parameter cache holds stale values.
+        platform.set_parameter(alias="drive_line_q0_bus", parameter=Parameter.FLUX, value=0.3)
+        platform.set_parameter(alias="flux_line_q1_bus", parameter=Parameter.FLUX, value=0.2)
+        assert platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.FLUX) == 0.3
+        assert platform.get_parameter(alias="flux_line_q1_bus", parameter=Parameter.FLUX) == 0.2
+
+        platform.set_bias_to_zero()
+
+        # Instrument outputs are 0 and the tracked fluxes are back in sync.
+        assert platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.OFFSET_OUT0) == 0.0
+        assert platform.get_parameter(alias="flux_line_q1_bus", parameter=Parameter.OFFSET_OUT1) == 0.0
+        assert platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.FLUX) == 0.0
+        assert platform.get_parameter(alias="flux_line_q1_bus", parameter=Parameter.FLUX) == 0.0
+
+    def test_set_bias_to_zero_with_flux_offsets_keeps_voltage_zero(self, platform: Platform):
+        """With non-zero flux offsets, voltage must stay 0 and FLUX must track the zero-bias flux."""
+        crosstalk_matrix = CrosstalkMatrix.from_buses(
+            buses={
+                "drive_line_q0_bus": {"drive_line_q0_bus": 1.0, "flux_line_q1_bus": 0.1},
+                "flux_line_q1_bus": {"drive_line_q0_bus": 0.1, "flux_line_q1_bus": 1.0},
+            }
+        )
+        crosstalk_matrix.set_offset({"drive_line_q0_bus": 0.5, "flux_line_q1_bus": 0.2})
+        platform.set_crosstalk(crosstalk_matrix)
+
+        platform.set_parameter(alias="drive_line_q0_bus", parameter=Parameter.FLUX, value=0.3)
+        platform.set_parameter(alias="flux_line_q1_bus", parameter=Parameter.FLUX, value=0.4)
+        platform.set_bias_to_zero()
+
+        # Instrument outputs are always driven to 0 V/A, regardless of flux offsets.
+        assert platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.OFFSET_OUT0) == 0.0
+        assert platform.get_parameter(alias="flux_line_q1_bus", parameter=Parameter.OFFSET_OUT1) == 0.0
+        # The tracked fluxes reflect the flux that corresponds to zero bias, i.e. the flux offsets.
+        assert platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.FLUX) == 0.5
+        assert platform.get_parameter(alias="flux_line_q1_bus", parameter=Parameter.FLUX) == 0.2
 
     def test_set_bias_to_zero_without_crosstalk_raises_error(self, platform: Platform):
         """Test set_bias_to_zero function error without crosstalk."""
@@ -690,7 +688,7 @@ class TestPlatform:
 
         new_platform = Platform(runcard=Runcard(**runcard_dict))
 
-        is_equal, diffs = compare_platforms(platform, new_platform)
+        is_equal, diffs = compare_objects(platform, new_platform)
         error_message = f"Platforms differ in {len(diffs)} place(s):\n"
         if not is_equal:
             for d in diffs:
@@ -711,7 +709,8 @@ class TestMethods:
 
         # Run the session successfully
         with platform.session():
-            pass  # Simulate a successful experiment execution
+            # Simulate a successful experiment execution
+            pass
 
         # Ensure methods were called in the correct order
         platform.connect.assert_called_once()
@@ -721,6 +720,35 @@ class TestMethods:
         # Ensure cleanup is called in reverse order
         platform.turn_off_instruments.assert_called_once()
         platform.disconnect.assert_called_once()
+
+    def test_session_logs_duration_on_success(self):
+        """Test that the session method logs how long the session took when it succeeds."""
+        platform = create_autospec(Platform, instance=True)
+        platform.session = Platform.session.__get__(platform, Platform)
+
+        with patch("qililab.platform.platform.logger", autospec=True) as mock_logger:
+            with platform.session():
+                pass
+
+        duration_messages = [
+            call.args[0] for call in mock_logger.info.call_args_list if re.match(r"^Platform session took .* seconds$", call.args[0])
+        ]
+        assert len(duration_messages) == 1
+        assert re.match(r"^Platform session took \d+\.\d{2} seconds$", duration_messages[0])
+
+    def test_session_yields_session_object_on_success(self):
+        """Test that the session method yields a Session object populated after a successful run."""
+        platform = create_autospec(Platform, instance=True)
+        platform.session = Platform.session.__get__(platform, Platform)
+
+        with platform.session() as running_session:
+            pass
+
+        assert isinstance(running_session, Session)
+        assert running_session.success is True
+        assert running_session.errors == []
+        assert running_session.execution_time is not None
+        assert running_session.execution_time >= 0
 
     def test_session_with_exception(self):
         """Test the session method when an exception occurs during execution."""
@@ -744,6 +772,170 @@ class TestMethods:
         platform.turn_off_instruments.assert_called_once()
         platform.disconnect.assert_called_once()
 
+    def test_session_logs_duration_on_exception(self):
+        """Test that the session method still logs the duration when the experiment code raises."""
+        platform = create_autospec(Platform, instance=True)
+        platform.session = Platform.session.__get__(platform, Platform)
+
+        def run_session_raising_error():
+            with platform.session():
+                raise AttributeError("Test Error")
+
+        with patch("qililab.platform.platform.logger", autospec=True) as mock_logger:
+            with pytest.raises(AttributeError, match="Test Error"):
+                run_session_raising_error()
+
+        duration_messages = [
+            call.args[0] for call in mock_logger.info.call_args_list if re.match(r"^Platform session took .* seconds$", call.args[0])
+        ]
+        assert len(duration_messages) == 1
+        assert re.match(r"^Platform session took \d+\.\d{2} seconds$", duration_messages[0])
+
+    def test_session_yields_session_object_on_exception(self):
+        """Test that the session method's Session object records failure when the experiment code raises."""
+        platform = create_autospec(Platform, instance=True)
+        platform.session = Platform.session.__get__(platform, Platform)
+
+        running_session = None
+
+        def run_session_raising_error():
+            nonlocal running_session
+            with platform.session() as session:
+                running_session = session
+                raise AttributeError("Test Error")
+
+        with pytest.raises(AttributeError, match="Test Error"):
+            run_session_raising_error()
+
+        assert isinstance(running_session, Session)
+        assert running_session.success is False
+        assert len(running_session.errors) == 1
+        assert isinstance(running_session.errors[0], AttributeError)
+        assert str(running_session.errors[0]) == "Test Error"
+        assert running_session.execution_time is not None
+        assert running_session.execution_time >= 0
+
+    def test_session_yields_session_object_on_cleanup_exception(self):
+        """Test that the Session object records failure when execution succeeds but cleanup raises."""
+        platform = create_autospec(Platform, instance=True)
+        platform.session = Platform.session.__get__(platform, Platform)
+
+        platform.disconnect.side_effect = Exception("Disconnect error")
+
+        running_session = None
+
+        def run_session_with_cleanup_error():
+            nonlocal running_session
+            with platform.session() as session:
+                running_session = session
+
+        with pytest.raises(Exception, match="Disconnect error"):
+            run_session_with_cleanup_error()
+
+        assert isinstance(running_session, Session)
+        assert running_session.success is False
+        assert len(running_session.errors) == 1
+        assert isinstance(running_session.errors[0], Exception)
+        assert str(running_session.errors[0]) == "Disconnect error"
+
+    def test_session_yields_session_object_on_multiple_cleanup_exceptions(self):
+        """Test that the Session object records an ExceptionGroup when multiple cleanup calls raise."""
+        platform = create_autospec(Platform, instance=True)
+        platform.session = Platform.session.__get__(platform, Platform)
+
+        platform.turn_off_instruments.side_effect = Exception("Turn off instruments error")
+        platform.disconnect.side_effect = Exception("Disconnect error")
+
+        running_session = None
+
+        def run_session_with_cleanup_errors():
+            nonlocal running_session
+            with platform.session() as session:
+                running_session = session
+
+        with pytest.raises(ExceptionGroup):
+            run_session_with_cleanup_errors()
+
+        assert isinstance(running_session, Session)
+        assert running_session.success is False
+        assert [str(error) for error in running_session.errors] == ["Turn off instruments error", "Disconnect error"]
+
+    def test_session_yields_session_object_on_execution_and_cleanup_exceptions(self):
+        """Test that the Session object records an ExceptionGroup when execution and cleanup both raise."""
+        platform = create_autospec(Platform, instance=True)
+        platform.session = Platform.session.__get__(platform, Platform)
+
+        platform.turn_off_instruments.side_effect = Exception("Turn off instruments error")
+        platform.disconnect.side_effect = Exception("Disconnect error")
+
+        running_session = None
+
+        def run_session_raising_execution_error():
+            nonlocal running_session
+            with platform.session() as session:
+                running_session = session
+                raise AttributeError("Execution error")
+
+        with pytest.raises(ExceptionGroup):
+            run_session_raising_execution_error()
+
+        assert isinstance(running_session, Session)
+        assert running_session.success is False
+        assert [str(error) for error in running_session.errors] == [
+            "Execution error",
+            "Turn off instruments error",
+            "Disconnect error",
+        ]
+
+    def test_session_yields_session_object_on_keyboard_interrupt(self):
+        """Test that an interrupted session is reported as a failure and still cleans up."""
+        platform = create_autospec(Platform, instance=True)
+        platform.session = Platform.session.__get__(platform, Platform)
+
+        running_session = None
+
+        def run_session_interrupted():
+            nonlocal running_session
+            with platform.session() as session:
+                running_session = session
+                raise KeyboardInterrupt
+
+        with pytest.raises(KeyboardInterrupt):
+            run_session_interrupted()
+
+        assert running_session.success is False
+        assert len(running_session.errors) == 1
+        assert isinstance(running_session.errors[0], KeyboardInterrupt)
+
+        platform.turn_off_instruments.assert_called_once()
+        platform.disconnect.assert_called_once()
+
+    def test_session_runs_remaining_cleanup_after_interrupt_in_cleanup(self):
+        """Test that an interrupt in a cleanup method does not stop the remaining cleanup methods."""
+        platform = create_autospec(Platform, instance=True)
+        platform.session = Platform.session.__get__(platform, Platform)
+
+        # turn_off_instruments is the first cleanup method to run, disconnect the second
+        platform.turn_off_instruments.side_effect = KeyboardInterrupt
+        platform.disconnect.side_effect = Exception("Disconnect error")
+
+        running_session = None
+
+        def run_session_interrupted_during_cleanup():
+            nonlocal running_session
+            with platform.session() as session:
+                running_session = session
+
+        with pytest.raises(BaseExceptionGroup) as exc_info:
+            run_session_interrupted_during_cleanup()
+
+        # The interrupt did not prevent disconnect from running, and both errors are reported
+        platform.turn_off_instruments.assert_called_once()
+        platform.disconnect.assert_called_once()
+        assert [type(error) for error in exc_info.value.exceptions] == [KeyboardInterrupt, Exception]
+        assert running_session.success is False
+        assert [type(error) for error in running_session.errors] == [KeyboardInterrupt, Exception]
+
     def test_session_with_exception_in_setup(self):
         """Test the session method when an error occurs before turning on instruments."""
         # Create an autospec of the Platform class
@@ -758,7 +950,8 @@ class TestMethods:
         # Simulate an error after connect() and initial_setup() but before turn_on_instruments()
         with pytest.raises(Exception, match="Instrument failure"):
             with platform.session():
-                pass  # The exception will occur inside the context
+                # The exception will occur inside the context
+                pass
 
         # Ensure methods were called until the point of failure
         platform.connect.assert_called_once()
@@ -783,7 +976,8 @@ class TestMethods:
         # Simulate no exception during the experiment, but failure during cleanup
         with pytest.raises(Exception, match="Turn off instruments error"):
             with platform.session():
-                pass  # No exception during the experiment
+                # No exception during the experiment
+                pass
 
         # Ensure methods were called in the correct order
         platform.connect.assert_called_once()
@@ -864,6 +1058,7 @@ class TestMethods:
 
         # Mock database manager
         mock_database = MagicMock()
+        mock_database.database_schema = "qaas"
         platform.db_manager = mock_database
         platform.save_experiment_results_in_database = True
 
@@ -874,7 +1069,8 @@ class TestMethods:
 
         # Mock the ExperimentExecutor to ensure it's used correctly
         with patch("qililab.platform.platform.ExperimentExecutor") as MockExecutor:
-            mock_executor_instance = MockExecutor.return_value  # Mock instance of ExperimentExecutor
+            # Mock instance of ExperimentExecutor
+            mock_executor_instance = MockExecutor.return_value
             mock_executor_instance.execute.return_value = expected_results_path
 
             # Call the method under test
@@ -929,10 +1125,30 @@ class TestMethods:
                 ):
                     # Mock the ExperimentExecutor to ensure it's used correctly
                     with patch("qililab.platform.platform.ExperimentExecutor") as MockExecutor:
-                        mock_executor_instance = MockExecutor.return_value  # Mock instance of ExperimentExecutor
+                        # Mock instance of ExperimentExecutor
+                        mock_executor_instance = MockExecutor.return_value
                         mock_executor_instance.execute.return_value = expected_results_path
 
                         platform.execute_experiment(experiment=mock_experiment)
+
+    def test_execute_experiment_loads_qaas_db_manager(self, override_settings):
+        """Test that execute_experiment loads a 'qaas' database manager when none is loaded."""
+        platform = create_autospec(Platform, instance=True)
+        platform.execute_experiment = MethodType(Platform.execute_experiment, platform)
+        platform.db_manager = None
+
+        mock_experiment = create_autospec(Experiment)
+
+        with override_settings(
+            experiment_results_save_in_database=True,
+            experiment_live_plot_enabled=False,
+            experiment_live_plot_on_slurm=False,
+        ):
+            with patch.object(platform, "load_db_manager") as mock_load_db_manager:
+                with patch("qililab.platform.platform.ExperimentExecutor"):
+                    platform.execute_experiment(experiment=mock_experiment, job_id=1, sample="sample", cooldown="cd")
+
+        mock_load_db_manager.assert_called_once_with(database_schema="qaas")
 
     def test_execute_qprogram_with_qblox(self, platform: Platform):
         """Test that the execute method compiles the qprogram, calls the buses to run and return the results."""
@@ -969,8 +1185,10 @@ class TestMethods:
 
         # assert run executed all three times (12 because there are 4 buses)
         assert run.call_count == 12
-        assert acquire_qprogram_results.call_count == 6  # only readout buses
-        assert sync_sequencer.call_count == 12  # called as many times as run
+        # only readout buses
+        assert acquire_qprogram_results.call_count == 6
+        # called as many times as run
+        assert sync_sequencer.call_count == 12
         assert desync_sequencer.call_count == 12
         assert first_execution_results.results["feedline_input_output_bus"] == [123]
         assert first_execution_results.results["feedline_input_output_bus_1"] == [123]
@@ -1018,14 +1236,19 @@ class TestMethods:
 
         # assert run executed all three times (6 because there are 2 buses)
         assert run.call_count == 6
-        assert acquire_qprogram_results.call_count == 3  # only readout buses
-        assert sync_sequencer.call_count == 6  # called as many times as run
+        # only readout buses
+        assert acquire_qprogram_results.call_count == 3
+        # called as many times as run
+        assert sync_sequencer.call_count == 6
         assert desync_sequencer.call_count == 6
         assert first_execution_results.results["resonator"] == [123]
         assert second_execution_results.results["resonator"] == [456]
-        assert upload_voltage_list.call_count == 3  # called as many times as executes
-        assert set_start_marker_external_trigger.call_count == 3  # called as many times as executes
-        assert start.call_count == 3  # called as many times as executes
+        # called as many times as executes
+        assert upload_voltage_list.call_count == 3
+        # called as many times as executes
+        assert set_start_marker_external_trigger.call_count == 3
+        # called as many times as executes
+        assert start.call_count == 3
 
         # assure only one debug was called
         assert patched_open.call_count == 1
@@ -1082,16 +1305,23 @@ class TestMethods:
 
         # assert run executed all three times (6 because there are 2 buses)
         assert run.call_count == 6
-        assert acquire_qprogram_results.call_count == 3  # only readout buses
-        assert sync_sequencer.call_count == 6  # called as many times as run
+        # only readout buses
+        assert acquire_qprogram_results.call_count == 3
+        # called as many times as run
+        assert sync_sequencer.call_count == 6
         assert desync_sequencer.call_count == 6
         assert first_execution_results.results["resonator"] == [123]
         assert second_execution_results.results["resonator"] == [456]
-        assert upload_voltage_list.call_count == 3  # called as many times as executes
-        assert set_out_external_trigger.call_count == 3  # called as many times as executes
-        assert set_in_external_trigger.call_count == 3  # called as many times as executes
-        assert set_start_marker_external_trigger.call_count == 3  # called as many times as executes
-        assert start.call_count == 6  # called as many times as executes
+        # called as many times as executes
+        assert upload_voltage_list.call_count == 3
+        # called as many times as executes
+        assert set_out_external_trigger.call_count == 3
+        # called as many times as executes
+        assert set_in_external_trigger.call_count == 3
+        # called as many times as executes
+        assert set_start_marker_external_trigger.call_count == 3
+        # called as many times as executes
+        assert start.call_count == 6
 
         # assure only one debug was called
         assert patched_open.call_count == 1
@@ -1151,14 +1381,19 @@ class TestMethods:
 
         # assert run executed all three times (6 because there are 2 buses)
         assert run.call_count == 6
-        assert acquire_qprogram_results.call_count == 3  # only readout buses
-        assert sync_sequencer.call_count == 6  # called as many times as run
+        # only readout buses
+        assert acquire_qprogram_results.call_count == 3
+        # called as many times as run
+        assert sync_sequencer.call_count == 6
         assert desync_sequencer.call_count == 6
         assert first_execution_results.results["resonator"] == [123]
         assert second_execution_results.results["resonator"] == [456]
-        assert upload_voltage_list.call_count == 3  # called as many times as executes
-        assert set_in_external_trigger.call_count == 3  # called as many times as executes
-        assert start.call_count == 3  # called as many times as executes
+        # called as many times as executes
+        assert upload_voltage_list.call_count == 3
+        # called as many times as executes
+        assert set_in_external_trigger.call_count == 3
+        # called as many times as executes
+        assert start.call_count == 3
 
         # assure only one debug was called
         assert patched_open.call_count == 1
@@ -1205,14 +1440,19 @@ class TestMethods:
 
         # assert run executed all three times (6 because there are 2 buses)
         assert run.call_count == 6
-        assert acquire_qprogram_results.call_count == 3  # only readout buses
-        assert sync_sequencer.call_count == 6  # called as many times as run
+        # only readout buses
+        assert acquire_qprogram_results.call_count == 3
+        # called as many times as run
+        assert sync_sequencer.call_count == 6
         assert desync_sequencer.call_count == 6
         assert first_execution_results.results["resonator"] == [123]
         assert second_execution_results.results["resonator"] == [456]
-        assert upload_voltage_list.call_count == 3  # called as many times as executes
-        assert set_in_external_trigger.call_count == 3  # called as many times as executes
-        assert start.call_count == 3  # called as many times as executes
+        # called as many times as executes
+        assert upload_voltage_list.call_count == 3
+        # called as many times as executes
+        assert set_in_external_trigger.call_count == 3
+        # called as many times as executes
+        assert start.call_count == 3
 
         # assure only one debug was called
         assert patched_open.call_count == 1
@@ -1334,7 +1574,8 @@ class TestMethods:
 
         # assert run executed all three times (3 because there is 1 bus)
         assert run.call_count == 3
-        assert sync_sequencer.call_count == 3  # called as many times as run
+        # called as many times as run
+        assert sync_sequencer.call_count == 3
         assert desync_sequencer.call_count == 3
 
         # assure only one debug was called
@@ -1457,15 +1698,27 @@ class TestMethods:
         np.testing.assert_array_equal(first_execution_results.results["readout"][0].Q, np.array([4, 5, 6]))
         np.testing.assert_array_equal(second_execution_results.results["readout"][0].I, np.array([3, 2, 1]))
         np.testing.assert_array_equal(second_execution_results.results["readout"][0].Q, np.array([6, 5, 4]))
-        assert upload_voltage_list.call_count == 3  # called as many times as executes
-        assert set_start_marker_external_trigger.call_count == 3  # called as many times as executes
-        assert start.call_count == 3  # called as many times as executes
+        # called as many times as executes
+        assert upload_voltage_list.call_count == 3
+        # called as many times as executes
+        assert set_start_marker_external_trigger.call_count == 3
+        # called as many times as executes
+        assert start.call_count == 3
 
         # assure only one debug was called
         assert patched_open.call_count == 1
         assert generate_qua.call_count == 1
 
-    def test_execute_qprogram_with_qblox_distortions(self, platform: Platform):
+    @pytest.mark.parametrize(
+        "execute",
+        [
+            lambda platform, qprogram: platform.execute_qprogram(qprogram=qprogram),
+            lambda platform, qprogram: platform.execute_qprograms_parallel(qprograms=[qprogram]),
+        ],
+        ids=["execute_qprogram", "execute_qprograms_parallel"],
+    )
+    def test_execute_qprogram_with_qblox_distortions(self, platform: Platform, execute):
+        """Test that the bus distortions are applied only once, in both single and parallel execution."""
         drive_wf = Square(amplitude=1.0, duration=4)
         qprogram = QProgram()
         qprogram.play(bus="drive_line_q0_bus", waveform=drive_wf)
@@ -1482,8 +1735,37 @@ class TestMethods:
             patch.object(QbloxModule, "sync_sequencer"),
             patch.object(QbloxModule, "desync_sequencer"),
         ):
-            _ = platform.execute_qprogram(qprogram=qprogram)
+            _ = execute(platform, qprogram)
             assert test_waveforms_q0.to_dict() == upload.call_args_list[0].kwargs["qpysequence"]._waveforms.to_dict()
+
+    def test_execute_qprograms_parallel_with_qblox_distortions_and_bus_mapping(self, platform: Platform):
+        """Test that each parallel qprogram gets the distortions of the physical bus its logical bus is mapped to."""
+        qprogram = QProgram()
+        qprogram.play(bus="drive", waveform=Square(amplitude=1.0, duration=4))
+
+        distorted_waveforms = Waveforms()
+        distorted_waveforms.add(array=[0.5, 1.0, 0.5, 0.0], index=0)
+        distorted_waveforms.add(array=[0.0, 0.0, 0.0, 0.0], index=1)
+
+        undistorted_waveforms = Waveforms()
+        undistorted_waveforms.add(array=[1.0, 1.0, 1.0, 1.0], index=0)
+
+        with (
+            patch("builtins.open"),
+            patch.object(Bus, "upload_qpysequence") as upload,
+            patch.object(Bus, "run"),
+            patch.object(Bus, "acquire_qprogram_results"),
+            patch.object(QbloxModule, "sync_sequencer"),
+            patch.object(QbloxModule, "desync_sequencer"),
+        ):
+            _ = platform.execute_qprograms_parallel(
+                qprograms=[qprogram, qprogram],
+                bus_mappings=[{"drive": "drive_line_q0_bus"}, {"drive": "flux_line_q0_bus"}],
+            )
+            assert distorted_waveforms.to_dict() == upload.call_args_list[0].kwargs["qpysequence"]._waveforms.to_dict()
+            assert (
+                undistorted_waveforms.to_dict() == upload.call_args_list[1].kwargs["qpysequence"]._waveforms.to_dict()
+            )
 
     @pytest.mark.qm
     def test_execute_qprogram_with_quantum_machines(self, platform_quantum_machines: Platform):
@@ -1795,6 +2077,24 @@ class TestMethods:
 
         assert mock_compile.call_args.kwargs["calibration"] is None
 
+    def test_execute_qprogram_errors_buses_with_same_rf_switch(self, platform_rf_switch: Platform):
+        qprogram_1 = QProgram()
+        qprogram_1._buses = {"bus_base", "bus_uses_same_channel"}
+        qprogram_2 = QProgram()
+        qprogram_2._buses = {"bus_base", "bus_uses_different_channel"}
+
+        with (
+            patch.object(Platform, "compile_qprogram"),
+            patch.object(Platform, "execute_compilation_output"),
+        ):
+            # If it uses the same channel it should not fail since the current can reach the fridge
+            platform_rf_switch.execute_qprogram(qprogram_1)
+
+            # If it uses different channels it should error since two channels can't be active at the same time
+            with pytest.raises(ValueError):
+                platform_rf_switch.execute_qprogram(qprogram_2)
+                
+
     @staticmethod
     def _two_disjoint_qprograms() -> list[QProgram]:
         """Build two QPrograms that act on non-overlapping buses (valid for parallel execution)."""
@@ -1876,6 +2176,25 @@ class TestMethods:
 
         for call in mock_compile.call_args_list:
             assert call.kwargs["calibration"] is None
+
+    def test_execute_qprograms_parallel_errors_buses_with_same_rf_switch(self, platform_rf_switch: Platform):
+            qprogram_1 = QProgram()
+            qprogram_1._buses = {"bus_base"}
+            qprogram_2 = QProgram()
+            qprogram_2._buses = {"bus_uses_same_channel"}
+            qprogram_3 = QProgram()
+            qprogram_3._buses = {"bus_uses_different_channel"}
+    
+            with (
+                patch.object(Platform, "compile_qprogram"),
+                patch.object(Platform, "execute_compilation_outputs_parallel"),
+            ):
+                # If it uses the same channel it should not fail since the current can reach the fridge
+                platform_rf_switch.execute_qprograms_parallel(qprograms=[qprogram_1, qprogram_2])
+    
+                # If it uses different channels it should error since two channels can't be active at the same time
+                with pytest.raises(ValueError):
+                    platform_rf_switch.execute_qprograms_parallel(qprograms=[qprogram_1, qprogram_3])
 
     def test_mapped_buses(self, platform: Platform):
         """Test the mappings of buses"""
@@ -2062,7 +2381,17 @@ class TestMethods:
 
         _ = platform.load_db_manager(path)
 
-        mock_get_db_manager.assert_called_once_with(path)
+        mock_get_db_manager.assert_called_once_with(path=path)
+
+    @patch("qililab.platform.platform.get_db_manager")
+    def test_load_db_manager_forwards_all_arguments(self, mock_get_db_manager, platform: Platform):
+        """Test load_db_manager passes path, database_name and database_schema to get_db_manager"""
+        db_manager = platform.load_db_manager("~/database_test.ini", database_name="qaas_db", database_schema="qaas")
+
+        mock_get_db_manager.assert_called_once_with(
+            path="~/database_test.ini", database_name="qaas_db", database_schema="qaas"
+        )
+        assert db_manager is platform.db_manager is mock_get_db_manager.return_value
 
     @patch("qililab.platform.platform.get_db_manager")
     @patch("qililab.result.database.database_manager._load_config")
@@ -2091,6 +2420,7 @@ class TestMethods:
         loops = {"test_amp_loop": np.arange(0, 2)}
         experiment_name = "test_db_real_time_saving"
         mock_database = MagicMock()
+        mock_database.database_schema = "measurements"
         platform.db_manager = mock_database
         description = "description"
 
@@ -2136,6 +2466,7 @@ class TestMethods:
         results = np.array([[1.0, 1.0], [1.0, 1.0]])
 
         mock_database = MagicMock()
+        mock_database.database_schema = "measurements"
         platform.db_manager = mock_database
         description = "description"
 
@@ -2158,6 +2489,7 @@ class TestMethods:
         results = np.array([[1.0, 1.0], [1.0, 1.0]])
 
         mock_database = MagicMock()
+        mock_database.database_schema = "measurements"
         platform.db_manager = mock_database
         description = "description"
 
@@ -2178,6 +2510,7 @@ class TestMethods:
         results = np.array([[1.0, 1.0], [1.0, 1.0]])
 
         mock_database = MagicMock()
+        mock_database.database_schema = "measurements"
         platform.db_manager = mock_database
         description = "description"
 
@@ -2198,6 +2531,7 @@ class TestMethods:
         results = np.array([[1.0, 1.0], [1.0, 1.0]])
 
         mock_database = MagicMock()
+        mock_database.database_schema = "measurements"
         platform.db_manager = mock_database
         description = "description"
 
@@ -2321,7 +2655,8 @@ class TestMethods:
             patch.object(QbloxModule, "desync_sequencer"),
             patch.object(Platform, "_unintertwined_qblox_results", side_effect=lambda r, i: [r]),
         ):
-            mock_acquire.return_value = list(range(n_measures))  # [0, 1] — distinct sentinel values
+            # [0, 1] — distinct sentinel values
+            mock_acquire.return_value = list(range(n_measures))
             results = platform.execute_qprogram(qprogram=qprogram)
 
         assert len(results.results["feedline_input_output_bus"]) == n_measures

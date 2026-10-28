@@ -12,11 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import datetime
+import datetime as dt
+import functools
 import os
 import warnings
+from collections.abc import Callable
 from configparser import ConfigParser
-from typing import TYPE_CHECKING, Any, overload
+from typing import TYPE_CHECKING, Any, Literal, TypeGuard, TypeVar, get_args, overload
 
 import h5py
 import numpy as np
@@ -35,17 +37,54 @@ if TYPE_CHECKING:
     from qililab.qprogram.experiment import Experiment
     from qililab.qprogram.qprogram import QProgram
 
+DatabaseSchema = Literal["measurements", "autocal", "qaas"]
+_DATABASE_SCHEMAS: frozenset[str] = frozenset(get_args(DatabaseSchema))
+
+
+_SCHEMA_MODELS: dict[DatabaseSchema, type[Measurement | AutocalMeasurement | QaaS_Experiment]] = {
+    "measurements": Measurement,
+    "autocal": AutocalMeasurement,
+    "qaas": QaaS_Experiment,
+}
+_Entry = TypeVar("_Entry", bound=Measurement | AutocalMeasurement | QaaS_Experiment)
+
+
+def _is_database_schema(value: object) -> TypeGuard[DatabaseSchema]:
+    return value in _DATABASE_SCHEMAS
+
+
+def _requires_schema(expected: DatabaseSchema) -> Callable[[Callable], Callable]:
+    """Raise if the manager's ``database_schema`` is not ``expected``."""
+
+    def decorator(func: Callable) -> Callable:
+        @functools.wraps(func)
+        def wrapper(self, *args, **kwargs):
+            if self.database_schema != expected:
+                raise ValueError(
+                    f"`{func.__name__}` needs a DatabaseManager with database_schema='{expected}', "
+                    f"this one uses '{self.database_schema}'."
+                )
+            return func(self, *args, **kwargs)
+
+        return wrapper
+
+    return decorator
+
 
 class DatabaseManager:
     """Database manager for measurements results and metadata"""
 
     calibration_measurement: AutocalMeasurement
 
-    def __init__(self, filename: str, database_name: str):
+    def __init__(self, filename: str, database_name: str, *, database_schema: DatabaseSchema | None = None):
         """
         Args:
             filename (str): location of the database `.ini`.
             database_name (str): Name of the config section inside the `.ini`.
+            database_schema (DatabaseSchema | None, optional): Database the manager writes to: ``"measurements"``,
+                ``"autocal"`` or ``"qaas"``. If None, the ``database_schema`` key of the config section is used, and
+                if that is missing too, ``"measurements"``. If both are given and differ, this argument is used and a
+                warning is raised. Defaults to None.
         """
         config = _load_config(filename, database_name)
 
@@ -56,6 +95,20 @@ class DatabaseManager:
                 f"Missing or empty required config value(s) in '{database_name}' "
                 f"Missing the database keys: {', '.join(missing)}"
             )
+
+        config_schema = config.get("database_schema")
+        schema: object = database_schema
+        if database_schema is None:
+            schema = config_schema if config_schema is not None else "measurements"
+        elif config_schema is not None and config_schema != database_schema:
+            warnings.warn(
+                f"'database_schema' is '{database_schema}' but the config section '{database_name}' declares "
+                f"'{config_schema}'. Using '{database_schema}'.",
+                stacklevel=3,
+            )
+        if not _is_database_schema(schema):
+            raise ValueError(f"'{schema}' is not a valid 'database_schema'. Valid values: {sorted(_DATABASE_SCHEMAS)}")
+        self.database_schema: DatabaseSchema = schema
 
         self.engine = get_engine(config["user"], config["passwd"], config["host"], config["port"], config["database"])
         self.session: sessionmaker[Session] = sessionmaker(bind=self.engine, expire_on_commit=False)
@@ -72,6 +125,7 @@ class DatabaseManager:
             self.base_path_share = config["base_path_shared"]
             self.folder_path = config["data_write_folder"]
 
+    @_requires_schema("measurements")
     def set_sample_and_cooldown(self, sample: str, cooldown: str | None = None):
         """Set sample and cooldown of the database
 
@@ -102,7 +156,8 @@ class DatabaseManager:
                 return
             warnings.warn(f"Set current sample to {sample}")
 
-    def add_cooldown(self, cooldown: str, fridge: str, date: datetime.date = datetime.date.today()):
+    @_requires_schema("measurements")
+    def add_cooldown(self, cooldown: str, fridge: str, date: dt.date = dt.date.today()):
         """Add cooldown to metadata
 
         Args:
@@ -119,6 +174,7 @@ class DatabaseManager:
                 running_session.rollback()
                 raise e
 
+    @_requires_schema("measurements")
     def add_sample(
         self,
         sample_name: str,
@@ -160,6 +216,7 @@ class DatabaseManager:
                 running_session.rollback()
                 raise e
 
+    @_requires_schema("measurements")
     def add_sequence_run(
         self, sequence_name: str, sequence_tree: dict, sample_name: str, cooldown: str | None = None
     ) -> SequenceRun:
@@ -173,7 +230,7 @@ class DatabaseManager:
         """
         sequence_obj = SequenceRun(
             sequence_name=sequence_name,
-            start_time=datetime.datetime.now(),
+            start_time=dt.datetime.now(),
             sequence_tree=sequence_tree,
             sequence_completed=False,
             sample_name=sample_name,
@@ -183,13 +240,14 @@ class DatabaseManager:
             running_session.add(sequence_obj)
             try:
                 running_session.commit()
-                self.current_sequence = sequence_obj.sequence_id  # type: ignore[assignment]
+                self.current_sequence = sequence_obj.sequence_id
                 return sequence_obj
 
             except Exception as e:
                 running_session.rollback()
                 raise e
 
+    @_requires_schema("autocal")
     def add_calibration_run(self, calibration_tree: dict, sample_name: str, cooldown: str) -> CalibrationRun:
         """Add autocalibration metadata.
 
@@ -197,7 +255,7 @@ class DatabaseManager:
             calibration_tree (dict): Full calibration tree of the run.
         """
         calibration_obj = CalibrationRun(
-            date=datetime.datetime.now(),
+            date=dt.datetime.now(),
             calibration_tree=calibration_tree,
             calibration_completed=False,
             sample_name=sample_name,
@@ -214,7 +272,7 @@ class DatabaseManager:
                 raise e
 
     @overload
-    def load_by_id(self, id: list[int]) -> list[Measurement] | None:
+    def load_by_id(self, id: list[int]) -> list[Measurement]:
         """Load list of measurements by their measurement_id.
 
         Args:
@@ -222,49 +280,87 @@ class DatabaseManager:
         """
 
     @overload
-    def load_by_id(self, id: int) -> Measurement | None:
-        """Load measurement by its measurement_id.
-
-        Args:
-            id (int | list[int]): measurement_id value given by the database.
-        """
-
-    def load_by_id(self, id: int | list[int]) -> list[Measurement] | Measurement | None:
-        """Load measurements by their measurement_id.
-
-        Args:
-            id (int | list[int]): measurement_id value given by the database.
-        """
-        with self.session() as running_session:
-            if not isinstance(id, list):
-                measurement_id = [id]
-            else:
-                measurement_id = id
-
-            measurement_by_id_list = (
-                running_session.query(Measurement).filter(Measurement.measurement_id.in_(measurement_id)).all()
-            )
-            if measurement_by_id_list is not None:
-                for meas in measurement_by_id_list:
-                    path = meas.result_path
-                    if not os.path.isfile(path):
-                        new_path = path.replace(self.base_path_local, self.base_path_share)
-                        meas.result_path = new_path
-            return measurement_by_id_list if len(measurement_by_id_list) > 1 else measurement_by_id_list[0]
-
-    def add_fitting(self, id: int, path: str, parameters: dict[str, Any] | None = None) -> Measurement:
-        """Store fitting information tho the measurements database, loaded by its measurement_id.
+    def load_by_id(self, id: int) -> Measurement:
+        """Load a measurement by its measurement_id.
 
         Args:
             id (int): measurement_id value given by the database.
-            path (str): Path to the fitting results file.
+        """
+
+    @_requires_schema("measurements")
+    def load_by_id(self, id: int | list[int]):
+        """Load measurements by their measurement_id. Needs a manager with the ``"measurements"`` schema.
+
+        To load from the table of any ``database_schema``, use ``load_entry_by_id``.
+
+        Args:
+            id (int | list[int]): measurement_id value or list of measurement_id values given by the database.
+
+        Returns:
+            Measurement | list[Measurement]: the measurement for an id, or a list of measurements for a list of ids.
+
+        Raises:
+            ValueError: if the manager's ``database_schema`` is not ``"measurements"``.
+            IndexError: if any of the ids does not exist.
+        """
+        return self._load_by_id(Measurement, id)
+
+    @overload
+    def load_entry_by_id(self, id: list[int]) -> list[Measurement] | list[AutocalMeasurement] | list[QaaS_Experiment]:
+        """Load list of entries by their id.
+
+        Args:
+            id (list[int]): id list given by the database.
+        """
+
+    @overload
+    def load_entry_by_id(self, id: int) -> Measurement | AutocalMeasurement | QaaS_Experiment:
+        """Load an entry by its id.
+
+        Args:
+            id (int): id value given by the database.
+        """
+
+    def load_entry_by_id(self, id: int | list[int]):
+        """Load entries by their id from the table of the manager's ``database_schema``.
+
+        The id is the ``measurement_id`` for the ``"measurements"`` and ``"autocal"`` schemas, and the
+        ``experiment_id`` for the ``"qaas"`` schema. Since the entry type depends on the ``database_schema``, the
+        return type is a union: when the schema is known, prefer ``load_by_id``, ``load_calibration_by_id`` or
+        ``load_experiment_by_id``, which return a precise type.
+
+        Args:
+            id (int | list[int]): id value or list of id values given by the database.
+
+        Returns:
+            Measurement | AutocalMeasurement | QaaS_Experiment | list: the entry for an id, or a list of entries for a
+            list of ids.
+
+        Raises:
+            IndexError: if any of the ids does not exist.
+        """
+        return self._load_by_id(_SCHEMA_MODELS[self.database_schema], id)
+
+    def add_fitting(
+        self, id: int, path: str | None = None, parameters: dict[str, Any] | None = None
+    ) -> Measurement | AutocalMeasurement:
+        """Store fitting information in the table of the manager's ``database_schema``, loaded by its measurement_id.
+
+        Args:
+            id (int): measurement_id value given by the database.
+            path (str | None, optional): Path to the fitting results file. Mandatory for the ``"measurements"`` schema.
+                Defaults to None.
             parameters (dict[str, Any] | None, optional): Fitting parameters. Defaults to None.
         """
-        measurement = self.load_by_id(id)
-        if measurement is None:
-            raise IndexError(f"Measurement entry '{id}' does not exist.")
-        return measurement.add_fitting(self, path, parameters)
+        if self.database_schema == "measurements":
+            if path is None:
+                raise ValueError("A fitting 'path' is mandatory for the 'measurements' database schema.")
+            return self._add_measurement_fitting(id, path, parameters)
+        if self.database_schema == "autocal":
+            return self._add_autocal_fitting(id, path, parameters)
+        raise ValueError(f"Fitting information cannot be stored in the '{self.database_schema}' database schema.")
 
+    @_requires_schema("measurements")
     def load_sequence_by_id(self, id: int | list[int]) -> list[Measurement] | None:
         """Load measurement by its measurement_id.
 
@@ -281,44 +377,100 @@ class DatabaseManager:
                 .all()
             )
             for meas in measurement_by_id_list:
-                path = meas.result_path
-                if not os.path.isfile(path):
-                    new_path = path.replace(self.base_path_local, self.base_path_share)
-                    meas.result_path = new_path
+                self._rewrite_result_path(meas)
             return measurement_by_id_list
 
-    def load_calibration_by_id(self, id: int) -> AutocalMeasurement | None:
-        """Load autocalibration measurement by its measurement_id.
+    @_requires_schema("autocal")
+    def load_calibration_by_id(self, id: int) -> AutocalMeasurement:
+        """Load autocalibration measurement by its measurement_id. Needs a manager with the ``"autocal"`` schema.
 
         Args:
             id (int): measurement_id value given by the database.
+
+        Raises:
+            ValueError: if the manager's ``database_schema`` is not ``"autocal"``.
+            IndexError: if the id does not exist.
         """
-        with self.session() as running_session:
-            measurement_by_id = (
-                running_session.query(AutocalMeasurement).where(AutocalMeasurement.measurement_id == id).one_or_none()
-            )
+        return self._load_by_id(AutocalMeasurement, id)
 
-            return measurement_by_id
+    @_requires_schema("autocal")
+    def add_calibration_fitting(
+        self, id: int, path: str | None = None, parameters: dict[str, Any] | None = None
+    ) -> AutocalMeasurement:
+        """Store fitting information into the autocalibration measurements database, loaded by its measurement_id.
 
-    def load_experiment_by_id(self, id: int) -> QaaS_Experiment | None:
-        """Load QaaS measurement by its measurement_id.
+        .. deprecated::
+            Use ``add_fitting`` with a ``DatabaseManager`` created with ``database_schema="autocal"`` instead.
 
         Args:
             id (int): measurement_id value given by the database.
+            path (str | None, optional): Path to the fitting results file. Defaults to None.
+            parameters (dict[str, Any] | None, optional): Fitting parameters. Defaults to None.
         """
+        warnings.warn(
+            "`add_calibration_fitting` is deprecated and will be removed in a future release. Use `add_fitting` with "
+            '`database_schema="autocal"` instead.',
+            FutureWarning,
+            stacklevel=2,
+        )
+        return self._add_autocal_fitting(id, path, parameters)
+
+    @_requires_schema("qaas")
+    def load_experiment_by_id(self, id: int) -> QaaS_Experiment:
+        """Load QaaS measurement by its experiment_id. Needs a manager with the ``"qaas"`` schema.
+
+        Args:
+            id (int): experiment_id value given by the database.
+
+        Raises:
+            ValueError: if the manager's ``database_schema`` is not ``"qaas"``.
+            IndexError: if the id does not exist.
+        """
+        return self._load_by_id(QaaS_Experiment, id)
+
+    def _rewrite_result_path(self, entry: Measurement | AutocalMeasurement | QaaS_Experiment) -> None:
+        """Point ``result_path`` to the shared base path when the local file does not exist."""
+        path = entry.result_path
+        if self.base_path_local is not None and self.base_path_share is not None and not os.path.isfile(path):
+            entry.result_path = path.replace(self.base_path_local, self.base_path_share)
+
+    @overload
+    def _load_by_id(self, model: type[_Entry], id: list[int]) -> list[_Entry]: ...
+
+    @overload
+    def _load_by_id(self, model: type[_Entry], id: int) -> _Entry: ...
+
+    def _load_by_id(self, model: type[_Entry], id: int | list[int]) -> _Entry | list[_Entry]:
+        """Load entries of ``model`` by its primary key: a list for a list of ids, else the entry.
+
+        Raises:
+            IndexError: if any of the ids does not exist.
+        """
+        ids = id if isinstance(id, list) else [id]
+        primary_key = model.__mapper__.primary_key[0]
+        primary_key_name = model.__mapper__.get_property_by_column(primary_key).key
         with self.session() as running_session:
-            experiment_by_id = (
-                running_session.query(QaaS_Experiment).where(QaaS_Experiment.experiment_id == id).one_or_none()
-            )
+            entries = running_session.query(model).filter(primary_key.in_(ids)).all()
+        missing = set(ids) - {getattr(entry, primary_key_name) for entry in entries}
+        if missing:
+            raise IndexError(f"{model.__name__} entry {sorted(missing)} does not exist.")
+        for entry in entries:
+            self._rewrite_result_path(entry)
+        return entries if isinstance(id, list) else entries[0]
 
-            if experiment_by_id is not None:
-                path = experiment_by_id.result_path
-                if not os.path.isfile(path):
-                    new_path = path.replace(self.base_path_local, self.base_path_share)
-                    experiment_by_id.result_path = new_path
+    def _add_measurement_fitting(self, id: int, path: str, parameters: dict[str, Any] | None = None) -> Measurement:
+        """Store fitting information in the measurements table."""
+        measurement = self._load_by_id(Measurement, id)
+        return measurement.add_fitting(self, path, parameters)
 
-            return experiment_by_id
+    def _add_autocal_fitting(
+        self, id: int, path: str | None = None, parameters: dict[str, Any] | None = None
+    ) -> AutocalMeasurement:
+        """Store fitting information in the autocalibration measurements table."""
+        measurement = self._load_by_id(AutocalMeasurement, id)
+        return measurement.add_fitting(self, path, parameters)
 
+    @_requires_schema("measurements")
     def tail(
         self,
         exp_name: str | None = None,
@@ -356,7 +508,8 @@ class DatabaseManager:
 
             Measurement.platform.isnot
             if light_read:
-                query = query.with_entities(  # Note that some columns are missing that currently are not being used
+                # Note that some columns are missing that currently are not being used
+                query = query.with_entities(
                     Measurement.measurement_id,
                     Measurement.sequence_id,
                     Measurement.experiment_name,
@@ -377,12 +530,14 @@ class DatabaseManager:
                     (Measurement.calibration != "null").label("has_calibration"),
                     (Measurement.debug_file != "null").label("has_debug"),
                     (Measurement.dc_offsets != "null").label("has_dc_offsets"),
+                    (Measurement.flux_offsets != "null").label("has_flux_offsets"),
                 )
 
             if pandas_output:
                 return read_sql(query.statement, con=con)
             return query.all()
 
+    @_requires_schema("measurements")
     def head(
         self,
         exp_name: str | None = None,
@@ -420,7 +575,8 @@ class DatabaseManager:
                 query = query.order_by(Measurement.measurement_id)
 
             if light_read:
-                query = query.with_entities(  # Note that some columns are missing that currently are not being used
+                # Note that some columns are missing that currently are not being used
+                query = query.with_entities(
                     Measurement.measurement_id,
                     Measurement.sequence_id,
                     Measurement.experiment_name,
@@ -441,12 +597,14 @@ class DatabaseManager:
                     (Measurement.calibration != "null").label("has_calibration"),
                     (Measurement.debug_file != "null").label("has_debug"),
                     (Measurement.dc_offsets != "null").label("has_dc_offsets"),
+                    (Measurement.flux_offsets != "null").label("has_flux_offsets"),
                 )
 
             if pandas_output:
                 return read_sql(query.statement, con=con)
             return query.all()
 
+    @_requires_schema("measurements")
     def get_qprogram(self, measurement_id: int) -> str:
         """Get QProgram of a measurement by its measurement_id.
         To be used when you have light loaded measurements
@@ -461,6 +619,7 @@ class DatabaseManager:
                 .scalar()
             )
 
+    @_requires_schema("measurements")
     def get_calibration(self, measurement_id: int) -> str:
         """Get Calibration of a measurement by its measurement_id.
         To be used when you have light loaded measurements
@@ -475,6 +634,7 @@ class DatabaseManager:
                 .scalar()
             )
 
+    @_requires_schema("measurements")
     def get_platform(self, measurement_id: int) -> dict:
         """Get Platform of a measurement by its measurement_id.
         To be used when you have light loaded measurements
@@ -489,6 +649,7 @@ class DatabaseManager:
                 .scalar()
             )
 
+    @_requires_schema("measurements")
     def get_debug(self, measurement_id: int) -> str:
         """Get Debug of a measurement by its measurement_id.
         To be used when you have light loaded measurements
@@ -503,6 +664,7 @@ class DatabaseManager:
                 .scalar()
             )
 
+    @_requires_schema("measurements")
     def get_dc_offsets(self, measurement_id: int) -> str:
         """Get DC offsets of a measurement by its measurement_id.
         To be used when you have light loaded measurements
@@ -517,13 +679,14 @@ class DatabaseManager:
                 .scalar()
             )
 
+    @_requires_schema("autocal")
     def add_autocal_measurement(
         self,
         experiment_name: str,
-        qubit_idx: int | str,
-        calibration: "Calibration",  # type: ignore
-        platform: "Platform" = None,  # type: ignore
-        qprogram: "QProgram" = None,  # type: ignore
+        qubit_idx: int | str | None,
+        calibration: "Calibration",
+        platform: "Platform | None" = None,
+        qprogram: "QProgram | None" = None,
         parameters: list[str] | None = None,
         data_shape: np.ndarray | None = None,
     ):
@@ -531,15 +694,14 @@ class DatabaseManager:
 
         Args:
             experiment_name (str): Experiment name.
-            qubit_idx (int): Number of qubit index.
+            qubit_idx (int | str | None): Index of the measured qubit, stored in the ``qbit_idx`` column.
             calibration (Calibration): Experiment calibration parameters.
             platform (Platform, optional): Platform used on the experiment. Defaults to None.
             qprogram (QProgram | None, optional): Qprogram used on the experiment. Defaults to None.
             parameters (list[str] | None, optional): Parameters used on the experiment. Defaults to None.
             data_shape (np.ndarray | None, optional): Shape of the results array. Defaults to None.
         """
-
-        start_time = datetime.datetime.now()
+        start_time = dt.datetime.now()
 
         with self.session() as running_session:
             calibration_id = (
@@ -560,12 +722,12 @@ class DatabaseManager:
         self.calibration_measurement = AutocalMeasurement(
             experiment_name=experiment_name,
             calibration_id=calibration_id,
-            qbit_idx=qubit_idx,
+            qbit_idx=str(qubit_idx) if isinstance(qubit_idx, int) else qubit_idx,
             result_path=result_path,
             fitting_path=base_path,
             experiment_completed=False,
             start_time=start_time,
-            platform_before=platform,
+            platform=platform,
             qprogram=qprogram,
             calibration=serialize(calibration),
             parameters=serialize(parameters),
@@ -580,14 +742,16 @@ class DatabaseManager:
                 running_session.rollback()
                 raise e
 
+    @_requires_schema("autocal")
     def update_platform(self, platform: "Platform"):
         """Update calibration platform after fitting
 
         Args:
-            platform (Platform): New platform to be set at platform_before column from `AutocalMeasurement`.
+            platform (Platform): New platform to be set at the platform_after column from `AutocalMeasurement`.
         """
         self.calibration_measurement.update_platform(self.session, platform)
 
+    @_requires_schema("qaas")
     def add_experiment(
         self,
         job_id: int,
@@ -605,8 +769,7 @@ class DatabaseManager:
             cooldown (str): Cooldown id.
             sample_name (str): Sample id.
         """
-
-        start_time = datetime.datetime.now()
+        start_time = dt.datetime.now()
 
         measurement = QaaS_Experiment(
             job_id=job_id,
@@ -626,6 +789,7 @@ class DatabaseManager:
                 running_session.rollback()
                 raise e
 
+    @_requires_schema("measurements")
     def add_measurement(
         self,
         experiment_name: str,
@@ -633,16 +797,17 @@ class DatabaseManager:
         cooldown: str | None = None,
         sample_name: str | None = None,
         optional_identifier: str | None = None,
-        end_time: datetime.datetime | None = None,
+        end_time: dt.datetime | None = None,
         run_length: float | None = None,
-        platform: "Platform" = None,  # type: ignore
-        experiment: "Experiment" = None,  # type: ignore
-        qprogram: "QProgram" = None,  # type: ignore
-        calibration: "Calibration" = None,  # type: ignore
+        platform: "Platform | None" = None,
+        experiment: "Experiment | None" = None,
+        qprogram: "QProgram | None" = None,
+        calibration: "Calibration | None" = None,
         debug_file: str | None = None,
         parameters: list[str] | None = None,
         data_shape: np.ndarray | None = None,
         dc_offsets: dict[str, float] | None = None,
+        flux_offsets: dict[str, float] | None = None,
         target: list[str] | None = None,
         secondary_source: list[str] | None = None,
         bus_mapping: dict[str, str] | None = None,
@@ -664,7 +829,8 @@ class DatabaseManager:
             calibration (Calibration | None, optional): Calibration used on the experiment. Defaults to None.
             parameters (list[str] | None, optional): Parameters used on the experiment. Defaults to None.
             data_shape (np.ndarray | None, optional): Shape of the results array. Defaults to None.
-            dc_offsets (np.ndarray | None, optional): Instruments offsets. Defaults to None.
+            dc_offsets (dict | None, optional): Instruments offsets. Defaults to None.
+            flux_offsets (dict | None, optional): Flux offsets. Defaults to None.
             target (np.ndarray | None, optional): Target qubits list. Defaults to None.
             secondary_source (np.ndarray | None, optional): Secondary source buses list. Defaults to None.
             bus_mapping (dict[str, str] | None, optional): Bus map of the qprogram. Defaults to None.
@@ -677,7 +843,7 @@ class DatabaseManager:
         if cooldown is None:
             cooldown = self.current_cd
 
-        start_time = datetime.datetime.now()
+        start_time = dt.datetime.now()
         formatted_time = start_time.strftime("%Y-%m-%d/%H_%M_%S_%f")
 
         base_path = f"{self.base_path_local}{self.folder_path}"
@@ -714,6 +880,7 @@ class DatabaseManager:
             parameters=parameters,
             data_shape=data_shape,
             dc_offsets=dc_offsets,
+            flux_offsets=flux_offsets,
             target=target,
             secondary_source=secondary_source,
             bus_mapping=bus_mapping,
@@ -727,6 +894,7 @@ class DatabaseManager:
                 running_session.rollback()
                 raise e
 
+    @_requires_schema("measurements")
     def add_results(
         self,
         experiment_name: str,
@@ -735,10 +903,10 @@ class DatabaseManager:
         cooldown: str | None = None,
         sample_name: str | None = None,
         optional_identifier: str | None = None,
-        platform: "Platform" = None,  # type: ignore
-        experiment: "Experiment" = None,  # type: ignore
-        qprogram: "QProgram" = None,  # type: ignore
-        calibration: "Calibration" = None,  # type: ignore
+        platform: "Platform | None" = None,
+        experiment: "Experiment | None" = None,
+        qprogram: "QProgram | None" = None,
+        calibration: "Calibration | None" = None,
         parameters: list[str] | None = None,
     ):
         """Add measurement metadata, data path and results from a finished experiment.
@@ -764,7 +932,7 @@ class DatabaseManager:
         if cooldown is None:
             cooldown = self.current_cd
 
-        start_time = datetime.datetime.now()
+        start_time = dt.datetime.now()
 
         base_path = f"{self.base_path_local}{self.folder_path}"
         if not os.path.isdir(base_path):
@@ -795,7 +963,7 @@ class DatabaseManager:
             start_time=start_time,
             cooldown=cooldown,
             optional_identifier=optional_identifier,
-            end_time=datetime.datetime.now(),
+            end_time=dt.datetime.now(),
             platform=platform,
             experiment=experiment,
             qprogram=qprogram,
@@ -828,10 +996,19 @@ def _load_config(filename, section):
     raise ReferenceError("Section {0} not found in the {1} file".format(section, filename))
 
 
-def get_db_manager(path: str = "~/database.ini", database_name: str = "postgresql") -> DatabaseManager:
-    """Automatic DatabaseManager generator based on default load_config"""
+def get_db_manager(
+    path: str = "~/database.ini", database_name: str = "postgresql", database_schema: DatabaseSchema | None = None
+) -> DatabaseManager:
+    """Automatic DatabaseManager generator based on default load_config
+
+    Args:
+        path (str, optional): Location of the database `.ini`. Defaults to "~/database.ini".
+        database_name (str, optional): Name of the config section inside the `.ini`. Defaults to "postgresql".
+        database_schema (DatabaseSchema | None, optional): Database the manager writes to. See ``DatabaseManager``.
+            Defaults to None.
+    """
     filename = os.path.expanduser(path)
-    return DatabaseManager(filename, database_name)
+    return DatabaseManager(filename, database_name, database_schema=database_schema)
 
 
 def get_engine(user: str, passwd: str, host: str, port: str, database: str):
@@ -848,9 +1025,23 @@ def get_engine(user: str, passwd: str, host: str, port: str, database: str):
     return create_engine(url)
 
 
-def load_by_id(id: int | list[int], path: str = "~/database.ini") -> list[Measurement] | Measurement | None:
-    """Function to get the database ID without loading the Database Manager"""
+@overload
+def load_by_id(id: list[int], path: str = "~/database.ini") -> list[Measurement]: ...
+
+
+@overload
+def load_by_id(id: int, path: str = "~/database.ini") -> Measurement: ...
+
+
+def load_by_id(id: int | list[int], path: str = "~/database.ini") -> list[Measurement] | Measurement:
+    """Load measurements by their measurement_id without creating a ``DatabaseManager`` yourself.
+
+    See ``DatabaseManager.load_by_id``. The `.ini` section must use the ``"measurements"`` database schema.
+
+    Args:
+        id (int | list[int]): measurement_id value or list of measurement_id values given by the database.
+        path (str, optional): Location of the database `.ini`. Defaults to "~/database.ini".
+    """
 
     db = get_db_manager(path)
-    measurement_by_id = db.load_by_id(id)
-    return measurement_by_id
+    return db.load_by_id(id)

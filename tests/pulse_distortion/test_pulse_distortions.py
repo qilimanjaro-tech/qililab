@@ -83,7 +83,8 @@ def test_amplitude_gain_matches_filter_peak_ratio(distortion):
     expected = np.max(np.abs(np.real(distortion._filter(envelope)))) / np.max(np.abs(np.real(envelope)))
 
     assert gain == pytest.approx(expected)
-    assert gain > 1.0  # these filters inflate a unit pulse
+    # these filters inflate a unit pulse
+    assert gain > 1.0
 
 
 @pytest.mark.parametrize(

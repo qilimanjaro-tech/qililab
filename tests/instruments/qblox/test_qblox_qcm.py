@@ -131,7 +131,8 @@ class TestQbloxQCM:
         assert qcm.alias == "qcm"
         assert qcm.is_awg()
         assert not qcm.is_adc()
-        assert len(qcm.awg_sequencers) == 2  # As per the YAML config
+        # As per the YAML config
+        assert len(qcm.awg_sequencers) == 2
         assert qcm.out_offsets == [0.0, 0.1, 0.2, 0.3]
         filter = qcm.get_filter(0)
         assert filter.exponential_amplitude[0] == 0.31

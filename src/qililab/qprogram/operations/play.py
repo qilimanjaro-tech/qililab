@@ -28,14 +28,14 @@ class Play(SdkPlay):
         waveform: Waveform | IQWaveform,
         wait_time: int | None = None,
         dwell: int | None = None,
-        delay: int | None = None,
+        delay: float | None = None,
         repetitions: int | None = None,
         stepped: bool | None = None,
     ) -> None:
         super().__init__(bus=bus, waveform=waveform)
         self.wait_time: int | None = wait_time
         self.dwell: int | None = dwell
-        self.delay: int | None = delay
+        self.delay: float | None = delay
         self.repetitions: int | None = repetitions
         self.stepped: bool | None = stepped
 
@@ -69,7 +69,7 @@ class PlayWithCalibratedWaveform(Operation):
         waveform: str,
         wait_time: int | None = None,
         dwell: int | None = None,
-        delay: int | None = None,
+        delay: float | None = None,
         repetitions: int | None = None,
         stepped: bool | None = None,
     ) -> None:
@@ -78,6 +78,6 @@ class PlayWithCalibratedWaveform(Operation):
         self.waveform: str = waveform
         self.wait_time: int | None = wait_time
         self.dwell: int | None = dwell
-        self.delay: int | None = delay
+        self.delay: float | None = delay
         self.repetitions: int | None = repetitions
         self.stepped: bool | None = stepped

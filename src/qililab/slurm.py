@@ -67,7 +67,8 @@ def is_variable_assigned(code: str, variable: str) -> bool:
         elif isinstance(node, ast.AnnAssign):
             if node.simple and isinstance(node.target, ast.Name) and node.target.id == variable:
                 return True
-        elif isinstance(node, ast.NamedExpr):  # walrus: x := ...
+        # walrus: x := ...
+        elif isinstance(node, ast.NamedExpr):
             if isinstance(node.target, ast.Name) and node.target.id == variable:
                 return True
     return False

@@ -13,20 +13,27 @@
 # limitations under the License.
 from __future__ import annotations
 
+import warnings
 from typing import TYPE_CHECKING, Any
 
 import h5py
 import numpy as np
 
+from qililab.core import Variable
 from qililab.instruments.qblox.qblox_module import QbloxModule
 from qililab.instruments.qdevil.qdevil_qdac2 import QDevilQDac2
+from qililab.qprogram.blocks import Block
+from qililab.qprogram.operations import SetOffset
 from qililab.typings.enums import Parameter
 from qililab.utils.serialization import serialize
 
 if TYPE_CHECKING:
+    from collections.abc import Mapping
+
     from qililab.platform import Platform
     from qililab.qprogram.qprogram import Calibration, QProgram
-    from qililab.result.database import AutocalMeasurement, DatabaseManager, Measurement
+    from qililab.result.database import AutocalMeasurement, DatabaseManager, DatabaseSchema, Measurement
+    from qililab.result.result_management import InputLoopData, LoopData
 
 
 class StreamArray:
@@ -39,12 +46,17 @@ class StreamArray:
 
     Args:
         shape (list | tuple): Shape of the results array.
-        loops (dict[str, np.ndarray] | dict[str, dict[str, Any]]): dictionary of loops with the name of the loop and the array.
+        loops (Mapping[str, np.ndarray | InputLoopData | LoopData]): dictionary of loops with the name of the loop and either the array or a
+            ``InputLoopData`` dictionary with the array and its ``units``, ``bus`` and ``parameter`` metadata.
         platform (Platform): platform where the experiment was executed
         experiment_name (str): Name of the experiment.
-        db_manager (DatabaseManager): database manager loaded from the database after setting the db parameters.
+        db_manager (DatabaseManager): database manager loaded from the database after setting the db parameters. Its
+            ``database_schema`` selects where the measurement is saved: ``"measurements"`` or ``"autocal"``.
         qprogram (QProgram | None, optional): Qprogram of the experiment, if there is no Qprogram related to the results it is not mandatory. Defaults to None.
         optional_identifier (str | None, optional): String containing a description or any relevant information about the experiment. Defaults to None.
+        autocalibration (bool | None, optional): Deprecated, set ``database_schema`` on the ``DatabaseManager`` instead.
+            If given, it must match ``db_manager.database_schema``: True needs ``"autocal"`` and False
+            ``"measurements"``, otherwise an error is raised. Defaults to None.
     """
 
     path: str
@@ -55,7 +67,7 @@ class StreamArray:
     def __init__(
         self,
         shape: list | tuple,
-        loops: dict[str, np.ndarray] | dict[str, dict[str, Any]],
+        loops: Mapping[str, np.ndarray | InputLoopData | LoopData],
         experiment_name: str,
         db_manager: DatabaseManager,
         platform: Platform | None = None,
@@ -63,7 +75,7 @@ class StreamArray:
         calibration: Calibration | None = None,
         bus_mapping: dict[str, str] | None = None,
         optional_identifier: str | None = None,
-        autocalibration: bool = False,
+        autocalibration: bool | None = None,
         qubit_idx: int | str | list[str] | None = None,
         secondary_idx: int | str | list[str] | None = None,
     ):
@@ -77,6 +89,13 @@ class StreamArray:
         self.qprogram = qprogram
         self.calibration = calibration
         self.bus_mapping = bus_mapping
+        if autocalibration is not None:
+            warnings.warn(
+                "`autocalibration` is deprecated and will be removed in a future release. Select the database with "
+                '`get_db_manager(..., database_schema="autocal")` instead.',
+                FutureWarning,
+                stacklevel=2,
+            )
         self.autocalibration = autocalibration
         self.qubit_idx = qubit_idx
         self.second_idx = secondary_idx
@@ -93,7 +112,8 @@ class StreamArray:
             if calibration is None and self.platform is not None:
                 calibration = self.platform.calibration
 
-            if self.autocalibration:
+            database_schema = self._database_schema()
+            if database_schema == "autocal":
                 if not calibration:
                     raise ValueError("For autocalibration a Calibration file is mandatory.")
                 self.measurement = self.db_manager.add_autocal_measurement(
@@ -105,7 +125,7 @@ class StreamArray:
                     parameters=self.loops,
                     data_shape=self.shape,
                 )
-            else:
+            elif database_schema == "measurements":
                 self.measurement = self.db_manager.add_measurement(
                     experiment_name=self.experiment_name,
                     experiment_completed=False,
@@ -114,11 +134,14 @@ class StreamArray:
                     qprogram=serialize(self.qprogram) if self.qprogram else None,
                     calibration=serialize(calibration) if calibration else None,
                     debug_file=self._get_debug() if self.platform and self.qprogram else None,
-                    dc_offsets=self._get_offsets() if self.platform else None,
+                    dc_offsets=self._get_dc_offsets() if self.platform else None,
+                    flux_offsets=self._get_flux_offsets() if calibration and calibration.crosstalk_matrix else None,
                     target=self._get_index_list(self.qubit_idx),
                     secondary_source=self._get_index_list(self.second_idx),
                     bus_mapping=self.bus_mapping,
                 )
+            else:
+                raise ValueError(f"StreamArray cannot save to the '{database_schema}' database schema.")
             self.path = self.measurement.result_path
 
             # Save loops
@@ -150,6 +173,18 @@ class StreamArray:
         except Exception as e:
             raise RuntimeError("An error occurred while creating the StreamArray.") from e
 
+    def _database_schema(self) -> DatabaseSchema:
+        """Database schema of the ``db_manager``, checked against the deprecated ``autocalibration`` flag."""
+        database_schema = self.db_manager.database_schema
+        if self.autocalibration is not None:
+            expected = "autocal" if self.autocalibration else "measurements"
+            if database_schema != expected:
+                raise ValueError(
+                    f"`autocalibration={self.autocalibration}` needs a db_manager with database_schema='{expected}', "
+                    f"this one uses '{database_schema}'."
+                )
+        return database_schema
+
     def __setitem__(
         self, key: tuple, value: np.ndarray[Any, np.dtype[np.floating]] | np.ndarray[Any, np.dtype[np.complexfloating]]
     ):
@@ -175,9 +210,9 @@ class StreamArray:
     def add_fitting(self, path: str, parameters: dict[str, Any] | None = None):
         """Attach fitting results to the measurement.
 
-        This is a thin wrapper over ``Measurement.add_fitting`` that injects the database session
-        held by the ``StreamArray``, so the user does not need to handle it. It is meant to be called
-        after the ``with`` block has exited (i.e. after ``end_experiment`` has run).
+        This is a thin wrapper over ``Measurement.add_fitting`` / ``AutocalMeasurement.add_fitting`` that
+        injects the database session held by the ``StreamArray``, so the user does not need to handle it.
+        It is meant to be called after the ``with`` block has exited (i.e. after ``end_experiment`` has run).
 
         Args:
             path (str): Path to the fitting results file.
@@ -185,8 +220,6 @@ class StreamArray:
         """
         if self.measurement is None:
             raise RuntimeError("add_fitting must be called after the StreamArray context has exited.")
-        if self.autocalibration:
-            raise NotImplementedError("Autocalibration fitting management does not depend on StreamArray.")
         self.measurement = self.measurement.add_fitting(self.db_manager, path, parameters)
         return self.measurement
 
@@ -248,7 +281,7 @@ class StreamArray:
         debug_exception = "Non Qblox machine."
         return debug_exception
 
-    def _get_offsets(self) -> dict[str, float] | None:
+    def _get_dc_offsets(self) -> dict[str, float] | None:
         qdac_buses = {
             bus.alias: bus.get_parameter(Parameter.VOLTAGE)
             for bus in self.platform.buses.elements  # type: ignore [union-attr]
@@ -256,6 +289,45 @@ class StreamArray:
             if isinstance(instrument, QDevilQDac2)
         }
         return qdac_buses if qdac_buses else None
+
+    def _get_flux_offsets(self) -> dict[str, float] | None:
+        platform_flux = (
+            dict(self.platform.flux_vector.flux_vector) if self.platform and self.platform.flux_vector else {}
+        )
+        qprogram_flux = self._get_qprogram_flux_vector() if self.qprogram else {}
+        if not platform_flux and not qprogram_flux:
+            return None
+        flux_offsets: dict[str, float] = dict(platform_flux)  # type: ignore[arg-type]
+        for bus, flux in qprogram_flux.items():
+            flux_offsets[bus] = flux_offsets.get(bus, 0.0) + flux
+        return flux_offsets
+
+    def _get_qprogram_flux_vector(self) -> dict[str, float]:
+        """Flux vector from the QProgram's constant ``set_offset`` calls on crosstalk buses.
+
+        Returns empty if any bus is offset more than once; swept offsets are skipped.
+        """
+        if not self.qprogram or not self.calibration or not self.calibration.crosstalk_matrix:
+            return {}
+        crosstalk_buses = set(self.calibration.crosstalk_matrix.matrix.keys())
+
+        offsets: dict[str, list[float | Variable]] = {}
+
+        def traverse(block: Block) -> None:
+            for element in block.elements:
+                if isinstance(element, SetOffset) and element.bus in crosstalk_buses:
+                    offsets.setdefault(element.bus, []).append(element.offset_path0)
+                elif isinstance(element, Block):
+                    traverse(element)
+
+        traverse(self.qprogram._body)
+        if any(len(values) > 1 for values in offsets.values()):
+            return {}
+        return {
+            bus: float(values[0])
+            for bus, values in offsets.items()
+            if isinstance(values[0], (int, float)) and not isinstance(values[0], Variable)
+        }
 
     def _get_index_list(self, qubit: int | str | list[str] | None) -> list[str] | None:
         if qubit is None:
@@ -306,7 +378,7 @@ def stream_results(shape: tuple, path: str, loops: dict[str, np.ndarray]):
                [0.25, 0.],
                [0.5, 0.],
                [0.75, 0.],
-               [1., 0.]]), {'loop_name': array([0.  , 0.25, 0.5 , 0.75, 1.  ])})
+               [1., 0.]]), {'loop_name': {'array': array([0.  , 0.25, 0.5 , 0.75, 1.  ]), 'units': '', 'bus': '', 'parameter': ''}})
 
     .. note::
 

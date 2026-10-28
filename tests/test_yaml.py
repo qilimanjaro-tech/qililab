@@ -4,8 +4,17 @@ from collections import deque
 from uuid import UUID
 
 import numpy as np
+import pytest
 
 from qililab.yaml import yaml
+from tests.test_utils import compare_objects
+
+
+def dump_to_string(obj) -> str:
+    """Serialize an object and return the resulting YAML document."""
+    stream = io.StringIO()
+    yaml.dump(obj, stream)
+    return stream.getvalue()
 
 
 def test_ndarray_serialization():
@@ -85,3 +94,55 @@ def test_uuid_serialization():
     # Verify that the original and loaded UUIDs are equal
     assert original_uuid == loaded_uuid
     assert isinstance(loaded_uuid, UUID)
+
+
+def test_legacy_tuple_deserialization():
+    """Test deserialization of the '!tuple' tag used by qililab versions that depended on qilisdk."""
+    # Files serialized before qilisdk was removed as a dependency may still contain this tag.
+    yaml_str = "!tuple [1, 2, 3]\n"
+
+    loaded_tuple = yaml.load(yaml_str)
+
+    # Verify that the loaded object is a tuple with the expected values
+    assert loaded_tuple == (1, 2, 3)
+    assert isinstance(loaded_tuple, tuple)
+
+
+@pytest.mark.parametrize(
+    ("dtype", "value"),
+    [("float64", 1.5), ("float32", 1.5), ("int64", 7), ("int32", -3), ("uint8", 255), ("bool", True)],
+)
+def test_legacy_np_scalar_deserialization(dtype, value):
+    """Test deserialization of the '!np_scalar' tag used by qililab versions that depended on qilisdk."""
+    # Files serialized before qilisdk was removed as a dependency may still contain this tag.
+    yaml_str = f"!np_scalar {{dtype: {dtype}, value: {value}}}\n"
+
+    loaded_scalar = yaml.load(yaml_str)
+
+    # The legacy tag carries the dtype, so deserialization restores the numpy scalar faithfully.
+    assert isinstance(loaded_scalar, np.generic)
+    assert loaded_scalar.dtype == np.dtype(dtype)
+    assert loaded_scalar == np.dtype(dtype).type(value)
+
+
+def test_np_float32_round_trip_is_exact_when_recast():
+    """Test that a float32 widened to float64 by serialization recasts back without loss."""
+    original_scalar = np.float32(0.1)
+
+    loaded_scalar = yaml.load(dump_to_string({"value": original_scalar}))["value"]
+
+    assert loaded_scalar == pytest.approx(float(original_scalar))
+    assert np.float32(loaded_scalar) == original_scalar
+
+
+def test_ndarray_serialization_is_unaffected_by_np_scalar_representer():
+    """Test that arrays keep the '!ndarray' tag, since np.ndarray is not an np.generic subclass."""
+    original_array = np.array([[1, 2, 3], [4, 5, 6]], dtype=np.float32)
+
+    yaml_str = dump_to_string(original_array)
+    assert "!ndarray" in yaml_str
+
+    loaded_array = yaml.load(yaml_str)
+
+    is_equal, differences = compare_objects(loaded_array, original_array)
+    assert is_equal, "\n".join(differences)

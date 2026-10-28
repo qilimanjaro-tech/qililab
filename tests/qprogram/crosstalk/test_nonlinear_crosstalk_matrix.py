@@ -285,6 +285,25 @@ class TestNonLinearCrosstalkMatrix:
         with pytest.raises(ValueError, match="Bus 'flux_2' not found"):
             nonlinear_crosstalk_matrix.get_non_linear_flux_terms({"flux_0": 0.1, "flux_1": 0.2})
 
+    def test_set_non_linear_params_invalidates_cached_terms(self, linear_crosstalk_matrix, flux_dict):
+        """The memoized sparse index must be rebuilt when a parameter is (re)set after a call."""
+        xtalk = NonLinearCrosstalkMatrix.from_linear(linear_crosstalk_matrix)
+        xtalk.set_non_linear_params("flux_0", "flux_2", beta_c=-0.234, amplitude=-0.021)
+        first = xtalk.get_non_linear_flux_terms(flux_dict)  # builds and caches the index
+        assert first["flux_1"] == pytest.approx(0.0)
+
+        # Add a new coupling AFTER the first computation -> must be reflected, not stale.
+        xtalk.set_non_linear_params("flux_1", "flux_2", beta_c=-0.253, amplitude=-0.021)
+        updated = xtalk.get_non_linear_flux_terms(flux_dict)
+        expected = xtalk.sin_beta_scaled(flux=flux_dict["flux_2"], beta=-0.253, amp=-0.021)
+        assert updated["flux_1"] == pytest.approx(expected)
+
+    def test_get_non_linear_flux_terms_reflects_removed_param(self, nonlinear_crosstalk_matrix, flux_dict):
+        """Clearing a coupling to None (after a call) drops its correction on the next call."""
+        assert nonlinear_crosstalk_matrix.get_non_linear_flux_terms(flux_dict)["flux_0"] != pytest.approx(0.0)
+        nonlinear_crosstalk_matrix.set_non_linear_params("flux_0", "flux_2", beta_c=None, amplitude=None)
+        assert nonlinear_crosstalk_matrix.get_non_linear_flux_terms(flux_dict)["flux_0"] == pytest.approx(0.0)
+
     # --- flux_to_bias ---
 
     def test_flux_to_bias_returns_all_buses(self, nonlinear_crosstalk_matrix, flux_dict):
@@ -309,6 +328,20 @@ class TestNonLinearCrosstalkMatrix:
         bias_nonlinear = nonlinear_crosstalk_matrix.flux_to_bias(flux_dict)
         assert any(bias_nonlinear[bus] != pytest.approx(bias_linear[bus], rel=1e-6) for bus in flux_dict)
 
+    @pytest.mark.parametrize("scalar_type", [float, np.float64, np.float32])
+    def test_flux_to_bias_accepts_numpy_scalars(self, nonlinear_crosstalk_matrix, flux_dict, scalar_type):
+        """Numpy scalars (incl. float32) must take the scalar path, not be mistaken for arrays.
+
+        Regression guard: the scalar check uses ``np.number`` so a ``float32`` no longer
+        falls into the array branch and crashes on ``len()``.
+        """
+        typed = {bus: scalar_type(value) for bus, value in flux_dict.items()}
+        bias = nonlinear_crosstalk_matrix.flux_to_bias(typed)
+        expected = nonlinear_crosstalk_matrix.flux_to_bias(dict(flux_dict))
+        for bus in flux_dict:
+            assert np.ndim(bias[bus]) == 0
+            assert bias[bus] == pytest.approx(expected[bus], rel=1e-6)
+
     def test_flux_to_bias_with_offsets(self, nonlinear_crosstalk_matrix, flux_dict):
         nonlinear_crosstalk_matrix.set_offset({"flux_0": 0.05, "flux_1": -0.05, "flux_2": 0.0})
         bias_with_offset = nonlinear_crosstalk_matrix.flux_to_bias(flux_dict)
@@ -328,6 +361,46 @@ class TestNonLinearCrosstalkMatrix:
             scalar_bias = nonlinear_crosstalk_matrix.flux_to_bias(scalar_flux)
             for bus in flux_dict:
                 assert float(bias[bus][i]) == pytest.approx(float(scalar_bias[bus]), rel=1e-6)
+
+    # --- set_non_linear toggle ---
+
+    def test_non_linear_enabled_defaults_to_true(self):
+        assert NonLinearCrosstalkMatrix().non_linear_enabled is True
+
+    def test_set_non_linear_toggles_flag(self, nonlinear_crosstalk_matrix):
+        nonlinear_crosstalk_matrix.set_non_linear(False)
+        assert nonlinear_crosstalk_matrix.non_linear_enabled is False
+        nonlinear_crosstalk_matrix.set_non_linear(True)
+        assert nonlinear_crosstalk_matrix.non_linear_enabled is True
+
+    def test_set_non_linear_defaults_to_true(self, nonlinear_crosstalk_matrix):
+        nonlinear_crosstalk_matrix.set_non_linear(False)
+        nonlinear_crosstalk_matrix.set_non_linear()
+        assert nonlinear_crosstalk_matrix.non_linear_enabled is True
+
+    def test_get_non_linear_flux_terms_zero_when_disabled(self, nonlinear_crosstalk_matrix, flux_dict):
+        nonlinear_crosstalk_matrix.set_non_linear(False)
+        corrections = nonlinear_crosstalk_matrix.get_non_linear_flux_terms(flux_dict)
+        for bus in corrections:
+            assert corrections[bus] == pytest.approx(0.0)
+
+    def test_get_non_linear_flux_terms_missing_default_enabled(self, nonlinear_crosstalk_matrix, flux_dict):
+        # Objects deserialized before the flag existed lack the attribute and must default to enabled.
+        del nonlinear_crosstalk_matrix.non_linear_enabled
+        corrections = nonlinear_crosstalk_matrix.get_non_linear_flux_terms(flux_dict)
+        assert corrections["flux_0"] != pytest.approx(0.0)
+
+    def test_flux_to_bias_disabled_matches_linear_inverse(self, nonlinear_crosstalk_matrix, flux_dict):
+        nonlinear_crosstalk_matrix.set_non_linear(False)
+        bias = nonlinear_crosstalk_matrix.flux_to_bias(flux_dict)
+        expected = CrosstalkMatrix.flux_to_bias(nonlinear_crosstalk_matrix, flux_dict)
+        for bus in flux_dict:
+            assert bias[bus] == pytest.approx(expected[bus], rel=1e-6)
+
+    def test_set_non_linear_preserves_stored_params(self, nonlinear_crosstalk_matrix):
+        nonlinear_crosstalk_matrix.set_non_linear(False)
+        assert nonlinear_crosstalk_matrix.beta_c_matrix["flux_0"]["flux_2"] == pytest.approx(-0.234)
+        assert nonlinear_crosstalk_matrix.non_lin_amp_matrix["flux_0"]["flux_2"] == pytest.approx(-0.021)
 
     # --- __repr__ and inherited methods ---
 

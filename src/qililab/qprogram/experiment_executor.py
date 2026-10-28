@@ -307,7 +307,8 @@ class ExperimentExecutor:
             def create_progress_bar():
                 total_iterations = shape
                 loop_task_id = progress.add_task(f"Looping over {label}", total=total_iterations)
-                task_ids[block.uuid] = loop_task_id  # Store the task ID associated with this loop block
+                # Store the task ID associated with this loop block
+                task_ids[block.uuid] = loop_task_id
 
                 # Track the index for this loop
                 self.loop_indices[block.uuid] = 0
@@ -441,11 +442,13 @@ class ExperimentExecutor:
                                     self.platform.execute_qprogram(
                                         qprogram=operation.qprogram(
                                             **{
-                                                **call_parameters,  # Bind the values that are known
+                                                # Bind the values that are known
+                                                **call_parameters,
                                                 **{
                                                     param_name: current_value_of_variable[uuid]
                                                     for param_name, uuid in deferred_parameters.items()
-                                                },  # Defer retrieving missing values
+                                                    # Defer retrieving missing values
+                                                },
                                             }
                                         ),  # type: ignore
                                         bus_mapping=operation.bus_mapping,
@@ -502,7 +505,8 @@ class ExperimentExecutor:
             progress.advance(main_task_id)
 
         progress.update(main_task_id, description="Executing experiment (done)")
-        progress.refresh()  # Ensure the final state of the progress bar is rendered
+        # Ensure the final state of the progress bar is rendered
+        progress.refresh()
 
     def _inclusive_range(self, start: int | float, stop: int | float, step: int | float) -> np.ndarray:
         # Define the number of decimal places based on the precision of the step

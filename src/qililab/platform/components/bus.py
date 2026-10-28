@@ -26,7 +26,7 @@ from qililab.pulse_distortion.pulse_distortion import PulseDistortion
 from qililab.qprogram.qblox_compiler import AcquisitionData
 from qililab.result.qprogram import MeasurementResult
 from qililab.settings import Settings
-from qililab.typings import FILTER_PARAMETERS, ChannelID, OutputID, Parameter, ParameterValue
+from qililab.typings import FILTER_PARAMETERS, ChannelID, InstrumentName, OutputID, Parameter, ParameterValue
 
 
 class Bus:
@@ -186,6 +186,24 @@ class Bus:
                 raise Exception(f"OutputID {output_id} is not linked to bus with alias {self.alias}")
             self.instruments[0].set_parameter(parameter=parameter, value=value, output_id=bus_output_id)
             return
+
+        if (
+            parameter == Parameter.LO_FREQUENCY
+            and (
+                rf_switch_channel := next(
+                    (
+                        (instrument, channel)
+                        for instrument, channel in zip(self.instruments, self.channels)
+                        if instrument.name == InstrumentName.RSWU_SP16TR
+                    ),
+                    None,
+                )
+            )
+            is not None
+        ):
+            rf_switch, rf_channel = rf_switch_channel
+            rf_switch.set_parameter(parameter=Parameter.RF_ACTIVE_CHANNEL, value=f"RF{rf_channel}")
+
         for instrument, instrument_channel in zip(self.instruments, self.channels):
             with contextlib.suppress(ParameterNotFound):
                 if output_id is not None:

@@ -51,7 +51,8 @@ class DigitalCompilationSettings(BaseModel):
 
         gate_qubits = (
             (qubits,) if isinstance(qubits, int) else qubits
-        )  # tuplify so that the join method below is general
+            # tuplify so that the join method below is general
+        )
         gate_name = f"{name}({', '.join(map(str, gate_qubits))})"
         gate_name_t = f"{name}({', '.join(map(str, gate_qubits[::-1]))})"
 

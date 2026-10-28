@@ -28,7 +28,8 @@ class InstrumentReference:
     """
 
     alias: str
-    slot_id: int  # slot_id represents the number displayed in the cluster
+    # slot_id represents the number displayed in the cluster
+    slot_id: int
 
     def __iter__(self):
         """Iterate over InstrumentReference elements.

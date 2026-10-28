@@ -91,8 +91,9 @@ class TestDigitalCompilationSettings:
         qubits = 0
 
         error_string = re.escape(f"Gate {name} for qubits {qubits} not found in settings").replace(
+            # fixes re.escape bug
             "\\", ""
-        )  # fixes re.escape bug
+        )
         with pytest.raises(KeyError, match=error_string):
             digital.get_gate(name, qubits=qubits)
 

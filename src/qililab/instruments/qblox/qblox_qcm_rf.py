@@ -40,21 +40,25 @@ class QbloxQCMRF(QbloxQCM):
 
         out0_lo_freq: float
         out0_lo_en: bool
-        out0_att: int  # must be a multiple of 2!
+        # must be a multiple of 2!
+        out0_att: int
         out0_offset_path0: float
         out0_offset_path1: float
         out1_lo_freq: float
         out1_lo_en: bool
-        out1_att: int  # must be a multiple of 2!
+        # must be a multiple of 2!
+        out1_att: int
         out1_offset_path0: float
         out1_offset_path1: float
         out_offsets: list[float] = field(
             init=False,
-            default_factory=list,  # QCM-RF module doesn't have an `out_offsets` parameter
+            # QCM-RF module doesn't have an `out_offsets` parameter
+            default_factory=list,
         )
         filters: Sequence[QbloxFilter] = field(
             init=False,
-            default_factory=list,  # QCM-RF module doesn't have filters
+            # QCM-RF module doesn't have filters
+            default_factory=list,
         )
         out0_lo_freq_cal_type_default: Optional[str] = "off"
         out1_lo_freq_cal_type_default: Optional[str] = "off"
