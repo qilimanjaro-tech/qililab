@@ -3557,7 +3557,7 @@ wheels = [
 
 [[package]]
 name = "qililab"
-version = "0.35.2+euroqcs1"
+version = "0.35.2+bsc"
 source = { editable = "." }
 dependencies = [
     { name = "cloudpickle" },
