@@ -14,6 +14,7 @@
 
 """Instrument Controller class"""
 
+import warnings
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from functools import partial
@@ -55,11 +56,19 @@ class InstrumentControllerSettings(Settings):
     connection: Connection
     modules: list[InstrumentReference]
     reference_clock: str = "internal"
-    ext_trigger: bool = False
+    ext_trigger: bool | None = None
     reset: bool = True
 
     def __post_init__(self):
         super().__post_init__()
+        if self.ext_trigger is not None:
+            warnings.warn(
+                "ext_trigger in the runcard is deprecated and will be removed in a future release. "
+                "It has no effect: the Qblox cluster's external trigger is now enabled automatically when a "
+                "QProgram uses wait_trigger or if_trigger.",
+                FutureWarning,
+                stacklevel=1,
+            )
         if self.connection and isinstance(self.connection, dict):
             # Pop the connection name from the dictionary and instantiate its corresponding Connection class.
             self.connection = Factory.get(name=self.connection.pop(RUNCARD.NAME))(settings=self.connection)
@@ -263,15 +272,6 @@ class InstrumentController(BusElement, ABC):
         return self.settings.reference_clock
 
     @property
-    def ext_trigger(self):
-        """Instrument Controller 'ext_trigger' property.
-
-        Returns:
-            str: settings.ext_trigger.
-        """
-        return self.settings.ext_trigger
-
-    @property
     def connection(self):
         """Instrument Controller 'connection' property.
 
@@ -302,5 +302,4 @@ class InstrumentController(BusElement, ABC):
             INSTRUMENTCONTROLLER.MODULES: [module.to_dict() for module in self.settings.modules],
             INSTRUMENTCONTROLLER.RESET: self.settings.reset,
             INSTRUMENTCONTROLLER.REFERENCE_CLOCK: self.settings.reference_clock,
-            INSTRUMENTCONTROLLER.EXT_TRIGGER: self.settings.ext_trigger,
         }

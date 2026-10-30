@@ -25,6 +25,20 @@ on:
         description: "Build and validate the distributions, but do not upload them"
         type: boolean
         default: false
+  # Called by dev-build.yml to publish a development version of a commit on main.
+  workflow_call:
+    inputs:
+      repository:
+        type: string
+        required: false
+        default: qilimanjaro
+      ref:
+        type: string
+        required: true
+      dry_run:
+        type: boolean
+        required: false
+        default: false
 
 concurrency:
   group: publish-${{ inputs.ref || github.event.release.tag_name || github.ref }}
@@ -45,9 +59,10 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
           ref: ${{ inputs.ref || github.ref }}
-          fetch-depth: 1
+          # Full history and tags: hatch-vcs derives the version from the latest release tag.
+          fetch-depth: 0
       - name: Install uv
-        uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884  # v10.3.0
+        uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e  # v10.3.2
         with:
           enable-cache: true
           cache-dependency-glob: |
@@ -96,6 +111,23 @@ jobs:
       
       - name: Build project
         run: uv build
+
+      - name: Check the built version
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: |
+          wheels=(dist/*.whl)
+          version="$(basename "${wheels[0]}" | cut -d- -f2)"
+          echo "Built qililab $version"
+          if [ -n "$RELEASE_TAG" ] && [ "$version" != "$RELEASE_TAG" ]; then
+            echo "::error::Release tag '$RELEASE_TAG' built as '$version'. Release tags must be a bare MAJOR.MINOR.PATCH."
+            exit 1
+          fi
+          # A dev build of a commit that already carries a release tag would upload the release version.
+          if [ "$GITHUB_EVENT_NAME" = "workflow_run" ] && [[ "$version" != *.dev* ]]; then
+            echo "::error::Dev build of a release-tagged commit built as '$version'; the release workflow publishes it."
+            exit 1
+          fi
 
       - name: Upload wheel
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
@@ -152,7 +184,7 @@ jobs:
           name: sdist
           path: dist
       - name: Install uv
-        uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884  # v10.3.0
+        uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e  # v10.3.2
         with:
           enable-cache: false
           python-version: "3.13"

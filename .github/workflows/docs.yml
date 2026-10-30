@@ -35,7 +35,7 @@ jobs:
         fetch-depth: 1
 
     - name: Install uv
-      uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884  # v10.3.0
+      uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e  # v10.3.2
       with:
         python-version: "3.13"
         cache-dependency-glob: |
@@ -91,5 +91,19 @@ jobs:
         echo "VIRTUAL_ENV=$PWD/.venv" >> "$GITHUB_ENV"
         echo "$PWD/.venv/bin" >> "$GITHUB_PATH"
 
+    # Renders the pending changes/ fragments into CHANGELOG.md (this checkout only), so the
+    # docs build below also checks how they render.
+    - name: Render pending changelog fragments
+      run: towncrier build --keep --version unreleased
+
     - name: Build docs
       run: sphinx-build -W -b html docs docs/_build --keep-going
+
+    # sphinx-mdinclude can stop converting a paragraph without any warning, leaving it as raw
+    # Markdown, e.g. after "`code`:" in a paragraph that also contains a link.
+    - name: Check the changelog rendered fully
+      run: |
+        if grep -n '\[PR #' docs/_build/changelog.html; then
+          echo "::error file=CHANGELOG.md::Part of the changelog rendered as raw Markdown."
+          exit 1
+        fi
