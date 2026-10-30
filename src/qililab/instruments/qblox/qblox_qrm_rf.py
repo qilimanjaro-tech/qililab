@@ -155,16 +155,30 @@ class QbloxQRMRF(QbloxQRM):
         return dictionary
 
     def calibrate_mixers(self, cal_type: str, channel_id: ChannelID | None = None):
-        if cal_type == "lo":
-            self.device._run_mixer_lo_calib(channel_id)
-        elif cal_type == "lo_and_sidebands":
-            self.device._run_mixer_lo_calib(channel_id)
-            for sequencer_dataclass in self.awg_sequencers:
-                sequencer = self.device.sequencers[sequencer_dataclass.identifier]
-                sequencer.sideband_cal()
-        else:
-            raise Exception(
-                f"`{cal_type}` for this module must be one of the following values: 'lo' or 'lo_and_sidebands'."
-            )
+        """Calibrate the out0/in0 mixer of the module.
 
-        return
+        The LO is calibrated through the public ``out0_in0_lo_cal`` driver method (which targets the correct LO
+        index internally). The sideband calibration, when requested, runs only on the targeted sequencer
+        (QHC-1655).
+
+        Args:
+            cal_type (str): one of ``"off"``, ``"lo only"`` or ``"lo and sidebands"`` (the runcard/driver
+                vocabulary). The legacy ``"lo"``/``"lo_and_sidebands"`` spellings are accepted but deprecated.
+            channel_id (ChannelID): sequencer id of the bus to calibrate. Required; ``None`` raises.
+
+        Raises:
+            ValueError: if ``channel_id`` is ``None`` or ``cal_type`` is not recognised.
+        """
+        cal_type = self._normalise_mixer_cal_type(cal_type)
+        if channel_id is None:
+            raise ValueError(
+                "`channel_id` cannot be None when calibrating mixers. "
+                "Please specify the sequencer id of the bus channel to calibrate."
+            )
+        if cal_type == "off":
+            return
+
+        self.device.out0_in0_lo_cal()
+        if cal_type == "lo and sidebands":
+            sequencer = self.get_sequencer(sequencer_id=int(channel_id))
+            self.device.sequencers[sequencer.identifier].sideband_cal()
