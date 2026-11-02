@@ -36,7 +36,14 @@ def for_loop_iterations(start: int | float, stop: int | float, step: int | float
     and a descending loop sweeps as many points as its ascending mirror. A count within 1e-9 of an integer snaps to it,
     to absorb floating-point error (``0 -> 0.7`` by ``0.1`` is 8 points, not 7).
 
-    A step pointing away from ``stop`` gives 0 points or fewer; callers decide how to handle it.
+    Args:
+        start (int | float): First value of the loop.
+        stop (int | float): Last value of the loop.
+        step (int | float): Increment between consecutive values, negative for a descending loop.
+
+    Returns:
+        int: The number of points, 0 or fewer when ``step`` points away from ``stop``; callers decide how to handle
+            that.
 
     Raises:
         ValueError: If ``step`` is zero.
