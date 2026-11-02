@@ -15,6 +15,7 @@
 """Bus class."""
 
 import contextlib
+import warnings
 from dataclasses import InitVar, dataclass, field
 
 from qpysequence import Sequence as QpySequence
@@ -74,9 +75,12 @@ class Bus:
             self.instruments = instruments
             # The bus delay is only applied by the Qblox compiler; a QDAC-II sets its delay per play instead
             if self.delay != 0 and any(isinstance(instrument, QDevilQDac2) for instrument in instruments):
-                raise ValueError(
-                    f"Bus '{self.alias}' has a delay of {self.delay} ns, but QDAC-II buses don't support a bus delay. "
-                    "Remove it from the runcard and set the QDAC-II delay in each play with qp.qdac.play(delay=...)."
+                warnings.warn(
+                    f"Bus '{self.alias}' has a delay of {self.delay} ns, but QDAC-II buses don't support a bus delay, "
+                    "so it is ignored. Remove it from the runcard and set the QDAC-II delay in each play with "
+                    "qp.qdac.play(delay=...). This will raise an error in a future release.",
+                    FutureWarning,
+                    stacklevel=1,
                 )
             self.distortions = [
                 PulseDistortion.from_dict(distortion)  # type: ignore[arg-type]
