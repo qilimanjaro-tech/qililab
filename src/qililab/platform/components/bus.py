@@ -15,6 +15,7 @@
 """Bus class."""
 
 import contextlib
+import warnings
 from dataclasses import InitVar, dataclass, field
 
 from qpysequence import Sequence as QpySequence
@@ -22,6 +23,7 @@ from qpysequence import Sequence as QpySequence
 from qililab.constants import RUNCARD
 from qililab.instruments import Instrument, Instruments, ParameterNotFound
 from qililab.instruments.qblox import QbloxQCM, QbloxQRM
+from qililab.instruments.qdevil import QDevilQDac2
 from qililab.pulse_distortion.pulse_distortion import PulseDistortion
 from qililab.qprogram.qblox_compiler import AcquisitionData
 from qililab.result.qprogram import MeasurementResult
@@ -71,6 +73,15 @@ class Bus:
                     )
                 instruments.append(inst_class)
             self.instruments = instruments
+            # The bus delay is only applied by the Qblox compiler; a QDAC-II sets its delay per play instead
+            if self.delay != 0 and any(isinstance(instrument, QDevilQDac2) for instrument in instruments):
+                warnings.warn(
+                    f"Bus '{self.alias}' has a delay of {self.delay} ns, but QDAC-II buses don't support a bus delay, "
+                    "so it is ignored. Remove it from the runcard and set the QDAC-II delay in each play with "
+                    "qp.qdac.play(delay=...). This will raise an error in a future release.",
+                    FutureWarning,
+                    stacklevel=1,
+                )
             self.distortions = [
                 PulseDistortion.from_dict(distortion)  # type: ignore[arg-type]
                 for distortion in self.distortions

@@ -1312,8 +1312,8 @@ class Platform:
             weight_durations = output.qblox.qprogram.qblox.weight_duration  # type: ignore[union-attr]
             for bus_alias, bus in buses.items():
                 # set up the trigger network if required
-                if bus_alias in output.qblox.qprogram.qblox.trigger_network_required:  # type: ignore[union-attr]
-                    trigger_address = output.qblox.qprogram.qblox.trigger_network_required[bus_alias]  # type: ignore[union-attr]
+                if bus_alias in output.qblox.trigger_network_addresses:  # type: ignore[union-attr]
+                    trigger_address = output.qblox.trigger_network_addresses[bus_alias]  # type: ignore[union-attr]
                     buses[bus_alias]._setup_trigger_network(trigger_address=trigger_address)
                     for controller in self.instrument_controllers.elements:
                         if isinstance(controller, QbloxClusterController):

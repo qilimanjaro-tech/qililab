@@ -9,7 +9,7 @@ import pytest
 import qpysequence as QPy
 import qpysequence.program.instructions as QPyInstructions
 from qililab.qprogram.operations import SetFrequency, SetPhase, SetGain, SetOffset, Wait, ResetPhase
-from qililab import Calibration, Domain, FlatTop, Gaussian, IQPair, IQDrag, QProgram, Square
+from qililab import Calibration, Domain, FlatTop, Gaussian, IQPair, IQDrag, QProgram, Square, SuddenNetZero
 from qililab.qprogram.blocks import ForLoop
 from qililab.qprogram import QbloxCompiler
 from tests.test_utils import is_q1asm_equal
@@ -1612,7 +1612,7 @@ class TestQBloxCompiler:
         compiler = QbloxCompiler()
         sequences, _ = compiler.compile(qprogram=qp, qblox_buses=["readout"])
 
-        assert compiler._buses["readout"].expected_trigger_wait_time == 3000
+        assert compiler._conditional.expected_wait_time_ns == 3000
 
         readout_str = """
             setup:
@@ -4964,7 +4964,8 @@ class TestQBloxCompiler:
             sequences, _ = compiler.compile(qprogram=qp)
 
         assert "Wait duration 0 ns is below the Q1ASM minimum (4 ns), clamping to 4 ns." in caplog.text
-        assert duration_loop.start == 4
+        # The compiler clamps its own copy: the caller's loops are unchanged
+        assert duration_loop.start == 0
         assert gain_loop.start == 0
 
         expected = """
@@ -5007,8 +5008,9 @@ class TestQBloxCompiler:
             sequences, _ = compiler.compile(qprogram=qp)
 
         assert "Wait duration 0 ns is below the Q1ASM minimum (4 ns), clamping to 4 ns." in caplog.text
+        # The compiler clamps its own copy: the caller's loop is unchanged
         assert duration_loop.start == 100
-        assert duration_loop.stop == 4
+        assert duration_loop.stop == 0
 
         expected = """
             setup:
@@ -5044,8 +5046,9 @@ class TestQBloxCompiler:
             sequences, _ = compiler.compile(qprogram=qp)
 
         assert "Wait duration 0 ns is below the Q1ASM minimum (4 ns), clamping to 4 ns." in caplog.text
+        # The compiler clamps its own copy: the caller's loop is unchanged
         assert loop.start == 100
-        assert loop.stop == 4
+        assert loop.stop == 0
 
         expected = """
             setup:
@@ -5121,6 +5124,8 @@ class TestQBloxCompiler:
         with caplog.at_level(logging.WARNING):
             sequences, _ = compiler.compile(qprogram=qp)
         assert "wait duration 2 ns is below the Q1ASM minimum (4 ns), clamping to 4 ns." in caplog.text
+        # The compiler clamps its own copy: the caller's wait is unchanged
+        assert qp.body.elements[0].duration == 2
         expected = """
             setup:
                 wait_sync        4
@@ -5141,6 +5146,8 @@ class TestQBloxCompiler:
         with caplog.at_level(logging.WARNING):
             sequences, _ = compiler.compile(qprogram=qp)
         assert "wait_trigger duration 0 ns is below the Q1ASM minimum (4 ns), clamping to 4 ns." in caplog.text
+        # The compiler clamps its own copy: the caller's wait_trigger is unchanged
+        assert qp.body.elements[0].duration == 0
         expected = """
             setup:
                 wait_sync        4
@@ -6835,6 +6842,690 @@ class TestQBloxCompiler:
                             stop
         """
         assert is_q1asm_equal(sequences["drive"], drive_str)
+
+    def test_play_uploads_waveform_samples(self):
+        """The samples uploaded for Gaussian, DRAG, FlatTop (short, chunked, and through qp.qblox.play), Square and
+        Arbitrary waveforms on an IQ bus."""
+        gaussian = Gaussian(amplitude=0.8, duration=40, num_sigmas=4)
+        drag = IQDrag(amplitude=0.7, duration=40, num_sigmas=4, drag_coefficient=0.5)
+        short_flat_top = IQPair(
+            I=FlatTop(amplitude=0.6, duration=80, smooth_duration=10),
+            Q=FlatTop(amplitude=0.3, duration=80, smooth_duration=10),
+        )
+        long_flat_top = IQPair(
+            I=FlatTop(amplitude=0.6, duration=300, smooth_duration=20, buffer=4),
+            Q=FlatTop(amplitude=0.2, duration=300, smooth_duration=20, buffer=4),
+        )
+        flat_top_with_wait_time = IQPair(
+            I=FlatTop(amplitude=0.5, duration=300, smooth_duration=20), Q=Square(amplitude=0.0, duration=300)
+        )
+        square = IQPair(I=Square(amplitude=0.4, duration=250), Q=Square(amplitude=0.1, duration=250))
+        arbitrary = Arbitrary(samples=np.linspace(0.0, 0.9, 20))
+        qp = QProgram()
+        qp.play(bus="drive", waveform=gaussian)
+        qp.play(bus="drive", waveform=drag)
+        qp.play(bus="drive", waveform=short_flat_top)
+        qp.play(bus="drive", waveform=long_flat_top)
+        qp.qblox.play(bus="drive", waveform=flat_top_with_wait_time, wait_time=300)
+        qp.play(bus="drive", waveform=square)
+        qp.play(bus="drive", waveform=arbitrary)
+
+        compiler = QbloxCompiler()
+        sequences, _ = compiler.compile(qprogram=qp)
+
+        drive_str = """
+            setup:
+                            wait_sync        4
+                            set_mrk          0
+                            upd_param        4
+
+            main:
+                            play             0, 1, 40
+                            play             2, 3, 40
+                            play             4, 5, 80
+                            play             6, 7, 24
+                            move             2, R0
+            square_0:
+                            play             8, 9, 126
+                            loop             R0, @square_0
+                            play             10, 11, 24
+                            play             12, 13, 300
+                            move             2, R1
+            square_1:
+                            play             14, 15, 125
+                            loop             R1, @square_1
+                            play             16, 17, 20
+                            set_mrk          0
+                            upd_param        4
+                            stop
+        """
+        assert is_q1asm_equal(sequences["drive"], drive_str)
+
+        # A long FlatTop plays its smooth edges around a looped chunk of its flat part; a missing Q plays zeros.
+        expected_waveforms = [
+            gaussian.envelope(),
+            np.zeros(40),
+            drag.get_I().envelope(),
+            drag.get_Q().envelope(),
+            short_flat_top.get_I().envelope(),
+            short_flat_top.get_Q().envelope(),
+            long_flat_top.get_I().envelope()[:24],
+            long_flat_top.get_Q().envelope()[:24],
+            np.full(126, 0.6),
+            np.full(126, 0.2),
+            long_flat_top.get_I().envelope()[-24:],
+            long_flat_top.get_Q().envelope()[-24:],
+            flat_top_with_wait_time.get_I().envelope(),
+            np.zeros(300),
+            np.full(125, 0.4),
+            np.full(125, 0.1),
+            arbitrary.envelope(),
+            np.zeros(20),
+        ]
+        waveforms = sorted(sequences["drive"]._waveforms._waveforms, key=lambda waveform: waveform.index)
+        assert len(waveforms) == len(expected_waveforms)
+        for waveform, expected in zip(waveforms, expected_waveforms):
+            np.testing.assert_array_equal(waveform.data, expected)
+
+    def test_play_uploads_waveform_samples_on_single_channel_bus(self):
+        """The samples uploaded for SNZ, chunked FlatTop and Gaussian waveforms on a single-channel bus, where Q
+        reuses the I waveform."""
+        snz = SuddenNetZero(amplitude=0.5, duration=40, b=0.2, t_phi=2)
+        flat_top = FlatTop(amplitude=0.3, duration=200, smooth_duration=15)
+        gaussian = Gaussian(amplitude=0.4, duration=60, num_sigmas=3)
+        qp = QProgram()
+        qp.play(bus="flux", waveform=snz)
+        qp.play(bus="flux", waveform=flat_top)
+        qp.play(bus="flux", waveform=gaussian)
+
+        compiler = QbloxCompiler()
+        sequences, _ = compiler.compile(qprogram=qp, single_channel=["flux"])
+
+        flux_str = """
+            setup:
+                            wait_sync        4
+                            set_mrk          0
+                            upd_param        4
+
+            main:
+                            play             0, 0, 40
+                            play             1, 1, 15
+                            move             1, R0
+            square_0:
+                            play             2, 2, 170
+                            loop             R0, @square_0
+                            play             3, 3, 15
+                            play             4, 4, 60
+                            set_mrk          0
+                            upd_param        4
+                            stop
+        """
+        assert is_q1asm_equal(sequences["flux"], flux_str)
+
+        expected_waveforms = [
+            snz.envelope(),
+            flat_top.envelope()[:15],
+            np.full(170, 0.3),
+            flat_top.envelope()[-15:],
+            gaussian.envelope(),
+        ]
+        waveforms = sorted(sequences["flux"]._waveforms._waveforms, key=lambda waveform: waveform.index)
+        assert len(waveforms) == len(expected_waveforms)
+        for waveform, expected in zip(waveforms, expected_waveforms):
+            np.testing.assert_array_equal(waveform.data, expected)
+
+    def test_acquire_uploads_weight_samples(self):
+        """The weight samples uploaded for Square, Gaussian, FlatTop (identical I and Q share one weight), DRAG and
+        Arbitrary weights, and the samples of a measure's FlatTop waveform with a Square Q (not chunked)."""
+        square_weights = IQPair(I=Square(amplitude=1.0, duration=100), Q=Square(amplitude=0.0, duration=100))
+        gaussian_weights = IQPair(
+            I=Gaussian(amplitude=1.0, duration=100, num_sigmas=3), Q=Gaussian(amplitude=0.5, duration=100, num_sigmas=3)
+        )
+        flat_top_weights = IQPair(
+            I=FlatTop(amplitude=1.0, duration=120, smooth_duration=20),
+            Q=FlatTop(amplitude=1.0, duration=120, smooth_duration=20),
+        )
+        drag_weights = IQDrag(amplitude=1.0, duration=100, num_sigmas=4, drag_coefficient=0.3)
+        arbitrary_weights = IQPair(I=Arbitrary(samples=np.linspace(1.0, 0.5, 100)), Q=Arbitrary(samples=np.zeros(100)))
+        readout_waveform = IQPair(
+            I=FlatTop(amplitude=0.5, duration=400, smooth_duration=30), Q=Square(amplitude=0.0, duration=400)
+        )
+        qp = QProgram()
+        qp.qblox.acquire(bus="readout", weights=square_weights)
+        qp.qblox.acquire(bus="readout", weights=gaussian_weights)
+        qp.qblox.acquire(bus="readout", weights=flat_top_weights)
+        qp.qblox.acquire(bus="readout", weights=drag_weights)
+        qp.measure(bus="readout", waveform=readout_waveform, weights=arbitrary_weights)
+
+        compiler = QbloxCompiler()
+        sequences, _ = compiler.compile(qprogram=qp, times_of_flight={"readout": 28})
+
+        readout_str = """
+            setup:
+                            wait_sync        4
+                            set_mrk          0
+                            upd_param        4
+
+            main:
+                            acquire_weighed  0, 0, 0, 1, 100
+                            acquire_weighed  0, 1, 2, 3, 100
+                            acquire_weighed  0, 2, 4, 4, 120
+                            acquire_weighed  0, 3, 5, 6, 100
+                            play             0, 1, 28
+                            acquire_weighed  0, 4, 7, 8, 100
+                            set_mrk          0
+                            upd_param        4
+                            stop
+        """
+        assert is_q1asm_equal(sequences["readout"], readout_str)
+
+        expected_weights = [
+            np.ones(100),
+            np.zeros(100),
+            gaussian_weights.get_I().envelope(),
+            gaussian_weights.get_Q().envelope(),
+            flat_top_weights.get_I().envelope(),
+            drag_weights.get_I().envelope(),
+            drag_weights.get_Q().envelope(),
+            np.linspace(1.0, 0.5, 100),
+            np.zeros(100),
+        ]
+        weights = sorted(sequences["readout"]._weights._weights, key=lambda weight: weight.index)
+        assert len(weights) == len(expected_weights)
+        for weight, expected in zip(weights, expected_weights):
+            np.testing.assert_array_equal(weight.data, expected)
+
+        waveforms = sorted(sequences["readout"]._waveforms._waveforms, key=lambda waveform: waveform.index)
+        assert len(waveforms) == 2
+        np.testing.assert_array_equal(waveforms[0].data, readout_waveform.get_I().envelope())
+        np.testing.assert_array_equal(waveforms[1].data, np.zeros(400))
+
+    @pytest.mark.parametrize(
+        "domain, start, stop, step, body, drive_str",
+        [
+            pytest.param(
+                Domain.Voltage,
+                0.0,
+                1.0,
+                0.3,
+                lambda qp, variable: qp.set_gain(bus="drive", gain=variable),
+                """
+                    setup:
+                                    wait_sync        4
+                                    set_mrk          0
+                                    upd_param        4
+
+                    main:
+                                    move             0, R0
+                                    move             4, R1
+                    loop_0:
+                                    set_awg_gain     R0, R0
+                                    play             0, 1, 40
+                                    add              R0, 10922, R0
+                                    loop             R1, @loop_0
+                                    set_mrk          0
+                                    upd_param        4
+                                    stop
+                """,
+                id="gain_ascending",
+            ),
+            pytest.param(
+                Domain.Frequency,
+                10e6,
+                55e6,
+                10e6,
+                lambda qp, variable: qp.set_frequency(bus="drive", frequency=variable),
+                """
+                    setup:
+                                    wait_sync        4
+                                    set_mrk          0
+                                    upd_param        4
+
+                    main:
+                                    move             40000000, R0
+                                    move             5, R1
+                    loop_0:
+                                    set_freq         R0
+                                    play             0, 1, 40
+                                    add              R0, 45000000, R0
+                                    loop             R1, @loop_0
+                                    set_mrk          0
+                                    upd_param        4
+                                    stop
+                """,
+                id="frequency_ascending",
+            ),
+            pytest.param(
+                Domain.Time,
+                100,
+                250,
+                40,
+                lambda qp, variable: qp.wait(bus="drive", duration=variable),
+                """
+                    setup:
+                                    wait_sync        4
+                                    set_mrk          0
+                                    upd_param        4
+
+                    main:
+                                    move             100, R0
+                                    move             4, R1
+                    loop_0:
+                                    wait             R0
+                                    play             0, 1, 40
+                                    add              R0, 50, R0
+                                    loop             R1, @loop_0
+                                    set_mrk          0
+                                    upd_param        4
+                                    stop
+                """,
+                id="wait_ascending",
+            ),
+            pytest.param(
+                Domain.Phase,
+                3.0,
+                0.0,
+                -0.7,
+                lambda qp, variable: qp.set_phase(bus="drive", phase=variable),
+                """
+                    setup:
+                                    wait_sync        4
+                                    set_mrk          0
+                                    upd_param        4
+
+                    main:
+                                    move             477464829, R0
+                                    move             6, R1
+                    loop_0:
+                                    set_ph           R0
+                                    play             0, 1, 40
+                                    sub              R0, 95492966, R0
+                                    loop             R1, @loop_0
+                                    set_mrk          0
+                                    upd_param        4
+                                    stop
+                """,
+                id="phase_descending",
+            ),
+            pytest.param(
+                Domain.Voltage,
+                0.5,
+                -0.5,
+                -0.3,
+                lambda qp, variable: qp.set_offset(bus="drive", offset_path0=variable, offset_path1=variable),
+                """
+                    setup:
+                                    wait_sync        4
+                                    set_mrk          0
+                                    upd_param        4
+
+                    main:
+                                    move             16383, R0
+                                    move             5, R1
+                    loop_0:
+                                    set_awg_offs     R0, R0
+                                    play             0, 1, 40
+                                    sub              R0, 8192, R0
+                                    loop             R1, @loop_0
+                                    set_mrk          0
+                                    upd_param        4
+                                    stop
+                """,
+                id="offset_descending",
+            ),
+        ],
+    )
+    def test_for_loop_step_not_dividing_range(self, domain, start, stop, step, body, drive_str):
+        """When the step doesn't divide the range, the number of points is rounded down (ascending) or up
+        (descending), and the register step is stretched so the last point lands on ``stop``."""
+        qp = QProgram()
+        variable = qp.variable(label="variable", domain=domain)
+        with qp.for_loop(variable=variable, start=start, stop=stop, step=step):
+            body(qp, variable)
+            qp.play(bus="drive", waveform=IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40)))
+
+        compiler = QbloxCompiler()
+        sequences, _ = compiler.compile(qprogram=qp)
+
+        assert is_q1asm_equal(sequences["drive"], drive_str)
+
+    def test_parallel_loops_with_different_number_of_points(self):
+        """A parallel block runs the number of points of its shortest loop, here with steps that don't divide the
+        range, inside an average."""
+        drive_wf = IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
+        readout_wf = IQPair(I=Square(amplitude=1.0, duration=100), Q=Square(amplitude=0.0, duration=100))
+        qp = QProgram()
+        frequency = qp.variable(label="frequency", domain=Domain.Frequency)
+        gain = qp.variable(label="gain", domain=Domain.Voltage)
+        with qp.average(shots=10):
+            with qp.parallel(
+                loops=[
+                    ForLoop(variable=frequency, start=10e6, stop=50e6, step=10e6),
+                    ForLoop(variable=gain, start=0.0, stop=1.0, step=0.3),
+                ]
+            ):
+                qp.set_frequency(bus="drive", frequency=frequency)
+                qp.set_gain(bus="drive", gain=gain)
+                qp.play(bus="drive", waveform=drive_wf)
+                qp.sync()
+                qp.measure(bus="readout", waveform=readout_wf, weights=readout_wf)
+
+        compiler = QbloxCompiler()
+        sequences, acquisitions = compiler.compile(qprogram=qp, times_of_flight={"readout": 28})
+
+        drive_str = """
+            setup:
+                            wait_sync        4
+                            set_mrk          0
+                            upd_param        4
+
+            main:
+                            move             10, R0
+            avg_0:
+                            move             40000000, R1
+                            move             0, R2
+                            move             4, R3
+            loop_0:
+                            set_freq         R1
+                            set_awg_gain     R2, R2
+                            play             0, 1, 40
+                            wait             128
+                            add              R1, 40000000, R1
+                            add              R2, 10922, R2
+                            loop             R3, @loop_0
+                            loop             R0, @avg_0
+                            set_mrk          0
+                            upd_param        4
+                            stop
+        """
+        readout_str = """
+            setup:
+                            wait_sync        4
+                            set_mrk          0
+                            upd_param        4
+
+            main:
+                            move             1, R0
+                            move             0, R1
+                            move             10, R2
+            avg_0:
+                            move             0, R3
+                            move             40000000, R4
+                            move             0, R5
+                            move             4, R6
+            loop_0:
+                            wait             40
+                            play             0, 1, 28
+                            acquire_weighed  0, R3, R1, R0, 100
+                            add              R3, 1, R3
+                            add              R4, 40000000, R4
+                            add              R5, 10922, R5
+                            loop             R6, @loop_0
+                            loop             R2, @avg_0
+                            set_mrk          0
+                            upd_param        4
+                            stop
+        """
+        assert is_q1asm_equal(sequences["drive"], drive_str)
+        assert is_q1asm_equal(sequences["readout"], readout_str)
+        assert acquisitions["readout"]["Acquisition 0"].shape == (4,)
+
+    def test_qdac_bus_operations_do_not_change_qblox_q1asm(self):
+        """Operations of every kind on a bus left out of ``qblox_buses`` don't appear in the Qblox bus Q1ASM, and a
+        wait_trigger on that bus doesn't require the external trigger."""
+        wf = IQPair(I=Square(amplitude=1.0, duration=1000), Q=Square(amplitude=0.0, duration=1000))
+        qp = QProgram()
+        qp.play(bus="drive", waveform=wf)
+        qp.set_frequency(bus="qdac_flux", frequency=1e6)
+        qp.set_phase(bus="qdac_flux", phase=0.1)
+        qp.reset_phase(bus="qdac_flux")
+        qp.set_gain(bus="qdac_flux", gain=0.1)
+        qp.qblox.set_markers(bus="qdac_flux", mask="0000")
+        qp.set_trigger(bus="qdac_flux", duration=100)
+        qp.wait(bus="qdac_flux", duration=100)
+        qp.wait_trigger(bus="qdac_flux", duration=100)
+        qp.measure(bus="qdac_flux", waveform=wf, weights=wf)
+        qp.play(bus="qdac_flux", waveform=wf)
+        qp.qblox.acquire(bus="qdac_flux", weights=wf)
+        qp.qdac.play(bus="qdac_flux", waveform=Square(amplitude=0.5, duration=10), dwell=2)
+        qp.set_offset(bus="qdac_flux", offset_path0=0.2)
+        qp.play(bus="drive", waveform=wf)
+
+        compiler = QbloxCompiler()
+        output = compiler.compile(qprogram=qp, bus_mapping={"drive": "drive_q0"}, qblox_buses=["drive_q0"])
+
+        drive_str = """
+            setup:
+                            wait_sync        4
+                            set_mrk          0
+                            upd_param        4
+
+            main:
+                            move             10, R0
+            square_0:
+                            play             0, 1, 100
+                            loop             R0, @square_0
+                            move             10, R1
+            square_1:
+                            play             0, 1, 100
+                            loop             R1, @square_1
+                            set_mrk          0
+                            upd_param        4
+                            stop
+        """
+        assert list(output.sequences) == ["drive_q0"]
+        assert is_q1asm_equal(output.sequences["drive_q0"], drive_str)
+        assert output.requires_external_trigger is False
+        # The output QProgram only holds the Qblox operations
+        assert output.qprogram.buses == {"drive_q0"}
+        assert [element.bus for element in output.qprogram.body.elements] == ["drive_q0", "drive_q0"]
+
+    def test_delay_is_inserted_at_first_qblox_play_of_block(self):
+        """Bus delays are inserted at the first play on a Qblox bus of each block: a QDAC play earlier in the block
+        doesn't trigger them, so the delay comes after the set_gain or set_phase on the Qblox bus."""
+        drive_wf = IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
+        readout_wf = IQPair(I=Square(amplitude=1.0, duration=100), Q=Square(amplitude=0.0, duration=100))
+        qp = QProgram()
+        qp.qdac.play(bus="qdac_flux", waveform=Square(amplitude=0.5, duration=10), dwell=2)
+        qp.set_gain(bus="drive", gain=0.5)
+        qp.play(bus="drive", waveform=drive_wf)
+        qp.play(bus="readout", waveform=readout_wf)
+        with qp.average(shots=5):
+            qp.qdac.play(bus="qdac_flux", waveform=Square(amplitude=0.5, duration=10), dwell=2)
+            qp.set_phase(bus="drive", phase=0.1)
+            qp.play(bus="drive", waveform=drive_wf)
+            qp.play(bus="readout", waveform=readout_wf)
+
+        compiler = QbloxCompiler()
+        # No negative delay on readout: with one, the Q1ASM depends on PYTHONHASHSEED (QHC-1672)
+        sequences, _ = compiler.compile(qprogram=qp, qblox_buses=["drive", "readout"], delays={"drive": 20})
+
+        drive_str = """
+            setup:
+                            wait_sync        4
+                            set_mrk          0
+                            upd_param        4
+
+            main:
+                            set_awg_gain     16383, 16383
+                            upd_param        20
+                            play             0, 1, 40
+                            move             5, R0
+            avg_0:
+                            set_ph           15915494
+                            upd_param        20
+                            play             0, 1, 40
+                            wait             120
+                            loop             R0, @avg_0
+                            set_mrk          0
+                            upd_param        4
+                            stop
+        """
+        readout_str = """
+            setup:
+                            wait_sync        4
+                            set_mrk          0
+                            upd_param        4
+
+            main:
+                            move             1, R0
+            square_0:
+                            play             0, 1, 100
+                            loop             R0, @square_0
+                            move             5, R1
+            avg_0:
+                            move             1, R2
+            square_1:
+                            play             0, 1, 100
+                            loop             R2, @square_1
+                            wait             20
+                            loop             R1, @avg_0
+                            set_mrk          0
+                            upd_param        4
+                            stop
+        """
+        assert is_q1asm_equal(sequences["drive"], drive_str)
+        assert is_q1asm_equal(sequences["readout"], readout_str)
+
+    def test_loop_variable_only_used_on_qdac_bus_is_not_swept_on_qblox(self):
+        """A loop whose variable is only used by a set_offset on a non-Qblox bus doesn't sweep any Qblox register:
+        only operations on Qblox buses set how the loop register is scaled."""
+        qp = QProgram()
+        voltage = qp.variable(label="voltage", domain=Domain.Voltage)
+        with qp.for_loop(variable=voltage, start=0.0, stop=0.5, step=0.1):
+            qp.set_offset(bus="qdac_flux", offset_path0=voltage)
+            qp.play(bus="drive", waveform=IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40)))
+
+        compiler = QbloxCompiler()
+        sequences, _ = compiler.compile(qprogram=qp, qblox_buses=["drive"])
+
+        drive_str = """
+            setup:
+                            wait_sync        4
+                            set_mrk          0
+                            upd_param        4
+
+            main:
+                            move             0, R0
+                            move             6, R1
+            loop_0:
+                            play             0, 1, 40
+                            loop             R1, @loop_0
+                            set_mrk          0
+                            upd_param        4
+                            stop
+        """
+        assert is_q1asm_equal(sequences["drive"], drive_str)
+
+    def test_loop_without_qblox_operation_compiles_to_an_empty_loop(self):
+        """A loop with no operation on a Qblox bus still compiles to a Qblox loop, with nothing inside."""
+        pulse = IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
+        qp = QProgram()
+        voltage = qp.variable(label="voltage", domain=Domain.Voltage)
+        qp.play(bus="drive", waveform=pulse)
+        with qp.for_loop(variable=voltage, start=0.0, stop=1.0, step=0.1):
+            qp.set_offset(bus="qdac_flux", offset_path0=voltage)
+        qp.play(bus="drive", waveform=pulse)
+
+        compiler = QbloxCompiler()
+        sequences, _ = compiler.compile(qprogram=qp, qblox_buses=["drive"])
+
+        drive_str = """
+            setup:
+                            wait_sync        4
+                            set_mrk          0
+                            upd_param        4
+
+            main:
+                            play             0, 1, 40
+                            move             0, R0
+                            move             11, R1
+                            nop
+            loop_0:
+                            loop             R1, @loop_0
+                            play             0, 1, 40
+                            set_mrk          0
+                            upd_param        4
+                            stop
+        """
+        assert is_q1asm_equal(sequences["drive"], drive_str)
+
+    def test_if_trigger_with_bus_mapping(self):
+        """qp.if_trigger() on mapped buses, its wait time derived from a mapped QDAC play(dwell=...)."""
+        qp = QProgram()
+        qp.qdac.play(bus="flux", waveform=Square(amplitude=1.0, duration=100), dwell=3)
+        qp.set_trigger(bus="flux", duration=100e-6, outputs=1, position="step")
+        with qp.if_trigger():
+            with qp.average(shots=10):
+                qp.qblox.acquire(
+                    bus="readout",
+                    weights=IQPair(I=Square(amplitude=1.0, duration=100), Q=Square(amplitude=0.0, duration=100)),
+                )
+
+        compiler = QbloxCompiler()
+        output = compiler.compile(
+            qprogram=qp, bus_mapping={"readout": "readout_q0", "flux": "flux_q0"}, qblox_buses=["readout_q0"]
+        )
+
+        readout_str = """
+            setup:
+                            set_latch_en     1, 4
+                            wait_sync        4
+                            set_mrk          0
+                            upd_param        4
+                            wait_trigger     15, 4
+
+            main:
+                            wait             252
+                            set_cond         1, 16384, 0, 4 # trigger condition met
+                            move             10, R0
+            avg_0:
+                            acquire_weighed  0, 0, 0, 1, 100
+                            loop             R0, @avg_0
+                            set_cond         0, 0, 0, 4
+                            set_cond         1, 16384, 1, 4 # trigger condition not met
+                            wait             964
+                            set_cond         0, 0, 1, 4
+                            latch_rst        4
+                            wait             1740
+                            set_mrk          0
+                            upd_param        4
+                            stop
+        """
+        assert list(output.sequences) == ["readout_q0"]
+        assert is_q1asm_equal(output.sequences["readout_q0"], readout_str)
+        assert output.requires_external_trigger is True
+
+    def test_loop_over_values_raises_error_even_if_only_used_on_qdac_bus(self):
+        """qp.loop() cannot be compiled for Qblox, even when its variable only drives a QDAC bus."""
+        qp = QProgram()
+        voltage = qp.variable(label="voltage", domain=Domain.Voltage)
+        with qp.loop(variable=voltage, values=np.array([0.1, 0.2, 0.3])):
+            qp.qdac.play(bus="qdac_flux", waveform=Square(amplitude=0.5, duration=10), dwell=2)
+            qp.play(bus="drive", waveform=IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40)))
+
+        compiler = QbloxCompiler()
+        with pytest.raises(
+            NotImplementedError,
+            match=re.escape("Loops with arbitrary numpy arrays are not currently supported for QBlox."),
+        ):
+            compiler.compile(qprogram=qp, qblox_buses=["drive"])
+
+    def test_measure_reset_on_bus_outside_qblox_buses_raises_error(self):
+        """qp.qblox.measure_reset() on a measurement bus left out of ``qblox_buses`` raises an error naming both buses."""
+        wf = IQPair(I=Square(amplitude=1.0, duration=100), Q=Square(amplitude=0.0, duration=100))
+        qp = QProgram()
+        qp.qblox.measure_reset(bus="readout", waveform=wf, weights=wf, control_bus="drive", reset_pulse=wf)
+
+        compiler = QbloxCompiler()
+        with pytest.raises(
+            ValueError,
+            match=re.escape(
+                "qp.qblox.measure_reset() measures on bus 'readout' and resets on bus 'drive', but both must be Qblox "
+                "buses; the Qblox buses are ['drive']."
+            ),
+        ):
+            compiler.compile(qprogram=qp, qblox_buses=["drive"])
 
 
 class TestAcquisition:

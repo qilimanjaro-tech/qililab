@@ -1205,7 +1205,7 @@ class TestQProgram(TestStructuredProgram):
         """Test with_crosstalk_qblox does not append the usual trailing loop Sync when a flux loop
         iteration's last element is a qp.if_trigger() block: that Conditional already self-times its
         own exit, and a Sync placed right after it would touch the gated bus outside the block, which
-        QbloxCompiler._validate_conditional_bus_isolation forbids."""
+        the Qblox pre-pass forbids."""
         inverse_xtalk_array = np.linalg.inv([[1, 0.5], [0.5, 1]])
         crosstalk = CrosstalkMatrix().from_array(["flux1", "flux2"], inverse_xtalk_array)
         non_linear_crosstalk = NonLinearCrosstalkMatrix.from_linear(crosstalk)
@@ -1781,8 +1781,6 @@ class TestQProgram(TestStructuredProgram):
         assert not op.save_adc
 
         # Interface flags updated
-        assert "control" in qp.qblox.latch_enabled
-        assert qp.qblox.trigger_network_required["readout"] == 1
         assert qp.qblox.weight_duration == {"readout": [40]}
 
     def test_with_bus_mapping_measure_reset(self):
