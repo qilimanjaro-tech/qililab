@@ -1770,14 +1770,7 @@ SCHEMA = {"add_measurement": "measurements", "add_results": "measurements", "add
 
 
 def _mock_latest_calibration_run(session: MagicMock, row: CalibrationRun) -> None:
-    chain = MagicMock()
-    for name in ("order_by", "filter", "filter_by", "where", "limit", "scalars"):
-        getattr(chain, name).return_value = chain
-    for name in ("first", "one", "one_or_none", "scalar_one", "scalar_one_or_none"):
-        getattr(chain, name).return_value = row
-    session.query.return_value = chain
-    session.execute.return_value = chain
-    session.scalars.return_value = chain
+    session.query.return_value.order_by.return_value.first.return_value = row
 
 
 def _build_manager(
@@ -2045,9 +2038,14 @@ class TestWithoutResultFolder:
         assert measurement.fitting_path is None
         assert not (tmp_path / "elsewhere").exists()
 
+    @pytest.mark.parametrize(
+        "base_paths",
+        [{}, {"base_path_local": "", "base_path_shared": "", "data_write_folder": "/data/"}],
+        ids=["missing", "empty"],
+    )
     @pytest.mark.parametrize("method", METHODS)
-    def test_missing_base_path_keys_raises_on_add(self, method: str):
-        manager = _build_manager(dict(REQUIRED_CONFIG), SCHEMA[method])
+    def test_missing_base_path_keys_raises_on_add(self, method: str, base_paths: dict):
+        manager = _build_manager({**REQUIRED_CONFIG, **base_paths}, SCHEMA[method])
         with pytest.raises(ValueError):
             _add(manager, method)
 

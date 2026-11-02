@@ -432,7 +432,7 @@ class DatabaseManager:
         self,
         experiment_name: str,
         start_time: dt.datetime,
-        sample_name: str | None,
+        sample_name: str,
         cooldown: str | None,
         result_folder: str | None = None,
         target: int | str | list[str] | None = None,
@@ -454,15 +454,15 @@ class DatabaseManager:
             name_parts = [experiment_name, _flatten_index(target), _flatten_index(secondary), time_str]
             filename = "-".join(part for part in name_parts if part)
         else:
-            if self.base_path_local is None or self.folder_path is None:
+            if not self.base_path_local or self.folder_path is None:
                 raise ValueError(
                     "No `result_folder` given and the database config has no `base_path_local` / `data_write_folder`."
                 )
             write_folder = self.folder_path.lstrip("/\\")
             base_path = os.path.join(self.base_path_local, write_folder)
-            if not os.path.isdir(base_path) and self.base_path_share is not None:
+            if not os.path.isdir(base_path) and self.base_path_share:
                 base_path = os.path.join(self.base_path_share, write_folder)
-            sample_folders = [str(sample_name)] if cooldown is None else [str(sample_name), cooldown]
+            sample_folders = [sample_name] if cooldown is None else [sample_name, cooldown]
             folder = os.path.join(base_path, *sample_folders, start_time.strftime("%Y-%m-%d"), time_str)
             filename = experiment_name
 
