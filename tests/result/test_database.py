@@ -178,7 +178,7 @@ class TestMeasurement:
         mock_session_context = MagicMock()
         mock_session = MagicMock()
         mock_session_context.__enter__.return_value = mock_session
-        mock_session.merge.return_value = measurement
+        mock_session.query.return_value.where.return_value.one_or_none.return_value = measurement
 
         mock_db_manager = MagicMock()
         mock_db_manager.session = lambda: mock_session_context
@@ -187,13 +187,14 @@ class TestMeasurement:
 
         assert result.fitting_path == "/test/fit.h5"
         assert result.fitting_parameters == {"a": 1.0}
+        mock_session.merge.assert_not_called()
         mock_session.commit.assert_called_once()
 
     def test_add_fitting_without_parameters(self, measurement):
         mock_session_context = MagicMock()
         mock_session = MagicMock()
         mock_session_context.__enter__.return_value = mock_session
-        mock_session.merge.return_value = measurement
+        mock_session.query.return_value.where.return_value.one_or_none.return_value = measurement
 
         mock_db_manager = MagicMock()
         mock_db_manager.session = lambda: mock_session_context
@@ -204,11 +205,41 @@ class TestMeasurement:
         assert result.fitting_parameters is None
         mock_session.commit.assert_called_once()
 
+    def test_add_fitting_without_path_keeps_existing_path(self, measurement):
+        measurement.fitting_path = "/test/old_fit.h5"
+        mock_session_context = MagicMock()
+        mock_session = MagicMock()
+        mock_session_context.__enter__.return_value = mock_session
+        mock_session.query.return_value.where.return_value.one_or_none.return_value = measurement
+
+        mock_db_manager = MagicMock()
+        mock_db_manager.session = lambda: mock_session_context
+
+        result = measurement.add_fitting(mock_db_manager, parameters={"a": 1.0})
+
+        assert result.fitting_path == "/test/old_fit.h5"
+        assert result.fitting_parameters == {"a": 1.0}
+        mock_session.commit.assert_called_once()
+
+    def test_add_fitting_raises_index_error_measurement_not_found(self, measurement):
+        mock_session_context = MagicMock()
+        mock_session = MagicMock()
+        mock_session_context.__enter__.return_value = mock_session
+        mock_session.query.return_value.where.return_value.one_or_none.return_value = None
+
+        mock_db_manager = MagicMock()
+        mock_db_manager.session = lambda: mock_session_context
+
+        with pytest.raises(IndexError, match="Measurement entry"):
+            measurement.add_fitting(mock_db_manager, path="/test/fit.h5")
+
+        mock_session.commit.assert_not_called()
+
     def test_add_fitting_raises_exception(self, measurement):
         mock_session_context = MagicMock()
         mock_session = MagicMock()
         mock_session_context.__enter__.return_value = mock_session
-        mock_session.merge.return_value = measurement
+        mock_session.query.return_value.where.return_value.one_or_none.return_value = measurement
         mock_session.commit.side_effect = Exception("Measurement error")
 
         mock_db_manager = MagicMock()
@@ -1052,9 +1083,16 @@ class Testdatabase:
         mock_measurement.add_fitting.assert_called_once_with(db_manager, None, {"a": 1.0})
         assert result == mock_measurement
 
-    def test_add_fitting_measurements_without_path_raises_error(self, db_manager: DatabaseManager):
-        with pytest.raises(ValueError, match="A fitting 'path' is mandatory"):
-            db_manager.add_fitting(123, parameters={"a": 1.0})
+    def test_add_fitting_measurements_without_path(self, db_manager: DatabaseManager):
+        mock_measurement = MagicMock(spec=Measurement)
+        mock_measurement.add_fitting.return_value = mock_measurement
+
+        with patch.object(db_manager, "_load_by_id", return_value=mock_measurement) as mock_load:
+            result = db_manager.add_fitting(123, parameters={"a": 1.0})
+
+        mock_load.assert_called_once_with(Measurement, 123)
+        mock_measurement.add_fitting.assert_called_once_with(db_manager, None, {"a": 1.0})
+        assert result == mock_measurement
 
     def test_add_fitting_qaas_raises_error(self, db_manager: DatabaseManager):
         db_manager.database_schema = "qaas"

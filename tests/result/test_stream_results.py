@@ -639,6 +639,19 @@ class TestStreamArray:
         assert stream_array.measurement == updated_measurement
         assert result == updated_measurement
 
+    def test_add_fitting_without_path(self, stream_array: StreamArray):
+        """Tests that add_fitting forwards a missing path as None."""
+        mock_measurement = MagicMock()
+        updated_measurement = MagicMock()
+        mock_measurement.add_fitting.return_value = updated_measurement
+        stream_array.measurement = mock_measurement
+
+        result = stream_array.add_fitting(parameters={"a": 1.0})
+
+        mock_measurement.add_fitting.assert_called_once_with(stream_array.db_manager, None, {"a": 1.0})
+        assert stream_array.measurement == updated_measurement
+        assert result == updated_measurement
+
     def test_add_fitting_raises_runtime_error_no_measurement(self, stream_array: StreamArray):
         """Tests that add_fitting raises if called before the context manager has created a measurement."""
         stream_array.measurement = None

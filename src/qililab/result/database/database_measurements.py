@@ -229,18 +229,31 @@ class Measurement(_MeasurementsBase):
         axis_labels = {dim: da.coords[dim].values for dim in da.dims[1:]}
         return arr, axis_labels
 
-    def add_fitting(self, database_manager: "DatabaseManager", path: str, parameters: dict[str, Any] | None = None):
-        """Add fitting_path and fitting_parameters into Measurements database table.
+    def add_fitting(
+        self, database_manager: "DatabaseManager", path: str | None = None, parameters: dict[str, Any] | None = None
+    ):
+        """Add fitting_path and fitting_parameters into the Measurements database table.
+
+        The row is re-loaded from the database by its ``measurement_id`` inside the session and only the
+        fitting columns are updated, instead of merging ``self``. This avoids a stale in-memory instance
+        overwriting columns that were changed elsewhere.
 
         Args:
-            database_manager (DatabaseManager): _description_
-            path (str): Fitting plots or data path.
+            database_manager (DatabaseManager): Database manager holding the session.
+            path (str | None, optional): Fitting plots or data path. Defaults to None.
             parameters (dict[str, Any] | None, optional): Fitting parameters in dictionary form. Defaults to None.
         """
         session = database_manager.session
         with session() as running_session:
-            persistent_instance = running_session.merge(self)
-            persistent_instance.fitting_path = path
+            persistent_instance = (
+                running_session.query(Measurement)
+                .where(Measurement.measurement_id == self.measurement_id)
+                .one_or_none()
+            )
+            if persistent_instance is None:
+                raise IndexError(f"Measurement entry '{self.measurement_id}' does not exist.")
+            if path:
+                persistent_instance.fitting_path = path
             if parameters:
                 persistent_instance.fitting_parameters = parameters
             try:
