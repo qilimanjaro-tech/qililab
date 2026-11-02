@@ -18,7 +18,7 @@ from typing import TYPE_CHECKING, ClassVar, overload
 import numpy as np
 
 from qililab.core.variables import Domain, Variable, requires_domain
-from qililab.qprogram.blocks import Block, Conditional, ForLoop, Parallel
+from qililab.qprogram.blocks import Block, Conditional, ForLoop, Parallel, for_loop_iterations
 from qililab.qprogram.calibration import Calibration
 from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix, NonLinearCrosstalkMatrix
 from qililab.qprogram.flux_vector import FluxVector, NonLinearFluxVector
@@ -453,8 +453,6 @@ class QProgram(StructuredProgram):
         Returns:
             QProgram: A new instance of QProgram with calibrated crosstalk.
         """
-        from .qblox_compiler import QbloxCompiler
-
         self._bus_variable_map: dict[tuple[Variable | float | None, str], Variable] = {}
         self._block_variables: dict[Variable | float | None, list[Variable]] = {}
         self._parallel_loops: dict[Variable, list[ForLoop]] = {}
@@ -625,12 +623,7 @@ class QProgram(StructuredProgram):
                         np.linspace(
                             variable_loop.start,
                             variable_loop.stop,
-                            max(
-                                QbloxCompiler._calculate_iterations(
-                                    variable_loop.start, variable_loop.stop, variable_loop.step
-                                ),
-                                0,
-                            ),
+                            max(for_loop_iterations(variable_loop.start, variable_loop.stop, variable_loop.step), 0),
                         )
                         if isinstance(variable_loop, ForLoop)
                         else variable_loop

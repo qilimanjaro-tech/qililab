@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import math
 
 from qililab.core.variables import Variable
 from qililab.qprogram.blocks.block import Block
@@ -26,3 +27,23 @@ class ForLoop(Block):
         self.start: int | float = start
         self.stop: int | float = stop
         self.step: int | float = step
+
+
+def for_loop_iterations(start: int | float, stop: int | float, step: int | float) -> int:
+    """Number of points a for_loop from ``start`` to ``stop`` by ``step`` sweeps.
+
+    The count is rounded down whatever the sign of ``step``, so a loop never sweeps more points than its step allows
+    and a descending loop sweeps as many points as its ascending mirror. A count within 1e-9 of an integer snaps to it,
+    to absorb floating-point error (``0 -> 0.7`` by ``0.1`` is 8 points, not 7).
+
+    A step pointing away from ``stop`` gives 0 points or fewer; callers decide how to handle it.
+
+    Raises:
+        ValueError: If ``step`` is zero.
+    """
+    if step == 0:
+        raise ValueError("Step value cannot be zero")
+    raw_iterations = (stop - start + step) / step
+    if abs(raw_iterations - round(raw_iterations)) < 1e-9:
+        return round(raw_iterations)
+    return math.floor(raw_iterations)

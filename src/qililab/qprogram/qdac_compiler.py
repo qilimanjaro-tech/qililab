@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import math
 from collections import deque
 from typing import TYPE_CHECKING, Any, Callable
 
@@ -21,7 +20,16 @@ import numpy as np
 from qililab.config import logger
 from qililab.constants import QDACCONSTANTS
 from qililab.instruments.qdevil import QDevilQDac2
-from qililab.qprogram.blocks import Average, Block, Conditional, ForLoop, InfiniteLoop, Loop, Parallel
+from qililab.qprogram.blocks import (
+    Average,
+    Block,
+    Conditional,
+    ForLoop,
+    InfiniteLoop,
+    Loop,
+    Parallel,
+    for_loop_iterations,
+)
 from qililab.qprogram.calibration import Calibration
 from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
 from qililab.qprogram.operations import (
@@ -218,7 +226,7 @@ class QdacCompiler:
         iterations = []
         for loop in element.loops:
             if isinstance(loop, ForLoop):
-                iters = QdacCompiler._convert_for_loop_values(loop)
+                iters = for_loop_iterations(loop.start, loop.stop, loop.step)
             elif isinstance(loop, Loop):
                 iters = int(loop.values.shape[0])
             iterations.append(iters)
@@ -243,7 +251,7 @@ class QdacCompiler:
         return True
 
     def _handle_for_loop(self, element: ForLoop):
-        iterations = QdacCompiler._convert_for_loop_values(element)
+        iterations = for_loop_iterations(element.start, element.stop, element.step)
         for qdac_bus_alias in self._qdac_buses_alias:
             self._loop_repetitions[qdac_bus_alias] *= iterations + 1
         for bus in self._buses:
@@ -469,24 +477,3 @@ class QdacCompiler:
                             channel_id=self._channels[bus], in_port=in_instrument.in_trigger
                         )
         self._qdacs = [qdac for qdac in self._qdacs if qdac != self._out_instrument] + [self._out_instrument]
-
-    @staticmethod
-    def _calculate_iterations(start: int | float, stop: int | float, step: int | float):
-        if step == 0:
-            raise ValueError("Step value cannot be zero")
-
-        # Calculate the raw number of iterations
-        raw_iterations = (stop - start + step) / step
-
-        # If the raw number of iterations is very close to an integer, round it to that integer
-        # This accounts for potential floating-point inaccuracies
-        if abs(raw_iterations - round(raw_iterations)) < 1e-9:
-            return round(raw_iterations)
-
-        # Otherwise, if we're incrementing, take the ceiling, and if we're decrementing, take the floor
-        return math.floor(raw_iterations) if step > 0 else math.ceil(raw_iterations)
-
-    @staticmethod
-    def _convert_for_loop_values(for_loop: ForLoop):
-        iterations = QdacCompiler._calculate_iterations(start=for_loop.start, stop=for_loop.stop, step=for_loop.step)
-        return iterations

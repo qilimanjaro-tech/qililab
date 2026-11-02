@@ -22,7 +22,7 @@ from typing import Literal
 import numpy as np
 
 from qililab.core.variables import Variable, VariableExpression
-from qililab.qprogram.blocks import Block, ForLoop, Loop, Parallel
+from qililab.qprogram.blocks import Block, ForLoop, Loop, Parallel, for_loop_iterations
 from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
 from qililab.qprogram.operations import (
     Acquire,
@@ -40,7 +40,6 @@ from qililab.qprogram.operations import (
     Wait,
     WaitTrigger,
 )
-from qililab.qprogram.qblox_compiler import QbloxCompiler
 from qililab.qprogram.qprogram import QProgram
 
 Quantity = Literal["offset", "gain"]
@@ -62,10 +61,10 @@ _PLAY_OPERATIONS = (Play, PlayWithCalibratedWaveform)
 
 
 def loop_values(loop: ForLoop | Loop) -> np.ndarray:
-    """Values a loop takes on the hardware, using the Qblox compiler's iteration count."""
+    """Values a loop takes on the hardware, using the compilers' iteration count."""
     if isinstance(loop, Loop):
         return np.asarray(loop.values, dtype=float)
-    iterations = QbloxCompiler._calculate_iterations(loop.start, loop.stop, loop.step)
+    iterations = for_loop_iterations(loop.start, loop.stop, loop.step)
     if iterations <= 1:
         return np.array([loop.start], dtype=float)[: max(iterations, 0)]
     return np.linspace(loop.start, loop.stop, iterations)

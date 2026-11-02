@@ -579,6 +579,20 @@ class TestExperimentExecutor:
         assert np.array_equal(int_result, int_check)
         assert np.array_equal(float_result, float_check)
 
+    @pytest.mark.parametrize(
+        "start, stop, step, expected",
+        [
+            (0.0, 1.0, 0.3, [0.0, 1 / 3, 2 / 3, 1.0]),
+            (1.0, 0.0, -0.3, [1.0, 2 / 3, 1 / 3, 0.0]),
+            (0.0, 0.7, 0.1, [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7]),
+        ],
+    )
+    def test_inclusive_range_qprogram(self, start, stop, step, expected):
+        """The results axis of a QProgram for_loop has the compilers' number of points: a step that doesn't divide
+        the range gives 4 points in both directions, and a count of 7.999999999999999 is 8 points, not 7."""
+        result = ExperimentExecutor._inclusive_range_qprogram(None, start, stop, step)
+        np.testing.assert_allclose(result, expected)
+
     @patch("qililab.platform.platform.get_db_manager")
     @patch("qililab.result.experiment_results_writer.h5py.File")
     def test_execute_database_no_job_id_raises_error(
