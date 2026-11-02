@@ -1886,8 +1886,9 @@ class TestResultFolderValidation:
     ):
         monkeypatch.chdir(tmp_path)
         manager = _build_manager(path_config, schema)
+        calibration = Calibration()
         with pytest.raises((ValueError, RuntimeError)) as excinfo:
-            stream_array = _stream_array(manager, result_folder="results", calibration=Calibration())
+            stream_array = _stream_array(manager, result_folder="results", calibration=calibration)
             with stream_array:
                 pass
         error = excinfo.value
