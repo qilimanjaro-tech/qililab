@@ -5,7 +5,9 @@ import copy
 import datetime
 import inspect
 import os
+import re
 import warnings
+from pathlib import Path
 from typing import get_args
 from unittest.mock import MagicMock, patch
 
@@ -15,7 +17,7 @@ import pytest
 from tests.data import Galadriel
 
 from qililab.data_management import build_platform
-from qililab.qprogram import Calibration
+from qililab.qprogram import Calibration, QProgram
 from qililab.result import AutocalMeasurement
 from qililab.result.database import CalibrationRun, QaaS_Experiment
 from qililab.result.database.database_manager import (
@@ -27,6 +29,8 @@ from qililab.result.database.database_manager import (
     load_by_id,
 )
 from qililab.result.database.database_measurements import Measurement, SequenceRun
+from qililab.result.stream_results import StreamArray
+from qililab.waveforms import Square
 
 # Use non-interactive backend for testing
 mpl.use("Agg")
@@ -1294,6 +1298,8 @@ class Testdatabase:
         mock_query = MagicMock()
         mock_order_by = MagicMock()
         mock_calibration_id.calibration_id = 1
+        mock_calibration_id.sample_name = "sampleA"
+        mock_calibration_id.cooldown = "cdX"
         mock_order_by.first.return_value = mock_calibration_id
         mock_query.order_by.return_value = mock_order_by
         db_manager_autocal._mock_session.query.return_value = mock_query
@@ -1304,21 +1310,23 @@ class Testdatabase:
         mock_datetime.datetime.strftime = datetime.datetime.strftime
 
         calibration = Calibration()
-        calibration.parameters = {"sample_name": "sampleA", "cooldown": "cdX", "data_folder": "/shared_test/"}
         # Act
         measurement = db_manager_autocal.add_autocal_measurement(
             experiment_name="exp1", qubit_idx=qubit_idx, calibration=calibration
         )
 
         # Assert
-        expected_path = "/shared_test/exp1.h5"
-        assert measurement.result_path == expected_path
+        expected_folder = os.path.join(
+            "/shared_test/", "measurement_folder", "sampleA", "cdX", "2023-01-01", "12_00_00_000000"
+        )
+        assert measurement.result_path == os.path.join(expected_folder, "exp1.h5")
+        assert measurement.fitting_path is None
         # int indexes are stored as str, so target matches Measurement.target
         assert measurement.qbit_idx == expected_qbit_idx
         assert measurement.target == expected_target
         db_manager_autocal._mock_session.add.assert_called_once()
         db_manager_autocal._mock_session.commit.assert_called_once()
-        mock_makedirs.assert_called_once_with("/shared_test/")
+        mock_makedirs.assert_called_once_with(expected_folder, exist_ok=True)
 
         db_manager_autocal.database_schema = "measurements"
         with pytest.raises(ValueError, match="needs a DatabaseManager with database_schema"):
@@ -1340,7 +1348,7 @@ class Testdatabase:
         mock_session.commit.side_effect = Exception("DB error")
 
         calibration = Calibration()
-        calibration.parameters = {"sample_name": "sampleA", "cooldown": "cdX", "data_folder": "/shared_test/"}
+        calibration.parameters = {"sample_name": "sampleA", "cooldown": "cdX"}
 
         db_manager_autocal.session = MagicMock(return_value=mock_session)
 
@@ -1360,7 +1368,7 @@ class Testdatabase:
         db_manager_autocal._mock_session.query.return_value = mock_query
 
         calibration = Calibration()
-        calibration.parameters = {"sample_name": "sampleA", "cooldown": "cdX", "data_folder": "/shared_test/"}
+        calibration.parameters = {"sample_name": "sampleA", "cooldown": "cdX"}
         # Act
         db_manager_autocal.add_autocal_measurement(experiment_name="exp1", qubit_idx=0, calibration=calibration)
 
@@ -1442,11 +1450,13 @@ class Testdatabase:
         measurement = db_manager.add_measurement("exp1", experiment_completed=True)
 
         # Assert
-        expected_path = "/shared_test/measurement_folder/sampleA/cdX/2023-01-01/12_00_00_000000/exp1.h5"
-        assert measurement.result_path == expected_path
+        expected_folder = os.path.join(
+            "/shared_test/", "measurement_folder", "sampleA", "cdX", "2023-01-01", "12_00_00_000000"
+        )
+        assert measurement.result_path == os.path.join(expected_folder, "exp1.h5")
         db_manager._mock_session.add.assert_called_once()
         db_manager._mock_session.commit.assert_called_once()
-        mock_makedirs.assert_called_once_with("/shared_test/measurement_folder/sampleA/cdX/2023-01-01/12_00_00_000000")
+        mock_makedirs.assert_called_once_with(expected_folder, exist_ok=True)
 
     @patch("qililab.result.database.database_manager.os.makedirs")
     @patch("qililab.result.database.database_manager.dt")
@@ -1465,12 +1475,14 @@ class Testdatabase:
         measurement = db_manager.add_measurement("exp1", experiment_completed=True, bus_mapping=bus_map)
 
         # Assert
-        expected_path = "/shared_test/measurement_folder/sampleA/cdX/2023-01-01/12_00_00_000000/exp1.h5"
-        assert measurement.result_path == expected_path
+        expected_folder = os.path.join(
+            "/shared_test/", "measurement_folder", "sampleA", "cdX", "2023-01-01", "12_00_00_000000"
+        )
+        assert measurement.result_path == os.path.join(expected_folder, "exp1.h5")
         assert measurement.bus_mapping == bus_map
         db_manager._mock_session.add.assert_called_once()
         db_manager._mock_session.commit.assert_called_once()
-        mock_makedirs.assert_called_once_with("/shared_test/measurement_folder/sampleA/cdX/2023-01-01/12_00_00_000000")
+        mock_makedirs.assert_called_once_with(expected_folder, exist_ok=True)
 
     @patch("qililab.result.database.database_manager.os.makedirs")
     @patch("qililab.result.database.database_manager.dt")
@@ -1744,3 +1756,362 @@ class TestDeprecated:
             pytest.warns(FutureWarning),
         ):
             db_manager.add_calibration_fitting(123, path="/test/fit.h5")
+
+
+# ---------- result_folder and result path layout (QHC-1716) ----------
+
+EXPERIMENT = "two_tone__frequency_vs_flux_pulsed_dc"
+DATA_FOLDER = "measurement_folder"
+WARNING = "Data folder did not exist"
+TIMESTAMP = r"\d{2}_\d{2}_\d{2}_\d{6}"
+REQUIRED_CONFIG = {"user": "user", "passwd": "pass", "host": "host", "port": "5432", "database": "db"}
+METHODS = ["add_measurement", "add_results", "add_autocal_measurement"]
+SCHEMA = {"add_measurement": "measurements", "add_results": "measurements", "add_autocal_measurement": "autocal"}
+
+
+def _mock_latest_calibration_run(session: MagicMock, row: CalibrationRun) -> None:
+    chain = MagicMock()
+    for name in ("order_by", "filter", "filter_by", "where", "limit", "scalars"):
+        getattr(chain, name).return_value = chain
+    for name in ("first", "one", "one_or_none", "scalar_one", "scalar_one_or_none"):
+        getattr(chain, name).return_value = row
+    session.query.return_value = chain
+    session.execute.return_value = chain
+    session.scalars.return_value = chain
+
+
+def _build_manager(
+    path_config: dict, database_schema: str, calibration_cooldown: str | None = "cdX"
+) -> DatabaseManager:
+    session = MagicMock()
+    context = MagicMock()
+    context.__enter__.return_value = session
+    with (
+        patch("qililab.result.database.database_manager._load_config", return_value=path_config),
+        patch("qililab.result.database.database_manager.get_engine", return_value=MagicMock()),
+        patch("qililab.result.database.database_manager.sessionmaker", return_value=lambda: context),
+    ):
+        manager = DatabaseManager("test_file.ini", "database", database_schema=database_schema)
+    manager._mock_session = session
+    if database_schema == "measurements":
+        manager.current_sample = "sampleA"
+        manager.current_cd = "cdX"
+    else:
+        row = CalibrationRun(
+            date=datetime.datetime(2023, 1, 1, 12, 0, 0),
+            calibration_tree={"tree": "test"},
+            calibration_completed=False,
+            sample_name="sampleA",
+            cooldown=calibration_cooldown,
+        )
+        row.calibration_id = 7
+        _mock_latest_calibration_run(session, row)
+    return manager
+
+
+def _add(manager: DatabaseManager, method: str, **kwargs):
+    if method == "add_measurement":
+        return manager.add_measurement(EXPERIMENT, False, **kwargs)
+    if method == "add_results":
+        return manager.add_results(EXPERIMENT, np.array([[1.0, 2.0], [3.0, 4.0]]), {"x": np.array([0, 1])}, **kwargs)
+    kwargs.setdefault("qubit_idx", None)
+    kwargs.setdefault("calibration", Calibration())
+    return manager.add_autocal_measurement(EXPERIMENT, **kwargs)
+
+
+def _start(measurement) -> datetime.datetime:
+    assert isinstance(measurement.start_time, datetime.datetime)
+    return measurement.start_time
+
+
+def _timestamp(measurement) -> str:
+    return _start(measurement).strftime("%H_%M_%S_%f")
+
+
+def _base_layout_path(base: Path, sample: str, cooldown: str | None, measurement) -> Path:
+    folder = base / DATA_FOLDER / sample
+    if cooldown is not None:
+        folder = folder / cooldown
+    start = _start(measurement)
+    return folder / start.strftime("%Y-%m-%d") / start.strftime("%H_%M_%S_%f") / f"{EXPERIMENT}.h5"
+
+
+@pytest.fixture(name="path_config")
+def fixture_path_config(tmp_path: Path) -> dict:
+    return {
+        **REQUIRED_CONFIG,
+        "base_path_local": str(tmp_path / "local"),
+        "base_path_shared": str(tmp_path / "shared"),
+        "data_write_folder": DATA_FOLDER,
+    }
+
+
+@pytest.fixture(name="result_folder")
+def fixture_result_folder(tmp_path: Path) -> str:
+    return str(tmp_path / "results")
+
+
+@pytest.fixture(name="path_db_manager")
+def fixture_path_db_manager(path_config: dict) -> DatabaseManager:
+    return _build_manager(path_config, "measurements")
+
+
+@pytest.fixture(name="path_db_manager_autocal")
+def fixture_path_db_manager_autocal(path_config: dict) -> DatabaseManager:
+    return _build_manager(path_config, "autocal")
+
+
+def _stream_array(path_db_manager: DatabaseManager, **kwargs) -> StreamArray:
+    qprogram = QProgram()
+    qprogram.play("feedline_input_output_bus", Square(1.0, 100))
+    qprogram.wait("feedline_input_output_bus", 100)
+    return StreamArray(
+        shape=(2, 1),
+        loops={"amp": np.arange(2)},
+        experiment_name=EXPERIMENT,
+        db_manager=path_db_manager,
+        platform=build_platform(runcard=copy.deepcopy(Galadriel.runcard)),
+        qprogram=qprogram,
+        **kwargs,
+    )
+
+
+class TestResultFolderValidation:
+    @pytest.mark.parametrize("relative", ["results", os.path.join("a", "b"), os.path.join(".", "results")])
+    @pytest.mark.parametrize("method", METHODS)
+    def test_relative_result_folder_raises_value_error(
+        self, path_config: dict, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, method: str, relative: str
+    ):
+        monkeypatch.chdir(tmp_path)
+        manager = _build_manager(path_config, SCHEMA[method])
+        with pytest.raises(ValueError):
+            _add(manager, method, result_folder=relative)
+
+    @pytest.mark.parametrize("schema", ["measurements", "autocal"])
+    def test_stream_array_relative_result_folder_raises_value_error(
+        self, path_config: dict, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, schema: str
+    ):
+        monkeypatch.chdir(tmp_path)
+        manager = _build_manager(path_config, schema)
+        with pytest.raises((ValueError, RuntimeError)) as excinfo:
+            stream_array = _stream_array(manager, result_folder="results", calibration=Calibration())
+            with stream_array:
+                pass
+        error = excinfo.value
+        assert isinstance(error, ValueError) or isinstance(error.__cause__, ValueError)
+
+
+class TestWithResultFolder:
+    @pytest.mark.parametrize(
+        ("target", "secondary_source", "suffix"),
+        [
+            (None, None, ""),
+            (["q0"], None, "-q0"),
+            (["q0", "q1"], None, "-q0-q1"),
+            (None, ["flux_q0_z"], "-flux_q0_z"),
+            (["q0"], ["flux_q0_z"], "-q0-flux_q0_z"),
+            (["q0", "q1"], ["c0", "c1"], "-q0-q1-c0-c1"),
+        ],
+    )
+    def test_add_measurement_filename(
+        self, path_db_manager: DatabaseManager, result_folder: str, target, secondary_source, suffix: str
+    ):
+        measurement = path_db_manager.add_measurement(
+            EXPERIMENT, False, target=target, secondary_source=secondary_source, result_folder=result_folder
+        )
+        expected = Path(result_folder) / f"{EXPERIMENT}{suffix}-{_timestamp(measurement)}.h5"
+        assert Path(measurement.result_path) == expected
+        assert os.path.isdir(result_folder)
+
+    @pytest.mark.parametrize(
+        ("qubit_idx", "secondary_idx", "suffix"),
+        [
+            (None, None, ""),
+            (0, None, "-0"),
+            ("q0", None, "-q0"),
+            ("q0", "flux_q0_z", "-q0-flux_q0_z"),
+            ("q0", ["c0", "c1"], "-q0-c0-c1"),
+            (None, ["flux_q0_z"], "-flux_q0_z"),
+        ],
+    )
+    def test_add_autocal_measurement_filename(
+        self, path_db_manager_autocal: DatabaseManager, result_folder: str, qubit_idx, secondary_idx, suffix: str
+    ):
+        measurement = path_db_manager_autocal.add_autocal_measurement(
+            EXPERIMENT,
+            qubit_idx=qubit_idx,
+            calibration=Calibration(),
+            secondary_idx=secondary_idx,
+            result_folder=result_folder,
+        )
+        expected = Path(result_folder) / f"{EXPERIMENT}{suffix}-{_timestamp(measurement)}.h5"
+        assert Path(measurement.result_path) == expected
+        assert measurement.fitting_path is None
+        assert os.path.isdir(result_folder)
+
+    def test_add_results_filename_and_file_written(self, path_db_manager: DatabaseManager, result_folder: str):
+        measurement = _add(path_db_manager, "add_results", result_folder=result_folder)
+        expected = Path(result_folder) / f"{EXPERIMENT}-{_timestamp(measurement)}.h5"
+        assert Path(measurement.result_path) == expected
+        assert expected.is_file()
+
+    @pytest.mark.parametrize("method", METHODS)
+    def test_result_folder_used_as_given_ignoring_base_paths(self, path_config: dict, result_folder: str, method: str):
+        manager = _build_manager(path_config, SCHEMA[method])
+        measurement = _add(manager, method, result_folder=result_folder)
+        assert Path(measurement.result_path).parent == Path(result_folder)
+        assert not os.path.exists(os.path.join(path_config["base_path_local"], DATA_FOLDER))
+        assert not os.path.exists(os.path.join(path_config["base_path_shared"], DATA_FOLDER))
+
+    @pytest.mark.parametrize("method", METHODS)
+    def test_result_folder_does_not_need_base_path_keys(self, result_folder: str, method: str):
+        manager = _build_manager(dict(REQUIRED_CONFIG), SCHEMA[method])
+        measurement = _add(manager, method, result_folder=result_folder)
+        assert Path(measurement.result_path).parent == Path(result_folder)
+
+    def test_autocal_ignores_calibration_data_folder(
+        self, path_db_manager_autocal: DatabaseManager, result_folder: str, tmp_path: Path
+    ):
+        calibration = Calibration()
+        calibration.parameters = {"data_folder": str(tmp_path / "elsewhere")}
+        measurement = _add(
+            path_db_manager_autocal, "add_autocal_measurement", calibration=calibration, result_folder=result_folder
+        )
+        assert Path(measurement.result_path).parent == Path(result_folder)
+        assert not (tmp_path / "elsewhere").exists()
+
+
+class TestWithoutResultFolder:
+    @pytest.mark.parametrize(
+        ("kwargs", "current_cd", "sample", "cooldown"),
+        [
+            ({}, "cdX", "sampleA", "cdX"),
+            ({"sample_name": "sampleB", "cooldown": "cdY"}, "cdX", "sampleB", "cdY"),
+            ({"sample_name": "sampleB"}, "cdX", "sampleB", "cdX"),
+            ({"cooldown": "cdY"}, "cdX", "sampleA", "cdY"),
+            ({}, None, "sampleA", None),
+            ({"sample_name": "sampleB"}, None, "sampleB", None),
+        ],
+    )
+    @pytest.mark.parametrize("local_exists", [True, False], ids=["local", "shared"])
+    @pytest.mark.parametrize("method", ["add_measurement", "add_results"])
+    def test_measurements_layout(
+        self,
+        path_db_manager: DatabaseManager,
+        path_config: dict,
+        method: str,
+        local_exists: bool,
+        kwargs: dict,
+        current_cd,
+        sample: str,
+        cooldown,
+    ):
+        if local_exists:
+            os.makedirs(os.path.join(path_config["base_path_local"], DATA_FOLDER))
+        path_db_manager.current_cd = current_cd
+        measurement = _add(path_db_manager, method, **kwargs)
+        base = Path(path_config["base_path_local"] if local_exists else path_config["base_path_shared"])
+        assert Path(measurement.result_path) == _base_layout_path(base, sample, cooldown, measurement)
+        assert "None" not in Path(measurement.result_path).parts
+        assert Path(measurement.result_path).parent.is_dir()
+
+    def test_add_measurement_target_not_in_filename(self, path_db_manager: DatabaseManager, path_config: dict):
+        measurement = path_db_manager.add_measurement(EXPERIMENT, False, target=["q0"], secondary_source=["flux_q0_z"])
+        base = Path(path_config["base_path_shared"])
+        assert Path(measurement.result_path) == _base_layout_path(base, "sampleA", "cdX", measurement)
+
+    def test_add_results_writes_file(self, path_db_manager: DatabaseManager):
+        measurement = _add(path_db_manager, "add_results")
+        assert Path(measurement.result_path).is_file()
+
+    @pytest.mark.parametrize("with_data_folder", [False, True], ids=["no_data_folder", "data_folder"])
+    @pytest.mark.parametrize("cooldown", ["cdX", None])
+    @pytest.mark.parametrize("local_exists", [True, False], ids=["local", "shared"])
+    def test_autocal_layout(
+        self, path_config: dict, tmp_path: Path, local_exists: bool, cooldown, with_data_folder: bool
+    ):
+        if local_exists:
+            os.makedirs(os.path.join(path_config["base_path_local"], DATA_FOLDER))
+        manager = _build_manager(path_config, "autocal", calibration_cooldown=cooldown)
+        calibration = Calibration()
+        if with_data_folder:
+            calibration.parameters = {"data_folder": str(tmp_path / "elsewhere")}
+        measurement = _add(
+            manager, "add_autocal_measurement", qubit_idx="q0", secondary_idx="flux_q0_z", calibration=calibration
+        )
+        base = Path(path_config["base_path_local"] if local_exists else path_config["base_path_shared"])
+        assert Path(measurement.result_path) == _base_layout_path(base, "sampleA", cooldown, measurement)
+        assert "None" not in Path(measurement.result_path).parts
+        assert measurement.fitting_path is None
+        assert not (tmp_path / "elsewhere").exists()
+
+    @pytest.mark.parametrize("method", METHODS)
+    def test_missing_base_path_keys_raises_on_add(self, method: str):
+        manager = _build_manager(dict(REQUIRED_CONFIG), SCHEMA[method])
+        with pytest.raises(ValueError):
+            _add(manager, method)
+
+
+class TestDataFolderWarning:
+    @pytest.mark.parametrize("method", METHODS)
+    def test_warns_when_result_folder_is_created(self, path_config: dict, result_folder: str, method: str):
+        manager = _build_manager(path_config, SCHEMA[method])
+        with pytest.warns(UserWarning, match=WARNING):
+            _add(manager, method, result_folder=result_folder)
+        assert os.path.isdir(result_folder)
+
+    @pytest.mark.parametrize("method", METHODS)
+    def test_no_warning_when_result_folder_exists(self, path_config: dict, result_folder: str, method: str):
+        os.makedirs(result_folder)
+        (Path(result_folder) / "previous.h5").write_bytes(b"")
+        manager = _build_manager(path_config, SCHEMA[method])
+        with warnings.catch_warnings(record=True) as record:
+            warnings.simplefilter("always")
+            _add(manager, method, result_folder=result_folder)
+        assert not [w for w in record if WARNING in str(w.message)]
+        assert (Path(result_folder) / "previous.h5").exists()
+
+    @pytest.mark.parametrize("method", METHODS)
+    def test_warns_when_base_layout_folder_is_created(self, path_config: dict, method: str):
+        manager = _build_manager(path_config, SCHEMA[method])
+        with pytest.warns(UserWarning, match=WARNING):
+            measurement = _add(manager, method)
+        assert Path(measurement.result_path).parent.is_dir()
+
+
+class TestStreamArrayResultFolder:
+    @pytest.mark.parametrize(
+        ("schema", "kwargs", "suffix"),
+        [
+            ("measurements", {}, ""),
+            ("measurements", {"qubit_idx": 0, "secondary_idx": ["flux_q0_z"]}, "-0-flux_q0_z"),
+            ("measurements", {"qubit_idx": "q0", "secondary_idx": ["c0", "c1"]}, "-q0-c0-c1"),
+            ("autocal", {}, ""),
+            ("autocal", {"qubit_idx": 0, "secondary_idx": "flux_q0_z"}, "-0-flux_q0_z"),
+            ("autocal", {"qubit_idx": "q0", "secondary_idx": ["c0", "c1"]}, "-q0-c0-c1"),
+        ],
+    )
+    def test_file_written_in_result_folder(
+        self, path_config: dict, result_folder: str, schema: str, kwargs: dict, suffix: str
+    ):
+        manager = _build_manager(path_config, schema)
+        stream_array = _stream_array(manager, result_folder=result_folder, calibration=Calibration(), **kwargs)
+        with stream_array:
+            stream_array[0] = [1.0]
+            stream_array[1] = [2.0]
+        files = os.listdir(result_folder)
+        assert len(files) == 1
+        assert re.fullmatch(rf"{EXPERIMENT}{re.escape(suffix)}-{TIMESTAMP}\.h5", files[0])
+
+    @pytest.mark.parametrize("schema", ["measurements", "autocal"])
+    def test_without_result_folder_uses_base_layout(self, path_config: dict, schema: str):
+        manager = _build_manager(path_config, schema)
+        stream_array = _stream_array(manager, calibration=Calibration(), qubit_idx="q0")
+        with stream_array:
+            stream_array[0] = [1.0]
+        written = list(Path(path_config["base_path_shared"], DATA_FOLDER).rglob("*.h5"))
+        assert [p.name for p in written] == [f"{EXPERIMENT}.h5"]
+        assert written[0].relative_to(Path(path_config["base_path_shared"], DATA_FOLDER)).parts[:2] == (
+            "sampleA",
+            "cdX",
+        )

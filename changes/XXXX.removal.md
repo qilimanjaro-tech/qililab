@@ -1,0 +1,1 @@
+`DatabaseManager.add_autocal_measurement`, and so `StreamArray` on the `autocal` schema, no longer reads `calibration.parameters["data_folder"]`. The value is ignored without a warning, and the `.h5` file goes to the default layout, `<base>/<sample>[/<cooldown>]/<YYYY-MM-DD>/<HH_MM_SS_ffffff>/<experiment_name>.h5`. Pass `result_folder` to keep saving in a chosen folder.
