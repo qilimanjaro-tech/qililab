@@ -7329,8 +7329,9 @@ class TestQBloxCompiler:
             qp.set_gain(bus="drive", gain=gain)
             qp.play(bus="drive", waveform=IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40)))
 
+        compiler = QbloxCompiler()
         with pytest.raises(ValueError, match="Iterations must be greater than 0"):
-            QbloxCompiler().compile(qprogram=qp)
+            compiler.compile(qprogram=qp)
 
     def test_qdac_bus_operations_do_not_change_qblox_q1asm(self):
         """Operations of every kind on a bus left out of ``qblox_buses`` don't appear in the Qblox bus Q1ASM, and a
