@@ -2009,6 +2009,10 @@ class QbloxCompiler:
     @staticmethod
     def _compute_loop_sweep(for_loop: ForLoop, scale_factor: float | int | None = None) -> tuple[float, float, int]:
         iterations = QbloxCompiler._calculate_iterations(start=for_loop.start, stop=for_loop.stop, step=for_loop.step)
+        if iterations == 1:
+            # Single point: the formulas below divide by iterations - 1, which is 0. The loop runs once, so the
+            # step doesn't matter: keep the loop's own step.
+            return (for_loop.start, for_loop.step, iterations)
         if scale_factor is None:
             qblox_step = (for_loop.stop - for_loop.start) / (iterations - 1)
             return (for_loop.start, qblox_step, iterations)

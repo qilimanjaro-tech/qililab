@@ -7173,11 +7173,142 @@ class TestQBloxCompiler:
                 """,
                 id="offset_descending",
             ),
+            pytest.param(
+                Domain.Voltage,
+                0.5,
+                0.5,
+                0.1,
+                lambda qp, variable: qp.set_gain(bus="drive", gain=variable),
+                """
+                    setup:
+                                    wait_sync        4
+                                    set_mrk          0
+                                    upd_param        4
+
+                    main:
+                                    move             16383, R0
+                                    move             1, R1
+                    loop_0:
+                                    set_awg_gain     R0, R0
+                                    play             0, 1, 40
+                                    add              R0, 3276, R0
+                                    loop             R1, @loop_0
+                                    set_mrk          0
+                                    upd_param        4
+                                    stop
+                """,
+                id="gain_start_equals_stop",
+            ),
+            pytest.param(
+                Domain.Voltage,
+                0.0,
+                0.05,
+                0.1,
+                lambda qp, variable: qp.set_gain(bus="drive", gain=variable),
+                """
+                    setup:
+                                    wait_sync        4
+                                    set_mrk          0
+                                    upd_param        4
+
+                    main:
+                                    move             0, R0
+                                    move             1, R1
+                    loop_0:
+                                    set_awg_gain     R0, R0
+                                    play             0, 1, 40
+                                    add              R0, 3276, R0
+                                    loop             R1, @loop_0
+                                    set_mrk          0
+                                    upd_param        4
+                                    stop
+                """,
+                id="gain_step_larger_than_range",
+            ),
+            pytest.param(
+                Domain.Time,
+                100,
+                100,
+                10,
+                lambda qp, variable: qp.wait(bus="drive", duration=variable),
+                """
+                    setup:
+                                    wait_sync        4
+                                    set_mrk          0
+                                    upd_param        4
+
+                    main:
+                                    move             100, R0
+                                    move             1, R1
+                    loop_0:
+                                    wait             R0
+                                    play             0, 1, 40
+                                    add              R0, 10, R0
+                                    loop             R1, @loop_0
+                                    set_mrk          0
+                                    upd_param        4
+                                    stop
+                """,
+                id="wait_start_equals_stop",
+            ),
+            pytest.param(
+                Domain.Time,
+                100,
+                150,
+                100,
+                lambda qp, variable: qp.wait(bus="drive", duration=variable),
+                """
+                    setup:
+                                    wait_sync        4
+                                    set_mrk          0
+                                    upd_param        4
+
+                    main:
+                                    move             100, R0
+                                    move             1, R1
+                    loop_0:
+                                    wait             R0
+                                    play             0, 1, 40
+                                    add              R0, 100, R0
+                                    loop             R1, @loop_0
+                                    set_mrk          0
+                                    upd_param        4
+                                    stop
+                """,
+                id="wait_step_larger_than_range",
+            ),
+            pytest.param(
+                Domain.Phase,
+                1.0,
+                1.0,
+                -0.1,
+                lambda qp, variable: qp.set_phase(bus="drive", phase=variable),
+                """
+                    setup:
+                                    wait_sync        4
+                                    set_mrk          0
+                                    upd_param        4
+
+                    main:
+                                    move             159154943, R0
+                                    move             1, R1
+                    loop_0:
+                                    set_ph           R0
+                                    play             0, 1, 40
+                                    sub              R0, 15915494, R0
+                                    loop             R1, @loop_0
+                                    set_mrk          0
+                                    upd_param        4
+                                    stop
+                """,
+                id="phase_descending_start_equals_stop",
+            ),
         ],
     )
-    def test_for_loop_step_not_dividing_range(self, domain, start, stop, step, body, drive_str):
+    def test_for_loop_number_of_points(self, domain, start, stop, step, body, drive_str):
         """When the step doesn't divide the range, the number of points is rounded down (ascending) or up
-        (descending), and the register step is stretched so the last point lands on ``stop``."""
+        (descending), and the register step is stretched so the last point lands on ``stop``. A single point
+        (``start == stop``, or a step larger than the range) runs one iteration at ``start``."""
         qp = QProgram()
         variable = qp.variable(label="variable", domain=domain)
         with qp.for_loop(variable=variable, start=start, stop=stop, step=step):
@@ -7187,6 +7318,49 @@ class TestQBloxCompiler:
         compiler = QbloxCompiler()
         sequences, _ = compiler.compile(qprogram=qp)
 
+        assert is_q1asm_equal(sequences["drive"], drive_str)
+
+    def test_parallel_loops_with_single_point_loop(self):
+        """A parallel block with a single-point loop runs one iteration, at the start of every loop."""
+        qp = QProgram()
+        frequency = qp.variable(label="frequency", domain=Domain.Frequency)
+        gain = qp.variable(label="gain", domain=Domain.Voltage)
+        with qp.parallel(
+            loops=[
+                ForLoop(variable=frequency, start=10e6, stop=50e6, step=10e6),
+                ForLoop(variable=gain, start=0.5, stop=0.5, step=0.1),
+            ]
+        ):
+            qp.set_frequency(bus="drive", frequency=frequency)
+            qp.set_gain(bus="drive", gain=gain)
+            qp.play(
+                bus="drive", waveform=IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
+            )
+
+        compiler = QbloxCompiler()
+        sequences, _ = compiler.compile(qprogram=qp)
+
+        drive_str = """
+            setup:
+                            wait_sync        4
+                            set_mrk          0
+                            upd_param        4
+
+            main:
+                            move             40000000, R0
+                            move             16383, R1
+                            move             1, R2
+            loop_0:
+                            set_freq         R0
+                            set_awg_gain     R1, R1
+                            play             0, 1, 40
+                            add              R0, 40000000, R0
+                            add              R1, 3276, R1
+                            loop             R2, @loop_0
+                            set_mrk          0
+                            upd_param        4
+                            stop
+        """
         assert is_q1asm_equal(sequences["drive"], drive_str)
 
     def test_parallel_loops_with_different_number_of_points(self):
