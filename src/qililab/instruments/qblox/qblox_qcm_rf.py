@@ -196,7 +196,8 @@ class QbloxQCMRF(QbloxQCM):
 
         The LO is calibrated through the public per-output driver method (``out{n}_lo_cal``), picked from the
         sequencer's output rather than from its id, so the right LO is always calibrated. The sideband
-        calibration, when requested, runs only on the targeted sequencer (QHC-1655).
+        calibration, when requested, runs only on the targeted sequencer. The calibration stops every
+        sequencer of the module, so the prepared sequencers are re-armed afterwards (QHC-1655).
 
         Args:
             cal_type (str): one of ``"off"``, ``"lo only"`` or ``"lo and sidebands"`` (the runcard/driver
@@ -220,3 +221,4 @@ class QbloxQCMRF(QbloxQCM):
         getattr(self.device, f"out{output}_lo_cal")()
         if cal_type == "lo and sidebands":
             self.device.sequencers[sequencer.identifier].sideband_cal()
+        self._rearm_sequencers_after_calibration()

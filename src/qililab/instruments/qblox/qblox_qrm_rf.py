@@ -158,7 +158,8 @@ class QbloxQRMRF(QbloxQRM):
         """Calibrate the out0/in0 mixer of the module.
 
         The LO is calibrated through the public ``out0_in0_lo_cal`` driver method (which targets the correct LO
-        index internally). The sideband calibration, when requested, runs only on the targeted sequencer
+        index internally). The sideband calibration, when requested, runs only on the targeted sequencer. The
+        calibration stops every sequencer of the module, so the prepared sequencers are re-armed afterwards
         (QHC-1655).
 
         Args:
@@ -182,3 +183,4 @@ class QbloxQRMRF(QbloxQRM):
         if cal_type == "lo and sidebands":
             sequencer = self.get_sequencer(sequencer_id=int(channel_id))
             self.device.sequencers[sequencer.identifier].sideband_cal()
+        self._rearm_sequencers_after_calibration()

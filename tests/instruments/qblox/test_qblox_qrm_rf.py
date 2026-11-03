@@ -369,10 +369,21 @@ class TestQbloxQRMRF:
 
     def test_calibrate_mixers_off_is_noop(self, qrm_rf: QbloxQRMRF):
         """`off` matches the runcard vocabulary and performs no calibration (QHC-1655)."""
+        qrm_rf.sequences = {0: MagicMock()}
         qrm_rf.calibrate_mixers(cal_type="off", channel_id=0)
         qrm_rf.device.out0_in0_lo_cal.assert_not_called()
         qrm_rf.device._run_mixer_lo_calib.assert_not_called()
         qrm_rf.device.sequencers[0].sideband_cal.assert_not_called()
+        qrm_rf.device.arm_sequencer.assert_not_called()  # off returns before touching sequencers
+
+    def test_calibrate_mixers_rearms_prepared_sequencers(self, qrm_rf: QbloxQRMRF):
+        """Calibration stops every sequencer of the module, so the sequencers with an uploaded sequence
+        are re-armed to a known, ready-to-start state afterwards (QHC-1655)."""
+        qrm_rf.sequences = {0: MagicMock(), 1: MagicMock()}
+        qrm_rf.calibrate_mixers(cal_type="lo only", channel_id=0)
+        qrm_rf.device.arm_sequencer.assert_any_call(sequencer=0)
+        qrm_rf.device.arm_sequencer.assert_any_call(sequencer=1)
+        assert qrm_rf.device.arm_sequencer.call_count == 2
 
     @pytest.mark.parametrize(
         "deprecated, canonical_sideband",

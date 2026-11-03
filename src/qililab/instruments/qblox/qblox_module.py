@@ -46,7 +46,7 @@ class QbloxModule(Instrument):
     # Valid mixer-calibration cal types, in the Qblox driver / runcard vocabulary. The explicit
     # `calibrate_mixers` API historically used "lo"/"lo_and_sidebands", which are kept as deprecated
     # aliases of the runcard values so both spellings agree (QHC-1655).
-    _MIXER_CAL_TYPES: tuple[str, ...] = ("off", "lo only", "lo and sidebands")
+    _MIXER_CAL_TYPES: ClassVar[tuple[str, ...]] = ("off", "lo only", "lo and sidebands")
     _DEPRECATED_MIXER_CAL_TYPES: ClassVar[dict[str, str]] = {
         "lo": "lo only",
         "lo_and_sidebands": "lo and sidebands",
@@ -82,6 +82,17 @@ class QbloxModule(Instrument):
             f"`{cal_type}` is not a valid mixer calibration type. "
             f"Valid values are: {', '.join(QbloxModule._MIXER_CAL_TYPES)}."
         )
+
+    def _rearm_sequencers_after_calibration(self) -> None:
+        """Re-arm every sequencer that has an uploaded sequence.
+
+        A mixer calibration (``out{n}_lo_cal`` / ``sideband_cal``) stops **every** sequencer of the
+        module, not only the calibrated one. Re-arming the prepared sequencers afterwards leaves them
+        in a known, ready-to-start state so the calibration does not silently disarm work set up on the
+        module's other buses (QHC-1655).
+        """
+        for sequencer_id in self.sequences:
+            self.device.arm_sequencer(sequencer=sequencer_id)
 
     @dataclass
     class QbloxModuleSettings(Instrument.InstrumentSettings):
