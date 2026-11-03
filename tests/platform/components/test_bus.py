@@ -221,6 +221,25 @@ class TestBus:
         assert bus.get_parameter(Parameter.DELAY) == 0
         qdac.set_parameter.assert_not_called()
 
+    def test_bus_with_non_whole_delay_raises_error(self, mock_instruments):
+        """A bus delay must be a whole number of ns, both in the runcard and in ``set_parameter``. A whole float is
+        stored as an int, so it's saved back as one."""
+        settings = {"alias": "bus1", "instruments": ["qcm"], "channels": [0], "delay": 12.7}
+        instruments = Instruments(elements=mock_instruments)
+        error = re.escape("Bus 'bus1' can't have a delay of 12.7 ns: the bus delay must be a whole number of ns.")
+
+        with pytest.raises(ValueError, match=error):
+            _ = Bus(settings=settings, platform_instruments=instruments)
+
+        settings["delay"] = 12.0
+        bus = Bus(settings=settings, platform_instruments=instruments)
+        assert bus.get_parameter(Parameter.DELAY) == 12
+        assert isinstance(bus.get_parameter(Parameter.DELAY), int)
+
+        with pytest.raises(ValueError, match=error):
+            bus.set_parameter(Parameter.DELAY, 12.7)
+        assert bus.get_parameter(Parameter.DELAY) == 12
+
     def test_check_recurrent_timeout(self, bus, mock_instruments):
         """Test that get recurrent timeout is retrieved correctly"""
         mock_instruments[1].get_parameter.return_value = 3
