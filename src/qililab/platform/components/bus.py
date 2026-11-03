@@ -72,7 +72,7 @@ class Bus:
                     )
                 instruments.append(inst_class)
             self.instruments = instruments
-            self.check_delay(self.delay)
+            self.set_delay(self.delay)
             self.distortions = [
                 PulseDistortion.from_dict(distortion)  # type: ignore[arg-type]
                 for distortion in self.distortions
@@ -80,16 +80,23 @@ class Bus:
             ]
             super().__post_init__()
 
-        def check_delay(self, delay: int) -> None:
-            """Raise a ``ValueError`` if the bus can't have the given delay.
+        def set_delay(self, delay: int) -> None:
+            """Set the bus delay.
 
             The bus delay is only applied by the Qblox compiler; a QDAC-II sets its delay per play instead.
+
+            Args:
+                delay (int): Bus delay, in ns.
+
+            Raises:
+                ValueError: If the delay isn't 0 and the bus has a QDAC-II.
             """
             if delay != 0 and any(isinstance(instrument, QDevilQDac2) for instrument in self.instruments):
                 raise ValueError(
                     f"Bus '{self.alias}' can't have a delay of {delay} ns: QDAC-II buses don't support a bus delay. "
                     "Leave it at 0 and set the QDAC-II delay in each play with qp.qdac.play(delay=...)."
                 )
+            self.delay = delay
 
     settings: BusSettings
     """Bus settings. Containing the alias of the bus, the system control used to control and readout its qubits, the alias
@@ -190,9 +197,7 @@ class Bus:
             output_id (int): module id. Defaults to None.
         """
         if parameter == Parameter.DELAY:
-            delay = int(value)
-            self.settings.check_delay(delay)
-            self.settings.delay = delay
+            self.settings.set_delay(int(value))
             return
 
         if parameter in FILTER_PARAMETERS:

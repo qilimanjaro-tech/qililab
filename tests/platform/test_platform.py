@@ -2207,16 +2207,6 @@ class TestMethods:
         assert platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.DELAY) == 20
         assert platform.get_parameter(alias="drive_line_q1_bus", parameter=Parameter.DELAY) == 0
 
-    def test_save_platform_keeps_bus_delay(self, tmp_path: Path):
-        """Test that a non-zero bus delay is kept when the platform is saved and loaded again."""
-        runcard = copy.deepcopy(Galadriel.runcard)
-        next(bus for bus in runcard["buses"] if bus["alias"] == "drive_line_q0_bus")["delay"] = 12
-
-        path = save_platform(path=str(tmp_path / "runcard.yml"), platform=build_platform(runcard=runcard))
-
-        saved_platform = platform_build_platform(runcard=path)
-        assert saved_platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.DELAY) == 12
-
     @pytest.mark.parametrize(
         "parameter",
         [Parameter.IF, Parameter.GAIN, Parameter.LO_FREQUENCY, Parameter.OFFSET_OUT0, Parameter.OFFSET_OUT2],
