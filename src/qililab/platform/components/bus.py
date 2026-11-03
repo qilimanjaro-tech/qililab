@@ -80,7 +80,7 @@ class Bus:
             ]
             super().__post_init__()
 
-        def check_delay(self, delay: int):
+        def check_delay(self, delay: int) -> None:
             """Raise a ``ValueError`` if the bus can't have the given delay.
 
             The bus delay is only applied by the Qblox compiler; a QDAC-II sets its delay per play instead.
@@ -180,7 +180,7 @@ class Bus:
         value: ParameterValue,
         channel_id: ChannelID | None = None,
         output_id: OutputID | None = None,
-    ):
+    ) -> None:
         """Set a parameter to the bus.
 
         Args:

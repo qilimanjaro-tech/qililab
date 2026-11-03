@@ -606,7 +606,7 @@ class Platform:
         value: ParameterValue,
         channel_id: ChannelID | None = None,
         output_id: OutputID | None = None,
-    ):
+    ) -> None:
         """Set a parameter for a platform element.
 
         If connected to an instrument, this function updates both the cache of the :class:`.Platform` object and the
