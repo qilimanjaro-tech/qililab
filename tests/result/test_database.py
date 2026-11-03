@@ -952,15 +952,24 @@ class Testdatabase:
         assert result[0].result_path == "/shared_test/results/file.h5"
         assert result[1].result_path == "/shared_test/results_2/file.h5"
 
-    def test_add_fitting(self, db_manager: DatabaseManager):
-        mock_measurement = MagicMock(spec=Measurement)
+    @pytest.mark.parametrize(
+        ("database_schema", "model"), [("measurements", Measurement), ("autocal", AutocalMeasurement)]
+    )
+    @pytest.mark.parametrize(
+        ("kwargs", "expected_path"),
+        [({"path": "/test/fit.h5"}, "/test/fit.h5"), ({}, None)],
+        ids=["with_path", "without_path"],
+    )
+    def test_add_fitting(self, db_manager: DatabaseManager, database_schema, model, kwargs, expected_path):
+        db_manager.database_schema = database_schema
+        mock_measurement = MagicMock(spec=model)
         mock_measurement.add_fitting.return_value = mock_measurement
 
         with patch.object(db_manager, "_load_by_id", return_value=mock_measurement) as mock_load:
-            result = db_manager.add_fitting(123, path="/test/fit.h5", parameters={"a": 1.0})
+            result = db_manager.add_fitting(123, **kwargs, parameters={"a": 1.0})
 
-        mock_load.assert_called_once_with(Measurement, 123)
-        mock_measurement.add_fitting.assert_called_once_with(db_manager, "/test/fit.h5", {"a": 1.0})
+        mock_load.assert_called_once_with(model, 123)
+        mock_measurement.add_fitting.assert_called_once_with(db_manager, expected_path, {"a": 1.0})
         assert result == mock_measurement
 
     def test_add_fitting_raises_exception_measurement_not_found(self, db_manager: DatabaseManager):
@@ -1027,21 +1036,6 @@ class Testdatabase:
 
         assert result == [entry]
         assert entry.result_path == "/shared_test/results/file.h5"
-
-    @pytest.mark.parametrize(
-        ("database_schema", "model"), [("measurements", Measurement), ("autocal", AutocalMeasurement)]
-    )
-    def test_add_fitting_without_path(self, db_manager: DatabaseManager, database_schema, model):
-        db_manager.database_schema = database_schema
-        mock_measurement = MagicMock(spec=model)
-        mock_measurement.add_fitting.return_value = mock_measurement
-
-        with patch.object(db_manager, "_load_by_id", return_value=mock_measurement) as mock_load:
-            result = db_manager.add_fitting(123, parameters={"a": 1.0})
-
-        mock_load.assert_called_once_with(model, 123)
-        mock_measurement.add_fitting.assert_called_once_with(db_manager, None, {"a": 1.0})
-        assert result == mock_measurement
 
     @pytest.mark.parametrize(
         ("database_schema", "model"), [("measurements", Measurement), ("autocal", AutocalMeasurement)]
