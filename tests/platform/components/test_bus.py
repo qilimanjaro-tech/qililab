@@ -105,6 +105,7 @@ class TestBus:
             "alias": "bus1",
             "instruments": ["qcm", "qrm"],
             "channels": [0, 0],
+            "delay": 0,
             "distortions": [{
                 'name': 'lfilter',
                 'norm_factor': 1,
@@ -207,14 +208,33 @@ class TestBus:
         with pytest.raises(
             ValueError,
             match=re.escape(
-                "Bus 'flux_bus' has a delay of 20 ns, but QDAC-II buses don't support a bus delay. Remove it from the "
-                "runcard and set the QDAC-II delay in each play with qp.qdac.play(delay=...)."
+                "Bus 'flux_bus' can't have a delay of 20 ns: QDAC-II buses don't support a bus delay. Leave it at 0 "
+                "and set the QDAC-II delay in each play with qp.qdac.play(delay=...)."
             ),
         ):
             _ = Bus(settings=settings, platform_instruments=instruments)
 
         settings["delay"] = 0
         assert Bus(settings=settings, platform_instruments=instruments).get_parameter(Parameter.DELAY) == 0
+
+    def test_bus_with_qdac_set_parameter_delay_raises_error(self):
+        """Setting a non-zero delay on a QDAC-II bus raises too, so the platform never saves a runcard it can't load."""
+        qdac = MagicMock(spec=QDevilQDac2)
+        type(qdac).alias = property(lambda self: "qdac")
+        settings = {"alias": "flux_bus", "instruments": ["qdac"], "channels": [1]}
+        bus = Bus(settings=settings, platform_instruments=Instruments(elements=[qdac]))
+
+        with pytest.raises(
+            ValueError,
+            match=re.escape(
+                "Bus 'flux_bus' can't have a delay of 20 ns: QDAC-II buses don't support a bus delay. Leave it at 0 "
+                "and set the QDAC-II delay in each play with qp.qdac.play(delay=...)."
+            ),
+        ):
+            bus.set_parameter(Parameter.DELAY, 20)
+
+        assert bus.get_parameter(Parameter.DELAY) == 0
+        qdac.set_parameter.assert_not_called()
 
     def test_check_recurrent_timeout(self, bus, mock_instruments):
         """Test that get recurrent timeout is retrieved correctly"""

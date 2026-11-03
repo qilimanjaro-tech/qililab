@@ -72,18 +72,24 @@ class Bus:
                     )
                 instruments.append(inst_class)
             self.instruments = instruments
-            # The bus delay is only applied by the Qblox compiler; a QDAC-II sets its delay per play instead
-            if self.delay != 0 and any(isinstance(instrument, QDevilQDac2) for instrument in instruments):
-                raise ValueError(
-                    f"Bus '{self.alias}' has a delay of {self.delay} ns, but QDAC-II buses don't support a bus delay. "
-                    "Remove it from the runcard and set the QDAC-II delay in each play with qp.qdac.play(delay=...)."
-                )
+            self.check_delay(self.delay)
             self.distortions = [
                 PulseDistortion.from_dict(distortion)  # type: ignore[arg-type]
                 for distortion in self.distortions
                 if isinstance(distortion, dict)
             ]
             super().__post_init__()
+
+        def check_delay(self, delay: int):
+            """Raise a ``ValueError`` if the bus can't have the given delay.
+
+            The bus delay is only applied by the Qblox compiler; a QDAC-II sets its delay per play instead.
+            """
+            if delay != 0 and any(isinstance(instrument, QDevilQDac2) for instrument in self.instruments):
+                raise ValueError(
+                    f"Bus '{self.alias}' can't have a delay of {delay} ns: QDAC-II buses don't support a bus delay. "
+                    "Leave it at 0 and set the QDAC-II delay in each play with qp.qdac.play(delay=...)."
+                )
 
     settings: BusSettings
     """Bus settings. Containing the alias of the bus, the system control used to control and readout its qubits, the alias
@@ -149,6 +155,7 @@ class Bus:
             RUNCARD.ALIAS: self.alias,
             RUNCARD.INSTRUMENTS: [instrument.alias for instrument in self.instruments],
             "channels": self.settings.channels,
+            "delay": self.settings.delay,
             "distortions": [distortion.to_dict() for distortion in self.settings.distortions],
         }
 
@@ -182,6 +189,12 @@ class Bus:
             channel_id (int, optional): instrument channel to update, if multiple. Defaults to None.
             output_id (int): module id. Defaults to None.
         """
+        if parameter == Parameter.DELAY:
+            delay = int(value)
+            self.settings.check_delay(delay)
+            self.settings.delay = delay
+            return
+
         if parameter in FILTER_PARAMETERS:
             bus_output_id = self._get_outputid_from_channelid()
             if channel_id is not None:
