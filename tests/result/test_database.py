@@ -209,6 +209,11 @@ class TestMeasurement:
         assert result.fitting_parameters == {"a": 1.0}
         assert result.experiment_completed is True
         assert result.end_time == datetime.datetime(2023, 1, 1, 13, 0, 0)
+        assert result is not stale_entry
+        assert stale_entry.fitting_path is None
+        assert stale_entry.fitting_parameters is None
+        assert stale_entry.experiment_completed is False
+        assert stale_entry.end_time is None
         mock_session.query.assert_called_once_with(type(stale_entry))
         mock_session.merge.assert_not_called()
         mock_session.commit.assert_called_once()
