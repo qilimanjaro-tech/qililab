@@ -1877,22 +1877,21 @@ class TestResultFolderValidation:
     ):
         monkeypatch.chdir(tmp_path)
         manager = _build_manager(path_config, SCHEMA[method])
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match="must be an absolute path"):
             _add(manager, method, result_folder=relative)
 
     @pytest.mark.parametrize("schema", ["measurements", "autocal"])
-    def test_stream_array_relative_result_folder_raises_value_error(
+    def test_stream_array_relative_result_folder_raises_wrapped_value_error(
         self, path_config: dict, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, schema: str
     ):
         monkeypatch.chdir(tmp_path)
         manager = _build_manager(path_config, schema)
-        calibration = Calibration()
-        with pytest.raises((ValueError, RuntimeError)) as excinfo:
-            stream_array = _stream_array(manager, result_folder="results", calibration=calibration)
+        stream_array = _stream_array(manager, result_folder="results", calibration=Calibration())
+        with pytest.raises(RuntimeError) as excinfo:
             with stream_array:
                 pass
-        error = excinfo.value
-        assert isinstance(error, ValueError) or isinstance(error.__cause__, ValueError)
+        assert isinstance(excinfo.value.__cause__, ValueError)
+        assert "must be an absolute path" in str(excinfo.value.__cause__)
 
 
 class TestWithResultFolder:
@@ -2047,8 +2046,19 @@ class TestWithoutResultFolder:
     @pytest.mark.parametrize("method", METHODS)
     def test_missing_base_path_keys_raises_on_add(self, method: str, base_paths: dict):
         manager = _build_manager({**REQUIRED_CONFIG, **base_paths}, SCHEMA[method])
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match="has no `base_path_local`"):
             _add(manager, method)
+
+    @pytest.mark.parametrize(
+        ("empty_key", "used_key"),
+        [("base_path_local", "base_path_shared"), ("base_path_shared", "base_path_local")],
+    )
+    @pytest.mark.parametrize("method", METHODS)
+    def test_empty_base_path_uses_the_other_one(self, path_config: dict, method: str, empty_key: str, used_key: str):
+        manager = _build_manager({**path_config, empty_key: ""}, SCHEMA[method])
+        measurement = _add(manager, method)
+        base = Path(path_config[used_key])
+        assert Path(measurement.result_path) == _base_layout_path(base, "sampleA", "cdX", measurement)
 
 
 class TestDataFolderWarning:
