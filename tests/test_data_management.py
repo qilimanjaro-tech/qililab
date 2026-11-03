@@ -69,6 +69,8 @@ class TestBuildPlatformCornerCases:
         original_dict["instruments"][0]["awg_sequencers"][0]["intermediate_frequency"] = 100_000_000
         # Test scientific notation
         original_dict["instruments"][1]["awg_sequencers"][0]["sampling_rate"] = 7.24730e09
+        # Test bus delay
+        original_dict["buses"][0]["delay"] = 12
 
         original_platform = ql.build_platform(original_dict)
 
@@ -83,5 +85,7 @@ class TestBuildPlatformCornerCases:
         new_saved_platform_dict = new_saved_platform.to_dict()
 
         assert original_platform_dict == saved_platform_dict == new_saved_platform_dict
+        # A field missing from to_dict passes the comparison above, so check the reloaded delay itself
+        assert saved_platform.buses.get(alias="drive_line_q0_bus").delay == 12
         # Cleaning generated file
         os.remove(path)

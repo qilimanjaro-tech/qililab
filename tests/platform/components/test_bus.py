@@ -105,6 +105,7 @@ class TestBus:
             "alias": "bus1",
             "instruments": ["qcm", "qrm"],
             "channels": [0, 0],
+            "delay": 0,
             "distortions": [{
                 'name': 'lfilter',
                 'norm_factor': 1,
@@ -198,23 +199,46 @@ class TestBus:
             _ = Bus(settings=settings, platform_instruments=Instruments(elements=mock_instruments))
 
     def test_bus_with_qdac_and_delay_raises_error(self):
-        """A QDAC-II bus doesn't support a bus delay: the runcard is rejected when the bus is built."""
+        """A QDAC-II bus doesn't support a bus delay: a non-zero delay is rejected both in the runcard and in
+        ``set_parameter``, so the platform never saves a runcard it can't load."""
         qdac = MagicMock(spec=QDevilQDac2)
         type(qdac).alias = property(lambda self: "qdac")
         settings = {"alias": "flux_bus", "instruments": ["qdac"], "channels": [1], "delay": 20}
         instruments = Instruments(elements=[qdac])
+        error = re.escape(
+            "Bus 'flux_bus' can't have a delay of 20 ns: QDAC-II buses don't support a bus delay. Leave it at 0 "
+            "and set the QDAC-II delay in each play with qp.qdac.play(delay=...)."
+        )
 
-        with pytest.raises(
-            ValueError,
-            match=re.escape(
-                "Bus 'flux_bus' has a delay of 20 ns, but QDAC-II buses don't support a bus delay. Remove it from the "
-                "runcard and set the QDAC-II delay in each play with qp.qdac.play(delay=...)."
-            ),
-        ):
+        with pytest.raises(ValueError, match=error):
             _ = Bus(settings=settings, platform_instruments=instruments)
 
         settings["delay"] = 0
-        assert Bus(settings=settings, platform_instruments=instruments).get_parameter(Parameter.DELAY) == 0
+        bus = Bus(settings=settings, platform_instruments=instruments)
+        with pytest.raises(ValueError, match=error):
+            bus.set_parameter(Parameter.DELAY, 20)
+
+        assert bus.get_parameter(Parameter.DELAY) == 0
+        qdac.set_parameter.assert_not_called()
+
+    def test_bus_with_non_whole_delay_raises_error(self, mock_instruments):
+        """A bus delay must be a whole number of ns, both in the runcard and in ``set_parameter``. A whole float is
+        stored as an int, so it's saved back as one."""
+        settings = {"alias": "bus1", "instruments": ["qcm"], "channels": [0], "delay": 12.7}
+        instruments = Instruments(elements=mock_instruments)
+        error = re.escape("Bus 'bus1' can't have a delay of 12.7 ns: the bus delay must be a whole number of ns.")
+
+        with pytest.raises(ValueError, match=error):
+            _ = Bus(settings=settings, platform_instruments=instruments)
+
+        settings["delay"] = 12.0
+        bus = Bus(settings=settings, platform_instruments=instruments)
+        assert bus.get_parameter(Parameter.DELAY) == 12
+        assert isinstance(bus.get_parameter(Parameter.DELAY), int)
+
+        with pytest.raises(ValueError, match=error):
+            bus.set_parameter(Parameter.DELAY, 12.7)
+        assert bus.get_parameter(Parameter.DELAY) == 12
 
     def test_check_recurrent_timeout(self, bus, mock_instruments):
         """Test that get recurrent timeout is retrieved correctly"""
