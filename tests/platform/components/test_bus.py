@@ -1,5 +1,4 @@
 import re
-import warnings
 
 import pytest
 from unittest.mock import MagicMock, patch
@@ -198,27 +197,24 @@ class TestBus:
             }
             _ = Bus(settings=settings, platform_instruments=Instruments(elements=mock_instruments))
 
-    def test_bus_with_qdac_and_delay_warns(self):
-        """A QDAC-II bus doesn't support a bus delay: a runcard delay is ignored with a FutureWarning."""
+    def test_bus_with_qdac_and_delay_raises_error(self):
+        """A QDAC-II bus doesn't support a bus delay: the runcard is rejected when the bus is built."""
         qdac = MagicMock(spec=QDevilQDac2)
         type(qdac).alias = property(lambda self: "qdac")
         settings = {"alias": "flux_bus", "instruments": ["qdac"], "channels": [1], "delay": 20}
         instruments = Instruments(elements=[qdac])
 
-        with pytest.warns(
-            FutureWarning,
+        with pytest.raises(
+            ValueError,
             match=re.escape(
-                "Bus 'flux_bus' has a delay of 20 ns, but QDAC-II buses don't support a bus delay, so it is ignored. "
-                "Remove it from the runcard and set the QDAC-II delay in each play with qp.qdac.play(delay=...). "
-                "This will raise an error in a future release."
+                "Bus 'flux_bus' has a delay of 20 ns, but QDAC-II buses don't support a bus delay. Remove it from the "
+                "runcard and set the QDAC-II delay in each play with qp.qdac.play(delay=...)."
             ),
         ):
             _ = Bus(settings=settings, platform_instruments=instruments)
 
         settings["delay"] = 0
-        with warnings.catch_warnings():
-            warnings.simplefilter("error", FutureWarning)
-            assert Bus(settings=settings, platform_instruments=instruments).get_parameter(Parameter.DELAY) == 0
+        assert Bus(settings=settings, platform_instruments=instruments).get_parameter(Parameter.DELAY) == 0
 
     def test_check_recurrent_timeout(self, bus, mock_instruments):
         """Test that get recurrent timeout is retrieved correctly"""
