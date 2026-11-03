@@ -624,31 +624,21 @@ class TestStreamArray:
                 assert 1.0 + 1.0j in stream_array_complex
                 assert (stream_array_complex[0] == 1.0 + 1.0j).all
 
-    def test_add_fitting(self, stream_array: StreamArray):
+    @pytest.mark.parametrize(
+        ("kwargs", "expected_path"),
+        [({"path": "/test/fit.h5"}, "/test/fit.h5"), ({}, None)],
+        ids=["with_path", "without_path"],
+    )
+    def test_add_fitting(self, stream_array: StreamArray, kwargs, expected_path):
         """Tests that add_fitting delegates to the measurement injecting the db session."""
         mock_measurement = MagicMock()
         updated_measurement = MagicMock()
         mock_measurement.add_fitting.return_value = updated_measurement
         stream_array.measurement = mock_measurement
 
-        result = stream_array.add_fitting(path="/test/fit.h5", parameters={"a": 1.0})
+        result = stream_array.add_fitting(**kwargs, parameters={"a": 1.0})
 
-        mock_measurement.add_fitting.assert_called_once_with(
-            stream_array.db_manager, "/test/fit.h5", {"a": 1.0}
-        )
-        assert stream_array.measurement == updated_measurement
-        assert result == updated_measurement
-
-    def test_add_fitting_without_path(self, stream_array: StreamArray):
-        """Tests that add_fitting forwards a missing path as None."""
-        mock_measurement = MagicMock()
-        updated_measurement = MagicMock()
-        mock_measurement.add_fitting.return_value = updated_measurement
-        stream_array.measurement = mock_measurement
-
-        result = stream_array.add_fitting(parameters={"a": 1.0})
-
-        mock_measurement.add_fitting.assert_called_once_with(stream_array.db_manager, None, {"a": 1.0})
+        mock_measurement.add_fitting.assert_called_once_with(stream_array.db_manager, expected_path, {"a": 1.0})
         assert stream_array.measurement == updated_measurement
         assert result == updated_measurement
 

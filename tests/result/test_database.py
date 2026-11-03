@@ -174,79 +174,90 @@ class TestMeasurement:
 
         mock_session.rollback.assert_called_once()
 
-    def test_add_fitting(self, measurement):
+    @staticmethod
+    def _fitting_db_manager(persisted):
         mock_session_context = MagicMock()
         mock_session = MagicMock()
         mock_session_context.__enter__.return_value = mock_session
-        mock_session.query.return_value.where.return_value.one_or_none.return_value = measurement
+        mock_session.query.return_value.where.return_value.one_or_none.return_value = persisted
 
         mock_db_manager = MagicMock()
         mock_db_manager.session = lambda: mock_session_context
+        return mock_db_manager, mock_session
 
-        result = measurement.add_fitting(mock_db_manager, path="/test/fit.h5", parameters={"a": 1.0})
+    @staticmethod
+    def _persisted_row(entry):
+        return type(entry)(
+            measurement_id=entry.measurement_id,
+            experiment_completed=True,
+            end_time=datetime.datetime(2023, 1, 1, 13, 0, 0),
+            fitting_path="/test/stored_fit.h5",
+            fitting_parameters={"stored": 0.0},
+        )
 
+    @pytest.mark.parametrize("entry_fixture", ["measurement", "autocalibration_measurement"])
+    def test_add_fitting_updates_only_fitting_columns_of_persisted_row(self, entry_fixture, request):
+        stale_entry = request.getfixturevalue(entry_fixture)
+        stale_entry.measurement_id = 1
+        persisted = self._persisted_row(stale_entry)
+        mock_db_manager, mock_session = self._fitting_db_manager(persisted)
+
+        result = stale_entry.add_fitting(mock_db_manager, path="/test/fit.h5", parameters={"a": 1.0})
+
+        assert result is persisted
         assert result.fitting_path == "/test/fit.h5"
         assert result.fitting_parameters == {"a": 1.0}
+        assert result.experiment_completed is True
+        assert result.end_time == datetime.datetime(2023, 1, 1, 13, 0, 0)
+        mock_session.query.assert_called_once_with(type(stale_entry))
         mock_session.merge.assert_not_called()
         mock_session.commit.assert_called_once()
 
-    def test_add_fitting_without_parameters(self, measurement):
-        mock_session_context = MagicMock()
-        mock_session = MagicMock()
-        mock_session_context.__enter__.return_value = mock_session
-        mock_session.query.return_value.where.return_value.one_or_none.return_value = measurement
+    @pytest.mark.parametrize("entry_fixture", ["measurement", "autocalibration_measurement"])
+    @pytest.mark.parametrize(
+        ("kwargs", "expected_path", "expected_parameters"),
+        [
+            ({"parameters": {"a": 1.0}}, "/test/stored_fit.h5", {"a": 1.0}),
+            ({"path": "", "parameters": {"a": 1.0}}, "/test/stored_fit.h5", {"a": 1.0}),
+            ({"path": "/test/fit.h5"}, "/test/fit.h5", {"stored": 0.0}),
+            ({"path": "/test/fit.h5", "parameters": {}}, "/test/fit.h5", {"stored": 0.0}),
+        ],
+        ids=["no_path", "empty_path", "no_parameters", "empty_parameters"],
+    )
+    def test_add_fitting_keeps_stored_value_when_empty_or_none(
+        self, entry_fixture, kwargs, expected_path, expected_parameters, request
+    ):
+        entry = request.getfixturevalue(entry_fixture)
+        entry.measurement_id = 1
+        persisted = self._persisted_row(entry)
+        mock_db_manager, mock_session = self._fitting_db_manager(persisted)
 
-        mock_db_manager = MagicMock()
-        mock_db_manager.session = lambda: mock_session_context
+        result = entry.add_fitting(mock_db_manager, **kwargs)
 
-        result = measurement.add_fitting(mock_db_manager, path="/test/fit.h5")
-
-        assert result.fitting_path == "/test/fit.h5"
-        assert result.fitting_parameters is None
+        assert result.fitting_path == expected_path
+        assert result.fitting_parameters == expected_parameters
         mock_session.commit.assert_called_once()
 
-    def test_add_fitting_without_path_keeps_existing_path(self, measurement):
-        measurement.fitting_path = "/test/old_fit.h5"
-        mock_session_context = MagicMock()
-        mock_session = MagicMock()
-        mock_session_context.__enter__.return_value = mock_session
-        mock_session.query.return_value.where.return_value.one_or_none.return_value = measurement
+    @pytest.mark.parametrize("entry_fixture", ["measurement", "autocalibration_measurement"])
+    def test_add_fitting_raises_index_error_measurement_not_found(self, entry_fixture, request):
+        entry = request.getfixturevalue(entry_fixture)
+        entry.measurement_id = 1
+        mock_db_manager, mock_session = self._fitting_db_manager(None)
 
-        mock_db_manager = MagicMock()
-        mock_db_manager.session = lambda: mock_session_context
-
-        result = measurement.add_fitting(mock_db_manager, parameters={"a": 1.0})
-
-        assert result.fitting_path == "/test/old_fit.h5"
-        assert result.fitting_parameters == {"a": 1.0}
-        mock_session.commit.assert_called_once()
-
-    def test_add_fitting_raises_index_error_measurement_not_found(self, measurement):
-        mock_session_context = MagicMock()
-        mock_session = MagicMock()
-        mock_session_context.__enter__.return_value = mock_session
-        mock_session.query.return_value.where.return_value.one_or_none.return_value = None
-
-        mock_db_manager = MagicMock()
-        mock_db_manager.session = lambda: mock_session_context
-
-        with pytest.raises(IndexError, match="Measurement entry"):
-            measurement.add_fitting(mock_db_manager, path="/test/fit.h5")
+        with pytest.raises(IndexError, match=f"{type(entry).__name__} entry '1' does not exist."):
+            entry.add_fitting(mock_db_manager, path="/test/fit.h5")
 
         mock_session.commit.assert_not_called()
 
-    def test_add_fitting_raises_exception(self, measurement):
-        mock_session_context = MagicMock()
-        mock_session = MagicMock()
-        mock_session_context.__enter__.return_value = mock_session
-        mock_session.query.return_value.where.return_value.one_or_none.return_value = measurement
+    @pytest.mark.parametrize("entry_fixture", ["measurement", "autocalibration_measurement"])
+    def test_add_fitting_raises_exception(self, entry_fixture, request):
+        entry = request.getfixturevalue(entry_fixture)
+        entry.measurement_id = 1
+        mock_db_manager, mock_session = self._fitting_db_manager(self._persisted_row(entry))
         mock_session.commit.side_effect = Exception("Measurement error")
 
-        mock_db_manager = MagicMock()
-        mock_db_manager.session = lambda: mock_session_context
-
         with pytest.raises(Exception, match="Measurement error"):
-            measurement.add_fitting(mock_db_manager, path="/test/fit.h5")
+            entry.add_fitting(mock_db_manager, path="/test/fit.h5")
 
         mock_session.rollback.assert_called_once()
 
@@ -315,65 +326,6 @@ class TestMeasurement:
 
         with pytest.raises(Exception, match="Measurement error"):
             result = autocalibration_measurement.end_experiment(lambda: mock_session_context)
-
-        mock_session.rollback.assert_called_once()
-
-    def test_autocalibration_add_fitting(self, autocalibration_measurement):
-        mock_session_context = MagicMock()
-        mock_session = MagicMock()
-        mock_session_context.__enter__.return_value = mock_session
-        mock_session.query.return_value.where.return_value.one_or_none.return_value = autocalibration_measurement
-
-        mock_db_manager = MagicMock()
-        mock_db_manager.session = lambda: mock_session_context
-
-        result = autocalibration_measurement.add_fitting(mock_db_manager, path="/test/fit.h5", parameters={"a": 1.0})
-
-        assert result.fitting_path == "/test/fit.h5"
-        assert result.fitting_parameters == {"a": 1.0}
-        mock_session.commit.assert_called_once()
-
-    def test_autocalibration_add_fitting_without_parameters(self, autocalibration_measurement):
-        mock_session_context = MagicMock()
-        mock_session = MagicMock()
-        mock_session_context.__enter__.return_value = mock_session
-        mock_session.query.return_value.where.return_value.one_or_none.return_value = autocalibration_measurement
-
-        mock_db_manager = MagicMock()
-        mock_db_manager.session = lambda: mock_session_context
-
-        result = autocalibration_measurement.add_fitting(mock_db_manager, path="/test/fit.h5")
-
-        assert result.fitting_path == "/test/fit.h5"
-        assert result.fitting_parameters is None
-        mock_session.commit.assert_called_once()
-
-    def test_autocalibration_add_fitting_raises_index_error_measurement_not_found(self, autocalibration_measurement):
-        mock_session_context = MagicMock()
-        mock_session = MagicMock()
-        mock_session_context.__enter__.return_value = mock_session
-        mock_session.query.return_value.where.return_value.one_or_none.return_value = None
-
-        mock_db_manager = MagicMock()
-        mock_db_manager.session = lambda: mock_session_context
-
-        with pytest.raises(IndexError, match="Autocalibration measurement entry"):
-            autocalibration_measurement.add_fitting(mock_db_manager, path="/test/fit.h5")
-
-        mock_session.commit.assert_not_called()
-
-    def test_autocalibration_add_fitting_raises_exception(self, autocalibration_measurement):
-        mock_session_context = MagicMock()
-        mock_session = MagicMock()
-        mock_session_context.__enter__.return_value = mock_session
-        mock_session.query.return_value.where.return_value.one_or_none.return_value = autocalibration_measurement
-        mock_session.commit.side_effect = Exception("Measurement error")
-
-        mock_db_manager = MagicMock()
-        mock_db_manager.session = lambda: mock_session_context
-
-        with pytest.raises(Exception, match="Measurement error"):
-            autocalibration_measurement.add_fitting(mock_db_manager, path="/test/fit.h5")
 
         mock_session.rollback.assert_called_once()
 
@@ -1071,28 +1023,40 @@ class Testdatabase:
         assert result == [entry]
         assert entry.result_path == "/shared_test/results/file.h5"
 
-    def test_add_fitting_autocal(self, db_manager: DatabaseManager):
-        db_manager.database_schema = "autocal"
-        mock_measurement = MagicMock(spec=AutocalMeasurement)
+    @pytest.mark.parametrize(
+        ("database_schema", "model"), [("measurements", Measurement), ("autocal", AutocalMeasurement)]
+    )
+    def test_add_fitting_without_path(self, db_manager: DatabaseManager, database_schema, model):
+        db_manager.database_schema = database_schema
+        mock_measurement = MagicMock(spec=model)
         mock_measurement.add_fitting.return_value = mock_measurement
 
         with patch.object(db_manager, "_load_by_id", return_value=mock_measurement) as mock_load:
             result = db_manager.add_fitting(123, parameters={"a": 1.0})
 
-        mock_load.assert_called_once_with(AutocalMeasurement, 123)
+        mock_load.assert_called_once_with(model, 123)
         mock_measurement.add_fitting.assert_called_once_with(db_manager, None, {"a": 1.0})
         assert result == mock_measurement
 
-    def test_add_fitting_measurements_without_path(self, db_manager: DatabaseManager):
-        mock_measurement = MagicMock(spec=Measurement)
-        mock_measurement.add_fitting.return_value = mock_measurement
+    @pytest.mark.parametrize(
+        ("database_schema", "model"), [("measurements", Measurement), ("autocal", AutocalMeasurement)]
+    )
+    def test_add_fitting_does_not_store_rewritten_result_path(
+        self, db_manager: DatabaseManager, database_schema, model
+    ):
+        db_manager.database_schema = database_schema
+        loaded = model(measurement_id=123, result_path="/local_test/results/file.h5")
+        persisted = model(measurement_id=123, result_path="/local_test/results/file.h5")
+        db_manager._mock_session.query.return_value.filter.return_value.all.return_value = [loaded]
+        db_manager._mock_session.query.return_value.where.return_value.one_or_none.return_value = persisted
 
-        with patch.object(db_manager, "_load_by_id", return_value=mock_measurement) as mock_load:
-            result = db_manager.add_fitting(123, parameters={"a": 1.0})
+        with patch("os.path.isfile", return_value=False):
+            result = db_manager.add_fitting(123, path="/test/fit.h5")
 
-        mock_load.assert_called_once_with(Measurement, 123)
-        mock_measurement.add_fitting.assert_called_once_with(db_manager, None, {"a": 1.0})
-        assert result == mock_measurement
+        assert loaded.result_path == "/shared_test/results/file.h5"
+        assert result is persisted
+        assert result.result_path == "/local_test/results/file.h5"
+        assert result.fitting_path == "/test/fit.h5"
 
     def test_add_fitting_qaas_raises_error(self, db_manager: DatabaseManager):
         db_manager.database_schema = "qaas"

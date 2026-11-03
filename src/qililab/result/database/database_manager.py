@@ -348,9 +348,14 @@ class DatabaseManager:
 
         Args:
             id (int): measurement_id value given by the database.
-            path (str | None, optional): Path to the fitting results file. If None, the existing path is kept.
-                Defaults to None.
-            parameters (dict[str, Any] | None, optional): Fitting parameters. Defaults to None.
+            path (str | None, optional): Path to the fitting results file. If empty or None, the stored value is
+                kept. Defaults to None.
+            parameters (dict[str, Any] | None, optional): Fitting parameters. If empty or None, the stored value is
+                kept. Defaults to None.
+
+        Raises:
+            IndexError: if the measurement does not exist.
+            ValueError: if the manager's ``database_schema`` cannot store fitting information.
         """
         if self.database_schema == "measurements":
             return self._add_measurement_fitting(id, path, parameters)

@@ -215,9 +215,10 @@ class StreamArray:
         It is meant to be called after the ``with`` block has exited (i.e. after ``end_experiment`` has run).
 
         Args:
-            path (str | None, optional): Path to the fitting results file. If None, the existing path is kept.
-                Defaults to None.
-            parameters (dict[str, Any] | None, optional): Fitting parameters. Defaults to None.
+            path (str | None, optional): Path to the fitting results file. If empty or None, the stored value is
+                kept. Defaults to None.
+            parameters (dict[str, Any] | None, optional): Fitting parameters. If empty or None, the stored value is
+                kept. Defaults to None.
         """
         if self.measurement is None:
             raise RuntimeError("add_fitting must be called after the StreamArray context has exited.")
