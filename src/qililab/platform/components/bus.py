@@ -15,7 +15,6 @@
 """Bus class."""
 
 import contextlib
-import warnings
 from dataclasses import InitVar, dataclass, field
 
 from qpysequence import Sequence as QpySequence
@@ -51,7 +50,7 @@ class Bus:
             system_control (SystemControl): System control used to control and readout the qubits of the bus.
             port (str): Alias of the port where bus is connected.
             distortions (list[PulseDistotion]): List of the distortions to apply to the Bus.
-            delay (int): Bus delay
+            delay (int): Bus delay, in ns. Defaults to 0.
         """
 
         alias: str
@@ -73,21 +72,36 @@ class Bus:
                     )
                 instruments.append(inst_class)
             self.instruments = instruments
-            # The bus delay is only applied by the Qblox compiler; a QDAC-II sets its delay per play instead
-            if self.delay != 0 and any(isinstance(instrument, QDevilQDac2) for instrument in instruments):
-                warnings.warn(
-                    f"Bus '{self.alias}' has a delay of {self.delay} ns, but QDAC-II buses don't support a bus delay, "
-                    "so it is ignored. Remove it from the runcard and set the QDAC-II delay in each play with "
-                    "qp.qdac.play(delay=...). This will raise an error in a future release.",
-                    FutureWarning,
-                    stacklevel=1,
-                )
+            self.set_delay(self.delay)
             self.distortions = [
                 PulseDistortion.from_dict(distortion)  # type: ignore[arg-type]
                 for distortion in self.distortions
                 if isinstance(distortion, dict)
             ]
             super().__post_init__()
+
+        def set_delay(self, delay: float) -> None:
+            """Set the bus delay.
+
+            The bus delay is only applied by the Qblox compiler; a QDAC-II sets its delay per play instead.
+
+            Args:
+                delay (float): Bus delay, in ns. It must be a whole number, and is stored as an int.
+
+            Raises:
+                ValueError: If the delay isn't a whole number of ns, or if it isn't 0 and the bus has a QDAC-II.
+            """
+            if delay != int(delay):
+                raise ValueError(
+                    f"Bus '{self.alias}' can't have a delay of {delay} ns: the bus delay must be a whole number of ns."
+                )
+            whole_delay = int(delay)
+            if whole_delay != 0 and any(isinstance(instrument, QDevilQDac2) for instrument in self.instruments):
+                raise ValueError(
+                    f"Bus '{self.alias}' can't have a delay of {whole_delay} ns: QDAC-II buses don't support a bus "
+                    "delay. Leave it at 0 and set the QDAC-II delay in each play with qp.qdac.play(delay=...)."
+                )
+            self.delay = whole_delay
 
     settings: BusSettings
     """Bus settings. Containing the alias of the bus, the system control used to control and readout its qubits, the alias
@@ -153,6 +167,7 @@ class Bus:
             RUNCARD.ALIAS: self.alias,
             RUNCARD.INSTRUMENTS: [instrument.alias for instrument in self.instruments],
             "channels": self.settings.channels,
+            "delay": self.settings.delay,
             "distortions": [distortion.to_dict() for distortion in self.settings.distortions],
         }
 
@@ -177,15 +192,24 @@ class Bus:
         value: ParameterValue,
         channel_id: ChannelID | None = None,
         output_id: OutputID | None = None,
-    ):
+    ) -> None:
         """Set a parameter to the bus.
 
         Args:
             parameter (Parameter): parameter settings of the instrument to update
-            value (int | float | str | bool): value to update
+            value (int | float | str | bool): value to update. A ``Parameter.DELAY`` is in ns, must be a whole number,
+                and is stored as an int.
             channel_id (int, optional): instrument channel to update, if multiple. Defaults to None.
             output_id (int): module id. Defaults to None.
+
+        Raises:
+            ValueError: If ``parameter`` is ``Parameter.DELAY`` and ``value`` isn't a whole number of ns, or isn't 0
+                on a QDAC-II bus.
         """
+        if parameter == Parameter.DELAY:
+            self.settings.set_delay(float(value))
+            return
+
         if parameter in FILTER_PARAMETERS:
             bus_output_id = self._get_outputid_from_channelid()
             if channel_id is not None:
