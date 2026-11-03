@@ -16,7 +16,7 @@
 
 import warnings
 from dataclasses import dataclass, field
-from typing import Iterable, Sequence, cast
+from typing import ClassVar, Iterable, Sequence, cast
 
 from qpysequence import Sequence as QpySequence
 
@@ -47,7 +47,7 @@ class QbloxModule(Instrument):
     # `calibrate_mixers` API historically used "lo"/"lo_and_sidebands", which are kept as deprecated
     # aliases of the runcard values so both spellings agree (QHC-1655).
     _MIXER_CAL_TYPES: tuple[str, ...] = ("off", "lo only", "lo and sidebands")
-    _DEPRECATED_MIXER_CAL_TYPES: dict[str, str] = {
+    _DEPRECATED_MIXER_CAL_TYPES: ClassVar[dict[str, str]] = {
         "lo": "lo only",
         "lo_and_sidebands": "lo and sidebands",
     }
