@@ -143,6 +143,8 @@ class TestNonLinearFluxVector:
             ForLoop(variable=phi, start=0, stop=0.1, step=0.08),
             ForLoop(variable=theta, start=0.1, stop=0, step=-0.08),
         ]))
+        np.testing.assert_allclose(nlfv_no_crosstalk.variables["phi"].arr, [0.0, 0.1])
+        np.testing.assert_allclose(nlfv_no_crosstalk.variables["theta"].arr, [0.1, 0.0])
 
     def test_set_loop_parallel_raises_different_loop_lengths(self, nlfv_no_crosstalk):
         phi = Variable("phi")

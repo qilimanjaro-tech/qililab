@@ -3283,18 +3283,6 @@ class TestQBloxCompiler:
         assert is_q1asm_equal(sequences["drive"], drive_str)
         assert is_q1asm_equal(sequences["readout"], readout_str)
 
-    @pytest.mark.parametrize(
-        "start,stop,step,expected_result",
-        [(0, 10, 1, 11), (10, 0, -1, 11), (1, 2.05, 0.1, 11)],
-    )
-    def test_calculate_iterations(self, start, stop, step, expected_result):
-        result = QbloxCompiler._calculate_iterations(start, stop, step)
-        assert result == expected_result
-
-    def test_calculate_iterations_with_zero_step_throws_error(self):
-        with pytest.raises(ValueError, match="Step value cannot be zero"):
-            QbloxCompiler._calculate_iterations(100, 200, 0)
-
     def test_update_latched_param_before_wait(self, update_latched_param: QProgram):
         compiler = QbloxCompiler()
         sequences, _ = compiler.compile(qprogram=update_latched_param)
@@ -5021,12 +5009,12 @@ class TestQBloxCompiler:
             main:
                 move             100, R0
                 move             0, R1
-                move             5, R2
+                move             4, R2
             loop_0:
                 set_awg_gain     R1, R1
                 play             0, 1, 40
                 wait             R0
-                sub              R0, 24, R0
+                sub              R0, 32, R0
                 add              R1, 3276, R1
                 loop             R2, @loop_0
                 set_mrk          0
@@ -5058,10 +5046,10 @@ class TestQBloxCompiler:
 
             main:
                 move             100, R0
-                move             5, R1
+                move             4, R1
             loop_0:
                 wait             R0
-                sub              R0, 24, R0
+                sub              R0, 32, R0
                 loop             R1, @loop_0
                 set_mrk          0
                 upd_param        4
@@ -7070,6 +7058,32 @@ class TestQBloxCompiler:
                 id="gain_ascending",
             ),
             pytest.param(
+                Domain.Voltage,
+                1.0,
+                0.0,
+                -0.3,
+                lambda qp, variable: qp.set_gain(bus="drive", gain=variable),
+                """
+                    setup:
+                                    wait_sync        4
+                                    set_mrk          0
+                                    upd_param        4
+
+                    main:
+                                    move             32767, R0
+                                    move             4, R1
+                    loop_0:
+                                    set_awg_gain     R0, R0
+                                    play             0, 1, 40
+                                    sub              R0, 10923, R0
+                                    loop             R1, @loop_0
+                                    set_mrk          0
+                                    upd_param        4
+                                    stop
+                """,
+                id="gain_descending",
+            ),
+            pytest.param(
                 Domain.Frequency,
                 10e6,
                 55e6,
@@ -7135,11 +7149,11 @@ class TestQBloxCompiler:
 
                     main:
                                     move             477464829, R0
-                                    move             6, R1
+                                    move             5, R1
                     loop_0:
                                     set_ph           R0
                                     play             0, 1, 40
-                                    sub              R0, 95492966, R0
+                                    sub              R0, 119366208, R0
                                     loop             R1, @loop_0
                                     set_mrk          0
                                     upd_param        4
@@ -7161,11 +7175,11 @@ class TestQBloxCompiler:
 
                     main:
                                     move             16383, R0
-                                    move             5, R1
+                                    move             4, R1
                     loop_0:
                                     set_awg_offs     R0, R0
                                     play             0, 1, 40
-                                    sub              R0, 8192, R0
+                                    sub              R0, 10922, R0
                                     loop             R1, @loop_0
                                     set_mrk          0
                                     upd_param        4
@@ -7306,9 +7320,9 @@ class TestQBloxCompiler:
         ],
     )
     def test_for_loop_number_of_points(self, domain, start, stop, step, body, drive_str):
-        """When the step doesn't divide the range, the number of points is rounded down (ascending) or up
-        (descending), and the register step is stretched so the last point lands on ``stop``. A single point
-        (``start == stop``, or a step larger than the range) runs one iteration at ``start``."""
+        """When the step doesn't divide the range, the number of points is rounded down in both directions, and the
+        register step is stretched so the last point lands on ``stop``. A single point (``start == stop``, or a step
+        larger than the range) runs one iteration at ``start``."""
         qp = QProgram()
         variable = qp.variable(label="variable", domain=domain)
         with qp.for_loop(variable=variable, start=start, stop=stop, step=step):
@@ -7443,6 +7457,55 @@ class TestQBloxCompiler:
         assert is_q1asm_equal(sequences["drive"], drive_str)
         assert is_q1asm_equal(sequences["readout"], readout_str)
         assert acquisitions["readout"]["Acquisition 0"].shape == (4,)
+
+    def test_parallel_loop_and_its_descending_mirror_sweep_the_same_points(self):
+        """A loop and its descending mirror, with a step that doesn't divide the range, run in parallel for 2
+        points: gain_2 sweeps 0.1, 0.0 and reaches ``stop``."""
+        square_wf = Square(amplitude=0.1, duration=50)
+        qp = QProgram()
+        gain_1 = qp.variable(label="gain_1", domain=Domain.Voltage)
+        gain_2 = qp.variable(label="gain_2", domain=Domain.Voltage)
+        with qp.parallel(loops=[ForLoop(gain_1, 0, 0.1, 0.08), ForLoop(gain_2, 0.1, 0, -0.08)]):
+            qp.set_gain(bus="flux_1", gain=gain_1)
+            qp.set_gain(bus="flux_2", gain=gain_2)
+            qp.play(bus="flux_1", waveform=square_wf)
+            qp.play(bus="flux_2", waveform=square_wf)
+
+        sequences, _ = QbloxCompiler().compile(qprogram=qp)
+
+        flux_2_str = """
+            setup:
+                            wait_sync        4
+                            set_mrk          0
+                            upd_param        4
+
+            main:
+                            move             0, R0
+                            move             3276, R1
+                            move             2, R2
+            loop_0:
+                            set_awg_gain     R1, R1
+                            play             0, 1, 50
+                            add              R0, 3276, R0
+                            sub              R1, 3276, R1
+                            loop             R2, @loop_0
+                            set_mrk          0
+                            upd_param        4
+                            stop
+        """
+        assert is_q1asm_equal(sequences["flux_2"], flux_2_str)
+
+    def test_for_loop_step_pointing_away_from_stop_raises(self):
+        """A step pointing away from ``stop`` gives no point, so the loop can't be compiled."""
+        qp = QProgram()
+        gain = qp.variable(label="gain", domain=Domain.Voltage)
+        with qp.for_loop(variable=gain, start=0, stop=1, step=-2):
+            qp.set_gain(bus="drive", gain=gain)
+            qp.play(bus="drive", waveform=IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40)))
+
+        compiler = QbloxCompiler()
+        with pytest.raises(ValueError, match="Iterations must be greater than 0"):
+            compiler.compile(qprogram=qp)
 
     def test_qdac_bus_operations_do_not_change_qblox_q1asm(self):
         """Operations of every kind on a bus left out of ``qblox_buses`` don't appear in the Qblox bus Q1ASM, and a

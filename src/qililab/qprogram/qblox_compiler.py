@@ -29,7 +29,16 @@ from qpysequence.enums import TriggerCondition as QPyTriggerCondition
 from qililab.config import logger
 from qililab.constants import QBLOXCONSTANTS
 from qililab.core.variables import Domain, Variable, VariableExpression
-from qililab.qprogram.blocks import Average, Block, Conditional, ForLoop, InfiniteLoop, Loop, Parallel
+from qililab.qprogram.blocks import (
+    Average,
+    Block,
+    Conditional,
+    ForLoop,
+    InfiniteLoop,
+    Loop,
+    Parallel,
+    for_loop_iterations,
+)
 from qililab.qprogram.calibration import Calibration
 from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
 from qililab.qprogram.operations import (
@@ -1974,22 +1983,6 @@ class QbloxCompiler:
         return operations[0]
 
     @staticmethod
-    def _calculate_iterations(start: int | float, stop: int | float, step: int | float) -> int:
-        if step == 0:
-            raise ValueError("Step value cannot be zero")
-
-        # Calculate the raw number of iterations
-        raw_iterations = (stop - start + step) / step
-
-        # If the raw number of iterations is very close to an integer, round it to that integer
-        # This accounts for potential floating-point inaccuracies
-        if abs(raw_iterations - round(raw_iterations)) < 1e-9:
-            return round(raw_iterations)
-
-        # Otherwise, if we're incrementing, take the ceiling, and if we're decrementing, take the floor
-        return math.floor(raw_iterations) if step > 0 else math.ceil(raw_iterations)
-
-    @staticmethod
     def _get_qpysequence_conversion_instructions(
         operation: Operation | None,
     ) -> type[QPyInstructions.ConversionInstruction] | None:
@@ -2008,7 +2001,7 @@ class QbloxCompiler:
 
     @staticmethod
     def _compute_loop_sweep(for_loop: ForLoop, scale_factor: float | int | None = None) -> tuple[float, float, int]:
-        iterations = QbloxCompiler._calculate_iterations(start=for_loop.start, stop=for_loop.stop, step=for_loop.step)
+        iterations = for_loop_iterations(for_loop.start, for_loop.stop, for_loop.step)
         if iterations == 1:
             # Single point: the formulas below divide by iterations - 1, which is 0. The loop runs once, so the
             # step doesn't matter: keep the loop's own step.

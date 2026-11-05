@@ -1094,6 +1094,22 @@ class TestQdacCompiler:
         qdac_bus.set_parameter.assert_called_with(parameter=Parameter.VOLTAGE, value=-0.2, channel_id=2)
         qdac_bus.set_in_internal_trigger.assert_called_once_with(channel_id=2, trigger="trigger_flux1_None_start")
 
+    @pytest.mark.parametrize("start, stop, step", [(0.0, 1.0, 0.3), (1.0, 0.0, -0.3)])
+    def test_for_loop_step_not_dividing_range_repetitions(
+        self, qdac: QDevilQDac2, flux1: Bus, start: float, stop: float, step: float
+    ):
+        """A step that doesn't divide the range gives 4 points in both directions, so 5 repetitions."""
+        qdac_bus = flux1.instruments[0]
+        wf = Square(1.0, 100)
+        qp = QProgram()
+        loop_variable = qp.variable("test", Domain.Voltage)
+        with qp.for_loop(loop_variable, start, stop, step):
+            qp.qdac.play(bus="flux1", waveform=wf, dwell=2)
+        QdacCompiler().compile(qprogram=qp, qdacs=[qdac], qdac_buses=[flux1], qdac_offsets=[0])
+        qdac_bus.upload_voltage_list.assert_called_with(
+            waveform=wf, channel_id=1, dwell_us=2, sync_delay_s=0, repetitions=5, stepped=False
+        )
+
     def test_loops_repetitions_per_bus(self, qdac: QDevilQDac2, flux1: Bus, flux2: Bus):
         """Repetitions of a for loop whose step divides the range or not (descending), and of two buses in nested
         loops: a bus count restarts after its own play, and explicit repetitions win."""
@@ -1116,7 +1132,7 @@ class TestQdacCompiler:
             qp.qdac.play(bus="flux1", waveform=wf, dwell=2)
         QdacCompiler().compile(qprogram=qp, qdacs=[qdac], qdac_buses=[flux1], qdac_offsets=[0])
         qdac_bus.upload_voltage_list.assert_called_with(
-            waveform=wf, channel_id=1, dwell_us=2, sync_delay_s=0, repetitions=6, stepped=False
+            waveform=wf, channel_id=1, dwell_us=2, sync_delay_s=0, repetitions=5, stepped=False
         )
 
         qdac_bus.upload_voltage_list.reset_mock()

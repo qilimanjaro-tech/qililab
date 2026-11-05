@@ -936,15 +936,3 @@ class TestQuantumMachinesCompiler:
         assert compiler._QuantumMachinesCompiler__hash_waveform(
             waveform0
         ) != compiler._QuantumMachinesCompiler__hash_waveform(waveform1)
-
-    @pytest.mark.parametrize(
-        "start,stop,step,expected_result",
-        [(0, 10, 1, 11), (10, 0, -1, 11), (1, 2.05, 0.1, 11)],
-    )
-    def test_calculate_iterations(self, start, stop, step, expected_result):
-        result = QuantumMachinesCompiler._calculate_iterations(start, stop, step)
-        assert result == expected_result
-
-    def test_calculate_iterations_with_zero_step_throws_error(self):
-        with pytest.raises(ValueError, match="Step value cannot be zero"):
-            QuantumMachinesCompiler._calculate_iterations(100, 200, 0)

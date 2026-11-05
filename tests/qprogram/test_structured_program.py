@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 from qililab import Domain
 from qililab.exceptions import VariableAllocated
-from qililab.qprogram.blocks import Block, ForLoop, InfiniteLoop, Loop, Parallel
+from qililab.qprogram.blocks import Block, ForLoop, InfiniteLoop, Loop, Parallel, for_loop_iterations
 from qililab.qprogram.structured_program import StructuredProgram
 
 
@@ -144,3 +144,31 @@ class TestStructuredProgram:
             with pytest.raises(VariableAllocated):
                 with instance.parallel(loops=[Loop(variable=variable, values=np.arange(10))]):
                     pass
+
+
+@pytest.mark.parametrize(
+    "start,stop,step,expected_iterations",
+    [
+        (0, 10, 1, 11),
+        (10, 0, -1, 11),
+        # Within 1e-9 of an integer: snapped, not rounded down.
+        (0, 0.7, 0.1, 8),
+        (0.7, 0, -0.1, 8),
+        # The step doesn't divide the range: rounded down in both directions.
+        (1, 2.05, 0.1, 11),
+        (2.05, 1, -0.1, 11),
+        (0, 1, 0.3, 4),
+        (1, 0, -0.3, 4),
+        (0, 0.1, 0.08, 2),
+        (0.1, 0, -0.08, 2),
+        # The step points away from stop.
+        (0, 1, -2, 0),
+    ],
+)
+def test_for_loop_iterations(start, stop, step, expected_iterations):
+    assert for_loop_iterations(start, stop, step) == expected_iterations
+
+
+def test_for_loop_iterations_with_zero_step_raises():
+    with pytest.raises(ValueError, match="Step value cannot be zero"):
+        for_loop_iterations(100, 200, 0)
