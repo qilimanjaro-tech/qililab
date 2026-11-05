@@ -606,7 +606,7 @@ class Platform:
         value: ParameterValue,
         channel_id: ChannelID | None = None,
         output_id: OutputID | None = None,
-    ):
+    ) -> None:
         """Set a parameter for a platform element.
 
         If connected to an instrument, this function updates both the cache of the :class:`.Platform` object and the
@@ -624,7 +624,7 @@ class Platform:
             output_id (int, optional): ID of the module we want to use to set the parameter, used for Qblox distortion filters. Defaults to None.
         """
         regex_match = re.search(GATE_ALIAS_REGEX, alias)
-        if alias == "platform" or parameter == Parameter.DELAY or regex_match is not None:
+        if alias == "platform" or regex_match is not None:
             if self.digital_compilation_settings is None:
                 raise ValueError("Trying to get parameter of gates settings, but no gates settings exist in platform.")
             self.digital_compilation_settings.set_parameter(

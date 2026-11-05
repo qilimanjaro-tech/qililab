@@ -2200,6 +2200,13 @@ class TestMethods:
         value = platform.get_parameter(parameter=Parameter.DELAY, alias="drive_line_q0_bus")
         assert value == 0
 
+    def test_set_parameter_with_delay(self, platform: Platform):
+        """Test that the ``set_parameter`` method sets the delay of the bus given by the alias."""
+        platform.set_parameter(alias="drive_line_q0_bus", parameter=Parameter.DELAY, value=20)
+
+        assert platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.DELAY) == 20
+        assert platform.get_parameter(alias="drive_line_q1_bus", parameter=Parameter.DELAY) == 0
+
     @pytest.mark.parametrize(
         "parameter",
         [Parameter.IF, Parameter.GAIN, Parameter.LO_FREQUENCY, Parameter.OFFSET_OUT0, Parameter.OFFSET_OUT2],
