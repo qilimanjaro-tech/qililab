@@ -2003,9 +2003,9 @@ class QbloxCompiler:
     def _compute_loop_sweep(for_loop: ForLoop, scale_factor: float | int | None = None) -> tuple[float, float, int]:
         iterations = for_loop_iterations(for_loop.start, for_loop.stop, for_loop.step)
         if iterations == 1:
-            # Single point: the formulas below divide by iterations - 1, which is 0. The loop runs once, so the
-            # step doesn't matter: keep the loop's own step.
-            return (for_loop.start, for_loop.step, iterations)
+            # Single point: the formulas below divide by iterations - 1, which is 0. The loop runs once, so use a
+            # step of 0: the register stays at start and no add/sub is written.
+            return (for_loop.start, 0, iterations)
         if scale_factor is None:
             qblox_step = (for_loop.stop - for_loop.start) / (iterations - 1)
             return (for_loop.start, qblox_step, iterations)

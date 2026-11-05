@@ -7205,7 +7205,6 @@ class TestQBloxCompiler:
                     loop_0:
                                     set_awg_gain     R0, R0
                                     play             0, 1, 40
-                                    add              R0, 3276, R0
                                     loop             R1, @loop_0
                                     set_mrk          0
                                     upd_param        4
@@ -7231,7 +7230,6 @@ class TestQBloxCompiler:
                     loop_0:
                                     set_awg_gain     R0, R0
                                     play             0, 1, 40
-                                    add              R0, 3276, R0
                                     loop             R1, @loop_0
                                     set_mrk          0
                                     upd_param        4
@@ -7257,7 +7255,6 @@ class TestQBloxCompiler:
                     loop_0:
                                     wait             R0
                                     play             0, 1, 40
-                                    add              R0, 10, R0
                                     loop             R1, @loop_0
                                     set_mrk          0
                                     upd_param        4
@@ -7283,7 +7280,6 @@ class TestQBloxCompiler:
                     loop_0:
                                     wait             R0
                                     play             0, 1, 40
-                                    add              R0, 100, R0
                                     loop             R1, @loop_0
                                     set_mrk          0
                                     upd_param        4
@@ -7309,7 +7305,6 @@ class TestQBloxCompiler:
                     loop_0:
                                     set_ph           R0
                                     play             0, 1, 40
-                                    sub              R0, 15915494, R0
                                     loop             R1, @loop_0
                                     set_mrk          0
                                     upd_param        4
@@ -7369,7 +7364,6 @@ class TestQBloxCompiler:
                             set_awg_gain     R1, R1
                             play             0, 1, 40
                             add              R0, 40000000, R0
-                            add              R1, 3276, R1
                             loop             R2, @loop_0
                             set_mrk          0
                             upd_param        4
