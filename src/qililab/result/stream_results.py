@@ -57,6 +57,9 @@ class StreamArray:
         autocalibration (bool | None, optional): Deprecated, set ``database_schema`` on the ``DatabaseManager`` instead.
             If given, it must match ``db_manager.database_schema``: True needs ``"autocal"`` and False
             ``"measurements"``, otherwise an error is raised. Defaults to None.
+        result_folder (str | None, optional): Absolute folder where the ``.h5`` is saved, named after the experiment,
+            ``qubit_idx``, ``secondary_idx`` and start time. If None, the database manager builds the path from its
+            config base path. Defaults to None.
     """
 
     path: str
@@ -78,6 +81,7 @@ class StreamArray:
         autocalibration: bool | None = None,
         qubit_idx: int | str | list[str] | None = None,
         secondary_idx: int | str | list[str] | None = None,
+        result_folder: str | None = None,
     ):
         self.results: np.ndarray
         self.shape = [shape] if isinstance(shape, int) else shape
@@ -99,6 +103,7 @@ class StreamArray:
         self.autocalibration = autocalibration
         self.qubit_idx = qubit_idx
         self.second_idx = secondary_idx
+        self.result_folder = result_folder
         self._first_value = True
 
     def __enter__(self):
@@ -124,6 +129,8 @@ class StreamArray:
                     calibration=calibration,
                     parameters=self.loops,
                     data_shape=self.shape,
+                    result_folder=self.result_folder,
+                    secondary_idx=self.second_idx,
                 )
             elif database_schema == "measurements":
                 self.measurement = self.db_manager.add_measurement(
@@ -139,6 +146,7 @@ class StreamArray:
                     target=self._get_index_list(self.qubit_idx),
                     secondary_source=self._get_index_list(self.second_idx),
                     bus_mapping=self.bus_mapping,
+                    result_folder=self.result_folder,
                 )
             else:
                 raise ValueError(f"StreamArray cannot save to the '{database_schema}' database schema.")
