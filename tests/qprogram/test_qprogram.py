@@ -8,7 +8,7 @@ import pytest
 
 from qililab import Arbitrary, Domain, GaussianDragCorrection, Gaussian, IQPair, QProgram, Square, IQDrag
 from qililab.core.variables import Variable, VariableExpression
-from qililab.qprogram.blocks import Average, Block, Conditional, Parallel
+from qililab.qprogram.blocks import Average, Block, Conditional, Parallel, for_loop_iterations
 from qililab.qprogram.calibration import Calibration
 from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix, NonLinearCrosstalkMatrix
 from qililab.pulse_distortion import ExponentialCorrection
@@ -1394,8 +1394,6 @@ class TestQProgram(TestStructuredProgram):
     def test_with_crosstalk_qblox_offset_flux_vs_flux_unequal_length_loops(self):
         """Nested flux-vs-flux offset loops of different lengths must not raise: the per-bus arrays
         are accumulated without an eager element-wise cross product and compensated via decomposition."""
-        from qililab.qprogram.qblox_compiler import QbloxCompiler
-
         crosstalk = CrosstalkMatrix().from_array(["flux1", "flux2"], np.linalg.inv([[1, 0.5], [0.5, 1]]))
         square_wf = Square(amplitude=0.1, duration=50)
         qp = QProgram()
@@ -1414,13 +1412,30 @@ class TestQProgram(TestStructuredProgram):
         outer = new_qp.body.elements[0]
         assert isinstance(outer, Parallel)
         inner = next(element for element in outer.elements if isinstance(element, Parallel))
-        assert {QbloxCompiler._calculate_iterations(loop.start, loop.stop, loop.step) for loop in outer.loops} == {39}
-        assert {QbloxCompiler._calculate_iterations(loop.start, loop.stop, loop.step) for loop in inner.loops} == {38}
+        assert {for_loop_iterations(loop.start, loop.stop, loop.step) for loop in outer.loops} == {39}
+        assert {for_loop_iterations(loop.start, loop.stop, loop.step) for loop in inner.loops} == {38}
 
         # Both flux buses are compensated at the innermost level, each combining the two variables.
         inner_offsets = [element for element in inner.elements if isinstance(element, SetOffset)]
         assert {offset.bus for offset in inner_offsets} == {"flux1", "flux2"}
         assert all(isinstance(offset.offset_path0, VariableExpression) for offset in inner_offsets)
+
+    @pytest.mark.parametrize("start, stop, step", [(0.0, 1.0, 0.3), (1.0, 0.0, -0.3)])
+    def test_with_crosstalk_qblox_loop_step_not_dividing_range(self, start, stop, step):
+        """A step that doesn't divide the range gives 4 points in both directions, and the compensated loops keep
+        them."""
+        crosstalk = CrosstalkMatrix().from_array(["flux1", "flux2"], np.linalg.inv([[1, 0.5], [0.5, 1]]))
+        qp = QProgram()
+        offset = qp.variable(label="offset", domain=Domain.Voltage)
+        with qp.for_loop(variable=offset, start=start, stop=stop, step=step):
+            qp.set_offset(bus="flux1", offset_path0=offset)
+            qp.play(bus="flux1", waveform=Square(amplitude=0.1, duration=50))
+
+        compensated = qp.with_crosstalk_qblox(crosstalk)
+
+        parallel = compensated.body.elements[0]
+        assert isinstance(parallel, Parallel)
+        assert {for_loop_iterations(loop.start, loop.stop, loop.step) for loop in parallel.loops} == {4}
 
     def test_with_crosstalk_qblox_offsets_across_loop_levels_carried_and_summed(self):
         """flux_1 offset set in the outer loop and flux_2 in the inner one: the outer level keeps its

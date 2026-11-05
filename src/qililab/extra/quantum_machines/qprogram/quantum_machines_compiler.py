@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import hashlib
-import math
 from collections import deque
 from contextlib import contextmanager
 from dataclasses import dataclass
@@ -25,7 +24,7 @@ from qm.program import Program
 from qm.qua import _dsl as qua_dsl
 
 from qililab.core.variables import Domain, FloatVariable, IntVariable, Variable
-from qililab.qprogram.blocks import Average, Block, ForLoop, Loop, Parallel
+from qililab.qprogram.blocks import Average, Block, ForLoop, Loop, Parallel, for_loop_iterations
 from qililab.qprogram.blocks.infinite_loop import InfiniteLoop
 from qililab.qprogram.calibration import Calibration
 from qililab.qprogram.operations import (
@@ -516,7 +515,7 @@ class QuantumMachinesCompiler:
         )
         for block in reversed(self._qprogram_block_stack):
             if isinstance(block, ForLoop):
-                iterations = QuantumMachinesCompiler._calculate_iterations(block.start, block.stop, block.step)
+                iterations = for_loop_iterations(block.start, block.stop, block.step)
                 measurement_info.loop_info_list.append(LoopInfo(is_average=False, iterations=iterations))
             if isinstance(block, Loop):
                 iterations = len(block.values)
@@ -526,7 +525,7 @@ class QuantumMachinesCompiler:
                     (
                         len(loop.values)
                         if isinstance(loop, Loop)
-                        else QuantumMachinesCompiler._calculate_iterations(loop.start, loop.stop, loop.step)
+                        else for_loop_iterations(loop.start, loop.stop, loop.step)
                     )
                     for loop in block.loops
                 )
@@ -671,19 +670,3 @@ class QuantumMachinesCompiler:
 
         envelope = waveform.envelope() / QuantumMachinesCompiler.VOLTAGE_COEFF
         return {"type": "arbitrary", "samples": envelope.tolist()}
-
-    @staticmethod
-    def _calculate_iterations(start: int | float, stop: int | float, step: int | float):
-        if step == 0:
-            raise ValueError("Step value cannot be zero")
-
-        # Calculate the raw number of iterations
-        raw_iterations = (stop - start + step) / step
-
-        # If the raw number of iterations is very close to an integer, round it to that integer
-        # This accounts for potential floating-point inaccuracies
-        if abs(raw_iterations - round(raw_iterations)) < 1e-9:
-            return round(raw_iterations)
-
-        # Otherwise, if we're incrementing, take the ceiling, and if we're decrementing, take the floor
-        return math.floor(raw_iterations) if step > 0 else math.ceil(raw_iterations)

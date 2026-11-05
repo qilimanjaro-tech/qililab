@@ -14,14 +14,13 @@
 
 from __future__ import annotations
 
-import math
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, cast
 
 import numpy as np
 
 from qililab.core.variables import Variable, VariableExpression
-from qililab.qprogram.blocks import ForLoop, Loop, Parallel
+from qililab.qprogram.blocks import ForLoop, Loop, Parallel, for_loop_iterations
 from qililab.qprogram.operations import SetGain, SetOffset
 from qililab.waveforms import Arbitrary, Square, Waveform
 from qililab.yaml import yaml
@@ -274,16 +273,7 @@ class NonLinearFluxVector:
     def _iterations_from_loop(loop: ForLoop | Loop):
         if isinstance(loop, Loop):
             return loop.values.shape[0]
-        raw_iterations = (loop.stop - loop.start + loop.step) / loop.step
-
-        # If the raw number of iterations is very close to an integer, round it to that integer
-        # This accounts for potential floating-point inaccuracies
-        if abs(raw_iterations - round(raw_iterations)) < 1e-9:
-            raw_iterations = round(raw_iterations)
-        else:
-            raw_iterations = math.floor(raw_iterations)
-
-        return raw_iterations
+        return for_loop_iterations(loop.start, loop.stop, loop.step)
 
     def set_element(self, element: SetGain | SetOffset):
         """Registers a gain or offset value for a bus.

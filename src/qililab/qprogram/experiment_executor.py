@@ -14,7 +14,6 @@
 
 # mypy: disable-error-code="union-attr, arg-type"
 import inspect
-import math
 import os
 from collections import defaultdict
 from dataclasses import dataclass
@@ -29,7 +28,7 @@ from rich.progress import BarColumn, Progress, TaskID, TextColumn, TimeElapsedCo
 
 from qililab.core.variables import Variable
 from qililab.qililab_settings import get_settings
-from qililab.qprogram.blocks import Average, Block, ForLoop, Loop, Parallel
+from qililab.qprogram.blocks import Average, Block, ForLoop, Loop, Parallel, for_loop_iterations
 from qililab.qprogram.experiment import Experiment
 from qililab.qprogram.operations import (
     Acquire,
@@ -524,17 +523,7 @@ class ExperimentExecutor:
         return np.around(result, decimals=decimal_places)
 
     def _inclusive_range_qprogram(self, start: int | float, stop: int | float, step: int | float) -> np.ndarray:
-        # Define the approximate number of iterations
-        raw_iterations = (stop - start + step) / step
-        if abs(raw_iterations - round(raw_iterations)) < 1e-9:
-            # If the iterations are an int they stay the same
-            iterations = raw_iterations
-        else:
-            # If the iterations are a decimal they fall to either side depending of the sign of the step
-            iterations = math.floor(raw_iterations) if step > 0 else math.ceil(raw_iterations)
-
-        # Use linspace
-        return np.linspace(start, stop, int(iterations))
+        return np.linspace(start, stop, for_loop_iterations(start, stop, step))
 
     def _get_loop_values(self, loop: Loop | ForLoop, qprogram: bool = False) -> np.ndarray:
         """Compute the values for a single Loop/ForLoop."""
