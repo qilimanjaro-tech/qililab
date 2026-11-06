@@ -1836,13 +1836,15 @@ class Platform:
                         instrument.desync_sequencer(sequencer_id=int(channel))  # type: ignore[arg-type]
 
     def calibrate_mixers(self, alias: str, cal_type: str, channel_id: ChannelID | None = None):
+        if channel_id is None:
+            raise ValueError(
+                "`channel_id` cannot be None when calibrating mixers. "
+                "Please specify the sequencer id of the bus channel to calibrate."
+            )
         bus = self.get_element(alias=alias)
         for instrument, instrument_channel in zip(bus.instruments, bus.channels):
-            if instrument.name == InstrumentName.QRMRF:
-                if channel_id is not None and channel_id == instrument_channel:
-                    instrument.calibrate_mixers(cal_type, instrument_channel)
-            elif instrument.name == InstrumentName.QCMRF:
-                if channel_id is not None and channel_id == instrument_channel:
+            if instrument.name in (InstrumentName.QRMRF, InstrumentName.QCMRF):
+                if channel_id == instrument_channel:
                     instrument.calibrate_mixers(cal_type, channel_id)
             else:
                 raise AttributeError("Mixers calibration not implemented for this instrument.")
