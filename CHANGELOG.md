@@ -1,3 +1,86 @@
+# qililab 0.36.0 (2026-11-09)
+
+## Features
+
+- Every merge to `main` that passes Tests and Code Quality now publishes a development version (for example `0.35.3.dev4`) to CodeArtifact. The version is derived from git tags with hatch-vcs instead of being set in `pyproject.toml`. Install the latest one with `uv pip install --upgrade --prerelease=allow qililab`, or pin an exact one. ([PR #1225](https://github.com/qilimanjaro-tech/qililab/pull/1225))
+
+- The fitting `path` is now optional on the `measurements` schema too, in `Measurement.add_fitting`, `DatabaseManager.add_fitting` and `StreamArray.add_fitting`. `DatabaseManager.add_fitting(id, parameters=...)` no longer requires `path`. On both schemas, an empty or missing `path` or `parameters` keeps the stored value instead of clearing it. ([PR #1263](https://github.com/qilimanjaro-tech/qililab/pull/1263))
+
+- Added a `result_folder` argument to `StreamArray`, `DatabaseManager.add_measurement`, `DatabaseManager.add_autocal_measurement` and `DatabaseManager.add_results` to choose where the `.h5` file is saved. It must be an absolute path, otherwise a `ValueError` is raised.
+
+  - With `result_folder`, the file is saved directly in that folder as `<experiment_name>[-<target>][-<secondary>]-<HH_MM_SS_ffffff>.h5`. Target and secondary are left out when they are None, and lists are joined with `-`. For example: `two_tone__frequency_vs_flux_pulsed_dc-q0-flux_q0_z-14_05_52_411000.h5`.
+  - Without `result_folder`, both the `measurements` and the `autocal` schemas save to `<base>/<sample>[/<cooldown>]/<YYYY-MM-DD>/<HH_MM_SS_ffffff>/<experiment_name>.h5`, using the `base_path_local`, `base_path_shared` and `data_write_folder` keys of the database config. On `autocal`, the sample and cooldown come from the latest `CalibrationRun`.
+  - `add_autocal_measurement` takes a new `secondary_idx` argument, used only in the filename. `StreamArray` passes its `secondary_idx` through on the `autocal` schema.
+
+  ([PR #1265](https://github.com/qilimanjaro-tech/qililab/pull/1265))
+
+## Bugfixes
+
+- Made `QbloxQCMRF.initial_setup` and `QbloxQRMRF.initial_setup` apply the runcard RF parameters in an explicit, documented order instead of iterating the `parameters` set. Set iteration order over the `str, Enum` members depends on `PYTHONHASHSEED`, so the order in which the LO frequency, the cal-type default and the DC offsets were written changed between processes. This made runcard mixer auto-calibration (`out0_lo_freq_cal_type_default: lo and sidebands`, and the QRM-RF equivalent) non-deterministic: the calibration only ran when the cal-type default happened to be set before the LO frequency, and when it did run the runcard offsets could be written afterwards and overwrite its result. Per output the parameters are now applied as: attenuation, LO enable, the runcard offsets, the cal-type default, then the LO frequency last, so auto-calibration runs on the final configuration and is not overwritten. ([PR #1245](https://github.com/qilimanjaro-tech/qililab/pull/1245))
+
+- Fixed the Qblox compilation of QPrograms that also drive other instruments, such as a QDAC-II, and the validation of their buses:
+
+  - A `play` on a bus that isn't a Qblox bus no longer triggers the bus delays of the Qblox buses. They are inserted at the first `play` on a Qblox bus of each block, so Qblox buses are no longer delayed in blocks whose only `play` is on another instrument.
+  - A loop whose variable is only used on a bus that isn't a Qblox bus no longer sets how the Qblox loop register is scaled.
+  - `qp.qblox.measure_reset()` on a bus that isn't a Qblox bus now raises a `ValueError` naming both buses, instead of a `KeyError`.
+  - Compiling a QProgram no longer modifies its operations. The QDAC-II compiler used to write the default `dwell`, `delay` and `stepped`, and the loop repetitions, into its plays. The Qblox compiler used to raise `wait` and `wait_trigger` durations below 4 ns to 4 ns, and the same for the bounds of `wait` loops.
+
+  ([PR #1253](https://github.com/qilimanjaro-tech/qililab/pull/1253))
+
+- `Measurement.add_fitting` now reloads the row by its `measurement_id` and only updates the fitting columns, like `AutocalMeasurement.add_fitting`, and both share one implementation. Previously it merged the in-memory instance into the session, which caused two problems:
+
+  - A stale `Measurement` object, such as the one a `StreamArray` keeps for the whole run, could overwrite columns changed elsewhere.
+  - Through `DatabaseManager.add_fitting`, the `result_path` rewritten to the shared base path by `_load_by_id` (when the local file is missing) was saved to the database.
+
+  A direct `Measurement.add_fitting` or `StreamArray.add_fitting` call on a row that does not exist now raises an `IndexError` instead of inserting it. `DatabaseManager.add_fitting` already raised it. The `IndexError` message of `AutocalMeasurement.add_fitting` is now `"AutocalMeasurement entry '<id>' does not exist."`.
+
+  `DatabaseManager.add_fitting` returns the row as stored in the database, so its `result_path` is no longer rewritten to the shared base path. Use `load_by_id` to get the rewritten path.
+
+  ([PR #1263](https://github.com/qilimanjaro-tech/qililab/pull/1263))
+
+- A `for_loop` with a single point (`start == stop`, or a step larger than the range) no longer crashes the Qblox compiler with a `ZeroDivisionError`. It runs one iteration at `start`, with no `add`/`sub` in the Q1ASM. qililab now requires qpysequence 0.12.0 or later, the first version whose `IterativeLoop` accepts a step of 0. ([PR #1264](https://github.com/qilimanjaro-tech/qililab/pull/1264))
+
+- Fixed how `DatabaseManager` builds result paths:
+
+  - The folder now uses the `sample_name` and `cooldown` passed to `add_measurement` and `add_results`. It used to use `current_sample` / `current_cd`, so a different sample or cooldown passed as an argument was stored in the row but ignored in the path.
+  - A `None` cooldown no longer creates a literal `None` folder; the cooldown segment is left out instead.
+  - If the database config has no base path and no `result_folder` is given, a `ValueError` is raised. Previously the path started with `NoneNone/`, relative to the working directory.
+  - `base_path_local` / `base_path_shared` and `data_write_folder` are now joined with a path separator. A base path without a trailing `/` used to be glued to the folder name (`/a` + `data` gave `/adata`), so files for those configs now land in `/a/data`.
+  - Adding a measurement whose folder already exists no longer fails, and the "Data folder did not exist" warning is only raised when the folder is actually created.
+  - `add_autocal_measurement` no longer stores the data folder in `fitting_path`. `fitting_path` stays None until `add_fitting` sets it, as on the `measurements` schema.
+
+  ([PR #1265](https://github.com/qilimanjaro-tech/qililab/pull/1265))
+
+- A `for_loop` whose step doesn't divide the range now has the same number of points in both directions: the count is rounded down whatever the sign of the step. Descending loops used to round it up, so they now have one point fewer: `start=1, stop=0, step=-0.3` sweeps 1, 0.667, 0.333, 0 instead of 1, 0.75, 0.5, 0.25, 0, like its ascending mirror. In a `parallel`, a loop and its descending mirror now sweep the same points, so the descending one reaches `stop`. This applies to the Qblox and QDAC-II compilers, to crosstalk compensation, and to the loop values saved by `ExperimentExecutor`. `ExperimentExecutor` also no longer saves one loop value fewer than the hardware sweeps when the number of points falls just below an integer in floating point, such as `start=0, stop=0.7, step=0.1` (8 points). ([PR #1267](https://github.com/qilimanjaro-tech/qililab/pull/1267))
+
+- Fixed the bus `delay`, which was lost when the platform was saved and couldn't be changed with `set_parameter`:
+
+  - `save_platform` now writes the `delay` of each bus to the runcard. It used to drop it, so the reloaded platform had a delay of 0.
+  - `platform.set_parameter(alias=<bus>, parameter=Parameter.DELAY, value=...)` now sets the delay of that bus. It used to raise `ValueError: Alias <bus> has incorrect format`.
+  - Setting a non-zero delay on a QDAC-II bus with `set_parameter` now raises the same `ValueError` as a non-zero delay in the runcard, so the platform never saves a runcard that it can't load.
+
+  ([PR #1268](https://github.com/qilimanjaro-tech/qililab/pull/1268))
+
+## Deprecations and Removals
+
+- Deprecated the `ext_trigger` field of the runcard's instrument controllers: it now raises a `FutureWarning` and has no effect. The Qblox cluster's external trigger is now enabled automatically, on every cluster used by the QProgram, whenever the QProgram contains a `wait_trigger` on a Qblox bus or an `if_trigger`. The `ext_trigger` argument of `QbloxCompiler.compile` has been removed. ([PR #1112](https://github.com/qilimanjaro-tech/qililab/pull/1112))
+
+- Removed `QProgram.qblox.latch_enabled` and `QProgram.qblox.trigger_network_required`, without a deprecation period. The Qblox compiler now derives both from the `qp.qblox.measure_reset()` operations of the QProgram, and the buses that send on the trigger network, with their trigger address, are in `QbloxCompilationOutput.trigger_network_addresses`.
+
+  The `qprogram` of `QbloxCompilationOutput` and of `QdacCompilationOutput` now only holds the operations of its instrument. Code that read another instrument's operations from it must read them from the QProgram given to `compile()` instead, through `QProgram.with_bus_mapping()` and `QProgram.with_calibration()` if it needs the bus mapping or the calibration applied. ([PR #1253](https://github.com/qilimanjaro-tech/qililab/pull/1253))
+
+- `DatabaseManager.add_autocal_measurement`, and so `StreamArray` on the `autocal` schema, no longer reads `calibration.parameters["data_folder"]`. The value is ignored without a warning, and the `.h5` file goes to the default layout, `<base>/<sample>[/<cooldown>]/<YYYY-MM-DD>/<HH_MM_SS_ffffff>/<experiment_name>.h5`. Pass `result_folder` to keep saving in a chosen folder. ([PR #1265](https://github.com/qilimanjaro-tech/qililab/pull/1265))
+
+- A bus with a QDAC-II and a non-zero `delay` in the runcard is now rejected with a `ValueError` when the platform is built. The delay was always ignored for QDAC-II buses; remove it from the runcard and set the QDAC-II delay in each play with `qp.qdac.play(delay=...)`. ([PR #1266](https://github.com/qilimanjaro-tech/qililab/pull/1266))
+
+- A bus `delay` that isn't a whole number of ns is now rejected with a `ValueError`, both in the runcard when the platform is built and in `set_parameter`. It used to be truncated when the QProgram was compiled, so `delay: 12.7` ran as 12 ns. A whole number written as a float, such as `delay: 12.0`, still loads and is saved back as `12`. ([PR #1268](https://github.com/qilimanjaro-tech/qililab/pull/1268))
+
+## Misc
+
+- The docs check now also renders the pending `changes/` fragments, so a fragment that breaks the changelog rendering fails in the PR that adds it instead of at release time. ([PR #1250](https://github.com/qilimanjaro-tech/qililab/pull/1250))
+- Moved the preparation of a QProgram out of `QbloxCompiler.compile()` and `QdacCompiler.compile()` into pre-passes in `qililab.qprogram.prepass`. One pre-pass is shared by every instrument (bus mapping, calibration, check that every named operation is mapped), then one runs per instrument (crosstalk and, for Qblox only, the distortions, the acquisition metadata, the `if_trigger` validation and the trigger requirements), each keeping only the operations of its instrument. The `compile()` signatures don't change. ([PR #1253](https://github.com/qilimanjaro-tech/qililab/pull/1253))
+- The number of points of a `for_loop` is now computed in one place, `for_loop_iterations` in `qililab.qprogram.blocks`, instead of five copies across the Qblox, QDAC-II and Quantum Machines compilers, crosstalk compensation and `ExperimentExecutor`. The private `_calculate_iterations` methods of `QbloxCompiler`, `QdacCompiler` and `QuantumMachinesCompiler` are removed. ([PR #1267](https://github.com/qilimanjaro-tech/qililab/pull/1267))
+
 # qililab 0.35.2 (2026-10-21)
 
 ## Features
@@ -9,6 +92,7 @@
   - Using `StreamArray` with `stream_array.add_fitting(path, parameters)`, which now supports autocalibration measurements as well.
 
   ([PR #1186](https://github.com/qilimanjaro-tech/qililab/pull/1186))
+
 - Added `qp.if_trigger()`, a block that only executes if an external trigger was received in time on the gated bus; if the trigger is missed, the block is skipped and its bus moves on to the next bin (recorded as `NaN`) instead of hanging.
 
   - `expected_wait_time_ns`: the trigger period, i.e. the time between two consecutive triggers, in ns. Each pass through the block is padded to exactly this duration so the bus stays in step with the trigger. If not given, it's derived from a QDAC bus in the same QProgram (its `dwell`, when `qp.set_trigger(bus, position="step")` is used).
@@ -35,14 +119,18 @@
   ```
 
   ([PR #1189](https://github.com/qilimanjaro-tech/qililab/pull/1189))
+
 - Made the `path` argument optional in `DatabaseManager.add_calibration_fitting`, so fitting parameters can be attached to an autocalibration measurement without providing a fitting results path. ([PR #1206](https://github.com/qilimanjaro-tech/qililab/pull/1206))
+
 - Added `flux_offsets` to the `Measurement` database table, saved automatically by `StreamArray` when a calibration with a crosstalk matrix is available. The stored flux vector is the sum of the platform's `flux_vector` and the flux defined by the QProgram's constant `set_offset` calls on crosstalk buses. Only buses offset exactly once by a scalar value are taken from the QProgram; swept offsets and buses offset more than once are ignored. ([PR #1215](https://github.com/qilimanjaro-tech/qililab/pull/1215))
+
 - Added a toggle to enable or disable the nonlinear crosstalk correction terms of a `NonLinearCrosstalkMatrix` without discarding its stored parameters.
 
   - `NonLinearCrosstalkMatrix.set_non_linear(enabled=True)` flips the new `non_linear_enabled` flag. While disabled, `flux_to_bias` (and `get_non_linear_flux_terms`) skip the non-linear corrections, so the matrix behaves as a purely linear crosstalk matrix.
   - `Calibration.set_non_linear_crosstalk(enabled=True)` toggles it on the stored crosstalk matrix. It raises `ValueError` if no crosstalk matrix is set, and logs a warning (leaving the matrix untouched) if the stored matrix is a linear `CrosstalkMatrix`.
 
   ([PR #1216](https://github.com/qilimanjaro-tech/qililab/pull/1216))
+
 - Added a `database_schema` argument to `DatabaseManager` and `get_db_manager` declaring which database the manager is connected to: `"measurements"`, `"autocal"` or `"qaas"`. It can also be set with a `database_schema` key in the `.ini` config section. If both are given and differ, the argument is used and a warning is raised; if neither is given, it defaults to `"measurements"`. The accepted values are available as the `DatabaseSchema` type, exported from `qililab.result`. `Platform.load_db_manager` also accepts `database_name` and `database_schema` and passes them to `get_db_manager`.
 
   Added `DatabaseManager.load_entry_by_id`, which loads entries from the table of the manager's `database_schema`, and made `DatabaseManager.add_fitting` store the fitting in that table. Since its return type depends on the schema, `load_entry_by_id` returns a union; the schema-specific loaders keep their precise types and stay available: `load_by_id` (`"measurements"`), `load_calibration_by_id` (`"autocal"`) and `load_experiment_by_id` (`"qaas"`). They now raise a `ValueError` when used with a manager of another schema. All loaders behave the same way: an id returns the entry, a list of ids returns a list, and an `IndexError` listing the missing ids is raised if any id does not exist. This changes a few things: `load_calibration_by_id` and `load_experiment_by_id` now raise an `IndexError` for a missing id instead of returning `None`, and `load_by_id` with a list with a single id now returns a one-element list instead of the entry itself, and a list with some missing ids raises instead of returning the ones found. `load_by_id` and the module-level `ql.load_by_id` are now typed as returning `Measurement` for an id and `list[Measurement]` for a list, instead of a union with `None`. Autocalibration measurements now also get their `result_path` rewritten to the shared base path when the local file does not exist, as the other schemas already did. `add_fitting` accepts an optional `path` (mandatory for `"measurements"`) and raises an error for `"qaas"`, which has no fitting columns.
@@ -54,26 +142,37 @@
 ## Bugfixes
 
 - Fixed the Keysight E5080B driver blocking for 5 seconds merely by being imported: the `time.sleep(5)` sat in the class body, so it ran at class-definition time (whenever this driver's module was loaded). It has been removed. ([PR #1200](https://github.com/qilimanjaro-tech/qililab/pull/1200))
+
 - Fixed `wait_trigger` unconditionally emitting a `wait_sync` instruction on every Qblox bus after the `wait_trigger`, even when there was only one bus and nothing to synchronize with. `QbloxCompiler._handle_wait_trigger` no longer emits a separate `wait_sync`; instead, every Qblox bus in the QProgram now receives its own `wait_trigger` of the same requested duration, which keeps them synchronized without the extra instruction. ([PR #1201](https://github.com/qilimanjaro-tech/qililab/pull/1201))
+
 - Fixed incorrect Q1ASM emission on Qblox buses when a `wait` or `wait_trigger` immediately followed a pending parameter update (e.g. `set_frequency`, `set_phase`, `set_gain`). The compiler previously always split the flush into a separate `upd_param 4` instruction plus a following `wait`/`wait_trigger`, which undercounted the tracked duration for waits longer than the Q1ASM max, and — since `wait_trigger` no longer relies on an unconditional `wait_sync` to force buses back in sync regardless (see the previous changelog entry) — left a bus with a pending update watching the trigger network for less time than the others, e.g. only 96 ns of a requested 100 ns `wait_trigger`, desynchronizing it from the rest.
 
   `QbloxCompiler._handle_add_waits` now merges the pending update into the wait itself when it fits in one instruction, and tracks the actual emitted duration for long waits — handled by `qpysequence`'s `upd_param` flag on `LongWait`, instead of being computed manually in `QbloxCompiler`. `QbloxCompiler._handle_wait_trigger` instead flushes the pending update on every affected bus with its own separate `upd_param` instruction *before* the buses sync on the trigger, so every bus still waits the exact same requested duration once the trigger arrives.
 
   Concretely, the generated Q1ASM changes shape: where a pending parameter update before a `wait` used to always show up as `upd_param 4` followed by a separate `wait <duration>`, it now shows up as a single `upd_param <duration>` line when the combined duration fits in one instruction. ([PR #1201](https://github.com/qilimanjaro-tech/qililab/pull/1201))
+
 - `InstrumentFactory.register` and `InstrumentControllerFactory.register` are now typed to return the type of the class you are registering. Before It returned `type[Instrument]` or `type[InstrumentController]`. That caused `isinstance` and `cast` to not narrow down the typing since the class (i.e.) `QDevilQDac2Controller` would be typed `InstrumentController` and not `QDevilQDac2Controller`. ([PR #1203](https://github.com/qilimanjaro-tech/qililab/pull/1203))
+
 - Fixed deserialization of YAML files (e.g. `QProgram` files) that were serialized by qililab versions still depending on `qilisdk`. Such files can contain a `!tuple` tag that qililab's own YAML loader did not know how to construct, causing a `ConstructorError`. A backward-compatible constructor for `!tuple` has been added so these older files load correctly again. ([PR #1207](https://github.com/qilimanjaro-tech/qililab/pull/1207))
+
 - Fixed deserialization of YAML files (e.g. `QProgram` and calibration files) that were serialized by qililab versions still depending on `qilisdk`: such files can contain a `!np_scalar` tag that qililab's own YAML loader did not know how to construct, causing a `ConstructorError`. A backward-compatible constructor for `!np_scalar` has been added so these older files load correctly again.
 
   `numpy` scalars are now written as plain python scalars instead, so re-serializing an existing calibration file or qprogram removes the legacy tags over time. The dtype is no longer preserved across a round trip (a `numpy.float32` loads back as a python `float`); the affected values are physical parameters whose dtype is incidental. ([PR #1208](https://github.com/qilimanjaro-tech/qililab/pull/1208))
+
 - Fixed `wait_trigger` silently compiling to an unreachable trigger address on Qblox. Previously the `port` argument was forwarded straight to the emitted `WaitTrigger`/`LongWaitTrigger` instruction, but the only signals published to the Qblox trigger network are the cluster's external trigger input (mapped to `EXT_TRIGGER_ADDRESS = 15`) and, for `measure_reset`, a QRM's thresholded-acquisition result. Passing any other address (e.g. `port=7`) produced a program that compiled cleanly yet blocked forever on hardware, because nothing ever drove that address.
 
   `QbloxCompiler._handle_wait_trigger` now always waits on `EXT_TRIGGER_ADDRESS`, ignoring the `port` argument on Qblox buses. The `port` argument remains available on `QProgram.wait_trigger` and the `WaitTrigger` operation for the QDACII compiler, which uses it to select an external input-trigger port.
 
   `EXT_TRIGGER_ADDRESS` was previously duplicated as a module-level literal in both `QbloxClusterController` (which publishes to it) and `QbloxCompiler` (which waits on it), so the two could silently diverge — precisely the failure mode of this bug. It is now defined once in `QBLOXCONSTANTS.EXT_TRIGGER_ADDRESS` and imported by both. ([PR #1210](https://github.com/qilimanjaro-tech/qililab/pull/1210))
+
 - Fixed `Platform.set_bias_to_zero` leaving the tracked `Parameter.FLUX` value stale. The instrument bias was correctly driven to 0 V/A, but the cached `flux_parameter` was never updated, so `get_parameter(alias, Parameter.FLUX)` kept returning the previous (non-zero) value. `set_bias_to_zero` now updates the tracked `Parameter.FLUX` for each bus to the flux that corresponds to zero bias. ([PR #1212](https://github.com/qilimanjaro-tech/qililab/pull/1212))
+
 - Fixed crosstalk compensation (`QProgram.with_crosstalk_qblox`) using the wrong flux vector when a flux bus is reused within a program. A repeated `play` on a bus was compensated as if the buses played earlier were still active, distorting the pulse. A reused `play` is now treated as an independent pulse and compensated on its own. Offsets and gains, being persistent DC settings, are instead kept across waits and loops, so the compensation of later elements correctly accounts for the still-active bias of the other buses (e.g. setting one flux bus and then sweeping another in a loop keeps the first bus at its target flux). ([PR #1213](https://github.com/qilimanjaro-tech/qililab/pull/1213))
+
 - Fixed crosstalk compensation (`QProgram.with_crosstalk_qblox`) crashing on a flux-vs-flux sweep whose two flux loops have different lengths, with `ValueError: operands could not be broadcast together with shapes (39,) (38,)`. The two loops' values were combined element-wise, which only works when both loops have the same length. Offset and gain sweeps are now compensated one loop at a time, so nested loops of any lengths work. `play` waveforms on different buses in the same group must still have the same length. ([PR #1218](https://github.com/qilimanjaro-tech/qililab/pull/1218))
+
 - Fixed crosstalk compensation (`QProgram.with_crosstalk_qblox`) raising `ValueError: Step value cannot be zero` when a swept loop has no effect on one of the buses, for example with an identity, diagonal or triangular crosstalk matrix. No compensated loop is created for such a bus any more, and the bias it still needs (a fixed flux set in the same block, or the calibrated `flux_offsets`) is applied as a constant. With an identity matrix and no `flux_offsets`, the compensated program now applies the same offsets as the original one. ([PR #1218](https://github.com/qilimanjaro-tech/qililab/pull/1218))
+
 - Fixed crosstalk compensation (`QProgram.with_crosstalk_qblox`) applying the wrong bias when flux offsets are set at different loop levels, e.g. `set_offset("flux1", x)` in an outer loop and `set_offset("flux2", y)` in an inner one. Each compensated `set_offset` and `set_gain` now applies the bias for the flux set in its own group (the `set_offset` and `set_gain` calls between two `wait`, `acquire` or `measure` operations) and in the loops that enclose it:
 
   - the inner loop combines its own crosstalk term with the outer loop's;
@@ -86,9 +185,13 @@
   When an operation needs two loop terms and a constant, which a single `VariableExpression` can't hold, the constant is moved into an extra compensated loop running in parallel with the same number of iterations. Two shapes are not supported and raise `NotImplementedError` with an explanation: three or more loops sweeping flux on the same bus at once, and an inner loop setting only some of the buses an outer loop sweeps together (e.g. the outer loop sets `flux1` and `flux2` to `x`, and the inner loop sets only `flux2` again).
 
   ([PR #1218](https://github.com/qilimanjaro-tech/qililab/pull/1218))
+
 - Fixed crosstalk compensation (`QProgram.with_crosstalk_qblox`) running swept loops for one point fewer than the compiler. The compensated loops were built from `np.arange(start, stop, step)`, which excludes `stop`, while the Qblox compiler runs `ForLoop(start, stop, step)` including `stop`. Results arrays sized from the original loop then failed to match the data, e.g. `Can't broadcast (40, 40, 2) -> (41, 41, 2)` when writing to a `StreamArray`. The loop values now come from `np.linspace(start, stop, n)`, with `n` taken from the Qblox compiler's own iteration count, so compensated and uncompensated sweeps always run the same points. A one-point sweep under crosstalk now raises `NotImplementedError`; the Qblox compiler can't run a one-iteration loop either. ([PR #1218](https://github.com/qilimanjaro-tech/qililab/pull/1218))
+
 - Fixed crosstalk compensation (`QProgram.with_crosstalk_qblox`) overwriting a group of `set_offset`/`set_gain` calls with the values of the next group on the same flux buses when no `wait` separated them (e.g. resetting the flux offsets to `0` after a `sync`, playing, and then setting the reset offsets again). The new group reused the same `FluxVector` instance as the previous one, so updating it in place also changed the earlier group's compensated bias and the earlier offsets never reached the hardware. The flux vector is now copied when a new group starts, so offsets still persist across groups without one group overwriting another. ([PR #1221](https://github.com/qilimanjaro-tech/qililab/pull/1221))
+
 - Fixed bus pulse distortions being applied twice in `Platform.execute_qprograms_parallel`. Distortions are applied at compile time by `QbloxCompiler`, which both `execute_qprogram` and `execute_qprograms_parallel` go through, but the parallel execution also applied them again to the compiled sequences before uploading them. The parallel execution now relies only on the compile-time distortions, like `execute_qprogram`. ([PR #1236](https://github.com/qilimanjaro-tech/qililab/pull/1236))
+
 - Fixed `QProgram.with_crosstalk_qblox` not adding buses that only receive operations through crosstalk compensation to `QProgram.buses`, so the compiler skipped them. ([PR #1238](https://github.com/qilimanjaro-tech/qililab/pull/1238))
 
 ## Improved Documentation
@@ -105,6 +208,7 @@
 ## Deprecations and Removals
 
 - `qililab.analog` (`AnnealingProgram`, `FluqeParameter`, `OneQubitTranspiler`) has been removed. `Platform` no longer calls into any of these classes, and nothing else in qililab or qilitools depended on them. ([PR #1200](https://github.com/qilimanjaro-tech/qililab/pull/1200))
+
 - Deprecated the functions and flags that selected the database table themselves, since a `DatabaseManager` is connected to a single database, declared with its `database_schema`. They will be removed in a future release and now raise a `FutureWarning`:
 
   - `DatabaseManager.add_calibration_fitting`: use `DatabaseManager.add_fitting`.
@@ -129,12 +233,15 @@
 ## Misc
 
 - Reduced `import qililab`'s cold-import time. `ExperimentLivePlot` (and the `dash` it depends on) and `matplotlib` (used only by `ExperimentResults.plot_S21`) are now imported lazily, on first use, instead of at package import time. `plotly`, already used directly by `qililab.instruments.qblox.qblox_draw` but only ever pulled in transitively through `dash`, is now declared as an explicit dependency. ([PR #1200](https://github.com/qilimanjaro-tech/qililab/pull/1200))
+
 - Cleaned up dependency declarations with `deptry`. Promoted packages that were already used directly but only pulled in transitively (`cloudpickle`, `ipython`, `loguru`, `matplotlib`, `numpy`, `plotly`, `pydantic`, `scipy`) to direct dependencies, and dropped unused ones (`papermill`, `rustworkx`). `deptry` now runs in CI on every PR to keep this from drifting again. ([PR #1209](https://github.com/qilimanjaro-tech/qililab/pull/1209))
+
 - Improved the performance of crosstalk compensation for large crosstalk matrices, which previously took several seconds to apply. `CrosstalkMatrix` and `NonLinearCrosstalkMatrix` now run their linear algebra (`to_array`, `inverse`, `flux_to_bias`) on a memoized, bus-labeled `xarray`/`numpy` representation that is built once and reused, instead of rebuilding nested dictionaries on every call. The public dictionary interface (`matrix`, `flux_offsets`, `resistances`) and the serialized `Calibration` format are unchanged.
 
   `FluxVector`: `get_decomposed_vector` no longer deep-copies the whole crosstalk matrix once per bus nor recomputes the bias on every individual zeroed flux, and `crosstalk_inverse` is now computed lazily on first access instead of eagerly on every `set_crosstalk`.
 
   Together these changes reduce large-matrix crosstalk operations from seconds to milliseconds while producing identical numerical results. ([PR #1214](https://github.com/qilimanjaro-tech/qililab/pull/1214))
+
 - Migrated the result database models (`Measurement`, `SequenceRun`, `Sample`, `Cooldown`, `CalibrationRun`, `AutocalMeasurement` and `QaaS_Experiment`) from the legacy `declarative_base()` + `Column` style to SQLAlchemy 2.0's `DeclarativeBase` with typed `Mapped[...]` / `mapped_column` attributes. Attribute types are now visible to type checkers (e.g. `Measurement.result_path` is a `str` instead of a `Column`), which removed the `# type: ignore` comments these models needed. The underlying table schemas are unchanged.
 
   The hand-written `__init__` methods were dropped in favour of SQLAlchemy's default constructor, so these models must now be instantiated with keyword arguments (all existing call sites already did so).
@@ -142,7 +249,6 @@
   `DatabaseManager.load_by_id`, `load_sequence_by_id` and `load_experiment_by_id` now only rewrite a `result_path` from the local to the shared base path when both `base_path_local` and `base_path_shared` are configured, instead of raising a `TypeError` when they are not.
 
   Added the `LoopData` and `InputLoopData` `TypedDict` classes (exported from `qililab.result`) describing each loop returned by `load_results`, with the loop values (`array`) and its `units`, `bus` and `parameter` metadata. `load_results` is now typed as returning `tuple[np.ndarray, dict[str, LoopData]]`, matching what it already returned at runtime, and `StreamArray`'s `loops` argument is typed as `Mapping[str, np.ndarray | LoopData | InputLoopData]`. The `load_results` and `save_results` docstrings were corrected accordingly (the `save_results` example used a non-existent `path` argument instead of `data_path`). ([PR #1222](https://github.com/qilimanjaro-tech/qililab/pull/1222))
-
 
 # qililab 0.35.1 (2026-08-25)
 
@@ -152,10 +258,10 @@
 
   - `QProgram.qblox.weight_duration` tracks each acquisition's real weight duration, per bus.
   - Value sent to hardware = `threshold * weight_duration`, computed fresh on every execution.
-  - Resolves on a copy of the QProgram, so reusing the same QProgram across different ``Calibration`` objects is safe.
+  - Resolves on a copy of the QProgram, so reusing the same QProgram across different `Calibration` objects is safe.
   - `bus_mapping` merges durations onto the same physical bus and resolves calibration against it.
   - Multiple durations on one bus -> a warning is logged and the first one (in order) is used.
-  ([PR #1151](https://github.com/qilimanjaro-tech/qililab/pull/1151))
+    ([PR #1151](https://github.com/qilimanjaro-tech/qililab/pull/1151))
 
 - When changing the LO frequency of a `Bus` that includes an `RSWU-SP16-TR` instrument, the switch channel is now automatically changed to the channel configured for that bus.
 
@@ -226,33 +332,33 @@
 ## Bugfixes
 
 - Fixed a spurious offset appearing on the non-swept flux buses when sweeping a flux with QDAC ramps under a `NonLinearCrosstalkMatrix`, so QDAC-ramp sweeps no longer disagree with the equivalent software-loop sweeps. `Platform.compile_qprogram`, `QdacCompiler.compile` and `QProgram.with_crosstalk_qdac` now seed the crosstalk parked point from the target fluxes (set via `set_parameter(FLUX)`) instead of reconstructing them from the hardware bias voltage.
-([PR #1191](https://github.com/qilimanjaro-tech/qililab/pull/1191))
+  ([PR #1191](https://github.com/qilimanjaro-tech/qililab/pull/1191))
 
 ## Improved Documentation
 
 - Removed documentation for already-removed features (`qibo`-based circuit execution, `platform.chip`) and rewrote the `Platform` tutorial to use `QProgram` instead. Also fixed the dev install guide, removed a dead docs nav link, and updated the list of pending deprecations.
-([PR #1197](https://github.com/qilimanjaro-tech/qililab/pull/1197))
+  ([PR #1197](https://github.com/qilimanjaro-tech/qililab/pull/1197))
 
 ## Deprecations and Removals
 
 - The runcard's `integration_length` field (on `QbloxADCSequencer`) is deprecated and will be removed in a future release; setting it now emits a `FutureWarning`. The integration length is derived from the QProgram's weight duration instead.
-([PR #1151](https://github.com/qilimanjaro-tech/qililab/pull/1151))
+  ([PR #1151](https://github.com/qilimanjaro-tech/qililab/pull/1151))
 
 - The runcard's `sequence_timeout` field (on `QbloxADCSequencer`) is deprecated and will be removed in a future release; setting it now emits a `FutureWarning`. It has no effect on the instrument's behavior. `Parameter.SEQUENCE_TIMEOUT` has also been removed, so it can no longer be set via `set_parameter` either.
-([PR #1193](https://github.com/qilimanjaro-tech/qililab/pull/1193))
+  ([PR #1193](https://github.com/qilimanjaro-tech/qililab/pull/1193))
 
 - `qililab.exceptions.ExceptionGroup` has been removed. It only existed as a fallback for Python \<3.11, where the built-in `ExceptionGroup` wasn't available yet; qililab now requires Python 3.11+, so the fallback was dead code.
-([PR #1195](https://github.com/qilimanjaro-tech/qililab/pull/1195))
+  ([PR #1195](https://github.com/qilimanjaro-tech/qililab/pull/1195))
 
 ## Misc
 
 - `Platform.session()` now yields a `Session` object (`with platform.session() as session: ...`) exposing `execution_time`, `success`, and `errors` for the code run inside the `with` block, populated whether it completes successfully or raises. `errors` is always a list, holding every exception the session ran into (the one raised inside the `with` block first, then the ones raised while cleaning up) and empty if and only if the session succeeded. A session is only considered successful if it runs start to finish without any error, including errors raised while cleaning up (e.g. `disconnect()` failing after a successful execution) and interruptions such as `KeyboardInterrupt`. All cleanup methods always run, so the instruments are released even when the session is interrupted. `execution_time` is also logged via `logger.info`. ([PR #1195](https://github.com/qilimanjaro-tech/qililab/pull/1195))
+
 - Cleaned up small leftover references to already-removed features: an unused `NODE` constants class, a stale `.gitignore` entry, and a couple of outdated docstrings.
-([PR #1197](https://github.com/qilimanjaro-tech/qililab/pull/1197))
+  ([PR #1197](https://github.com/qilimanjaro-tech/qililab/pull/1197))
 
 - Trimmed the CI matrices so each check runs once per PR instead of once per Python version, and made the mdformat step fail on unformatted markdown instead of rewriting it.
-([PR #1199](https://github.com/qilimanjaro-tech/qililab/pull/1199))
-
+  ([PR #1199](https://github.com/qilimanjaro-tech/qililab/pull/1199))
 
 # qililab 0.35.0 (2026-08-12)
 
@@ -263,16 +369,15 @@
 ## Deprecations and Removals
 
 - Removed `qilisdk` as a dependency of `qililab`. The `qililab.digital` module (`CircuitTranspiler`, `CircuitToQProgramCompiler`, native gates, transpiler passes, `Rmw`, `qprogram_results_to_samples`) and `Platform.execute_circuit`/`Platform.compile_circuit` have been removed.
-([PR #1116](https://github.com/qilimanjaro-tech/qililab/pull/1116))
+  ([PR #1116](https://github.com/qilimanjaro-tech/qililab/pull/1116))
 
 ## Misc
 
 - `qililab.yaml` no longer imports its shared YAML instance from `qilisdk.yaml`. It now defines its own `ruamel.yaml.YAML` instance with the same custom representers/constructors for `numpy.ndarray`, `deque`, lambdas, and `UUID`. YAML-registered enums (`Parameter`, `Domain`) now register with `yaml.register_class` instead of the shared `yaml.register_class(shared=True)`, and use a hardcoded YAML tag instead of the shared registry's `cls.yaml_tag`.
-([PR #1116](https://github.com/qilimanjaro-tech/qililab/pull/1116))
+  ([PR #1116](https://github.com/qilimanjaro-tech/qililab/pull/1116))
 
 - Replaced the manual `changelog-dev.md` with towncrier. Each PR now adds a news fragment under `changes/` instead of editing a shared file, and `towncrier build` compiles them into `CHANGELOG.md` at release time. The GitHub Action reminding authors to update `changelog-dev.md` has been removed.
-([PR #1185](https://github.com/qilimanjaro-tech/qililab/pull/1185))
-
+  ([PR #1185](https://github.com/qilimanjaro-tech/qililab/pull/1185))
 
 ## 0.34.0
 
@@ -293,13 +398,14 @@
   [#1173](https://github.com/qilimanjaro-tech/qililab/pull/1173)
 
 - Migrated `QbloxCompiler` to the redesigned `qpysequence` API (version 0.11). The compiler now uses the new `Compiler` class (`qpysequence.compiler.Compiler`) to compile programs to Q1ASM, replacing the old `program.compile()` call. Program construction now uses `block.add()` throughout, loop sweeps use the new `SweepSpec`-based `IterativeLoop` API with `ConversionInstruction` subclasses (`SetNormalisedOffs`, `SetNormalisedGain`, `SetFrequencyHz`, `SetPhaseRad`) for automatic physical-unit-to-integer scaling, and label references no longer require the `@` prefix. `Sequence.todict()` is replaced by `Sequence.to_dict()` throughout. Several responsibilities have shifted from `qililab` to `qpysequence`:
+
   - **`nop` insertion**: `qililab` no longer emits `nop` instructions manually; `qpysequence`'s compiler handles read-after-write hazard guards automatically. Duplicate parameter instructions (e.g. double `set_awg_gain` or `set_freq`) that were previously emitted as a workaround are no longer needed.
   - **Physical-unit-to-integer conversion**: scaling of physical-unit values (normalised gain/offset, Hz frequency, radian phase) to Q1ASM integers is now fully owned by `qpysequence` via `ConversionInstruction.scale_factor`.
   - **Long-wait handling**: durations exceeding `INST_MAX_WAIT`, for both `wait` and `wait_trigger`, are now managed by `qpysequence`'s `LongWait` instruction rather than `qililab`.
   - **Adjacent wait merging**: consecutive `wait` instructions are now combined by `qpysequence`'s compiler rather than by `qililab`.
   - **Setup block creation**: `qililab` now explicitly creates the `setup` block and adds its `WaitSync(4)` instruction before compilation, calling `Compiler.compile(..., wait_sync=False)` to opt out of the compiler's own automatic setup-block insertion. Previously, `qpysequence`'s `Program.__init__` created the `setup` block and its `WaitSync(4)` automatically.
   - The Q1ASM output is functionally equivalent but may differ structurally from previous versions; see the `qpysequence` changelog for a full description.
-  [#1090](https://github.com/qilimanjaro-tech/qpysequence/pull/1090)
+    [#1090](https://github.com/qilimanjaro-tech/qpysequence/pull/1090)
 
 - Updated `QbloxDraw` to iterate over all program blocks (`setup` and `main`) to match the new Q1ASM structure introduced by `qpysequence` 0.11.
   [#1090](https://github.com/qilimanjaro-tech/qpysequence/pull/1090)
@@ -333,7 +439,7 @@
 - Fixed `wait_trigger` overshooting the requested duration by tens of thousands of ns whenever it exceeded `INST_MAX_WAIT`: `_handle_add_trigger_waits` now emits `LongWait`, like its sibling `_handle_add_waits`, instead of a manual splitting loop that always rounded up to a whole number of `INST_MAX_WAIT` chunks and dropped the remainder.
   [#1090](https://github.com/qilimanjaro-tech/qpysequence/pull/1090)
 
-- Fixed a hardware loop's `wait` domain not clamping the `stop` value to the Q1ASM minimum of 4 ns: only `start` was previously clamped, so a descending `for_loop`/`parallel` sweep over `wait` durations could reach an invalid (< 4 ns) final register value with no warning.
+- Fixed a hardware loop's `wait` domain not clamping the `stop` value to the Q1ASM minimum of 4 ns: only `start` was previously clamped, so a descending `for_loop`/`parallel` sweep over `wait` durations could reach an invalid (\< 4 ns) final register value with no warning.
   [#1090](https://github.com/qilimanjaro-tech/qpysequence/pull/1090)
 
 ## 0.33.3
@@ -344,10 +450,11 @@
   [#1170](https://github.com/qilimanjaro-tech/qililab/pull/1170)
 
 - Added `fitting_path` and `fitting_parameters` columns to `Measurements` database. These optional fields add the location folder of the resulting fit plots and the outcome parameters of those fittings respectively. The path is introduced as a string and the parameters as a dictionary with the parameter name as a string. Those can be added at three different levels:
+
   - Using the `Measurement` database table with `meas.add_fitting(db_manager, path, parameters)`. The only inconvenience is that the user needs to add the database manager.
   - Using `DatabaseManager` with `db_manager.add_fitting(id, path, parameters)`. Using an ID like `load_by_id`. This method is ideal to add the fitting results in a later session (for completed experiments or if the post processing of the data has been done in a separate Python instance).
   - Using `StreamArray` with `stream_array.add_fitting(path, parameters)` after a measurement that used `StreamArray`. This is the simplest way of adding the fit results as it requires no ID nor session but it requires the instance of `StreamArray` to still be loaded. The ideal scenario is for fits done in sequence after measurements (such as a `qilitools` implementation).
-  [#1162](https://github.com/qilimanjaro-tech/qililab/pull/1162)
+    [#1162](https://github.com/qilimanjaro-tech/qililab/pull/1162)
 
 - Updated `electrical_delay` to be a changeable parameter for the keysight E5080b and not just a software setting used in the auto-ploting.
   [#1047](https://github.com/qilimanjaro-tech/qililab/pull/1047)
@@ -356,15 +463,16 @@
   [#1136](https://github.com/qilimanjaro-tech/qililab/pull/1136)
 
 - Added `sort_buses` and `argsort_buses` to `qililab.utils`, utilities that order bus identifiers into a stable, easy to read order:
-    1. Count of integers in the name; single-index qubit buses (one number) sort
-       before two-index couplers, e.g. "flux q9" before "coupler 0 1".
-    2. The integers themselves, compared numerically; so "drive q2" sorts before
-       "drive q10" (plain alphabetical order would put q10 first).
-    3. Bus type: readout < drive < flux < unspecified.
-    4. Loop type: z < x < unspecified (x and z are only identified if there are no surrounding letters).
-    5. The raw string, as a final alphabetical tiebreak for full determinism.
-  `argsort_buses` also returns the sort permutation, so a matrix and its bus labels can be reordered together.
-  [#1161](https://github.com/qilimanjaro-tech/qililab/pull/1161)
+
+  1. Count of integers in the name; single-index qubit buses (one number) sort
+     before two-index couplers, e.g. "flux q9" before "coupler 0 1".
+  1. The integers themselves, compared numerically; so "drive q2" sorts before
+     "drive q10" (plain alphabetical order would put q10 first).
+  1. Bus type: readout \< drive \< flux \< unspecified.
+  1. Loop type: z \< x \< unspecified (x and z are only identified if there are no surrounding letters).
+  1. The raw string, as a final alphabetical tiebreak for full determinism.
+     `argsort_buses` also returns the sort permutation, so a matrix and its bus labels can be reordered together.
+     [#1161](https://github.com/qilimanjaro-tech/qililab/pull/1161)
 
 ### Improvements
 
@@ -407,6 +515,7 @@
   ```
 
   The following limitations apply when the number of distinct acquisitions in different blocks exceed 32:
+
   - All acquisition blocks must be at **the same nesting depth**. Mixed depths (e.g. some acquires inside a `for_loop` and some directly inside `average`) raise `NotImplementedError`.
   - Each block must contain **exactly one acquisition**. Multiple acquires inside the same block raise `NotImplementedError`.
   - All blocks must be `average` blocks. Using `for_loop` blocks raises `NotImplementedError`.
@@ -417,7 +526,7 @@
 ### Breaking changes
 
 - Added `timeout_repetitions` parameter for QRM and QRM-RF instruments sequencers inside the runcard. This parameter controls how many (if any) executions of the same qblox qprogram execution must be done after an acquisition `TimeoutError`. Defaults to no repetitions.
-In the runcard this parameter is located inside the instruments sequencer for QRM and QRM-RF modules.
+  In the runcard this parameter is located inside the instruments sequencer for QRM and QRM-RF modules.
 
   ```
     - name: QRM-RF
@@ -433,10 +542,10 @@ In the runcard this parameter is located inside the instruments sequencer for QR
 
   [#1106](https://github.com/qilimanjaro-tech/qililab/pull/1106)
 
-
 ### Bug fixes
 
 - Fixed two bugs in how bus pulse distortions (`distortions` defined per bus in the runcard) were applied for Qblox:
+
   - Distortions were only being applied to a single bus, instead of every bus that defines them.
   - Distortions were applied after compilation, directly to the already-compiled sequences. For long `Square`/`FlatTop` pulses, the compiler optimizes the flat part into a short chunk that gets replayed in a hardware loop instead of a full-length array; filtering only that short chunk does not reproduce the same result as filtering the pulse's full duration, so any distortion whose response time is comparable to (or longer than) the chunk length produced an incorrect distorted waveform.
 
@@ -446,9 +555,10 @@ In the runcard this parameter is located inside the instruments sequencer for QR
 - Fixed a race condition, introduced in [#1154](https://github.com/qilimanjaro-tech/qililab/pull/1154), where triggered `Qblox` executions using a `QDAC-II` could hang forever waiting for a trigger that was already cancelled. `qdac.start()` only issues a non-blocking SCPI command; the QDAC's trigger pulse to `Qblox` fires later, on the instrument's own internal timing. The post-execution `qdac.clear_cache()` ran immediately after `start()` and zeroed the same marker register that routes that pulse, so if the register was cleared before the instrument's internal clock reached the marker event, the pulse never went out and `Qblox` stayed armed indefinitely.
 
   The fix removes the `qdac.clear_cache()` calls from `Platform._execute_qblox_compilation_output` (both the pre-compilation reset and the post-execution / timeout cleanup) so a marker register that routes a live trigger is never zeroed while an execution is in flight. Clearing the QDAC-II cache during execution is no longer needed because the driver now manages its trigger allocation:
+
   - `QDevilQDac2._set_dc_marker` reuses the existing internal trigger when the same trigger name is re-applied to the same channel and marker location, instead of always freeing and re-allocating it. It only clears and re-allocates when the trigger moves to a different register.
   - `QDevilQDac2.clear_trigger` now also zeroes every marker register on the instance's own channels, scrubbing any stale markers left on the instrument so allocations start from a clean hardware state.
-  [#1164](https://github.com/qilimanjaro-tech/qililab/pull/1164)
+    [#1164](https://github.com/qilimanjaro-tech/qililab/pull/1164)
 
 - Fixed an `UnboundLocalError` raised by `QbloxQRM.acquire_qprogram_results` when a bus is played on but no acquisition is performed on it.
   [#1168](https://github.com/qilimanjaro-tech/qililab/pull/1168)
@@ -456,12 +566,13 @@ In the runcard this parameter is located inside the instruments sequencer for QR
 - Fixed `CrosstalkMatrix` row/column ordering being inconsistent between `to_array` (ordered with `sort_buses`) and `inverse`/`from_array` (raw insertion order). For any matrix whose buses were not stored in natural order e.g. a system with ≥10 buses saved alphabetically (`flux q0, flux q1, flux q10, flux q2`); the inverse was mislabeled and `flux_to_bias` returned wrong bias values, and `Calibration.add_intra_crosstalk`/`add_inter_crosstalk` corrupted the stored matrix and offsets. `inverse`, the calibration updates and their `from_array` calls now share the canonical `sort_buses` ordering. Also added `qililab.utils.argsort_buses`, which returns the sort permutation so an array and its bus labels can be reordered together.
   [#1161](https://github.com/qilimanjaro-tech/qililab/pull/1161)
 
-- Fixed the default value for QDAC's voltage list dwell time. Before, it was set to 1 us but the [QDAC documentation page 76](https://qm.quantum-machines.co/hubfs/QDAC%20II%20-%20User%20manual%20v2.2%20(2024-01-17).pdf) states that the minimum is 2 us. If a user states a number smaller than 2 us, the qdac automatically sets the dwell time as the minimum (2 us).
+- Fixed the default value for QDAC's voltage list dwell time. Before, it was set to 1 us but the [QDAC documentation page 76](<https://qm.quantum-machines.co/hubfs/QDAC%20II%20-%20User%20manual%20v2.2%20(2024-01-17).pdf>) states that the minimum is 2 us. If a user states a number smaller than 2 us, the qdac automatically sets the dwell time as the minimum (2 us).
   [#1154](https://github.com/qilimanjaro-tech/qililab/pull/1154)
 
 - Fixed the QDAC-II trigger network breaking when multiple users are connected to the same instrument. Each qililab instance allocated internal trigger numbers from its own driver-side pool, with no way of knowing which numbers other Python processes were already using. When two instances picked the same number, their triggers fired through each other's networks, interfering with both experiments.
 
   Internal triggers in use are now read directly from the instrument's marker registers before every allocation, so a new trigger always takes the lowest number that is actually free on the hardware. Related behavior changes:
+
   - `QDevilQDac2.start()` now starts only the DC lists and AWG waveforms uploaded by this instance, instead of `start_all()`, which also fired generators armed by other users.
   - `QDevilQDac2.clear_trigger()` now frees the triggers created by this instance from the instrument (previously `free_all_triggers()` released the triggers set by `QCodes`, not affecting the instrument).
   - Allocating a trigger when all 14 internal triggers are busy raises a `ValueError` including other users triggers.
@@ -473,7 +584,9 @@ In the runcard this parameter is located inside the instruments sequencer for QR
   [#1152](https://github.com/qilimanjaro-tech/qililab/pull/1152)
 
 - Fixed some bugs with the automatic non-linear crosstalk compensation at the `QbloxCompiler`:
+
   - The offset was set unnecessary times whenever a play followed a set offset in a qprogram, now the amount of set offsets are reduced on the Q1ASM sequencer.
+
   - A sequence of offset loops using the same variable did not update the offset value correctly, now the variables are set correctly. For example:
 
     ```
@@ -514,7 +627,7 @@ In the runcard this parameter is located inside the instruments sequencer for QR
 
 - Fixed `QbloxQRM.acquire_qprogram_results` uploading an empty sequence after each individual acquisition deletion, which wiped the hardware acquisition table mid-loop and caused subsequent deletions to fail. The empty-sequence upload now happens once after all acquisitions have been deleted. This was triggered by any QProgram that produced more than one named acquisition on the same sequencer (e.g. two separate `average` blocks each containing one `acquire` on the same bus).
   [#1117](https://github.com/qilimanjaro-tech/qililab/pull/1117)
- 
+
 - Fixed a bug for `ExperimentExecutor`'s `_inclusive_range` function where the range for certain loops had overflows and didn't match the experimental result. Now it matches the `QProgram`'s result shape.
   [#1066](https://github.com/qilimanjaro-tech/qililab/pull/1066)
 
@@ -539,7 +652,6 @@ In the runcard this parameter is located inside the instruments sequencer for QR
 - Pinned spirack to ==0.2.12 as some newer versions may cause an error when importing qblox-instruments.
   [#1135](https://github.com/qilimanjaro-tech/qililab/pull/1135)
 
-
 ## 0.33.1
 
 ### New features since last release
@@ -550,7 +662,7 @@ In the runcard this parameter is located inside the instruments sequencer for QR
 ### Bug fixes
 
 - Fixed `NonLinearFluxVector` handling of the ForLoop to mach the QbloxCompiler behavior.
- [#1126](https://github.com/qilimanjaro-tech/qililab/pull/1126)
+  [#1126](https://github.com/qilimanjaro-tech/qililab/pull/1126)
 
 - Fixed a mismatch between `FlatTop`'s duration and `envelope`, were the waveform's `envelope` had length duration + 1.
   [#1122](https://github.com/qilimanjaro-tech/qililab/pull/1122)
@@ -559,20 +671,20 @@ In the runcard this parameter is located inside the instruments sequencer for QR
   [#1121](https://github.com/qilimanjaro-tech/qililab/pull/1121)
 
 - Fixed a bug where `CrosstalkMatrix.to_array()` crashed instead of creating the right array when some field of the matrix dictionary where missing (missing values of the matrix), this should default to the identity (values of 1 in the diagonal and 0 outside the diagonal). Now it creates an array even if there are missing elements of the matrix and defaults them to 0 or 1 if those elements are in the diagonal of the matrix.
-Also fixed the `str` representation of the same crosstalk matrix as the same missing values were represented with ones instead of zeroes.
+  Also fixed the `str` representation of the same crosstalk matrix as the same missing values were represented with ones instead of zeroes.
   [#1125](https://github.com/qilimanjaro-tech/qililab/pull/1125)
 
 ## 0.33.0
 
 ### New features since last release
 
-- Added Qblox automatic non-linear crosstalk compensation inside qprogram. This feature requires a `NonLinearCrosstalkMatrix` as the input crosstalk matrix and it makes use of the features given by `NonLinearFluxVector`. 
+- Added Qblox automatic non-linear crosstalk compensation inside qprogram. This feature requires a `NonLinearCrosstalkMatrix` as the input crosstalk matrix and it makes use of the features given by `NonLinearFluxVector`.
 
 It functions much like the linear crosstalk compensation as it modifies the qprogram to adjust the flux buses into their correct bias, in this case the compensation is non-linear.
 
 As the conversion to the new bias is non-linear, the loops given to the qblox Q1ASM cannot be linear and are therefore unpacked limiting the amount of instructions to be given to the Q1ASM sequencer. As well as the `qp.play` waveforms given, if those are arbitrary and inside a loop, it can lead to a waveform memory limitation. Square pulses and `qp.set_offset` does not have this limitation.
 
-  [#1118](https://github.com/qilimanjaro-tech/qililab/pull/1118)
+[#1118](https://github.com/qilimanjaro-tech/qililab/pull/1118)
 
 - Added `NonLinearFluxVector` class for managing per-bus flux offsets and gain values with crosstalk compensation across multi-loop sweeps.
 
@@ -613,11 +725,12 @@ As the conversion to the new bias is non-linear, the loops given to the qblox Q1
 
 - Added `NonLinearCrosstalkMatrix` class extending `CrosstalkMatrix` to support nonlinear flux crosstalk correction between buses. The  nonlinear correction models SQUID-mediated coupling using a Bessel-series expansion of the periodic SQUID nonlinearity:
 
-  $$\delta\phi_i = 2 \cdot \text{amp}_{ij} \sum_{k=1}^{K} \frac{J_k(k\beta_{ij})}{k\beta_{ij}} \sin(2\pi k \phi_j)$$
+  $$\\delta\\phi_i = 2 \\cdot \\text{amp}_{ij} \\sum_{k=1}^{K} \\frac{J_k(k\\beta\_{ij})}{k\\beta\_{ij}} \\sin(2\\pi k \\phi_j)$$
 
-  where $\beta_{ij}$ and $\text{amp}_{ij}$ are per-bus-pair parameters stored in `beta_c_matrix` and `non_lin_amp_matrix` respectively. Entries set to `None` indicate no nonlinear coupling for that pair.
+  where $\\beta\_{ij}$ and $\\text{amp}\_{ij}$ are per-bus-pair parameters stored in `beta_c_matrix` and `non_lin_amp_matrix` respectively. Entries set to `None` indicate no nonlinear coupling for that pair.
 
   Key additions:
+
   - `set_non_linear_params(bus_i, bus_j, beta_c, amplitude)`: sets the Bessel modulation parameter and amplitude for a given bus pair.
   - `get_non_linear_flux_terms(flux)`: computes the nonlinear correction vector for a given flux operating point.
   - `flux_to_bias(flux)`: converts target flux values to hardware bias values including nonlinear corrections, applying the inverse of the linear crosstalk matrix on top.
@@ -633,6 +746,7 @@ As the conversion to the new bias is non-linear, the loops given to the qblox Q1
 
   bias = xtalk.flux_to_bias({"qubit_flux_0": 0.1, "qubit_flux_3": 0.2, "coupler_flux_2": 0.05})
 ```
+
 [#1102](https://github.com/qilimanjaro-tech/qililab/pull/1102)
 
 - Added `NonLinearFluxVector` class for managing per-bus flux offsets and gain values with crosstalk compensation across multi-loop sweeps. This class is in qililab.qprogram.flux_vector. The original `FluxVector` has been moved to this module.
@@ -673,45 +787,48 @@ As the conversion to the new bias is non-linear, the loops given to the qblox Q1
   [#1115](https://github.com/qilimanjaro-tech/qililab/pull/1115)
 
 - Extended `VariableExpression` capabilities (Qblox backend only)
-  The capabilities of `VariableExpression` have been extended, and remain exclusive to the Qblox backend. 
+  The capabilities of `VariableExpression` have been extended, and remain exclusive to the Qblox backend.
 
   Previously, this type of expression was only supported in the Time Domain. It is now also available in the Voltage Domain, where it can be used to modify values in `qprogram` via the offset or the gain.
   The Time Domain behavior is unchanged. The updates described below therefore apply only to Voltage Domain operations.
 
   A combination of variables is now possible (Voltage Domain only), as shown below.
-    ```
-    qp = ql.Qprogram()
-    gain1 = qp.variable("gain1", ql.Domain.Voltage)
-    gain2 = qp.variable("gain2", ql.Domain.Voltage)
-    qp.set_gain("bus", gain1 + gain2)
-    
-    ```
-    These expressions are subject to some restrictions:
-    - Expression chaining is not supported: at most two components (a variable and a constant, or two variables) are allowed. For example, the following code will raise a `NotImplementedError`:
-        ```
-      qp = ql.Qprogram(
-      gain1 = qp.variable("gain1", ql.Domain.Voltage)
-      qp.set_gain("bus", 10 + gain1 + 30)
-      )
-      ```
-      Note: unary negation of a variable (e.g. `- gain`) counts as two components (it is rewritten as `0 - gain`), so combining it with an additional term (e.g. `- gain - 10`) is also expression chaining and raises `NotImplementedError`.
-    - Only addition (`+`) and subtraction (`-`) are supported. The following raise a `TypeError`: `*`, `@`, `/`, `//`, `%`, `**`, `&`, `|`, `^`, `<<`, `>>`, `>`, `<`, `>=`, `<=`, `+=`, `-=`, `*=`, `/=`. Boolean constants also raise a `ValueError`. Taking `abs()` of a variable raises a `NotImplementedError`.
-    - Mixing variables of different domains (e.g. `gain + freq`) raises a `ValueError`.
-    - Using a `VariableExpression` in `set_offset` with independent I and Q paths raises a `NotImplementedError`.
-    - Using a `VariableExpression` with crosstalk compensation across multiple hardware loops raises a `NotImplementedError` (`"Double Hardware loops are not yet implemented with the crosstalk."`). This will be supported in a future PR.
-    - To facilitate the `Q1ASM` implementation, some expressions are internally reorganized in the `Variable` class without changing their semantics:
-      ```
-      gain + (-10) -> gain - abs(10)
-      - 10 + gain  -> gain - abs(10)
-      gain - (-10) -> gain + abs(10)
-      - gain       -> 0 - gain
 
-      ```
+  ```
+  qp = ql.Qprogram()
+  gain1 = qp.variable("gain1", ql.Domain.Voltage)
+  gain2 = qp.variable("gain2", ql.Domain.Voltage)
+  qp.set_gain("bus", gain1 + gain2)
+
+  ```
+
+  These expressions are subject to some restrictions:
+
+  - Expression chaining is not supported: at most two components (a variable and a constant, or two variables) are allowed. For example, the following code will raise a `NotImplementedError`:
+    ```
+    qp = ql.Qprogram(
+    gain1 = qp.variable("gain1", ql.Domain.Voltage)
+    qp.set_gain("bus", 10 + gain1 + 30)
+    )
+    ```
+    Note: unary negation of a variable (e.g. `- gain`) counts as two components (it is rewritten as `0 - gain`), so combining it with an additional term (e.g. `- gain - 10`) is also expression chaining and raises `NotImplementedError`.
+  - Only addition (`+`) and subtraction (`-`) are supported. The following raise a `TypeError`: `*`, `@`, `/`, `//`, `%`, `**`, `&`, `|`, `^`, `<<`, `>>`, `>`, `<`, `>=`, `<=`, `+=`, `-=`, `*=`, `/=`. Boolean constants also raise a `ValueError`. Taking `abs()` of a variable raises a `NotImplementedError`.
+  - Mixing variables of different domains (e.g. `gain + freq`) raises a `ValueError`.
+  - Using a `VariableExpression` in `set_offset` with independent I and Q paths raises a `NotImplementedError`.
+  - Using a `VariableExpression` with crosstalk compensation across multiple hardware loops raises a `NotImplementedError` (`"Double Hardware loops are not yet implemented with the crosstalk."`). This will be supported in a future PR.
+  - To facilitate the `Q1ASM` implementation, some expressions are internally reorganized in the `Variable` class without changing their semantics:
+    ```
+    gain + (-10) -> gain - abs(10)
+    - 10 + gain  -> gain - abs(10)
+    gain - (-10) -> gain + abs(10)
+    - gain       -> 0 - gain
+
+    ```
+
   [#1057](https://github.com/qilimanjaro-tech/qililab/pull/1057)
 
-
 - Implemented QBlox and QDAC-II automatic crosstalk compensation for `Qprogram`. The compiler automatically detects if there is a crosstalk matrix inside platform and implements the crosstalk for any bus inside the `Crosstalk` class. To do so, either use `platform.set_crosstalk(crosstalk)` or define a crosstalk inside `calibration` and use it through `execute_qprogram(..., calibration)`.
-With `execute_qprogram(..., crosstalk= True / False)` the parameter introduced is a trigger that activates the crosstalk, the user can deactivate crosstalk compensation by setting this flag as False. The flag is True by default but if no crosstalk has been introduce through `platform.set_crosstalk(crosstalk)` or `execute_qprogram(..., calibration)` no crosstalk will be applied as none exists.
+  With `execute_qprogram(..., crosstalk= True / False)` the parameter introduced is a trigger that activates the crosstalk, the user can deactivate crosstalk compensation by setting this flag as False. The flag is True by default but if no crosstalk has been introduce through `platform.set_crosstalk(crosstalk)` or `execute_qprogram(..., calibration)` no crosstalk will be applied as none exists.
 
   - For QDAC-II:
     The crosstalk modifies the internal structure of the `QProgram`, it changes any play or set offset into a set of plays and offsets of each bus of the crosstalk. It also takes into account different loops.
@@ -783,7 +900,7 @@ With `execute_qprogram(..., crosstalk= True / False)` the parameter introduced i
     With crosstalk, the qprogram structure will look the same as usual, but for each bus inside the crosstalk matrix, the machine will send a flux pulse / offset to compensate the crosstalk.
     Parallel loops are also available .
 
-    IMPORTANT: there is a limitation when trying to use a combination of play with different amplitudes and different `set_gain`. Since the output is a combination of $amplitude*gain$, the crosstalk would be incorrectly applied if we translate directly. Therefore the gain takes priority when applying the crosstalk.
+    IMPORTANT: there is a limitation when trying to use a combination of play with different amplitudes and different `set_gain`. Since the output is a combination of $amplitude\*gain$, the crosstalk would be incorrectly applied if we translate directly. Therefore the gain takes priority when applying the crosstalk.
 
   [#1030](https://github.com/qilimanjaro-tech/qililab/pull/1030)
 
@@ -791,35 +908,23 @@ With `execute_qprogram(..., crosstalk= True / False)` the parameter introduced i
 
 - Allowing for multiple hardware loops for gain and offset with crosstalk compensation, such as flux vs flux measurements. This is possible due to the `VariableExpression` with crosstalk compensation.  Removed raised `NotImplementedError` (`"Double Hardware loops are not yet implemented with the crosstalk."`). Example qprograms:
 
-    ```
-    ...
-    square_wf = Square(amplitude=0.1, duration=50)
-    qp = QProgram()
-    offset_1 = qp.variable(label="offset_1", domain=Domain.Voltage)
-    offset_2 = qp.variable(label="offset_2", domain=Domain.Voltage)
-    with qp.for_loop(variable=offset_1, start=0, stop=0.1, step=0.01):
-        with qp.for_loop(variable=offset_2, start=0.1, stop=0, step=-0.01):
-            qp.set_offset(bus="flux1", offset_path0=offset_1)
-            qp.set_offset(bus="flux2", offset_path0=offset_2)
-            ...
-    ```
-And after the crosstalk compensation has been applied the qprogram will look internally like this: 
-    ```
-    ...
-    square_wf = Square(amplitude=0.1, duration=50)
-    qp = QProgram()
-    flux_offset_1_1 = qp.variable(label="flux_offset_1_1", domain=Domain.Voltage)  # Flux 1 to itself
-    flux_offset_1_2 = qp.variable(label="flux_offset_1_2", domain=Domain.Voltage)  # Flux 2 to flux 1
-    flux_offset_2_1 = qp.variable(label="flux_offset_2_1", domain=Domain.Voltage)  # Flux 1 to flux 2
-    flux_offset_2_2 = qp.variable(label="flux_offset_2_2", domain=Domain.Voltage)  # Flux 2 to itself
-    with qp.parallel([ForLoop(flux_offset_1_1, 0, 0.1, 0.01), ForLoop(flux_offset_1_2, 0, 0.1, 0.01)]):
-        with qp.parallel([ForLoop(flux_offset_2_1, 0.1, 0, -0.01), ForLoop(flux_offset_2_2, 0.1, 0, -0.01)]):
-            qp.set_offset(bus="flux1", offset_path0=flux_offset_1_1 + flux_offset_1_2)  # Here we require variable extension
-            qp.set_offset(bus="flux2", offset_path0=flux_offset_2_1 + flux_offset_2_2)
-            ...
-    ```
+  ```
+  ...
+  square_wf = Square(amplitude=0.1, duration=50)
+  qp = QProgram()
+  offset_1 = qp.variable(label="offset_1", domain=Domain.Voltage)
+  offset_2 = qp.variable(label="offset_2", domain=Domain.Voltage)
+  with qp.for_loop(variable=offset_1, start=0, stop=0.1, step=0.01):
+      with qp.for_loop(variable=offset_2, start=0.1, stop=0, step=-0.01):
+          qp.set_offset(bus="flux1", offset_path0=offset_1)
+          qp.set_offset(bus="flux2", offset_path0=offset_2)
+          ...
+  ```
 
-  [#1109](https://github.com/qilimanjaro-tech/qililab/pull/1109)
+And after the crosstalk compensation has been applied the qprogram will look internally like this:
+`     ...     square_wf = Square(amplitude=0.1, duration=50)     qp = QProgram()     flux_offset_1_1 = qp.variable(label="flux_offset_1_1", domain=Domain.Voltage)  # Flux 1 to itself     flux_offset_1_2 = qp.variable(label="flux_offset_1_2", domain=Domain.Voltage)  # Flux 2 to flux 1     flux_offset_2_1 = qp.variable(label="flux_offset_2_1", domain=Domain.Voltage)  # Flux 1 to flux 2     flux_offset_2_2 = qp.variable(label="flux_offset_2_2", domain=Domain.Voltage)  # Flux 2 to itself     with qp.parallel([ForLoop(flux_offset_1_1, 0, 0.1, 0.01), ForLoop(flux_offset_1_2, 0, 0.1, 0.01)]):         with qp.parallel([ForLoop(flux_offset_2_1, 0.1, 0, -0.01), ForLoop(flux_offset_2_2, 0.1, 0, -0.01)]):             qp.set_offset(bus="flux1", offset_path0=flux_offset_1_1 + flux_offset_1_2)  # Here we require variable extension             qp.set_offset(bus="flux2", offset_path0=flux_offset_2_1 + flux_offset_2_2)             ...     `
+
+[#1109](https://github.com/qilimanjaro-tech/qililab/pull/1109)
 
 - Modified database manager's `load_by_id` to allow a list of ids to return a list of the measurements with said ids. Also added function `db_manager.get_dc_offsets(id)`, for recent addition to the measurements database, `dc_offsets`.
   [#1097](https://github.com/qilimanjaro-tech/qililab/pull/1097)
@@ -870,7 +975,7 @@ And after the crosstalk compensation has been applied the qprogram will look int
   [#1091](https://github.com/qilimanjaro-tech/qililab/pull/1091)
 
 - Previously, `QProgram.set_offset` required both I and Q offsets (`offset_path0` and `offset_path1`) to be of the same type (either both constants or both variables).
- This restriction has been removed: it is now possible to mix constants and variables between I and Q.
+  This restriction has been removed: it is now possible to mix constants and variables between I and Q.
 
   ```
   qp = ql.QProgram()
@@ -915,7 +1020,7 @@ calibration.crosstalk_matrix = crosstalk_matrix
 calibration.save_history()
 ```
 
-  [#1079](https://github.com/qilimanjaro-tech/qililab/pull/1079)
+[#1079](https://github.com/qilimanjaro-tech/qililab/pull/1079)
 
 ### Improvements
 
@@ -931,13 +1036,14 @@ calibration.save_history()
                   "program": "",
           }
   ```
+
   Previously, the upload cache compared sequence hashes and skipped re-uploading if no changes were detected. However, since the acquisition portion of the sequence is now consistently removed the cache has been removed to ensure the sequence is always re-uploaded.
 
   [#1082](https://github.com/qilimanjaro-tech/qililab/pull/1082)
   [#1088](https://github.com/qilimanjaro-tech/qililab/pull/1088)
 
 - Previously, the software filters in the `PulseDistortion` module were normalised by default.
-This PR changes the default value of `auto_norm` to False, as the previous behaviour was considered counterintuitive.
+  This PR changes the default value of `auto_norm` to False, as the previous behaviour was considered counterintuitive.
   [#1075](https://github.com/qilimanjaro-tech/qililab/pull/1075)
 
 - Implemented a new driver for the Becker Nachrichtentechnik RSWU-SP16TR
@@ -950,13 +1056,14 @@ This PR changes the default value of `auto_norm` to False, as the previous behav
   [#1070](https://github.com/qilimanjaro-tech/qililab/pull/1070)
 
 - Changed internal structure of waveform generation on the qblox compiler.
-Added a check in the platform for QCM and QRM modules with only one channel.
-Now whenever a single waveform is given instead of giving this waveform to I and creating an empty Q, it checks first how many channels does it have based on platform:
+  Added a check in the platform for QCM and QRM modules with only one channel.
+  Now whenever a single waveform is given instead of giving this waveform to I and creating an empty Q, it checks first how many channels does it have based on platform:
+
   - If it has 2 channels the behavior is the same (waveform to I and an empty Q)
   - If it has 1 channel, I and Q are identical waveforms and register as one single waveform (effectively doubling the Q1ASM waveform compilation available size and setting the correct amplitude). If the user gives an IQPair regardless, the behavior remains unchanged and a Q wave will be saved in memory but never sent through the machine.
 
 This check is automatic and requires no input from the user aside from setting the runcard correctly.
-  [#1076](https://github.com/qilimanjaro-tech/qililab/pull/1076)
+[#1076](https://github.com/qilimanjaro-tech/qililab/pull/1076)
 
 ### Breaking changes
 
@@ -981,7 +1088,7 @@ This check is automatic and requires no input from the user aside from setting t
 
 ### Bug fixes
 
-- [BUG] - VNA E5080B Driver. Enum Parameters were passing the entire Enum to the device causing an error when setting the parameter. Now the value of the Enum is passed to the device.
+- \[BUG\] - VNA E5080B Driver. Enum Parameters were passing the entire Enum to the device causing an error when setting the parameter. Now the value of the Enum is passed to the device.
   [#1072](https://github.com/qilimanjaro-tech/qililab/pull/1072)
 
 - Calibration file: The `with_calibration` method in `qprogram` was not storing the needed information to import blocks, this information is now being stored.
@@ -998,32 +1105,32 @@ This check is automatic and requires no input from the user aside from setting t
   [#1049](https://github.com/qilimanjaro-tech/qililab/pull/1049)
 
 - Removed threading for `ExperimentExecutor()`. This feature caused a deadlock on the execution if any error is raised inside it (mainly involving the ExperimentsResultsWriter). The threading has been removed as it was only necessary for parallel time tracking.
-[#1055](https://github.com/qilimanjaro-tech/qililab/pull/1055)
-
+  [#1055](https://github.com/qilimanjaro-tech/qililab/pull/1055)
 
 ## BSC-15
 
 ### Improvements
 
 - For Autocalibration database, moved `sample_name` and `cooldown` from `AutocalMeasurement` (independent experiment) to `CalibrationRun` (full calibration tree). This way the database does not include redundant information, as these variables do not change from one measurement to another, only in different calibration runs.
-[#1053](https://github.com/qilimanjaro-tech/qililab/pull/1053)
+  [#1053](https://github.com/qilimanjaro-tech/qililab/pull/1053)
 
 ### Bug fixes
 
 - Calibration file: The `with_calibration` method in `qprogram` was not storing the needed information to import blocks, this information is now being stored.
-The `insert_block` method in `structured_qprogram` has been modified such that the block is flattened, hence each element is added separately, rather than adding the block. Adding the block directly was causing problems at compilation because adding twice in a single `qprogram` the same block meant they shared the same UUID.
-[#1050](https://github.com/qilimanjaro-tech/qililab/pull/1050)
+  The `insert_block` method in `structured_qprogram` has been modified such that the block is flattened, hence each element is added separately, rather than adding the block. Adding the block directly was causing problems at compilation because adding twice in a single `qprogram` the same block meant they shared the same UUID.
+  [#1050](https://github.com/qilimanjaro-tech/qililab/pull/1050)
 
 - QbloxDraw: Fixed two acquisition-related bugs:.
+
   1. Acquisition-only programs are now displayed correctly.
-  2. Acquisition timing issues caused by wait instructions have been fixed.
-[#1051](https://github.com/qilimanjaro-tech/qililab/pull/1051)
+  1. Acquisition timing issues caused by wait instructions have been fixed.
+     [#1051](https://github.com/qilimanjaro-tech/qililab/pull/1051)
 
 - QbloxDraw: Variable offsets can now be plotted.
-[#1049](https://github.com/qilimanjaro-tech/qililab/pull/1049)
+  [#1049](https://github.com/qilimanjaro-tech/qililab/pull/1049)
 
 - Removed threading for `ExperimentExecutor()`. This feature caused a deadlock on the execution if any error is raised inside it (mainly involving the ExperimentsResultsWriter). The threading has been removed as it was only necessary for parallel time tracking.
-[#1055](https://github.com/qilimanjaro-tech/qililab/pull/1055)
+  [#1055](https://github.com/qilimanjaro-tech/qililab/pull/1055)
 
 ## BSC-14
 
@@ -1215,30 +1322,30 @@ with qp.for_loop(variable=duration, start=100, stop=200, step=10):
 
      ```
      setup:
-                   wait_sync        4              
-                   set_mrk          0              
-                   upd_param        4              
+                   wait_sync        4
+                   set_mrk          0
+                   upd_param        4
 
      main:
-                     move             0, R0          
-                     move             0, R1          
-                     move             0, R2          
-                     move             0, R3          
-                     move             0, R4          
-                     move             0, R5          
-                     move             101, R6        
-                     move             0, R7          
+                     move             0, R0
+                     move             0, R1
+                     move             0, R2
+                     move             0, R3
+                     move             0, R4
+                     move             0, R5
+                     move             101, R6
+                     move             0, R7
      loop_0:
-                     play             0, 0, 4        
+                     play             0, 0, 4
                      acquire_weighed  0, R5, R4, R3, 100
-                     add              R5, 1, R5      
-                     play             0, 0, 4        
+                     add              R5, 1, R5
+                     play             0, 0, 4
                      acquire_weighed  1, R2, R1, R0, 100
-                     add              R2, 1, R2      
-                     add              R7, 1, R7      
-                     loop             R6, @loop_0    
-                     set_mrk          0              
-                     upd_param        4              
+                     add              R2, 1, R2
+                     add              R7, 1, R7
+                     loop             R6, @loop_0
+                     set_mrk          0
+                     upd_param        4
                      stop
      ```
 
@@ -1251,22 +1358,22 @@ with qp.for_loop(variable=duration, start=100, stop=200, step=10):
                    upd_param        4
 
       main:
-                      move             0, R0          
-                      move             0, R1          
-                      move             0, R2          
-                      move             101, R3        
-                      move             0, R4          
+                      move             0, R0
+                      move             0, R1
+                      move             0, R2
+                      move             101, R3
+                      move             0, R4
       loop_0:
-                      play             0, 0, 4        
+                      play             0, 0, 4
                       acquire_weighed  0, R2, R1, R1, 100
-                      add              R2, 1, R2      
-                      play             0, 0, 4        
+                      add              R2, 1, R2
+                      play             0, 0, 4
                       acquire_weighed  1, R0, R1, R1, 100
-                      add              R0, 1, R0      
-                      add              R4, 1, R4      
-                      loop             R3, @loop_0    
-                      set_mrk          0              
-                      upd_param        4              
+                      add              R0, 1, R0
+                      add              R4, 1, R4
+                      loop             R3, @loop_0
+                      set_mrk          0
+                      upd_param        4
                       stop
      ```
 
@@ -1277,13 +1384,13 @@ with qp.for_loop(variable=duration, start=100, stop=200, step=10):
 
 - `platform.execute_qprograms_parallel()` now takes a list of bus mappings to allow one bus mapping per qprogram.
   Parameters for the function have now the same syntax and behaviour:
-  bus_mapping (ist\[dict[str, str] | None\] | dict[str, str], optional). It can be one of the following:
+  bus_mapping (ist\[dict\[str, str\] | None\] | dict\[str, str\], optional). It can be one of the following:
   A list of dictionaries mapping the buses in the :class:`.QProgram` (keys )to the buses in the platform (values). In this case, each bus mapping gets assigned to the :class:`.QProgram` in the same index of the list of qprograms passed as first parameter.
   A single dictionary mapping the buses in the :class:`.QProgram` (keys )to the buses in the platform (values). In this case the same bus mapping is used for each one of the qprograms.
   None, in this case there is not a bus mapping between :class:`.QProgram` (keys )to the buses in the platform (values) and the buses are as defined in each qprogram.
   It is useful for mapping a generic :class:`.QProgram` to a specific experiment.
   Defaults to None.
-  calibrations (list[Calibration], Calibration, optional). Contains information of previously calibrated values, like waveforms, weights and crosstalk matrix. It can be one of the following:
+  calibrations (list\[Calibration\], Calibration, optional). Contains information of previously calibrated values, like waveforms, weights and crosstalk matrix. It can be one of the following:
   A list of :class:`.Calibration` instances, one per :class:`.QProgram` instance in the qprograms parameter.
   A single instance of :class:`.Calibration`, in this case the same `.Calibration` instance gets associated to all qprograms.
   None. In this case no `.Calibration` instance is used.
@@ -1648,7 +1755,7 @@ platform.set_flux_to_zero()
 
 ### Bug fixes
 
-- Correction of bugs following the implementation of the qblox drawing class. The user can now play the same waveform twice in one play, and when gains are set as 0 in the qprogram they are no longer replaced by 1 but remain at 0. Some improvements added, the RF modules are now scaled properly instead of on 1, when plotting through qprogram the y axis now reads Amplitude [a.u.], and the subplots have been removed, all the lines plot in one plot.
+- Correction of bugs following the implementation of the qblox drawing class. The user can now play the same waveform twice in one play, and when gains are set as 0 in the qprogram they are no longer replaced by 1 but remain at 0. Some improvements added, the RF modules are now scaled properly instead of on 1, when plotting through qprogram the y axis now reads Amplitude \[a.u.\], and the subplots have been removed, all the lines plot in one plot.
   [#918](https://github.com/qilimanjaro-tech/qililab/pull/918)
 
 - Fixed an issue involving D5a initial setup where the channel id was not correctly set by id index.
@@ -1714,7 +1821,7 @@ platform.set_flux_to_zero()
   1. **First Pass**: The compiler tries to find a chunk duration that divides the total waveform length evenly (i.e., remainder = 0).
   1. **Second Pass**: If no exact divisor is found, it looks for a chunk duration that leaves a remainder of at least 4 ns. This leftover chunk is large enough to be stored or handled separately.
 
-  Each chunk duration is restricted to the range ([100, 500]) ns, ensuring that chunks are neither too small (leading to excessive repetitions) nor too large (risking out-of-memory issues). If no duration within ([100, 500]) ns meets these remainder constraints, the compiler defaults to using the original waveform in its entirety.
+  Each chunk duration is restricted to the range (\[100, 500\]) ns, ensuring that chunks are neither too small (leading to excessive repetitions) nor too large (risking out-of-memory issues). If no duration within (\[100, 500\]) ns meets these remainder constraints, the compiler defaults to using the original waveform in its entirety.
   [#861](https://github.com/qilimanjaro-tech/qililab/pull/861)
   [#895](https://github.com/qilimanjaro-tech/qililab/pull/895)
 
@@ -2379,7 +2486,7 @@ platform.set_flux_to_zero()
 ### Improvements
 
 - Improve Crosstalk matrix `from_buses` method so it can be a dictionary of buses and crosstalks coefficients.
-  [#784]<https://github.com/qilimanjaro-tech/qililab/pull/784>
+  \[#784\]<https://github.com/qilimanjaro-tech/qililab/pull/784>
 
 - Now platform.get_parameter works for QM without the need of connecting to the machine.
 
@@ -3296,7 +3403,7 @@ platform.set_flux_to_zero()
 
 ### Documentation
 
-- Documentation for the Chip module: [#553] (<https://github.com/qilimanjaro-tech/qililab/pull/553>)
+- Documentation for the Chip module: \[#553\] (<https://github.com/qilimanjaro-tech/qililab/pull/553>)
 
   Includes documentation for all public features of the Chip module
 
@@ -4167,7 +4274,7 @@ awg_sequencers:
 
 ### Refactor
 
-- [qili-243] sequence class (#104)
+- \[qili-243\] sequence class (#104)
 
 ## 0.10.1 (2022-12-14)
 
@@ -4179,7 +4286,7 @@ awg_sequencers:
 
 ### Feat
 
-- [QILI-201] multibus support (#101)
+- \[QILI-201\] multibus support (#101)
 
 ## 0.9.2 (2022-11-17)
 
@@ -4209,43 +4316,43 @@ awg_sequencers:
 
 ### Fix
 
-- [QILI-169] load 2D results (#69)
+- \[QILI-169\] load 2D results (#69)
 
 ## 0.7.2 (2022-08-22)
 
 ### Fix
 
-- [QILI-187 ] :bug: loops minimum length taking the passed value instead of the self (#57)
+- \[QILI-187 \] :bug: loops minimum length taking the passed value instead of the self (#57)
 
 ## 0.7.1 (2022-08-19)
 
 ### Refactor
 
-- [QILI-186] :recycle: renamed beta to drag_coefficient (#56)
+- \[QILI-186\] :recycle: renamed beta to drag_coefficient (#56)
 
 ## 0.7.0 (2022-08-19)
 
 ### Feat
 
-- [QILI-185] add option to NOT reset an instrument (#54)
+- \[QILI-185\] add option to NOT reset an instrument (#54)
 
 ## 0.6.0 (2022-08-18)
 
 ### Feat
 
-- [QILI-184] :sparkles: New daily directory generated for results data (#50)
+- \[QILI-184\] :sparkles: New daily directory generated for results data (#50)
 
 ## 0.5.9 (2022-08-18)
 
 ### Fix
 
-- [QILI-183] :bug: accept float master duration gate (#49)
+- \[QILI-183\] :bug: accept float master duration gate (#49)
 
 ## 0.5.8 (2022-08-18)
 
 ### Fix
 
-- [QILI-182] :bug: uses deepcopy before pop dict key (#48)
+- \[QILI-182\] :bug: uses deepcopy before pop dict key (#48)
 
 ## 0.5.7 (2022-08-17)
 
@@ -4269,43 +4376,43 @@ awg_sequencers:
 
 ### Fix
 
-- [QILI-181] :bug: fixed values types when they are numpy (#38)
+- \[QILI-181\] :bug: fixed values types when they are numpy (#38)
 
 ## 0.5.3 (2022-07-26)
 
 ### Fix
 
-- [QILI-178] set beta master (#37)
+- \[QILI-178\] set beta master (#37)
 
 ## 0.5.2 (2022-07-26)
 
 ### Fix
 
-- [QILI-180] :bug: check for multiple loops correctly (#36)
+- \[QILI-180\] :bug: check for multiple loops correctly (#36)
 
 ## 0.5.1 (2022-07-25)
 
 ### Fix
 
-- [QILI-177] :bug: make sure amplitude and duration are float or int (#35)
+- \[QILI-177\] :bug: make sure amplitude and duration are float or int (#35)
 
 ## 0.5.0 (2022-07-24)
 
 ### Feat
 
-- [QILI-174] loop support multiple parameters (#34)
+- \[QILI-174\] loop support multiple parameters (#34)
 
 ## 0.4.2 (2022-07-23)
 
 ### Fix
 
-- [QILI-176] set master value for gate amplitude and duration (#33)
+- \[QILI-176\] set master value for gate amplitude and duration (#33)
 
 ## 0.4.1 (2022-07-23)
 
 ### Fix
 
-- [QILI-168] Set voltage normalization (#32)
+- \[QILI-168\] Set voltage normalization (#32)
 
 ## 0.4.0 (2022-07-20)
 
@@ -4317,18 +4424,18 @@ awg_sequencers:
 
 ### Feat
 
-- [QILI-81] Implement schema class (#5)
+- \[QILI-81\] Implement schema class (#5)
 
 ## 0.2.0 (2022-04-19)
 
 ### Feat
 
-- [QILI-46] Implement instrument classes (#9)
+- \[QILI-46\] Implement instrument classes (#9)
 
 ## 0.1.0 (2022-04-06)
 
 ### Feat
 
-- [QILI-48] Implement platform, backend and settings classes (#8)
+- \[QILI-48\] Implement platform, backend and settings classes (#8)
 
 ## 0.0.0 (2022-03-28)
