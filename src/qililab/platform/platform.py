@@ -24,7 +24,7 @@ from builtins import BaseExceptionGroup
 from contextlib import contextmanager
 from copy import deepcopy
 from dataclasses import asdict, dataclass, field
-from time import perf_counter
+from time import perf_counter, sleep
 from typing import TYPE_CHECKING, Any, Callable, cast
 
 import numpy as np
@@ -1356,6 +1356,10 @@ class Platform:
                 for bus_alias in sequences:
                     buses[bus_alias].run()
                 if output.qdac.trigger_position == "front":
+                    # Temporary fix (QHC-1843): with cluster firmware 2.x, qblox-instruments' start_sequencer
+                    # returns without waiting for any reply from the module, so the QDAC's first trigger(s) can
+                    # arrive before the sequencer is waiting for them. Give the Qblox sequencers time to start.
+                    sleep(0.1)
                     for qdac in output.qdac.qdacs:
                         qdac.start()
             else:
