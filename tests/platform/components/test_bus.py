@@ -9,7 +9,6 @@ from qililab.instruments.rohde_schwarz import SGS100A
 from qililab.instruments.qblox import QbloxQCM, QbloxQRM
 from qililab.qprogram.qblox_compiler import AcquisitionData
 from qililab.typings import Parameter, InstrumentName
-from qililab.result.qprogram import MeasurementResult
 from qililab.platform import Bus
 from qililab.pulse_distortion.lfilter_correction import LFilterCorrection
 
@@ -177,9 +176,20 @@ class TestBus:
 
     def test_bus_acquire_qprogram_results(self, bus):
         acquisitions = {"acq1": MagicMock(spec=AcquisitionData)}
-        results = [MagicMock(spec=MeasurementResult)]
+        results = [{"bins": {"integration": {"path0": [1.0], "path1": [2.0]}, "threshold": [0], "avg_cnt": [1]}}]
         bus.instruments[1].acquire_qprogram_results.return_value = results
         assert bus.acquire_qprogram_results(acquisitions) == results
+        bus.instruments[1].acquire_qprogram_results.assert_called_once_with(
+            acquisitions=acquisitions, channel_id=None, scope=False
+        )
+
+    def test_bus_acquire_qprogram_results_with_scope(self, bus):
+        acquisitions = {"acq1": MagicMock(spec=AcquisitionData)}
+        bus.instruments[1].acquire_qprogram_results.return_value = []
+        bus.acquire_qprogram_results(acquisitions, channel_id=0, scope=True)
+        bus.instruments[1].acquire_qprogram_results.assert_called_once_with(
+            acquisitions=acquisitions, channel_id=0, scope=True
+        )
 
     def test_bus_acquire_qprogram_results_raises_error(self, bus):
         acquisitions = {"acq1": MagicMock(spec=AcquisitionData)}

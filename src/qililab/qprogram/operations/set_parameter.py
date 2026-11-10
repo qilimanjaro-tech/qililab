@@ -13,14 +13,19 @@
 # limitations under the License.
 
 
-from qililab.core.variables import Variable
-from qililab.qprogram.operations.operation import Operation
+from typing import ClassVar
+
+from qprogram import Variable
+from qprogram.operations import Operation
+
 from qililab.typings.enums import Parameter
 from qililab.yaml import yaml
 
 
 @yaml.register_class
 class SetParameter(Operation):
+    BUS_ATTRS: ClassVar[tuple[str, ...]] = ()
+
     def __init__(
         self,
         alias: str,
@@ -29,7 +34,6 @@ class SetParameter(Operation):
         channel_id: int | None = None,
         output_id: int | None = None,
     ) -> None:
-        super().__init__()
         self.alias: str = alias
         self.parameter: Parameter = parameter
         self.value: int | float | bool | Variable = value

@@ -28,17 +28,11 @@ from time import perf_counter
 from typing import TYPE_CHECKING, Any, Callable, cast
 
 import numpy as np
+from qprogram import QProgramResult
 from ruamel.yaml import YAML
 
 from qililab.config import logger
 from qililab.constants import FLUX_CONTROL_REGEX, GATE_ALIAS_REGEX, RUNCARD
-from qililab.extra.quantum_machines import (
-    QuantumMachinesCluster,
-    QuantumMachinesCompilationOutput,
-    QuantumMachinesCompiler,
-    QuantumMachinesMeasurementResult,
-    generate_qua_script,
-)
 from qililab.instrument_controllers import InstrumentController, InstrumentControllers
 from qililab.instrument_controllers.qblox import QbloxClusterController
 from qililab.instrument_controllers.utils import InstrumentControllerFactory
@@ -64,8 +58,7 @@ from qililab.qprogram.experiment_executor import ExperimentExecutor
 from qililab.qprogram.flux_vector import FluxVector
 from qililab.qprogram.qdac_compiler import QdacCompiler
 from qililab.result.database import get_db_manager
-from qililab.result.qprogram.qblox_measurement_result import QbloxMeasurementResult
-from qililab.result.qprogram.qprogram_results import QProgramResults
+from qililab.result.qblox_results import append_measurement, measurement_fields, ordered, scope_trace
 from qililab.result.stream_results import StreamArray
 from qililab.typings import ChannelID, DistortionState, InstrumentName, OutputID, Parameter, ParameterValue
 from qililab.utils.serialization import deserialize_from
@@ -155,7 +148,7 @@ class Platform:
         .. code-block:: python
 
             import qililab as ql
-            from qililab.waveforms import IQDrag, Square, IQPair
+            from qililab import IQDrag, Square, IQPair
 
             pi_pulse = IQDrag(amplitude=1.0, duration=100, num_sigmas=4.5, drag_coefficient=-2.0)
             readout_pulse = IQPair(I=Square(amplitude=1.0, duration=2000), Q=Square(amplitude=0.0, duration=2000))
@@ -164,7 +157,7 @@ class Platform:
             # Defining the QProgram:
             qp = ql.QProgram()
             qp.play(bus="drive_line_q0_bus", waveform=pi_pulse)
-            qp.measure(bus="feedline_bus", waveform=readout_pulse, weights=weights)
+            measurement = qp.measure(bus="feedline_bus", waveform=readout_pulse, weights=weights)
 
             # Building the platform:
             platform = ql.build_platform(runcard="runcards/galadriel.yml")
@@ -179,19 +172,14 @@ class Platform:
 
         The results would look something like this:
 
-        >>> result.results["feedline_bus"][0].array
-        array([[6.],
-                [6.]])
+        >>> result.get(measurement).values
+        array([6., 6.])
 
         .. note::
 
-            The obtained values correspond to the integral of the I/Q signals received by the digitizer.
-            And they have shape `(#sequencers, 2, #bins)`, in this case you only have 1 sequencer and 1 bin.
-
-        .. note::
-
-            ``result.results`` maps each measured bus alias to the list of :class:`.MeasurementResult` produced on that bus, one per
-            ``measure()``/``acquire()`` call, in the order they were issued.
+            ``result`` is a ``qprogram.QProgramResult``: ``result.get(handle)`` returns the integrated I/Q values the
+            digitizer measured, as an ``xarray.DataArray`` with an ``"IQ"`` dimension, plus one dimension per sweep
+            around the measurement.
 
         |
 
@@ -203,7 +191,7 @@ class Platform:
         .. code-block:: python
 
             import qililab as ql
-            from qililab.waveforms import IQDrag, Square, IQPair
+            from qililab import IQDrag, Square, IQPair
 
             pi_pulse = IQDrag(amplitude=1.0, duration=100, num_sigmas=4.5, drag_coefficient=-2.0)
             readout_pulse = IQPair(I=Square(amplitude=1.0, duration=2000), Q=Square(amplitude=0.0, duration=2000))
@@ -211,19 +199,18 @@ class Platform:
 
             # Defining the Rabi sweep as a single QProgram:
             qp = ql.QProgram()
-            gain = qp.variable(label="gain", domain=ql.Domain.Voltage)
-            with qp.for_loop(variable=gain, start=0.0, stop=1.0, step=0.1):
+            gain = qp.variable("gain")
+            with qp.sweep(gain).from_range(0.0, 1.0, 0.1):
                 qp.set_gain(bus="drive_line_q0_bus", gain=gain)
                 qp.play(bus="drive_line_q0_bus", waveform=pi_pulse)
-                qp.measure(bus="feedline_bus", waveform=readout_pulse, weights=weights)
+                measurement = qp.measure(bus="feedline_bus", waveform=readout_pulse, weights=weights)
 
             result = platform.execute_qprogram(qprogram=qp)
 
-        The single measurement now holds one value per point of the sweep, with shape `(2, #bins)`:
+        The single measurement now holds one value per point of the sweep, with dims ``("gain", "IQ")``:
 
-        >>> result.results["feedline_bus"][0].array
-        array([[5, 4, 3, 2, 1, 2, 3, 4, 5, 4],
-                [5, 4, 3, 2, 1, 2, 3, 4, 5, 4]])
+        >>> result.get(measurement).sel(IQ="I").values
+        array([5., 4., 3., 2., 1., 2., 3., 4., 5., 4., 3.])
 
         You can see how the integrated I/Q values oscillate, indicating that qubit ``0`` oscillates between the ground and
         excited states!
@@ -238,7 +225,7 @@ class Platform:
         .. code-block:: python
 
             import qililab as ql
-            from qililab.waveforms import IQDrag, Square, IQPair
+            from qililab import IQDrag, Square, IQPair
 
             half_pi_pulse = IQDrag(amplitude=0.5, duration=100, num_sigmas=4.5, drag_coefficient=-2.0)
             readout_pulse = IQPair(I=Square(amplitude=1.0, duration=2000), Q=Square(amplitude=0.0, duration=2000))
@@ -254,12 +241,12 @@ class Platform:
 
             # Defining the Ramsey sweep as a single QProgram:
             qp = ql.QProgram()
-            wait_time = qp.variable(label="wait_time", domain=ql.Domain.Time)
-            with qp.for_loop(variable=wait_time, start=0, stop=10000, step=1000):
+            wait_time = qp.variable("wait_time", units="ns")
+            with qp.sweep(wait_time).from_range(0, 10000, 1000):
                 qp.play(bus="drive_line_q0_bus", waveform=half_pi_pulse)
                 qp.wait(bus="drive_line_q0_bus", duration=wait_time)
                 qp.play(bus="drive_line_q0_bus", waveform=half_pi_pulse)
-                qp.measure(bus="feedline_bus", waveform=readout_pulse, weights=weights)
+                measurement = qp.measure(bus="feedline_bus", waveform=readout_pulse, weights=weights)
 
             result = platform.execute_qprogram(qprogram=qp)
 
@@ -267,9 +254,8 @@ class Platform:
 
         If you print the results, you'll see how you obtain the sinusoidal expected behavior!
 
-        >>> result.results["feedline_bus"][0].array
-        array([[5, 4, 3, 2, 1, 2, 3, 4, 5, 4, 3],
-                [5, 4, 3, 2, 1, 2, 3, 4, 5, 4, 3]])
+        >>> result.get(measurement).sel(IQ="I").values
+        array([5., 4., 3., 2., 1., 2., 3., 4., 5., 4., 3.])
     """
 
     def __init__(self, runcard: Runcard):
@@ -756,7 +742,7 @@ class Platform:
     def _set_bias_from_element(self, element: Bus | InstrumentController | Instrument | None):
         """Sets the right parameter depending on the instrument defined inside the element.
         This is used in the crosstalk correction.
-        The instruments included in this function are: QM, QBlox, SPI and QDevil.
+        The instruments included in this function are: QBlox, SPI and QDevil.
 
         Args:
             element (_type_): runcard element.
@@ -765,20 +751,17 @@ class Platform:
         bias = [
             instrument
             for instrument in element.instruments  # type: ignore[union-attr]
-            if instrument.name
-            in {"QCM", "QRM", "QRM-RF", "QCM-RF", "D5a", "S4g", "quantum_machines_cluster", "qdevil_qdac2"}
+            if instrument.name in {"QCM", "QRM", "QRM-RF", "QCM-RF", "D5a", "S4g", "qdevil_qdac2"}
         ]
 
         if len(bias) == 0:
             raise ReferenceError(
-                "Flux bus must have one of these instruments:\nQCM, QRM, QRM-RF, QCM-RF, D5a, S4g, quantum_machines_cluster, qdevil_qdac2"
+                "Flux bus must have one of these instruments:\nQCM, QRM, QRM-RF, QCM-RF, D5a, S4g, qdevil_qdac2"
             )
         if len(bias) > 1:
             raise NotImplementedError(
-                "Flux bus must not have more than one of these instruments:\nQCM, QRM, QRM-RF, QCM-RF, D5a, S4g, quantum_machines_cluster, qdevil_qdac2"
+                "Flux bus must not have more than one of these instruments:\nQCM, QRM, QRM-RF, QCM-RF, D5a, S4g, qdevil_qdac2"
             )
-        if bias[0].name in {"quantum_machines_cluster"}:
-            parameter = Parameter.DC_OFFSET
         if bias[0].name in {"D5a", "qdevil_qdac2"}:
             parameter = Parameter.VOLTAGE
         if bias[0].name in {"S4g"}:
@@ -1142,10 +1125,7 @@ class Platform:
         bus_aliases = {bus_mapping[bus] if bus_mapping and bus in bus_mapping else bus for bus in qprogram.buses}
         buses = [self.buses.get(alias=bus_alias) for bus_alias in bus_aliases]
         instruments = {
-            instrument
-            for bus in buses
-            for instrument in bus.instruments
-            if isinstance(instrument, (QbloxModule, QuantumMachinesCluster))
+            instrument for bus in buses for instrument in bus.instruments if isinstance(instrument, QbloxModule)
         }
 
         qdac_qprogram_buses = [
@@ -1222,7 +1202,6 @@ class Platform:
                 if bus.distortions:
                     bus_distortions[bus.alias] = bus.distortions
 
-            qprogram = qprogram.with_resolved_weight_duration(calibration, bus_mapping)
             qblox_compiler = QbloxCompiler()
             qblox_buses = [
                 bus.alias for bus in buses if any(isinstance(instrument, QbloxModule) for instrument in bus.instruments)
@@ -1239,44 +1218,17 @@ class Platform:
                     single_channel=single_channel,
                     bus_distortions=bus_distortions,
                     crosstalk=self.crosstalk if crosstalk else None,
+                    readout_modules={
+                        bus.alias: instrument.alias
+                        for bus in buses
+                        for instrument in bus.instruments
+                        if isinstance(instrument, QbloxQRM)
+                    },
                 ),
                 qdac=compiled_qdac,
             )
             return output
 
-        if all(isinstance(instrument, QuantumMachinesCluster) for instrument in instruments):
-            if len(instruments) != 1:
-                raise NotImplementedError(
-                    "Executing QProgram in more than one Quantum Machines Cluster is not supported."
-                )
-            thresholds: dict[str, float] = {
-                bus.alias: float(bus.get_parameter(parameter=Parameter.THRESHOLD) or 0.0)
-                for bus in buses
-                if bus.has_adc()
-            }
-            threshold_rotations: dict[str, float] = {
-                bus.alias: float(bus.get_parameter(parameter=Parameter.THRESHOLD_ROTATION) or 0.0)
-                for bus in buses
-                if bus.has_adc()
-            }
-
-            compiler = QuantumMachinesCompiler()
-            qm_buses = [
-                bus
-                for bus in buses
-                if any(isinstance(instrument, QuantumMachinesCluster) for instrument in bus.instruments)
-            ]
-            return QProgramCompilationOutput(
-                quantum_machines=compiler.compile(
-                    qprogram=qprogram,
-                    bus_mapping=bus_mapping,
-                    thresholds=thresholds,
-                    threshold_rotations=threshold_rotations,
-                    calibration=calibration,
-                    qm_buses=qm_buses,
-                ),
-                qdac=compiled_qdac,
-            )
         raise NotImplementedError("Compiling QProgram for a mixture of AWG instruments is not supported.")
 
     def execute_compilation_output(
@@ -1284,20 +1236,12 @@ class Platform:
         output: QProgramCompilationOutput,
         debug: bool = False,
     ):
-        if isinstance(output.qblox, QbloxCompilationOutput):
-            self.trigger_runs = 0
-            return self._execute_qblox_compilation_output(output=output, debug=debug)
-
-        buses = [self.buses.get(alias=bus_alias) for bus_alias in output.quantum_machines.qprogram.buses]  # type: ignore[union-attr]
-        instruments = {instrument for bus in buses for instrument in bus.instruments if bus.has_adc()}
-        if len(instruments) != 1:
-            raise NotImplementedError("Executing QProgram in more than one Quantum Machines Cluster is not supported.")
-        cluster: QuantumMachinesCluster = cast("QuantumMachinesCluster", next(iter(instruments)))
-        return self._execute_quantum_machines_compilation_output(output=output, cluster=cluster, debug=debug)
+        self.trigger_runs = 0
+        return self._execute_qblox_compilation_output(output=output, debug=debug)
 
     def _execute_qblox_compilation_output(self, output: QProgramCompilationOutput, debug: bool = False):
         try:
-            sequences, acquisitions = output.qblox.sequences, output.qblox.acquisitions  # type: ignore[union-attr]
+            sequences = output.qblox.sequences  # type: ignore[union-attr]
             buses = {bus_alias: self.buses.get(alias=bus_alias) for bus_alias in sequences}
 
             # The compiler makes every qblox bus wait on the external trigger, so enable it on every cluster in use
@@ -1340,6 +1284,8 @@ class Platform:
                         print(str(sequence._program), file=sourceFile)
                         print(file=sourceFile)
 
+            self._setup_qblox_scopes(output=output.qblox, buses=buses)  # type: ignore[arg-type]
+
             # Upload sequences
             for bus_alias in sequences:
                 buses[bus_alias].upload_qpysequence(qpysequence=sequences[bus_alias])
@@ -1363,19 +1309,7 @@ class Platform:
                     buses[bus_alias].run()
 
             # Acquire results
-            results = QProgramResults()
-            for bus_alias, bus in buses.items():
-                if bus.has_adc():
-                    for instrument, channel in zip(buses[bus_alias].instruments, buses[bus_alias].channels):
-                        if isinstance(instrument, QbloxModule):
-                            bus_results = bus.acquire_qprogram_results(
-                                acquisitions=acquisitions[bus_alias], channel_id=int(channel)
-                            )
-                            for bus_result, (_, acquisition_data) in zip(bus_results, acquisitions[bus_alias].items()):
-                                intertwined = acquisition_data.intertwined
-                                unintertwined_results = self._unintertwined_qblox_results(bus_result, intertwined)
-                                for unintertwined_result in unintertwined_results:
-                                    results.append_result(bus=bus_alias, result=unintertwined_result)
+            results = self._acquire_qblox_results(output=output.qblox, buses=buses)  # type: ignore[arg-type]
 
             # Reset instrument settings
             for bus_alias in sequences:
@@ -1408,92 +1342,58 @@ class Platform:
 
             raise timeout
 
-    def _unintertwined_qblox_results(
-        self, bus_result: QbloxMeasurementResult, intertwined: int
-    ) -> list[QbloxMeasurementResult]:
-        """Return a list of results where intertwined acquisitions are separated.
+    @staticmethod
+    def _setup_qblox_scopes(output: QbloxCompilationOutput, buses: dict[str, Bus]) -> None:
+        """Configure the scope of each module a ``qp.qblox.scope`` scopes, for the bus it names.
 
-        In Qililab, when multiple acquisitions or measurements are performed at the same nested level, their results are intertwined: the bins are looped over
-        while the acquisition index remains constant.
-        If `intertwined` is greater than 1, this function separates each acquisition into its own QbloxMeasurementResult object.
-        QbloxMeasurementResult object. If `intertwined` is 1 the result is returned inside a single-element list.
+        Args:
+            output (QbloxCompilationOutput): The compiled program.
+            buses (dict[str, Bus]): The buses of the program, by alias.
+        """
+        for bus_alias, scope in output.scopes.items():
+            for instrument, channel in zip(buses[bus_alias].instruments, buses[bus_alias].channels):
+                if isinstance(instrument, QbloxQRM):
+                    instrument.setup_scope(
+                        sequencer_id=int(channel),  # type: ignore[arg-type]
+                        averaging=scope.averaging,
+                        trigger_level=scope.trigger_level,
+                    )
+
+    @staticmethod
+    def _acquire_qblox_results(output: QbloxCompilationOutput, buses: dict[str, Bus]) -> QProgramResult:
+        """Read the acquisitions of every readout bus and return them as the program's measurements.
+
+        Each acquisition's bins are split between the measurements writing into it, and a ``qp.qblox.scope`` adds its
+        trace under its own name. The measurements come in the order they are declared in the program.
+
+        Args:
+            output (QbloxCompilationOutput): The compiled program.
+            buses (dict[str, Bus]): The buses of the program, by alias.
 
         Returns:
-            list[QbloxMeasurementResult]: unintertwined results where each element corresponds to one acquisition.
+            QProgramResult: The results, one record per measurement.
         """
-        results_unintertwined_list = []
-        if intertwined > 1:
-            for result in range(intertwined):
-                bus = bus_result.bus
-                new_raw_measurement_data = {
-                    "scope": {
-                        "path0": {
-                            "data": bus_result.raw_measurement_data["scope"]["path0"]["data"][result::intertwined]
-                        },
-                        "path1": {
-                            "data": bus_result.raw_measurement_data["scope"]["path1"]["data"][result::intertwined]
-                        },
-                    },
-                    "bins": {
-                        "integration": {
-                            "path0": bus_result.raw_measurement_data["bins"]["integration"]["path0"][
-                                result::intertwined
-                            ],
-                            "path1": bus_result.raw_measurement_data["bins"]["integration"]["path1"][
-                                result::intertwined
-                            ],
-                        },
-                        "threshold": bus_result.raw_measurement_data["bins"]["threshold"][result::intertwined],
-                        "avg_cnt": bus_result.raw_measurement_data["bins"]["avg_cnt"][result::intertwined],
-                    },
-                }
-                results_unintertwined = QbloxMeasurementResult(
-                    bus=bus, raw_measurement_data=new_raw_measurement_data, shape=bus_result.shape
+        result = QProgramResult()
+        for bus_alias, bus in buses.items():
+            if not bus.has_adc():
+                continue
+            for instrument, channel in zip(bus.instruments, bus.channels):
+                if not isinstance(instrument, QbloxModule):
+                    continue
+                scope = output.scopes.get(bus_alias)
+                acquisitions = output.acquisitions[bus_alias]
+                raws = bus.acquire_qprogram_results(
+                    acquisitions=acquisitions,
+                    channel_id=int(channel),  # type: ignore[arg-type]
+                    scope=scope is not None,
                 )
-                results_unintertwined_list.append(results_unintertwined)
-
-        else:
-            results_unintertwined_list = [bus_result]
-
-        return results_unintertwined_list
-
-    def _execute_quantum_machines_compilation_output(
-        self,
-        output: QProgramCompilationOutput,
-        cluster: QuantumMachinesCluster,
-        debug: bool = False,
-    ):
-        qua = output.quantum_machines.qua  # type: ignore[union-attr]
-        configuration = output.quantum_machines.configuration  # type: ignore[union-attr]
-        measurements = output.quantum_machines.measurements  # type: ignore[union-attr]
-        try:
-            cluster.append_configuration(configuration=configuration)
-
-            if debug:
-                with open("debug_qm_execution.py", "w", encoding="utf-8") as sourceFile:
-                    print(generate_qua_script(qua, cluster.config), file=sourceFile)
-
-            compiled_program_id = cluster.compile(program=qua)
-
-            job = cluster.run_compiled_program(compiled_program_id=compiled_program_id)
-
-            acquisitions = cluster.get_acquisitions(job=job)
-
-            results = QProgramResults()
-            # Doing manual classification of results as QM does not return thresholded values like Qblox
-            for measurement in measurements:
-                measurement_result = QuantumMachinesMeasurementResult(
-                    measurement.bus,
-                    *[acquisitions[handle] for handle in measurement.result_handles],
-                )
-                measurement_result.set_classification_threshold(measurement.threshold)
-                results.append_result(bus=measurement.bus, result=measurement_result)
-
-            return results
-
-        except Exception as e:
-            cluster.turn_off()
-            raise e
+                for raw, acquisition in zip(raws, acquisitions.values()):
+                    for name, fields in measurement_fields(raw, acquisition):
+                        append_measurement(result, bus_alias, name, fields)
+                if scope is not None and raws:
+                    trace = scope_trace(raws[0])
+                    result.append_measurement(bus=bus_alias, name=scope.name, data=trace, fields={"raw": trace})
+        return ordered(result, [handle.name for handle in output.qprogram.measurement_handles()])
 
     def execute_qprogram(
         self,
@@ -1502,7 +1402,7 @@ class Platform:
         calibration: Calibration | None = None,
         crosstalk: bool = True,
         debug: bool = False,
-    ) -> QProgramResults:
+    ) -> QProgramResult:
         """Execute a :class:`.QProgram` using the platform instruments.
 
         |
@@ -1515,10 +1415,9 @@ class Platform:
 
         |
 
-        **The execution can be done for (buses associated to) two different type of clusters:**
-
-        - For ``Qblox`` modules, the compilation is done using the :class:`.QbloxCompiler`. Which compiles the :class:`.QProgram` into``Q1ASM`` for multiple sequencers based on each bus, uploads and executes the sequences, and acquires the results.
-        - For ``Quantum Machines`` clusters, the compilation is done using the :class:`.QuantumMachinesCompiler`. This compiler transforms the :class:`.QProgram` into ``QUA``, the programming language of ``Quantum Machines`` hardware. It then executes the resulting ``QUA`` program and returns the results, organized by bus.
+        The compilation is done using the :class:`.QbloxCompiler`, which compiles the :class:`.QProgram` into ``Q1ASM``
+        for multiple sequencers based on each bus, uploads and executes the sequences, and acquires the results. QDAC-II
+        operations are compiled by the :class:`.QdacCompiler` and set up before the run.
 
         Args:
             qprogram (QProgram): The :class:`.QProgram` to execute.
@@ -1526,13 +1425,14 @@ class Platform:
                 It is useful for mapping a generic :class:`.QProgram` to a specific experiment. Defaults to None.
             calibration (Calibration, optional): :class:`.Calibration` instance containing information of previously calibrated values, like waveforms, weights and crosstalk matrix. Defaults to None.
             debug (bool, optional): Whether to create debug information. For ``Qblox`` clusters all the program information is printed on screen.
-                For ``Quantum Machines`` clusters a ``.py`` file is created containing the ``QUA`` and config compilation. Defaults to False.
+                Defaults to False.
             crosstalk (bool, optional): Trigger that allows crosstalk compensation, if false it ignores all existing crosstalk matrices added to execute with bias.
                 If no crosstalk has been added inside platform or the calibration file, this trigger will not apply the crosstalk. Defaults to None.
 
         Returns:
-            QProgramResults: The results of the execution. ``QProgramResults.results()`` returns a dictionary (``dict[str, list[Result]]``) of measurement results.
-            The keys correspond to the buses a measurement were performed upon, and the values are the list of measurement results in chronological order.
+            QProgramResult: The results of the execution, one record per measurement, in the order they are declared in the
+            QProgram. ``result.get(handle)`` returns a measurement's data, by the handle ``measure()`` or ``acquire()``
+            returned, or by name.
         """
         if calibration is None:
             calibration = self.calibration
@@ -1608,7 +1508,7 @@ class Platform:
         calibrations: list[Calibration | None] | Calibration | None = None,
         crosstalk: bool = True,
         debug: bool = False,
-    ) -> list[QProgramResults]:
+    ) -> list[QProgramResult]:
         """Compiles a list of qprograms to be executed in parallel. Then it calls the execute_compilation_outputs_parallel method to execute the compiled qprograms.
         It loads each qprogram into a different sequencer and uses the multiplexing capabilities of QBlox to run all sequencers at the same time.
 
@@ -1633,9 +1533,7 @@ class Platform:
                 If no crosstalk has been added inside platform or the calibration file, this trigger will not apply the crosstalk. Defaults to None.
 
         Returns:
-            QProgramResults: The results of the execution. ``QProgramResults.results()`` returns a list of dictionary (``dict[str, list[Result]]``) of measurement results.
-            Each element of the list corresponds to a sequencer.
-            The keys correspond to the buses a measurement were performed upon, and the values are the list of measurement results in chronological order.
+            list[QProgramResult]: The results of the execution, one per QProgram, in the order of ``qprograms``.
         """
         if not qprograms:
             return []
@@ -1667,9 +1565,6 @@ class Platform:
                 for qp, bus_mapping, calibration in zip(qprograms, bus_mapping_list, calibrations_list)
             ]
 
-        if any(isinstance(output.quantum_machines, QuantumMachinesCompilationOutput) for output in outputs):
-            raise ValueError("Parallel execution is not supported in Quantum Machines.")
-
         return self.execute_compilation_outputs_parallel(
             outputs=cast("list[QbloxCompilationOutput]", [output.qblox for output in outputs]), debug=debug
         )
@@ -1696,17 +1591,17 @@ class Platform:
                 Defaults to False.
 
         Returns:
-            QProgramResults: The results of the execution. ``QProgramResults.results()`` returns a list of dictionary (``dict[str, list[Result]]``) of measurement results.
-            Each element of the list corresponds to a sequencer.
-            The keys correspond to the buses a measurement were performed upon, and the values are the list of measurement results in chronological order.
+            list[QProgramResult]: The results of the execution, one per QProgram, in the order of ``qprograms``.
         """
         sequences_per_qprogram = [output.sequences for output in outputs]
-        aquisitions_per_qprogram = [output.acquisitions for output in outputs]
         buses_per_qprogram = self._resolve_qblox_parallel_buses(sequences_per_qprogram=sequences_per_qprogram)
         self._apply_qblox_threshold_parallel(outputs=outputs, buses_per_qprogram=buses_per_qprogram)
 
         if debug:
             self._write_qblox_parallel_debug(sequences_per_qprogram=sequences_per_qprogram)
+
+        for output, buses in zip(outputs, buses_per_qprogram):
+            self._setup_qblox_scopes(output=output, buses=buses)
 
         # Upload sequences
         self._upload_qblox_parallel_sequences(
@@ -1722,7 +1617,6 @@ class Platform:
         results = self._acquire_qblox_parallel_results(
             outputs=outputs,
             buses_per_qprogram=buses_per_qprogram,
-            aquisitions_per_qprogram=aquisitions_per_qprogram,
         )
 
         # Reset instrument settings
@@ -1800,26 +1694,11 @@ class Platform:
         self,
         outputs: list[QbloxCompilationOutput],
         buses_per_qprogram: list[dict[str, Bus]],
-        aquisitions_per_qprogram: list[dict[str, Any]],
-    ) -> list[QProgramResults]:
-        results = [QProgramResults() for _ in outputs]
-        for qprogram_idx, buses in enumerate(buses_per_qprogram):
-            for bus_alias, bus in buses.items():
-                if bus.has_adc():
-                    for instrument, channel in zip(buses[bus_alias].instruments, buses[bus_alias].channels):
-                        if isinstance(instrument, QbloxModule):
-                            bus_results = bus.acquire_qprogram_results(
-                                acquisitions=aquisitions_per_qprogram[qprogram_idx][bus_alias],
-                                channel_id=int(channel),  # type: ignore[arg-type]
-                            )
-                            for bus_result, (_, acquisition_data) in zip(
-                                bus_results, aquisitions_per_qprogram[qprogram_idx][bus_alias].items()
-                            ):
-                                intertwined = acquisition_data.intertwined
-                                unintertwined_results = self._unintertwined_qblox_results(bus_result, intertwined)  # type: ignore[arg-type]
-                                for unintertwined_result in unintertwined_results:
-                                    results[qprogram_idx].append_result(bus=bus_alias, result=unintertwined_result)
-        return results
+    ) -> list[QProgramResult]:
+        return [
+            self._acquire_qblox_results(output=output, buses=buses)
+            for output, buses in zip(outputs, buses_per_qprogram)
+        ]
 
     def _reset_qblox_parallel_sequencers(
         self,

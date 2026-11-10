@@ -15,12 +15,12 @@
 from typing import Any
 
 import numpy as np
+from qprogram.blocks import Block
+from qprogram.waveforms import IQWaveform, Waveform
 
 from qililab.config import logger
-from qililab.qprogram.blocks import Block
 from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix, NonLinearCrosstalkMatrix
 from qililab.utils import sort_buses
-from qililab.waveforms import IQWaveform, Waveform
 from qililab.yaml import yaml
 
 _NO_CROSSTALK = "No crosstalk has been given to the Calibration file."

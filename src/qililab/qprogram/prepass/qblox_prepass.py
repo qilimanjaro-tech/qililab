@@ -18,36 +18,26 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
-from uuid import UUID
+
+from qprogram import Expression
+from qprogram.blocks import Average, Block, Parallel, Sweep
+from qprogram.operations import Measure, ResetPhase, SetFrequency, SetGain, SetOffset, SetPhase, Sync, Wait
+from qprogram_qblox import Acquire, Scope, SetMarkers
+from qprogram_qblox import WaitTrigger as QbloxWaitTrigger
+from qprogram_qdac import Play as QdacPlay
+from qprogram_qdac import SetTrigger as QdacSetTrigger
 
 from qililab.config import logger
-from qililab.constants import QDACCONSTANTS
-from qililab.core.variables import Variable
-from qililab.qprogram.blocks import Average, Block, Conditional, ForLoop
-from qililab.qprogram.operations import (
-    Acquire,
-    Measure,
-    MeasureReset,
-    Play,
-    PlayWithCalibratedWaveform,
-    ResetPhase,
-    SetFrequency,
-    SetGain,
-    SetMarkers,
-    SetOffset,
-    SetPhase,
-    SetTrigger,
-    Sync,
-    Wait,
-    WaitTrigger,
-)
+from qililab.qprogram.blocks import IfTrigger
+from qililab.qprogram.operations.measure_reset import MeasureReset
 from qililab.qprogram.prepass.utils_prepass import keep_instrument_operations
 
 if TYPE_CHECKING:
+    from qprogram.operations import Operation
+
     from qililab.pulse_distortion.pulse_distortion import PulseDistortion
     from qililab.qprogram.calibration import Calibration
     from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
-    from qililab.qprogram.operations import Operation
     from qililab.qprogram.qprogram import QProgram
 
 # Default and minimum for qp.if_trigger()'s trigger_padding_ns.
@@ -56,8 +46,10 @@ WAIT_TRIGGER_NETWORK_EXT_TRIGGER = 252
 # Operations carrying no duration
 NON_REALTIME_OPERATIONS = (SetFrequency, SetPhase, ResetPhase, SetGain, SetOffset, SetMarkers)
 
-# Per Qblox bus and per block uuid: (acquisitions directly in the block, block nesting depth)
-AcquisitionMetadata = dict[str, dict[UUID, tuple[int, int]]]
+# Per Qblox bus and per block id: (acquisitions directly in the block, block nesting depth). qprogram blocks compare
+# by structure, so two identical blocks are told apart by identity: the ids are those of the blocks of
+# ``QbloxPrepassResult.qprogram``, the program the compiler walks.
+AcquisitionMetadata = dict[str, dict[int, tuple[int, int]]]
 
 
 @dataclass(frozen=True)
@@ -85,7 +77,8 @@ class QbloxPrepassResult:
     """The Qblox buses: the given ones, else every bus of the QProgram."""
 
     acquisition_metadata: AcquisitionMetadata
-    """Per Qblox bus and per block: the number of acquisitions directly in the block, and the block's nesting depth."""
+    """Per Qblox bus and per block of ``qprogram`` (by ``id``): the number of acquisitions directly in the block, and
+    the block's nesting depth."""
 
     conditional: ConditionalTrigger | None
     """The ``qp.if_trigger()`` block, if any."""
@@ -109,6 +102,7 @@ def prepare_qblox(
     crosstalk: CrosstalkMatrix | None = None,
     bus_distortions: dict[str, list[PulseDistortion]] | None = None,
     qblox_buses: list[str] | None = None,
+    readout_modules: dict[str, str] | None = None,
 ) -> QbloxPrepassResult:
     """Prepare a QProgram, already through the shared pre-pass, for the Qblox compiler.
 
@@ -123,6 +117,8 @@ def prepare_qblox(
         crosstalk (CrosstalkMatrix, optional): Crosstalk matrix used if the calibration has no AC matrix. Defaults to None.
         bus_distortions (dict[str, list[PulseDistortion]], optional): Distortions to apply per bus. Defaults to None.
         qblox_buses (list[str], optional): The Qblox buses. Defaults to every bus of the QProgram.
+        readout_modules (dict[str, str], optional): The QRM of each Qblox bus that has one, by bus, used to check the
+            ``qp.qblox.scope`` of the QProgram. Defaults to None, which skips the checks needing it.
 
     Returns:
         QbloxPrepassResult: The QProgram with only Qblox operations, and what the compiler needs to know about it.
@@ -130,7 +126,7 @@ def prepare_qblox(
     Raises:
         ValueError: If a ``qp.qblox.measure_reset()`` measures or resets on a bus that isn't a Qblox bus, or if a
             ``qp.if_trigger()`` block has no operation on a Qblox bus, no wait time given or derivable from a QDAC
-            ``set_trigger(position='step')`` + ``play(dwell=...)``, or a ``trigger_padding_ns`` below the trigger
+            ``qp.qdac.set_trigger(position='step')`` + ``qp.qdac.play(dwell=...)``, or a ``trigger_padding_ns`` below the trigger
             network's propagation delay.
         NotImplementedError: If ``qp.if_trigger()`` is used in a way that isn't supported.
     """
@@ -149,7 +145,7 @@ def prepare_qblox(
 
     qblox_buses = qblox_buses or list(qprogram.buses)
     qblox_bus_set = set(qblox_buses)
-    leaves, acquisition_metadata, conditional_block = _walk_tree(qprogram.body, qblox_buses)
+    leaves, conditional_block = _walk_tree(qprogram.body)
 
     conditional = None
     if conditional_block is not None:
@@ -165,13 +161,16 @@ def prepare_qblox(
                 f"'{measure_reset.control_bus}', but both must be Qblox buses; the Qblox buses are {sorted(qblox_buses)}."
             )
 
+    _validate_scopes(qprogram.body, readout_modules)
+
+    qblox_qprogram = keep_instrument_operations(qprogram, qblox_bus_set)
     return QbloxPrepassResult(
-        qprogram=keep_instrument_operations(qprogram, qblox_bus_set),
+        qprogram=qblox_qprogram,
         qblox_buses=qblox_buses,
-        acquisition_metadata=acquisition_metadata,
+        acquisition_metadata=_acquisition_metadata(qblox_qprogram.body, qblox_buses),
         conditional=conditional,
         requires_external_trigger=conditional is not None
-        or any(isinstance(leaf, WaitTrigger) and leaf.bus in qblox_buses for leaf in leaves),
+        or any(isinstance(leaf, QbloxWaitTrigger) and leaf.bus in qblox_buses for leaf in leaves),
         latch_buses=list(dict.fromkeys(measure_reset.control_bus for measure_reset in measure_resets)),
         trigger_network_addresses={
             measure_reset.bus: measure_reset.trigger_address for measure_reset in measure_resets
@@ -179,80 +178,77 @@ def prepare_qblox(
     )
 
 
-def _walk_tree(
-    body: Block, qblox_buses: list[str]
-) -> tuple[list[Operation], AcquisitionMetadata, tuple[Conditional, int, int] | None]:
+def _walk_tree(body: Block) -> tuple[list[Operation], tuple[IfTrigger, int, int] | None]:
     """Walk the QProgram once, before the bus filter, since ``qp.if_trigger()`` needs the QDAC operations.
 
     Args:
         body (Block): The body of the QProgram.
-        qblox_buses (list[str]): The Qblox buses, the only ones whose acquisitions are counted.
 
     Returns:
-        tuple: The flat, document-order list of every non-``Block`` operation (the leaves); the acquisition metadata of
-        the Qblox buses (bus -> block uuid -> (acquisitions directly in the block, block depth)); and the
-        ``qp.if_trigger()`` block, if any, with the ``(start, end)`` range of its leaves.
+        tuple: The flat, document-order list of every non-``Block`` operation (the leaves), and the ``qp.if_trigger()``
+        block, if any, with the ``(start, end)`` range of its leaves.
 
     Raises:
-        NotImplementedError: If a block other than ``qp.average(...)``/``qp.for_loop(...)`` is nested inside
-            ``qp.if_trigger()``, or if there is more than one ``qp.if_trigger()`` block.
+        NotImplementedError: If a block other than ``qp.average(...)`` or a sweep is nested inside ``qp.if_trigger()``,
+            or if there is more than one ``qp.if_trigger()`` block.
     """
     leaves: list[Operation] = []
-    acquisition_metadata: AcquisitionMetadata = {}
-    conditional_block: tuple[Conditional, int, int] | None = None
+    conditional_block: tuple[IfTrigger, int, int] | None = None
 
-    def traverse(block: Block, depth: int, inside_conditional: bool) -> None:
+    def traverse(block: Block, inside_conditional: bool) -> None:
         nonlocal conditional_block
         for element in block.elements:
             if isinstance(element, Block):
-                if inside_conditional and not isinstance(element, (Average, ForLoop)):
+                if inside_conditional and not isinstance(element, (Average, Sweep)):
                     raise NotImplementedError(
                         f"{type(element).__name__} block cannot be nested inside qp.if_trigger() "
-                        "(only qp.average(...)/qp.for_loop(...) can be)."
+                        "(only qp.average(...) and sweeps can be)."
                     )
                 start = len(leaves)
-                traverse(element, depth + 1, inside_conditional or isinstance(element, Conditional))
-                if isinstance(element, Conditional):
+                traverse(element, inside_conditional or isinstance(element, IfTrigger))
+                if isinstance(element, IfTrigger):
                     if conditional_block is not None:
                         raise NotImplementedError("Only one qp.if_trigger() block is supported per QProgram.")
                     conditional_block = (element, start, len(leaves))
             else:
                 leaves.append(element)
-                _count_acquisition(acquisition_metadata, element, block, depth, qblox_buses)
 
-    traverse(body, 0, False)
-    return leaves, acquisition_metadata, conditional_block
+    traverse(body, False)
+    return leaves, conditional_block
 
 
-def _count_acquisition(
-    acquisition_metadata: AcquisitionMetadata,
-    element: Operation,
-    block: Block,
-    depth: int,
-    qblox_buses: list[str],
-) -> None:
-    """Count an acquisition on a Qblox bus in the acquisition metadata of the block holding it.
+def _acquisition_metadata(body: Block, qblox_buses: list[str]) -> AcquisitionMetadata:
+    """Count the acquisitions on Qblox buses directly held by each block, with the block's nesting depth.
 
     Args:
-        acquisition_metadata (AcquisitionMetadata): The acquisition metadata being collected, updated in place.
-        element (Operation): The operation. Only an ``Acquire``, ``Measure`` or ``MeasureReset`` on a Qblox bus counts.
-        block (Block): The block directly holding ``element``.
-        depth (int): The nesting depth of ``block``.
-        qblox_buses (list[str]): The Qblox buses.
+        body (Block): The body of the QProgram the compiler walks.
+        qblox_buses (list[str]): The Qblox buses, the only ones whose acquisitions are counted.
+
+    Returns:
+        AcquisitionMetadata: Per bus and per block id, the acquisitions directly in the block and the block's depth.
     """
-    if isinstance(element, (Acquire, Measure, MeasureReset)) and element.bus in qblox_buses:
-        block_metadata = acquisition_metadata.setdefault(element.bus, {})
-        count, _ = block_metadata.get(block.uuid, (0, depth))
-        block_metadata[block.uuid] = (count + 1, depth)
+    acquisition_metadata: AcquisitionMetadata = {}
+
+    def traverse(block: Block, depth: int) -> None:
+        for element in block.elements:
+            if isinstance(element, Block):
+                traverse(element, depth + 1)
+            elif isinstance(element, (Acquire, Measure, MeasureReset)) and element.bus in qblox_buses:
+                block_metadata = acquisition_metadata.setdefault(element.bus, {})
+                count, _ = block_metadata.get(id(block), (0, depth))
+                block_metadata[id(block)] = (count + 1, depth)
+
+    traverse(body, 0)
+    return acquisition_metadata
 
 
 def _validate_conditional_trigger(
-    element: Conditional, leaf_range: tuple[int, int], all_leaves: list[Operation], qblox_buses: list[str]
+    element: IfTrigger, leaf_range: tuple[int, int], all_leaves: list[Operation], qblox_buses: list[str]
 ) -> ConditionalTrigger:
     """Validate a ``qp.if_trigger()`` block and resolve the bus it gates and its wait time.
 
     Args:
-        element (Conditional): The ``qp.if_trigger()`` block.
+        element (IfTrigger): The ``qp.if_trigger()`` block.
         leaf_range (tuple[int, int]): ``(start, end)`` indices, within ``all_leaves``, of the operations nested in the
             block at any depth. Which blocks may be nested in it is already checked by ``_walk_tree``.
         all_leaves (list[Operation]): Every non-``Block`` operation of the QProgram, in document order. Used to derive
@@ -266,12 +262,12 @@ def _validate_conditional_trigger(
         NotImplementedError: If the block contains a ``qp.wait(duration=<variable>)``, touches more than one Qblox
             bus, or if more than one Qblox bus is compiled at all.
         ValueError: If no operation in the block is on a Qblox bus, if ``expected_wait_time_ns`` isn't given and can't
-            be derived from a QDAC ``set_trigger(position='step')`` + ``play(dwell=...)``, or if
+            be derived from a ``qp.qdac.set_trigger(position='step')`` + ``qp.qdac.play(dwell=...)``, or if
             ``trigger_padding_ns`` is below the trigger network's propagation delay.
     """
     start, end = leaf_range
     leaves = all_leaves[start:end]
-    dynamic_wait = next((x for x in leaves if isinstance(x, Wait) and isinstance(x.duration, Variable)), None)
+    dynamic_wait = next((x for x in leaves if isinstance(x, Wait) and isinstance(x.duration, Expression)), None)
     if dynamic_wait is not None:
         raise NotImplementedError(
             f"qp.wait(bus='{dynamic_wait.bus}', duration=<variable>) cannot be used inside "
@@ -300,7 +296,7 @@ def _validate_conditional_trigger(
     if expected_wait_time_ns is None:
         raise ValueError(
             f"qp.if_trigger() on bus '{bus}' has no expected_wait_time_ns and no QDAC "
-            "set_trigger(position='step') + play(dwell=...) in this QProgram to derive it from."
+            "qp.qdac.set_trigger(position='step') + qp.qdac.play(dwell=...) in this QProgram to derive it from."
         )
 
     if element.trigger_padding_ns is not None and element.trigger_padding_ns < WAIT_TRIGGER_NETWORK_EXT_TRIGGER:
@@ -321,53 +317,50 @@ def _validate_conditional_trigger(
 def _derive_expected_wait_time_from_qdac(leaves: list[Operation], qblox_buses: list[str]) -> int | None:
     """Derive the external-trigger wait time (ns) from a QDAC trigger set up in this same QProgram.
 
-    ``qp.set_trigger(bus, ..., position="step")`` fires the trigger once per sweep step, so the inter-trigger period
-    equals that step's ``dwell`` (set via ``qp.qdac.play(bus, ..., dwell=...)``, in microseconds). Returns ``None`` if
-    no such trigger is found, e.g. the trigger source isn't a QDAC modeled in this QProgram.
+    ``qp.qdac.set_trigger(bus, ..., position="step")`` fires the trigger once per sweep step, so the inter-trigger
+    period equals that step's ``dwell`` (set via ``qp.qdac.play(bus, ..., dwell=...)``, in microseconds). Returns
+    ``None`` if no such trigger is found, e.g. the trigger source isn't a QDAC modeled in this QProgram.
 
     Args:
         leaves (list[Operation]): Every non-``Block`` operation of the QProgram, in document order.
-        qblox_buses (list[str]): The Qblox buses, whose plays are never taken for QDAC plays.
+        qblox_buses (list[str]): The Qblox buses.
 
     Returns:
         int | None: The wait time in ns, or ``None`` if there is no such trigger.
 
     Raises:
-        NotImplementedError: If a ``qp.set_trigger()`` on a QDAC-driven bus has a ``position`` other than ``"step"``,
-            or if more than one bus has a ``qp.set_trigger(position="step")``: which one is wired to the trigger
-            address ``qp.if_trigger()`` gates on cannot be inferred from the QProgram alone.
-        ValueError: If a ``qp.set_trigger(position="step")`` has no preceding ``qp.qdac.play(bus, dwell=...)``.
+        NotImplementedError: If a ``qp.qdac.set_trigger()`` on a bus with a QDAC play has a ``position`` other than
+            ``"step"``, or if more than one bus has a ``qp.qdac.set_trigger(position="step")``: which one is wired to
+            the trigger address ``qp.if_trigger()`` gates on cannot be inferred from the QProgram alone.
+        ValueError: If a ``qp.qdac.set_trigger(position="step")`` has no preceding ``qp.qdac.play(bus, dwell=...)``.
     """
     dwell_us_by_bus: dict[str, int] = {}
     step_trigger_wait_time_by_bus: dict[str, int] = {}
 
     for element in leaves:
-        if isinstance(element, (Play, PlayWithCalibratedWaveform)):
+        if isinstance(element, QdacPlay):
             if element.bus not in qblox_buses and element.bus not in dwell_us_by_bus:
-                # A falsy (unset or 0) dwell mirrors the QDAC compiler's own default. Qblox buses are excluded so a
-                # plain qp.play() on the gated bus itself is never mistaken for a QDAC-driven bus.
-                dwell_us_by_bus[element.bus] = element.dwell or QDACCONSTANTS.DEFAULT_DWELL_US
-        elif isinstance(element, SetTrigger):
+                dwell_us_by_bus[element.bus] = element.dwell
+        elif isinstance(element, QdacSetTrigger):
             if element.position == "step":
                 if element.bus not in dwell_us_by_bus:
                     raise ValueError(
-                        f"qp.set_trigger(bus='{element.bus}', position='{element.position}') has no "
+                        f"qp.qdac.set_trigger(bus='{element.bus}', position='{element.position}') has no "
                         f"preceding qp.qdac.play(bus='{element.bus}', dwell=...) in this QProgram to "
                         "derive its wait time from."
                     )
                 step_trigger_wait_time_by_bus[element.bus] = dwell_us_by_bus[element.bus] * 1000
             elif element.bus in dwell_us_by_bus:
-                # Only buses already known to be QDAC-driven must use position="step"; a qp.set_trigger() on an
-                # unrelated bus (e.g. a Qblox marker trigger) isn't part of this derivation.
+                # Only buses already known to play a QDAC list must use position="step".
                 raise NotImplementedError(
-                    f"qp.if_trigger() requires qp.set_trigger(bus='{element.bus}', position='step'); "
+                    f"qp.if_trigger() requires qp.qdac.set_trigger(bus='{element.bus}', position='step'); "
                     f"got position='{element.position}'."
                 )
 
     if len(step_trigger_wait_time_by_bus) > 1:
         raise NotImplementedError(
             "Cannot derive qp.if_trigger()'s expected_wait_time_ns automatically: found "
-            f"qp.set_trigger(position='step') on more than one bus ({sorted(step_trigger_wait_time_by_bus)}); "
+            f"qp.qdac.set_trigger(position='step') on more than one bus ({sorted(step_trigger_wait_time_by_bus)}); "
             "pass expected_wait_time_ns explicitly to disambiguate which one gates the trigger."
         )
     return next(iter(step_trigger_wait_time_by_bus.values()), None)
@@ -378,7 +371,7 @@ def _validate_conditional_bus_isolation(
 ) -> None:
     """Ensure the bus gated by ``qp.if_trigger()`` has no real-time instruction outside the block.
 
-    The epilogue's padding only balances the time spent inside the ``Conditional`` block; a real-time instruction on
+    The epilogue's padding only balances the time spent inside the ``IfTrigger`` block; a real-time instruction on
     the same bus outside it would drift the sequencer out of phase with the QDAC's trigger cadence.
     ``NON_REALTIME_OPERATIONS`` (``qp.set_frequency()``, ``qp.set_offset()``, ...) add no duration, so are allowed.
 
@@ -399,7 +392,7 @@ def _validate_conditional_bus_isolation(
         if isinstance(x, NON_REALTIME_OPERATIONS):
             return False
         if isinstance(x, Sync):
-            return bus in (x.buses or qblox_buses_in_qprogram)
+            return bus in (x.targets or qblox_buses_in_qprogram)
         return getattr(x, "bus", None) == bus
 
     outside = [x for i, x in enumerate(all_leaves) if touches_bus(x) and not start <= i < end]
@@ -408,3 +401,53 @@ def _validate_conditional_bus_isolation(
             f"Bus '{bus}' cannot have instructions outside its qp.if_trigger() block: found "
             f"{type(outside[0]).__name__} outside the conditional, which would break the synchronisation."
         )
+
+
+def _validate_scopes(body: Block, readout_modules: dict[str, str] | None) -> None:
+    """Check the ``qp.qblox.scope`` of a QProgram against what a QRM's scope can record.
+
+    A QRM has one scope, recording its inputs, triggered by one sequencer's acquisitions or by an input level.
+
+    Args:
+        body (Block): The body of the QProgram, after the bus mapping.
+        readout_modules (dict[str, str] | None): The QRM of each bus that has one, or None to skip the checks needing it.
+
+    Raises:
+        ValueError: If a scoped bus is not on a QRM, two scoped buses are on the same QRM, or a scope triggered by its
+            bus's acquisitions has no acquisition on that bus.
+    """
+    scopes = [node for node in body.walk() if isinstance(node, Scope)]
+    if not scopes:
+        return
+    acquisitions_per_bus: dict[str, list[bool]] = {}
+
+    def traverse(block: Block, in_loop: bool) -> None:
+        for element in block.elements:
+            if isinstance(element, Block):
+                traverse(element, in_loop or isinstance(element, (Sweep, Parallel)))
+            elif isinstance(element, (Acquire, Measure, MeasureReset)):
+                acquisitions_per_bus.setdefault(element.bus, []).append(in_loop)
+
+    traverse(body, False)
+    scoped_modules: dict[str, str] = {}
+    for scope in scopes:
+        if readout_modules is not None:
+            module = readout_modules.get(scope.bus)
+            if module is None:
+                raise ValueError(f"qp.qblox.scope() scopes bus '{scope.bus}', which is not on a QRM.")
+            if module in scoped_modules:
+                raise ValueError(
+                    f"qp.qblox.scope() scopes buses '{scoped_modules[module]}' and '{scope.bus}', both on QRM "
+                    f"'{module}': a QRM has one scope, so scope one bus per QRM."
+                )
+            scoped_modules[module] = scope.bus
+        acquisitions = acquisitions_per_bus.get(scope.bus, [])
+        if scope.trigger_level is None and not acquisitions:
+            raise ValueError(
+                f"qp.qblox.scope() on bus '{scope.bus}' is triggered by the bus's acquisitions, but the bus has none."
+            )
+        if len(acquisitions) > 1 or any(acquisitions):
+            logger.warning(
+                f"The scope of bus '{scope.bus}' is triggered by several acquisitions (more than one, or one in a sweep): "
+                "its trace averages over all of them."
+            )

@@ -23,6 +23,18 @@ Pending deprecations
     - Deprecated in an upcoming release (`#1112 <https://github.com/qilimanjaro-tech/qililab/pull/1112>`_)
     - No removal version set yet
 
+- `QProgram.for_loop` is deprecated in favor of `qp.sweep(variable).from_range(start, stop, step)`. When `step` does not divide `stop - start`, `from_range` rounds the number of points to the nearest and steps by `step`, where `for_loop` rounds it down and spreads the points from `start` to `stop`.
+    - Deprecated in an upcoming release
+    - No removal version set yet
+
+- `QProgram.parallel` (with `ForLoop` / `Loop` descriptions) is deprecated in favor of combining sweeps with `|`: `qp.sweep(a).from_range(...) | qp.sweep(b).from_range(...)`.
+    - Deprecated in an upcoming release
+    - No removal version set yet
+
+- The runcard's `scope_acquire_trigger_mode`, `scope_hardware_averaging` and `scope_store_enabled` fields (on `QbloxADCSequencer`), and their `Parameter` members in `set_parameter` / `get_parameter`, are deprecated and ignored; the scope is now set from the QProgram with `qp.qblox.scope(bus, averaging, trigger_level)`.
+    - Deprecated in an upcoming release
+    - No removal version set yet
+
 Completed deprecation cycles
 -----------------------------
 - The `path` argument in `qililab.build_platform` was changed to `runcard`, since it not only accepts a path to the YAML file but also the dictionary directly.

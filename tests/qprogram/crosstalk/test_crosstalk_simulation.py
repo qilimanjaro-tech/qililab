@@ -1,11 +1,17 @@
 import numpy as np
 import pytest
+from qprogram import Range
+from qprogram.blocks import Sweep
 
-from qililab.core.variables import Domain
 from qililab.qprogram import QProgram
 from qililab.qprogram.blocks import ForLoop
 from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
-from tests.qprogram.crosstalk.crosstalk_simulation import assert_compensated, compensation_mismatches, loop_values, simulate
+from tests.qprogram.crosstalk.crosstalk_simulation import (
+    assert_compensated,
+    compensation_mismatches,
+    loop_values,
+    simulate,
+)
 
 BUSES = ["flux1", "flux2"]
 
@@ -19,8 +25,8 @@ def make_crosstalk(matrix, flux_offsets=None) -> CrosstalkMatrix:
 
 def single_sweep() -> QProgram:
     qp = QProgram()
-    x = qp.variable("x", Domain.Voltage)
-    with qp.for_loop(x, 0, 0.2, 0.1):
+    x = qp.variable("x")
+    with qp.sweep(x).from_range(0, 0.2, 0.1):
         qp.set_offset("flux1", x)
         qp.set_offset("flux2", 0.05)
         qp.wait("flux1", 100)
@@ -28,17 +34,17 @@ def single_sweep() -> QProgram:
 
 
 def test_loop_values_match_compiler_count():
-    x = QProgram().variable("x", Domain.Voltage)
-    assert np.allclose(loop_values(ForLoop(x, 0, 0.25, 0.1)), [0.0, 0.125, 0.25])
-    assert np.allclose(loop_values(ForLoop(x, 0.2, 0.2, 0.1)), [0.2])
+    x = QProgram().variable("x")
+    assert np.allclose(loop_values(Sweep(x, ForLoop(x, 0, 0.25, 0.1).to_range())), [0.0, 0.125, 0.25])
+    assert np.allclose(loop_values(Sweep(x, ForLoop(x, 0.2, 0.2, 0.1).to_range())), [0.2])
 
 
 def test_simulate_records_state_at_each_wait_and_later_offsets_replace_earlier_ones():
     qp = QProgram()
-    x = qp.variable("x", Domain.Voltage)
+    x = qp.variable("x")
     qp.set_offset("flux1", 0.3)
     qp.wait("flux1", 100)
-    with qp.for_loop(x, 0, 0.1, 0.1):
+    with qp.sweep(x).from_range(0, 0.1, 0.1):
         qp.set_offset("flux1", x)
         qp.wait("flux1", 100)
 
@@ -64,10 +70,12 @@ def test_single_sweep_is_compensated():
 
 def test_parallel_loops_of_different_lengths_raise():
     qp = QProgram()
-    x = qp.variable("x", Domain.Voltage)
-    y = qp.variable("y", Domain.Voltage)
-    with qp.parallel([ForLoop(x, 0, 0.1, 0.05), ForLoop(y, 0, 0.1, 0.025)]):
+    x = qp.variable("x")
+    y = qp.variable("y")
+    with qp.sweep(x).from_range(0, 0.1, 0.05) | qp.sweep(y).from_range(0, 0.1, 0.05) as parallel:
         qp.set_offset("flux1", x)
         qp.wait("flux1", 100)
+    # A Parallel refuses loops of different lengths when built, so give it one afterwards.
+    parallel.loops[1] = Sweep(y, Range(0, 0.1, 0.025))
     with pytest.raises(ValueError, match="different lengths"):
         simulate(qp, BUSES)

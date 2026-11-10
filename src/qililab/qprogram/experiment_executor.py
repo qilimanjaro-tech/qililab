@@ -20,25 +20,20 @@ from dataclasses import dataclass
 from datetime import datetime
 from time import perf_counter
 from types import LambdaType
-from typing import TYPE_CHECKING, Callable
-from uuid import UUID
+from typing import TYPE_CHECKING, Callable, cast
 
 import numpy as np
+from qprogram import QProgramResult, Range, Variable
+from qprogram.blocks import Average, Block, Parallel, Sweep
+from qprogram.operations import Operation
+from qprogram.operations.operation import MeasurementField, MeasurementOperation
+from qprogram_qblox import Scope
 from rich.progress import BarColumn, Progress, TaskID, TextColumn, TimeElapsedColumn
 
-from qililab.core.variables import Variable
 from qililab.qililab_settings import get_settings
-from qililab.qprogram.blocks import Average, Block, ForLoop, Loop, Parallel, for_loop_iterations
+from qililab.qprogram.blocks import to_scalar
 from qililab.qprogram.experiment import Experiment
-from qililab.qprogram.operations import (
-    Acquire,
-    ExecuteQProgram,
-    GetParameter,
-    Measure,
-    MeasureReset,
-    Operation,
-    SetParameter,
-)
+from qililab.qprogram.operations import ExecuteQProgram, GetParameter, SetParameter
 from qililab.qprogram.operations.set_crosstalk import SetCrosstalk
 from qililab.result.experiment_results_writer import (
     ExperimentDataBaseMetadata,
@@ -48,7 +43,6 @@ from qililab.result.experiment_results_writer import (
     QProgramMetadata,
     VariableMetadata,
 )
-from qililab.result.qprogram.qprogram_results import QProgramResults
 from qililab.utils.serialization import serialize
 
 if TYPE_CHECKING:
@@ -59,7 +53,9 @@ if TYPE_CHECKING:
 class VariableInfo:
     """Dataclass to store information of a Variable"""
 
-    uuid: UUID
+    uuid: int
+    """The ``id`` of the variable: qprogram variables compare by name, and an experiment's and a QProgram's may share
+    one."""
     label: str
     values: np.ndarray
 
@@ -135,10 +131,12 @@ class ExperimentExecutor:
         self._all_variables: dict = defaultdict(lambda: {"label": None, "values": {}})
 
         # Mapping from each Block to the list of variables associated with that block
-        self._variables_per_block: dict[Block, list[VariableInfo]] = {}
+        # By block id: qprogram blocks compare by structure, so two identical loops would share an entry
+        self._variables_per_block: dict[int, list[VariableInfo]] = {}
 
         # Mapping from each ExecuteQProgram operation to its execution index (order of execution)
-        self._qprogram_execution_indices: dict[ExecuteQProgram, int] = {}
+        # By operation id, for the same reason: the same QProgram executed twice has two indices
+        self._qprogram_execution_indices: dict[int, int] = {}
 
         # Variables that uses flux for further processing and saving the right bias
         # TODO: implement a way to save the bias based on the same principle as HW loops Xtalk
@@ -173,7 +171,7 @@ class ExperimentExecutor:
 
         def traverse_experiment(block: Block):
             """Traverses the blocks to gather loop information and determine result shape."""
-            if isinstance(block, (Loop, ForLoop, Parallel)):
+            if isinstance(block, (Sweep, Parallel)):
                 variables = self._get_variables_of_loop(block)
 
                 self._experiment_variables_stack.append(variables)
@@ -186,21 +184,22 @@ class ExperimentExecutor:
                 if isinstance(element, ExecuteQProgram):
                     if isinstance(element.qprogram, LambdaType):
                         signature = inspect.signature(element.qprogram)
-                        call_parameters = {param.name: 0 for param in signature.parameters.values()}
+                        # Only the structure is read here: 1 is a value every operation accepts, shots included
+                        call_parameters = {param.name: 1 for param in signature.parameters.values()}
                         qprogram = element.qprogram(**call_parameters)
                         traverse_qprogram(qprogram.body)
                     else:
                         traverse_qprogram(element.qprogram.body)
-                    self._qprogram_execution_indices[element] = self._qprogram_index
+                    self._qprogram_execution_indices[id(element)] = self._qprogram_index
                     self._measurement_index = 0
                     self._qprogram_index += 1
 
-            if isinstance(block, (Loop, ForLoop, Parallel)):
+            if isinstance(block, (Sweep, Parallel)):
                 del self._experiment_variables_stack[-1]
 
         def traverse_qprogram(block: Block):
             """Traverses a QProgram to gather loop information."""
-            if isinstance(block, (Loop, ForLoop, Parallel)):
+            if isinstance(block, (Sweep, Parallel)):
                 variables = self._get_variables_of_loop(block, qprogram=True)
 
                 self._qprogram_variables_stack.append(variables)
@@ -211,13 +210,12 @@ class ExperimentExecutor:
             for element in block.elements:
                 if isinstance(element, Block):
                     traverse_qprogram(element)
-                # Acquire, Measure and MeasureReset each produce a measurement result in the
-                # QProgramResults timeline (this is the same set the QbloxCompiler treats as
-                # acquisitions), so each must get its own entry in the results structure.
-                if isinstance(element, (Acquire, Measure, MeasureReset)):
+                # Every measurement but a scope (acquire, measure, measure_reset) produces a measurement result
+                # with an IQ field, so each must get its own entry in the results structure.
+                if isinstance(element, MeasurementOperation) and not isinstance(element, Scope):
                     finalize_measurement_structure()
 
-            if isinstance(block, (Loop, ForLoop, Parallel)):
+            if isinstance(block, (Sweep, Parallel)):
                 del self._qprogram_variables_stack[-1]
             if isinstance(block, Average):
                 self._shots = 1
@@ -282,42 +280,42 @@ class ExperimentExecutor:
     def _prepare_operations(self, block: Block, progress: Progress):
         """Traverse blocks, store generated Python functions, and return the stored operations."""
 
-        # A mapping from block UUID to the associated Progress TaskID
-        task_ids: dict[UUID, TaskID] = {}
+        # A mapping from block id to the associated Progress TaskID
+        task_ids: dict[int, TaskID] = {}
 
         # A list of operations to execute
         operations: list[Callable] = []
 
-        # A mapping from block UUID to the index of the current value of its variable
-        self.loop_indices: dict[UUID, int] = {}
+        # A mapping from block id to the index of the current value of its variable
+        self.loop_indices: dict[int, int] = {}
 
-        # A mapping from variable UUID to current value of the variable
-        current_value_of_variable: dict[UUID, int | float] = {}
+        # A mapping from variable id to current value of the variable
+        current_value_of_variable: dict[int, int | float] = {}
 
-        def handle_loop(block: ForLoop | Loop | Parallel) -> list[Callable]:
-            """Common logic for handling ForLoop and Loop blocks."""
+        def handle_loop(block: Sweep | Parallel) -> list[Callable]:
+            """Common logic for handling Sweep and Parallel blocks."""
             loop_operations: list[Callable] = []
 
             # Determine loop parameters based on the type of block
-            label = ",".join([variable.label for variable in self._variables_per_block[block]])
-            shape = self._variables_per_block[block][0].values.shape[-1]
+            label = ",".join([variable.label for variable in self._variables_per_block[id(block)]])
+            shape = self._variables_per_block[id(block)][0].values.shape[-1]
 
             # Create the progress bar for the loop
             def create_progress_bar():
                 total_iterations = shape
                 loop_task_id = progress.add_task(f"Looping over {label}", total=total_iterations)
                 # Store the task ID associated with this loop block
-                task_ids[block.uuid] = loop_task_id
+                task_ids[id(block)] = loop_task_id
 
                 # Track the index for this loop
-                self.loop_indices[block.uuid] = 0
+                self.loop_indices[id(block)] = 0
 
                 return loop_task_id
 
             loop_operations.append(create_progress_bar)
 
             def advance_progress_bar(variable_value: tuple[int | float, ...]) -> None:
-                loop_task_id = task_ids[block.uuid]
+                loop_task_id = task_ids[id(block)]
                 progress.update(
                     loop_task_id,
                     description=f"Looping over {label}: {variable_value[0] if len(variable_value) == 1 else variable_value}",
@@ -326,14 +324,14 @@ class ExperimentExecutor:
 
             def advance_loop_index() -> None:
                 # Update the loop index
-                self.loop_indices[block.uuid] += 1
+                self.loop_indices[id(block)] += 1
 
-            uuids = [variable.uuid for variable in self._variables_per_block[block]]
-            values = [variable.values for variable in self._variables_per_block[block]]
+            uuids = [variable.uuid for variable in self._variables_per_block[id(block)]]
+            values = [variable.values for variable in self._variables_per_block[id(block)]]
 
             for current_values in zip(*values):
                 for uuid, value in zip(uuids, current_values):
-                    current_value_of_variable[uuid] = value
+                    current_value_of_variable[uuid] = cast("int | float", to_scalar(value))
 
                 loop_operations.append(lambda value=current_values: advance_progress_bar(value))  # type: ignore
 
@@ -343,8 +341,8 @@ class ExperimentExecutor:
                 loop_operations.append(advance_loop_index)
 
             def remove_progress_bar():
-                progress.remove_task(task_ids[block.uuid])
-                del self.loop_indices[block.uuid]
+                progress.remove_task(task_ids[id(block)])
+                del self.loop_indices[id(block)]
 
             loop_operations.append(remove_progress_bar)
 
@@ -357,12 +355,12 @@ class ExperimentExecutor:
             for element in elements:
                 if isinstance(element, GetParameter):
                     # Set current value of the variable to None
-                    current_value_of_variable[element.variable.uuid] = None  # type: ignore[assignment]
+                    current_value_of_variable[id(element.variable)] = None  # type: ignore[assignment]
                     # Append a lambda that will call the `platform.get_parameter` method and assign the returned value to the variable
                     elements_operations.append(
                         lambda operation=element: current_value_of_variable.update(
                             {
-                                operation.variable.uuid: self.platform.get_parameter(
+                                id(operation.variable): self.platform.get_parameter(
                                     alias=operation.alias,
                                     parameter=operation.parameter,
                                     channel_id=operation.channel_id,
@@ -378,13 +376,13 @@ class ExperimentExecutor:
                 if isinstance(element, SetParameter):
                     # Append a lambda that will call the `platform.set_parameter` method
                     if isinstance(element.value, Variable):
-                        if current_value_of_variable[element.value.uuid] is None:
+                        if current_value_of_variable[id(element.value)] is None:
                             # Variable has no value and it will get it from a `GetOperation` in the future. Thus, don't bind `value` in lambda.
                             elements_operations.append(
                                 lambda operation=element: self.platform.set_parameter(
                                     alias=operation.alias,
                                     parameter=operation.parameter,
-                                    value=current_value_of_variable[operation.value.uuid],
+                                    value=current_value_of_variable[id(operation.value)],
                                     channel_id=operation.channel_id,
                                     output_id=operation.output_id,
                                 )
@@ -392,7 +390,7 @@ class ExperimentExecutor:
                         else:
                             # Variable has a value that was set from a loop. Thus, bind `value` in lambda with the current value of the variable.
                             elements_operations.append(
-                                lambda operation=element, value=current_value_of_variable[element.value.uuid]: (
+                                lambda operation=element, value=current_value_of_variable[id(element.value)]: (
                                     self.platform.set_parameter(
                                         alias=operation.alias,
                                         parameter=operation.parameter,
@@ -415,21 +413,21 @@ class ExperimentExecutor:
                         )
 
                 if isinstance(element, ExecuteQProgram):
-                    qprogram_index = self._qprogram_execution_indices[element]
+                    qprogram_index = self._qprogram_execution_indices[id(element)]
                     if isinstance(element.qprogram, LambdaType):
                         signature = inspect.signature(element.qprogram)
                         call_parameters: dict[str, int | float] = {}
-                        deferred_parameters: dict[str, UUID] = {}
+                        deferred_parameters: dict[str, int] = {}
 
                         # Iterate through parameters and separate the ones that have values and the ones that don't
                         for param in signature.parameters.values():
                             if isinstance(param.default, Variable):
-                                variable_value = current_value_of_variable.get(param.default.uuid, None)
+                                variable_value = current_value_of_variable.get(id(param.default), None)
                                 if variable_value is None:
                                     # The variable doesn't have a value yet; defer binding
-                                    deferred_parameters[param.name] = param.default.uuid
+                                    deferred_parameters[param.name] = id(param.default)
                                     # Make sure key exists
-                                    current_value_of_variable[param.default.uuid] = None  # type: ignore[assignment]
+                                    current_value_of_variable[id(param.default)] = None  # type: ignore[assignment]
                                 else:
                                     # The variable has a current value; bind it immediately
                                     call_parameters[param.name] = variable_value
@@ -478,14 +476,22 @@ class ExperimentExecutor:
 
             return elements_operations
 
-        def store_results(qprogram_results: QProgramResults, qprogram_index: int):
+        def store_results(qprogram_result: QProgramResult, qprogram_index: int):
             """Store the result in the correct location within the ExperimentResultsWriter."""
             # Determine the index based on current loop indices and store the results in the ExperimentResultsWriter
-            for measurement_index, measurement_result in enumerate(qprogram_results.timeline):
+            measurements = [
+                record for record in qprogram_result.measurements if MeasurementField.RAW not in record.fields
+            ]
+            for measurement_index, measurement_result in enumerate(measurements):
+                if MeasurementField.IQ not in measurement_result.fields:
+                    raise ValueError(
+                        f"The ExperimentExecutor stores the IQ field of each measurement, but measurement "
+                        f"{measurement_result.name!r} did not request it."
+                    )
                 indices = (qprogram_index, measurement_index, *tuple(index for _, index in self.loop_indices.items()))
-                self._results_writer[indices] = np.moveaxis(measurement_result.array, 0, -1)
+                self._results_writer[indices] = measurement_result.fields[MeasurementField.IQ].values
 
-        if isinstance(block, (Loop, ForLoop, Parallel)):
+        if isinstance(block, (Sweep, Parallel)):
             # Handle loops
             operations.extend(handle_loop(block))
         else:
@@ -522,33 +528,37 @@ class ExperimentExecutor:
             return np.around(result, decimals=0).astype(int)
         return np.around(result, decimals=decimal_places)
 
-    def _inclusive_range_qprogram(self, start: int | float, stop: int | float, step: int | float) -> np.ndarray:
-        return np.linspace(start, stop, for_loop_iterations(start, stop, step))
+    def _get_loop_values(self, loop: Sweep, qprogram: bool = False) -> np.ndarray:
+        """Compute the values for a single loop.
 
-    def _get_loop_values(self, loop: Loop | ForLoop, qprogram: bool = False) -> np.ndarray:
-        """Compute the values for a single Loop/ForLoop."""
-        if not isinstance(loop, ForLoop):
-            return loop.values
-        if qprogram:
-            return self._inclusive_range_qprogram(loop.start, loop.stop, loop.step)
-        return self._inclusive_range(loop.start, loop.stop, loop.step)
+        A QProgram loop takes its source's values. An experiment's ``for_loop`` keeps the values the experiment always
+        swept: integers when its bounds and step are, else rounded to the step's precision.
+        """
+        source = loop.source
+        if qprogram or not isinstance(source, Range):
+            return source.values()
+        start, stop, step = source.start, source.values()[-1], source.step
+        if all(float(value).is_integer() for value in (start, stop, step)):
+            return self._inclusive_range(int(start), int(stop), int(step))
+        return self._inclusive_range(start, stop, step)
 
-    def _get_variables_of_loop(self, block: Loop | ForLoop | Parallel, qprogram: bool = False) -> list[VariableInfo]:
-        variables: dict[UUID, VariableInfo] = {}
+    def _get_variables_of_loop(self, block: Sweep | Parallel, qprogram: bool = False) -> list[VariableInfo]:
+        variables: dict[int, VariableInfo] = {}
 
         loops = block.loops if isinstance(block, Parallel) else [block]
         for loop in loops:
             values = self._get_loop_values(loop, qprogram)
-            variable = VariableInfo(uuid=loop.variable.uuid, label=loop.variable.label, values=values)
-            variables[loop.variable.uuid] = variable
+            label = loop.variable.label or loop.variable.id
+            variable = VariableInfo(uuid=id(loop.variable), label=label, values=values)
+            variables[id(loop.variable)] = variable
 
-        self._variables_per_block[block] = list(variables.values())
+        self._variables_per_block[id(block)] = list(variables.values())
 
         # Update all_variables registry
         for variable in variables.values():
             if self._all_variables[variable.uuid]["label"] is None:
                 self._all_variables[variable.uuid]["label"] = variable.label
-            self._all_variables[variable.uuid]["values"][block.uuid] = variable.values
+            self._all_variables[variable.uuid]["values"][id(block)] = variable.values
 
         return list(variables.values())
 

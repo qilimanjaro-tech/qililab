@@ -12,14 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from qililab.core.variables import Variable
-from qililab.qprogram.operations.operation import Operation
+from typing import ClassVar
+
+from qprogram import Variable
+from qprogram.operations import Operation
+
 from qililab.typings.enums import Parameter
 from qililab.yaml import yaml
 
 
 @yaml.register_class
 class GetParameter(Operation):
+    BUS_ATTRS: ClassVar[tuple[str, ...]] = ()
+
     def __init__(
         self,
         variable: Variable,
@@ -28,7 +33,6 @@ class GetParameter(Operation):
         channel_id: int | None = None,
         output_id: int | None = None,
     ) -> None:
-        super().__init__()
         self.variable: Variable = variable
         self.alias: str = alias
         self.parameter: Parameter = parameter

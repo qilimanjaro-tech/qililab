@@ -27,14 +27,14 @@ import contextlib
 from .about import about
 from .config import logger
 from .data_management import build_platform, save_platform
-from .core.variables import Domain
 from .qprogram import Calibration, CrosstalkMatrix, QProgram, Experiment, QbloxCompiler, QdacCompiler
 from .platform import Platform, Session
 from .result import ExperimentResults, load_by_id, stream_results
 from .typings import Parameter
 from .utils.serialization import serialize, serialize_to, deserialize, deserialize_from
-from .waveforms import (
+from qprogram.waveforms import (
     IQPair,
+    IQWaveform,
     SuddenNetZero,
     Square,
     Gaussian,
@@ -57,7 +57,6 @@ __all__ = [
     "Cooldown",
     "CrosstalkMatrix",
     "DatabaseManager",
-    "Domain",
     "Experiment",
     "ExperimentResults",
     "FlatTop",
@@ -65,6 +64,7 @@ __all__ = [
     "GaussianDragCorrection",
     "IQDrag",
     "IQPair",
+    "IQWaveform",
     "Measurement",
     "Parameter",
     "Platform",

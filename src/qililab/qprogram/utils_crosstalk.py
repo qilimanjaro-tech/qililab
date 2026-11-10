@@ -13,9 +13,26 @@
 # limitations under the License.
 from copy import deepcopy
 
+from qprogram.operations import Play, SetGain, SetOffset
+
 from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
 from qililab.qprogram.flux_vector import FluxVector
-from qililab.qprogram.operations import Play, SetGain, SetOffset
+from qililab.qprogram.operations.play import QbloxPlay
+
+PLAY_KEY = str(Play)
+"""The group key of the plays, ``qp.play`` and ``qp.qblox.play`` alike."""
+
+
+def operation_key(element: Play | QbloxPlay | SetOffset | SetGain) -> str:
+    """The key of the group an element is compensated with: one for the plays, one per class for the others.
+
+    Args:
+        element (Play | QbloxPlay | SetOffset | SetGain): Qprogram `play`, `set_offset` or `set_gain` elements.
+
+    Returns:
+        str: ``PLAY_KEY`` for a play, the element's class otherwise.
+    """
+    return PLAY_KEY if isinstance(element, (Play, QbloxPlay)) else str(element.__class__)
 
 
 class CrosstalkElements:
@@ -27,25 +44,25 @@ class CrosstalkElements:
         crosstalk (CrosstalkMatrix): Crosstalk to be applied over the elements.
     """
 
-    def __init__(self, crosstalk: CrosstalkMatrix):
+    def __init__(self, crosstalk: CrosstalkMatrix) -> None:
         self.crosstalk = crosstalk
 
         self.element_list: dict[int, tuple[FluxVector, list[int]]] = {}
 
         self.element_group: dict[str, list[int]] = {}
-        self.element: dict[str, list[Play | SetOffset | SetGain]] = {}
+        self.element: dict[str, list[Play | QbloxPlay | SetOffset | SetGain]] = {}
         self.flux_vector: dict[str, FluxVector] = {}
         self.flux_vector_bus: dict[str, list[str]] = {}
 
-    def add_element(self, element: Play | SetOffset | SetGain, iteration: int):
+    def add_element(self, element: Play | QbloxPlay | SetOffset | SetGain, iteration: int) -> None:
         """Adds an element and its iteration inside the block to the dictionary and organizes them in groups.
 
         Args:
-            element (Play | SetOffset | SetGain): Qprogram `play`, `set_offset` or `set_gain` elements.
+            element (Play | QbloxPlay | SetOffset | SetGain): Qprogram `play`, `set_offset` or `set_gain` elements.
             iteration (int): location of the element inside the block list.
         """
 
-        operation = str(element.__class__)
+        operation = operation_key(element)
         self.element[operation].append(element)
         self.element_group[operation].append(iteration)
         self.flux_vector_bus[operation].append(element.bus)
@@ -53,21 +70,23 @@ class CrosstalkElements:
         for ii in self.element_group[operation]:
             self.element_list[ii] = (self.flux_vector[operation], self.element_group[operation])
 
-    def check_flux_vector(self, element: Play | SetOffset | SetGain):
+    def check_flux_vector(self, element: Play | QbloxPlay | SetOffset | SetGain) -> None:
         """Function to verify the flux vectors of each element and in case they don't exist,
         create empty dictionary entries.
 
         Args:
-            element (Play | SetOffset | SetGain): Qprogram `play`, `set_offset` or `set_gain` elements.
+            element (Play | QbloxPlay | SetOffset | SetGain): Qprogram `play`, `set_offset` or `set_gain` elements.
         """
-        operation = str(element.__class__)
+        operation = operation_key(element)
         if operation not in self.flux_vector_bus.keys() or element.bus in self.flux_vector_bus[operation]:
-            bus_reused = isinstance(element, Play) and element.bus in self.flux_vector_bus.get(operation, [])
+            bus_reused = isinstance(element, (Play, QbloxPlay)) and element.bus in self.flux_vector_bus.get(
+                operation, []
+            )
             self.restart_flux_vector(operation, check_after_loop=True, bus_reused=bus_reused)
 
     def restart_flux_vector(
         self, operation: str | None = None, check_after_loop: bool = False, bus_reused: bool = False
-    ):
+    ) -> None:
         """Function create or overwrite empty dictionary entries for each operation given.
         If no operations given it does it for every element in those dictionaries.
 
@@ -93,7 +112,7 @@ class CrosstalkElements:
                 self.element_group[operation] = []
                 self.flux_vector_bus[operation] = []
                 if operation not in self.flux_vector or not check_after_loop:
-                    if operation == str(Play) or operation not in self.flux_vector:
+                    if operation == PLAY_KEY or operation not in self.flux_vector:
                         self.flux_vector[operation] = FluxVector()
                         self.flux_vector[operation].set_crosstalk(self.crosstalk)
                     else:

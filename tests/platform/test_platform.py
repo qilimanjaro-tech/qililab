@@ -13,6 +13,8 @@ import logging
 
 import numpy as np
 import pytest
+import xarray as xr
+from qprogram.operations.operation import MeasurementField
 from qililab.data_management import build_platform as platform_build_platform
 from qililab.qprogram import QbloxCompilationOutput
 from qililab.qprogram.qdac_compiler import QdacCompilationOutput
@@ -22,7 +24,6 @@ from ruamel.yaml import YAML
 from tests.data import (
     Galadriel,
     SauronQDevil,
-    SauronQuantumMachines,
     SauronSpiRack,
     SauronYokogawa,
 )
@@ -32,7 +33,6 @@ from tests.test_utils import build_platform, compare_objects, is_q1asm_equal
 
 from qililab import save_platform
 from qililab.constants import DEFAULT_PLATFORM_NAME
-from qililab.extra.quantum_machines import QuantumMachinesCluster, QuantumMachinesMeasurementResult
 from qililab.instrument_controllers import InstrumentControllers
 from qililab.instrument_controllers.qblox import QbloxClusterController
 from qililab.instruments import SGS100A
@@ -44,11 +44,32 @@ from qililab.platform import Bus, Buses, Platform, Session
 from qililab.qprogram import Calibration, Experiment, QProgram, QbloxCompilationOutput
 from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
 from qililab.result.database import get_db_manager
-from qililab.result.qprogram.qblox_measurement_result import QbloxMeasurementResult
 from qililab.settings import AnalogCompilationSettings, DigitalCompilationSettings, Runcard
 from qililab.settings.digital.gate_event import GateEvent
 from qililab.typings.enums import InstrumentName, Parameter
-from qililab.waveforms import Arbitrary, Chained, IQDrag, IQPair, Ramp, Square
+from qililab import Arbitrary, Chained, IQDrag, IQPair, Ramp, Square
+from qililab.qprogram.namespace import QililabQbloxNamespace
+
+# xarray imports dask lazily, when it builds its first DataArray, and dask then reads its config with ``open``: build one
+# now, before the tests below patch ``builtins.open`` around the executions that build the results.
+xr.DataArray(np.zeros(1))
+
+
+def _raw_acquisition(
+    path0: list[float],
+    path1: list[float],
+    threshold: list[float] | None = None,
+    scope: tuple[list[float], list[float]] | None = None,
+) -> dict:
+    """Return an acquisition as the QRM returns it."""
+    return {
+        "bins": {
+            "integration": {"path0": path0, "path1": path1},
+            "threshold": threshold if threshold is not None else [0.0] * len(path0),
+            "avg_cnt": [1] * len(path0),
+        },
+        "scope": {"path0": {"data": scope[0] if scope else []}, "path1": {"data": scope[1] if scope else []}},
+    }
 
 @pytest.fixture(name="platform")
 def fixture_platform():
@@ -68,19 +89,9 @@ def fixture_platform_qblox_qdacs_no_trigger():
     return platform_build_platform(runcard="tests/runcards/qblox_and_qdacs_no_trigger.yml")
 
 
-@pytest.fixture(name="platform_qm_qdac")
-def fixture_platform_qm_qdac():
-    return platform_build_platform(runcard="tests/runcards/qm_and_qdac.yml")
-
-
 @pytest.fixture(name="platform_rf_switch")
 def fixture_platform_rf_switch():
     return platform_build_platform("tests/runcards/rf_switch_qcm_rohde.yml")
-
-
-@pytest.fixture(name="platform_quantum_machines")
-def fixture_platform_quantum_machines():
-    return build_platform(runcard=SauronQuantumMachines.runcard)
 
 
 @pytest.fixture(name="platform_spi")
@@ -254,13 +265,6 @@ def get_calibration_with_preparation_block():
     return calibration
 
 
-@pytest.fixture(name="qp_quantum_machine")
-def fixture_qp_quantum_machine() -> QProgram:
-    qp = QProgram()
-    qp.play(bus="drive_q0", waveform=Square(amplitude=1, duration=10))
-    qp.wait("drive_q0", 10)
-    return qp
-
 class TestPlatformInitialization:
     """Unit tests for the Platform class initialization"""
 
@@ -362,7 +366,7 @@ class TestPlatform:
 
     def test_set_flux_parameter_without_instruments_raises_error(self, platform_yokogawa: Platform):
         """Test error raised when the instruments do not match the flux parameter"""
-        error_string = "Flux bus must have one of these instruments:\nQCM, QRM, QRM-RF, QCM-RF, D5a, S4g, quantum_machines_cluster, qdevil_qdac2"
+        error_string = "Flux bus must have one of these instruments:\nQCM, QRM, QRM-RF, QCM-RF, D5a, S4g, qdevil_qdac2"
         with pytest.raises(ReferenceError, match=error_string):
             crosstalk_matrix = CrosstalkMatrix.from_buses(
                 buses={"yokogawa_gs200_current_bus": {"yokogawa_gs200_current_bus": 0.1}}
@@ -377,7 +381,7 @@ class TestPlatform:
 
     def test_set_flux_parameter_too_many_instruments_raises_error(self, platform: Platform):
         """Test error raised when there is more than one instrument affected by the flux"""
-        error_string = "Flux bus must not have more than one of these instruments:\nQCM, QRM, QRM-RF, QCM-RF, D5a, S4g, quantum_machines_cluster, qdevil_qdac2"
+        error_string = "Flux bus must not have more than one of these instruments:\nQCM, QRM, QRM-RF, QCM-RF, D5a, S4g, qdevil_qdac2"
         with pytest.raises(NotImplementedError, match=error_string):
             crosstalk_matrix = CrosstalkMatrix.from_buses(
                 buses={"flux_line_too_many_instr": {"flux_line_too_many_instr": 0.1}}
@@ -483,30 +487,6 @@ class TestPlatform:
         platform.set_crosstalk(CrosstalkMatrix.from_buses(buses={"drive_line_q0_bus": {"drive_line_q0_bus": 0.1}}))
         platform.set_parameter(alias="drive_line_q0_bus", parameter=Parameter.FLUX, value=0.14, channel_id=0)
         assert platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.FLUX, channel_id=0) == 0.14
-
-    @pytest.mark.parametrize(
-        "bus, parameter, value",
-        [
-            ("drive_q0_rf", Parameter.LO_FREQUENCY, 5e9),
-            ("drive_q0_rf", Parameter.IF, 14e6),
-            ("drive_q0_rf", Parameter.GAIN, 0.001),
-            ("readout_q0_rf", Parameter.LO_FREQUENCY, 8e9),
-            ("readout_q0_rf", Parameter.IF, 16e6),
-            ("readout_q0_rf", Parameter.GAIN, 0.002),
-            ("drive_q0", Parameter.IF, 13e6),
-            ("flux_q0", Parameter.FLUX, 0.5),
-        ],
-    )
-    @pytest.mark.qm
-    def test_set_parameter_no_instrument_connection_QM(self, bus: str, parameter: Parameter, value: float | str | bool):
-        """Test platform raises and error if no instrument connection."""
-        # Overwrite platform to use Quantum Machines:
-        platform = build_platform(runcard=SauronQuantumMachines.runcard)
-        platform._connected_to_instruments = False
-
-        platform.set_crosstalk(CrosstalkMatrix.from_buses(buses={bus: {bus: 1}}))
-        platform.set_parameter(alias=bus, parameter=parameter, value=value)
-        assert platform.get_parameter(alias=bus, parameter=parameter) == value
 
     def test_connect_logger(self, platform: Platform):
         platform._connected_to_instruments = True
@@ -1160,8 +1140,8 @@ class TestMethods:
         qprogram.sync()
         qprogram.play(bus="feedline_input_output_bus", waveform=readout_wf)
         qprogram.play(bus="feedline_input_output_bus_1", waveform=readout_wf)
-        qprogram.qblox.acquire(bus="feedline_input_output_bus", weights=weights_wf)
-        qprogram.qblox.acquire(bus="feedline_input_output_bus_1", weights=weights_wf)
+        m0 = qprogram.qblox.acquire(bus="feedline_input_output_bus", weights=weights_wf)
+        m1 = qprogram.qblox.acquire(bus="feedline_input_output_bus_1", weights=weights_wf)
 
         with (
             patch("builtins.open") as patched_open,
@@ -1171,10 +1151,10 @@ class TestMethods:
             patch.object(QbloxModule, "sync_sequencer") as sync_sequencer,
             patch.object(QbloxModule, "desync_sequencer") as desync_sequencer,
         ):
-            acquire_qprogram_results.return_value = [123]
+            acquire_qprogram_results.return_value = [_raw_acquisition(path0=[1.0], path1=[2.0])]
             first_execution_results = platform.execute_qprogram(qprogram=qprogram)
 
-            acquire_qprogram_results.return_value = [456]
+            acquire_qprogram_results.return_value = [_raw_acquisition(path0=[4.0], path1=[5.0])]
             second_execution_results = platform.execute_qprogram(qprogram=qprogram)
 
             _ = platform.execute_qprogram(qprogram=qprogram, debug=True)
@@ -1189,10 +1169,16 @@ class TestMethods:
         # called as many times as run
         assert sync_sequencer.call_count == 12
         assert desync_sequencer.call_count == 12
-        assert first_execution_results.results["feedline_input_output_bus"] == [123]
-        assert first_execution_results.results["feedline_input_output_bus_1"] == [123]
-        assert second_execution_results.results["feedline_input_output_bus"] == [456]
-        assert second_execution_results.results["feedline_input_output_bus_1"] == [456]
+        acquire_qprogram_results.assert_called_with(acquisitions=ANY, channel_id=ANY, scope=False)
+        assert [(record.bus, record.name) for record in first_execution_results.measurements] == [
+            ("feedline_input_output_bus", "m0"),
+            ("feedline_input_output_bus_1", "m1"),
+        ]
+        assert first_execution_results.get(m0).dims == ("IQ",)
+        assert first_execution_results.get(m0).values.tolist() == [1.0, 2.0]
+        assert first_execution_results.get(m1).values.tolist() == [1.0, 2.0]
+        assert second_execution_results.get(m0).values.tolist() == [4.0, 5.0]
+        assert second_execution_results.get(m1).values.tolist() == [4.0, 5.0]
 
         # assure only one debug was called
         assert patched_open.call_count == 1
@@ -1204,11 +1190,11 @@ class TestMethods:
         weights_wf = IQPair(I=Square(amplitude=1.0, duration=120), Q=Square(amplitude=0.0, duration=120))
         qdac_wf = Square(amplitude=1.0, duration=100)
         qprogram = QProgram()
-        qprogram.play(bus="qdac_bus_1", waveform=qdac_wf)
-        qprogram.set_offset(bus="qdac_bus_2", offset_path0=1)
-        qprogram.set_trigger(bus="qdac_bus_1", duration=10e-6, outputs=1)
+        qprogram.qdac.play(bus="qdac_bus_1", waveform=qdac_wf, dwell=2)
+        qprogram.qdac.set_offset(bus="qdac_bus_2", offset=1)
+        qprogram.qdac.set_trigger(bus="qdac_bus_1", duration=10e-6, outputs=[1])
         qprogram.play(bus="drive", waveform=drive_wf)
-        qprogram.measure(bus="resonator", waveform=readout_wf, weights=weights_wf)
+        measurement = qprogram.measure(bus="resonator", waveform=readout_wf, weights=weights_wf)
 
         with (
             patch("builtins.open") as patched_open,
@@ -1222,10 +1208,10 @@ class TestMethods:
             patch.object(QDevilQDac2, "set_start_marker_external_trigger") as set_start_marker_external_trigger,
             patch.object(QDevilQDac2, "start") as start,
         ):
-            acquire_qprogram_results.return_value = [123]
+            acquire_qprogram_results.return_value = [_raw_acquisition(path0=[1.0], path1=[2.0])]
             first_execution_results = platform_qblox_qdac.execute_qprogram(qprogram=qprogram)
 
-            acquire_qprogram_results.return_value = [456]
+            acquire_qprogram_results.return_value = [_raw_acquisition(path0=[4.0], path1=[5.0])]
             second_execution_results = platform_qblox_qdac.execute_qprogram(qprogram=qprogram)
 
             _ = platform_qblox_qdac.execute_qprogram(qprogram=qprogram, debug=True)
@@ -1240,8 +1226,9 @@ class TestMethods:
         # called as many times as run
         assert sync_sequencer.call_count == 6
         assert desync_sequencer.call_count == 6
-        assert first_execution_results.results["resonator"] == [123]
-        assert second_execution_results.results["resonator"] == [456]
+        assert [(record.bus, record.name) for record in first_execution_results.measurements] == [("resonator", "m0")]
+        assert first_execution_results.get(measurement).values.tolist() == [1.0, 2.0]
+        assert second_execution_results.get(measurement).values.tolist() == [4.0, 5.0]
         # called as many times as executes
         assert upload_voltage_list.call_count == 3
         # called as many times as executes
@@ -1259,11 +1246,11 @@ class TestMethods:
         weights_wf = IQPair(I=Square(amplitude=1.0, duration=120), Q=Square(amplitude=0.0, duration=120))
         qdac_wf = Square(amplitude=1.0, duration=100)
         qprogram = QProgram()
-        qprogram.play(bus="qdac_bus_1", waveform=qdac_wf)
-        qprogram.set_offset(bus="qdac2_bus_1", offset_path0=1)
-        qprogram.set_trigger(bus="qdac_bus_1", duration=10e-6, outputs=1)
+        qprogram.qdac.play(bus="qdac_bus_1", waveform=qdac_wf, dwell=2)
+        qprogram.qdac.set_offset(bus="qdac2_bus_1", offset=1)
+        qprogram.qdac.set_trigger(bus="qdac_bus_1", duration=10e-6, outputs=[1])
         qprogram.play(bus="drive", waveform=drive_wf)
-        qprogram.measure(bus="resonator", waveform=readout_wf, weights=weights_wf)
+        measurement = qprogram.measure(bus="resonator", waveform=readout_wf, weights=weights_wf)
 
         # Retrieve the qdac_2 instrument instance from the platform to patch it directly
         qdac_2_instrument = next(
@@ -1291,10 +1278,10 @@ class TestMethods:
             patch.object(QDevilQDac2, "set_start_marker_external_trigger") as set_start_marker_external_trigger,
             patch.object(QDevilQDac2, "start") as start,
         ):
-            acquire_qprogram_results.return_value = [123]
+            acquire_qprogram_results.return_value = [_raw_acquisition(path0=[1.0], path1=[2.0])]
             first_execution_results = platform_qblox_qdacs.execute_qprogram(qprogram=qprogram)
 
-            acquire_qprogram_results.return_value = [456]
+            acquire_qprogram_results.return_value = [_raw_acquisition(path0=[4.0], path1=[5.0])]
             second_execution_results = platform_qblox_qdacs.execute_qprogram(qprogram=qprogram)
 
             _ = platform_qblox_qdacs.execute_qprogram(qprogram=qprogram, debug=True)
@@ -1309,8 +1296,9 @@ class TestMethods:
         # called as many times as run
         assert sync_sequencer.call_count == 6
         assert desync_sequencer.call_count == 6
-        assert first_execution_results.results["resonator"] == [123]
-        assert second_execution_results.results["resonator"] == [456]
+        assert [(record.bus, record.name) for record in first_execution_results.measurements] == [("resonator", "m0")]
+        assert first_execution_results.get(measurement).values.tolist() == [1.0, 2.0]
+        assert second_execution_results.get(measurement).values.tolist() == [4.0, 5.0]
         # called as many times as executes
         assert upload_voltage_list.call_count == 3
         # called as many times as executes
@@ -1332,9 +1320,9 @@ class TestMethods:
         weights_wf = IQPair(I=Square(amplitude=1.0, duration=120), Q=Square(amplitude=0.0, duration=120))
         qdac_wf = Square(amplitude=1.0, duration=100)
         qprogram = QProgram()
-        qprogram.play(bus="qdac_bus_1", waveform=qdac_wf)
-        qprogram.set_offset(bus="qdac2_bus_1", offset_path0=1)
-        qprogram.set_trigger(bus="qdac_bus_1", duration=10e-6, outputs=1)
+        qprogram.qdac.play(bus="qdac_bus_1", waveform=qdac_wf, dwell=2)
+        qprogram.qdac.set_offset(bus="qdac2_bus_1", offset=1)
+        qprogram.qdac.set_trigger(bus="qdac_bus_1", duration=10e-6, outputs=[1])
         qprogram.play(bus="drive", waveform=drive_wf)
         qprogram.measure(bus="resonator", waveform=readout_wf, weights=weights_wf)
 
@@ -1349,11 +1337,11 @@ class TestMethods:
         weights_wf = IQPair(I=Square(amplitude=1.0, duration=120), Q=Square(amplitude=0.0, duration=120))
         qdac_wf = Square(amplitude=1.0, duration=100)
         qprogram = QProgram()
-        qprogram.play(bus="qdac_bus_1", waveform=qdac_wf)
-        qprogram.set_offset(bus="qdac_bus_2", offset_path0=1)
-        qprogram.wait_trigger(bus="qdac_bus_1", duration=10e-6, port=1)
+        qprogram.qdac.play(bus="qdac_bus_1", waveform=qdac_wf, dwell=2)
+        qprogram.qdac.set_offset(bus="qdac_bus_2", offset=1)
+        qprogram.qdac.wait_trigger(bus="qdac_bus_1", port=1)
         qprogram.play(bus="drive", waveform=drive_wf)
-        qprogram.measure(bus="resonator", waveform=readout_wf, weights=weights_wf)
+        measurement = qprogram.measure(bus="resonator", waveform=readout_wf, weights=weights_wf)
 
         with (
             patch("builtins.open") as patched_open,
@@ -1367,10 +1355,10 @@ class TestMethods:
             patch.object(QDevilQDac2, "set_in_external_trigger") as set_in_external_trigger,
             patch.object(QDevilQDac2, "start") as start,
         ):
-            acquire_qprogram_results.return_value = [123]
+            acquire_qprogram_results.return_value = [_raw_acquisition(path0=[1.0], path1=[2.0])]
             first_execution_results = platform_qblox_qdac.execute_qprogram(qprogram=qprogram)
 
-            acquire_qprogram_results.return_value = [456]
+            acquire_qprogram_results.return_value = [_raw_acquisition(path0=[4.0], path1=[5.0])]
             second_execution_results = platform_qblox_qdac.execute_qprogram(qprogram=qprogram)
 
             _ = platform_qblox_qdac.execute_qprogram(qprogram=qprogram, debug=True)
@@ -1385,8 +1373,9 @@ class TestMethods:
         # called as many times as run
         assert sync_sequencer.call_count == 6
         assert desync_sequencer.call_count == 6
-        assert first_execution_results.results["resonator"] == [123]
-        assert second_execution_results.results["resonator"] == [456]
+        assert [(record.bus, record.name) for record in first_execution_results.measurements] == [("resonator", "m0")]
+        assert first_execution_results.get(measurement).values.tolist() == [1.0, 2.0]
+        assert second_execution_results.get(measurement).values.tolist() == [4.0, 5.0]
         # called as many times as executes
         assert upload_voltage_list.call_count == 3
         # called as many times as executes
@@ -1406,10 +1395,10 @@ class TestMethods:
         ramp_wf = Arbitrary(samples=np.array([0.0, 0.1, 0.2, 0.3, 0.2, 0.1, 0.0]))
         qprogram = QProgram()
         qprogram.qdac.play(bus="qdac_bus_1", waveform=ramp_wf, dwell=2)
-        qprogram.set_trigger(bus="qdac_bus_1", duration=10e-6, outputs=1, position="start")
-        qprogram.set_offset(bus="qdac_bus_2", offset_path0=0.1)
+        qprogram.qdac.set_trigger(bus="qdac_bus_1", duration=10e-6, position="start", outputs=[1])
+        qprogram.qdac.set_offset(bus="qdac_bus_2", offset=0.1)
         with qprogram.average(10):
-            qprogram.wait_trigger(bus="drive", duration=100)
+            qprogram.qblox.wait_trigger(bus="drive", duration=100)
             qprogram.play(bus="drive", waveform=drive_wf)
             qprogram.sync()
             qprogram.measure(bus="resonator", waveform=readout_wf, weights=readout_wf)
@@ -1493,7 +1482,7 @@ class TestMethods:
         ramp_wf = Arbitrary(samples=np.array([0.0, 0.1, 0.2, 0.3, 0.2, 0.1, 0.0]))
         qprogram = QProgram()
         qprogram.qdac.play(bus="qdac_bus_1", waveform=ramp_wf, dwell=3)
-        qprogram.set_trigger(bus="qdac_bus_1", duration=100e-6, outputs=1, position="step")
+        qprogram.qdac.set_trigger(bus="qdac_bus_1", duration=100e-6, position="step", outputs=[1])
         with qprogram.if_trigger():
             with qprogram.average(shots=10):
                 qprogram.qblox.acquire(
@@ -1663,11 +1652,11 @@ class TestMethods:
         weights_wf = IQPair(I=Square(amplitude=1.0, duration=120), Q=Square(amplitude=0.0, duration=120))
         qdac_wf = Square(amplitude=1.0, duration=100)
         qprogram = QProgram()
-        qprogram.play(bus="qdac_bus_1", waveform=qdac_wf)
-        qprogram.set_offset(bus="qdac_bus_2", offset_path0=1)
-        qprogram.wait_trigger(bus="qdac_bus_1", duration=10e-6, port=1)
+        qprogram.qdac.play(bus="qdac_bus_1", waveform=qdac_wf, dwell=2)
+        qprogram.qdac.set_offset(bus="qdac_bus_2", offset=1)
+        qprogram.qdac.wait_trigger(bus="qdac_bus_1", port=1)
         qprogram.play(bus="drive", waveform=drive_wf)
-        qprogram.measure(bus="resonator", waveform=readout_wf, weights=weights_wf)
+        measurement = qprogram.measure(bus="resonator", waveform=readout_wf, weights=weights_wf)
 
         expected_crosstalk = CrosstalkMatrix.from_buses(buses={"qdac_bus": {"qdac_bus": 0.1}})
         platform_qblox_qdac.set_crosstalk(expected_crosstalk)
@@ -1685,10 +1674,10 @@ class TestMethods:
             patch.object(QDevilQDac2, "set_in_external_trigger") as set_in_external_trigger,
             patch.object(QDevilQDac2, "start") as start,
         ):
-            acquire_qprogram_results.return_value = [123]
+            acquire_qprogram_results.return_value = [_raw_acquisition(path0=[1.0], path1=[2.0])]
             first_execution_results = platform_qblox_qdac.execute_qprogram(qprogram=qprogram, calibration=calibration, crosstalk=False)
 
-            acquire_qprogram_results.return_value = [456]
+            acquire_qprogram_results.return_value = [_raw_acquisition(path0=[4.0], path1=[5.0])]
             second_execution_results = platform_qblox_qdac.execute_qprogram(qprogram=qprogram, crosstalk=False)
 
             _ = platform_qblox_qdac.execute_qprogram(qprogram=qprogram, debug=True, crosstalk=False)
@@ -1703,8 +1692,9 @@ class TestMethods:
         # called as many times as run
         assert sync_sequencer.call_count == 6
         assert desync_sequencer.call_count == 6
-        assert first_execution_results.results["resonator"] == [123]
-        assert second_execution_results.results["resonator"] == [456]
+        assert [(record.bus, record.name) for record in first_execution_results.measurements] == [("resonator", "m0")]
+        assert first_execution_results.get(measurement).values.tolist() == [1.0, 2.0]
+        assert second_execution_results.get(measurement).values.tolist() == [4.0, 5.0]
         # called as many times as executes
         assert upload_voltage_list.call_count == 3
         # called as many times as executes
@@ -1724,9 +1714,9 @@ class TestMethods:
         weights_wf = IQPair(I=Square(amplitude=1.0, duration=120), Q=Square(amplitude=0.0, duration=120))
         qdac_wf = Square(amplitude=1.0, duration=100)
         qprogram = QProgram()
-        qprogram.play(bus="qdac_bus_1", waveform=qdac_wf)
-        qprogram.set_offset(bus="qdac_bus_2", offset_path0=1)
-        qprogram.wait_trigger(bus="qdac_bus_1", duration=10e-6, port=1)
+        qprogram.qdac.play(bus="qdac_bus_1", waveform=qdac_wf, dwell=2)
+        qprogram.qdac.set_offset(bus="qdac_bus_2", offset=1)
+        qprogram.qdac.wait_trigger(bus="qdac_bus_1", port=1)
         qprogram.play(bus="drive", waveform=drive_wf)
         qprogram.measure(bus="resonator", waveform=readout_wf, weights=weights_wf)
         return qprogram
@@ -1865,7 +1855,8 @@ class TestMethods:
         mock_bus.run.side_effect = TimeoutError("Simulated timeout")
 
         mock_output.qprogram = MagicMock(spec=QProgram)
-        mock_output.qprogram.qblox = MagicMock(spec=QProgram._QbloxInterface)
+        mock_output.qprogram.qblox = MagicMock(spec=QililabQbloxNamespace)
+        mock_output.scopes = {}
         mock_output.trigger_network_addresses = {}
         mock_output.requires_external_trigger = False
 
@@ -1917,7 +1908,8 @@ class TestMethods:
         platform_qblox_qdac.trigger_runs = 0
 
         mock_output.qprogram = MagicMock(spec=QProgram)
-        mock_output.qprogram.qblox = MagicMock(spec=QProgram._QbloxInterface)
+        mock_output.qprogram.qblox = MagicMock(spec=QililabQbloxNamespace)
+        mock_output.scopes = {}
         mock_output.trigger_network_addresses = {}
         mock_output.requires_external_trigger = True
 
@@ -1957,68 +1949,6 @@ class TestMethods:
 
         # initial attempt + 3 retries = 4 total
         assert mock_bus.run.call_count == 4
-
-    @pytest.mark.qm
-    def test_execute_qprogram_with_quantum_machines_and_qdac(self, platform_qm_qdac: Platform):
-        """Test that the execute method compiles the qprogram, calls the buses to run and return the results."""
-        drive_wf = IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
-        readout_wf = IQPair(I=Square(amplitude=1.0, duration=120), Q=Square(amplitude=0.0, duration=120))
-        weights_wf = IQPair(I=Square(amplitude=1.0, duration=120), Q=Square(amplitude=0.0, duration=120))
-        qdac_wf = Square(amplitude=1.0, duration=100)
-        qprogram = QProgram()
-        qprogram.play(bus="qdac_bus_1", waveform=qdac_wf)
-        qprogram.set_offset(bus="qdac_bus_2", offset_path0=1)
-        qprogram.set_trigger(bus="qdac_bus_1", duration=10e-6, outputs=1)
-        qprogram.play(bus="drive", waveform=drive_wf)
-        qprogram.measure(bus="readout", waveform=readout_wf, weights=weights_wf)
-
-        with (
-            patch("builtins.open") as patched_open,
-            patch("qililab.platform.platform.generate_qua_script", return_value=None) as generate_qua,
-            patch.object(QuantumMachinesCluster, "config") as config,
-            patch.object(QuantumMachinesCluster, "append_configuration") as append_configuration,
-            patch.object(QuantumMachinesCluster, "compile") as compile_program,
-            patch.object(QuantumMachinesCluster, "run_compiled_program") as run_compiled_program,
-            patch.object(QuantumMachinesCluster, "get_acquisitions") as get_acquisitions,
-            # Mock Qdac functions without connecting
-            patch.object(QDevilQDac2, "upload_voltage_list") as upload_voltage_list,
-            patch.object(QDevilQDac2, "set_start_marker_external_trigger") as set_start_marker_external_trigger,
-            patch.object(QDevilQDac2, "start") as start,
-        ):
-            cluster = platform_qm_qdac.get_element("qmm")
-            config.return_value = cluster.settings.to_qua_config()
-
-            get_acquisitions.return_value = {"I_0": np.array([1, 2, 3]), "Q_0": np.array([4, 5, 6])}
-            first_execution_results = platform_qm_qdac.execute_qprogram(qprogram=qprogram)
-
-            get_acquisitions.return_value = {"I_0": np.array([3, 2, 1]), "Q_0": np.array([6, 5, 4])}
-            second_execution_results = platform_qm_qdac.execute_qprogram(qprogram=qprogram)
-
-            _ = platform_qm_qdac.execute_qprogram(qprogram=qprogram, debug=True)
-
-        # assert upload executed only once (2 because there are 2 buses)
-        assert append_configuration.call_count == 3
-        assert run_compiled_program.call_count == 3
-        assert get_acquisitions.call_count == 3
-
-        # assert run executed all three times (6 because there are 2 buses)
-        assert "readout" in first_execution_results.results
-        assert len(first_execution_results.results["readout"]) == 1
-        assert isinstance(first_execution_results.results["readout"][0], QuantumMachinesMeasurementResult)
-        np.testing.assert_array_equal(first_execution_results.results["readout"][0].I, np.array([1, 2, 3]))
-        np.testing.assert_array_equal(first_execution_results.results["readout"][0].Q, np.array([4, 5, 6]))
-        np.testing.assert_array_equal(second_execution_results.results["readout"][0].I, np.array([3, 2, 1]))
-        np.testing.assert_array_equal(second_execution_results.results["readout"][0].Q, np.array([6, 5, 4]))
-        # called as many times as executes
-        assert upload_voltage_list.call_count == 3
-        # called as many times as executes
-        assert set_start_marker_external_trigger.call_count == 3
-        # called as many times as executes
-        assert start.call_count == 3
-
-        # assure only one debug was called
-        assert patched_open.call_count == 1
-        assert generate_qua.call_count == 1
 
     @pytest.mark.parametrize(
         "execute",
@@ -2077,81 +2007,6 @@ class TestMethods:
             assert (
                 undistorted_waveforms.to_dict() == upload.call_args_list[1].kwargs["qpysequence"]._waveforms.to_dict()
             )
-
-    @pytest.mark.qm
-    def test_execute_qprogram_with_quantum_machines(self, platform_quantum_machines: Platform):
-        """Test that the execute_qprogram method executes the qprogram for Quantum Machines correctly"""
-        drive_wf = IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
-        readout_wf = IQPair(I=Square(amplitude=1.0, duration=120), Q=Square(amplitude=0.0, duration=120))
-        weights_wf = IQPair(I=Square(amplitude=1.0, duration=2000), Q=Square(amplitude=0.0, duration=2000))
-        qprogram = QProgram()
-        qprogram.play(bus="drive_q0_rf", waveform=drive_wf)
-        qprogram.sync()
-        qprogram.play(bus="readout_q0_rf", waveform=readout_wf)
-        qprogram.measure(bus="readout_q0_rf", waveform=readout_wf, weights=weights_wf)
-
-        with (
-            patch("builtins.open") as patched_open,
-            patch("qililab.platform.platform.generate_qua_script", return_value=None) as generate_qua,
-            patch.object(QuantumMachinesCluster, "config") as config,
-            patch.object(QuantumMachinesCluster, "append_configuration") as append_configuration,
-            patch.object(QuantumMachinesCluster, "compile") as compile_program,
-            patch.object(QuantumMachinesCluster, "run_compiled_program") as run_compiled_program,
-            patch.object(QuantumMachinesCluster, "get_acquisitions") as get_acquisitions,
-        ):
-            cluster = platform_quantum_machines.get_element("qmm")
-            config.return_value = cluster.settings.to_qua_config()
-
-            get_acquisitions.return_value = {"I_0": np.array([1, 2, 3]), "Q_0": np.array([4, 5, 6])}
-            first_execution_results = platform_quantum_machines.execute_qprogram(qprogram=qprogram)
-
-            get_acquisitions.return_value = {"I_0": np.array([3, 2, 1]), "Q_0": np.array([6, 5, 4])}
-            second_execution_results = platform_quantum_machines.execute_qprogram(qprogram=qprogram)
-
-            _ = platform_quantum_machines.execute_qprogram(qprogram=qprogram, debug=True)
-
-        assert compile_program.call_count == 3
-        assert append_configuration.call_count == 3
-        assert run_compiled_program.call_count == 3
-        assert get_acquisitions.call_count == 3
-
-        assert "readout_q0_rf" in first_execution_results.results
-        assert len(first_execution_results.results["readout_q0_rf"]) == 1
-        assert isinstance(first_execution_results.results["readout_q0_rf"][0], QuantumMachinesMeasurementResult)
-        np.testing.assert_array_equal(first_execution_results.results["readout_q0_rf"][0].I, np.array([1, 2, 3]))
-        np.testing.assert_array_equal(first_execution_results.results["readout_q0_rf"][0].Q, np.array([4, 5, 6]))
-
-        assert "readout_q0_rf" in second_execution_results.results
-        assert len(second_execution_results.results["readout_q0_rf"]) == 1
-        assert isinstance(second_execution_results.results["readout_q0_rf"][0], QuantumMachinesMeasurementResult)
-        np.testing.assert_array_equal(second_execution_results.results["readout_q0_rf"][0].I, np.array([3, 2, 1]))
-        np.testing.assert_array_equal(second_execution_results.results["readout_q0_rf"][0].Q, np.array([6, 5, 4]))
-
-        # assure only one debug was called
-        assert patched_open.call_count == 1
-        assert generate_qua.call_count == 1
-
-    @pytest.mark.qm
-    def test_execute_qprogram_with_quantum_machines_raises_error(self, platform_quantum_machines: Platform):
-        """Test that the execute_qprogram method raises the exception if the qprogram failes"""
-
-        error_string = "The QM `config` dictionary does not exist. Please run `initial_setup()` first."
-        escaped_error_str = re.escape(error_string)
-
-        drive_wf = IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
-        readout_wf = IQPair(I=Square(amplitude=1.0, duration=120), Q=Square(amplitude=0.0, duration=120))
-        weights_wf = IQPair(I=Square(amplitude=1.0, duration=2000), Q=Square(amplitude=0.0, duration=2000))
-        qprogram = QProgram()
-        qprogram.play(bus="drive_q0_rf", waveform=drive_wf)
-        qprogram.sync()
-        qprogram.play(bus="readout_q0_rf", waveform=readout_wf)
-        qprogram.measure(bus="readout_q0_rf", waveform=readout_wf, weights=weights_wf)
-
-        with patch.object(QuantumMachinesCluster, "turn_off") as turn_off:
-            with pytest.raises(ValueError, match=escaped_error_str):
-                _ = platform_quantum_machines.execute_qprogram(qprogram=qprogram, debug=True)
-
-        turn_off.assert_called_once_with()
 
     @pytest.mark.parametrize("parameter", [Parameter.AMPLITUDE, Parameter.DURATION, Parameter.PHASE])
     @pytest.mark.parametrize("gate", ["I(0)", "X(0)", "Y(0)"])
@@ -2256,27 +2111,6 @@ class TestMethods:
             qp_list = [qp1, qp2, qp3]
             with pytest.raises(ValueError, match=error_string):
                 platform.execute_qprograms_parallel(qp_list, debug=True)
-
-    @pytest.mark.qm
-    def test_parallelisation_execute_quantum_machine_not_supported(self, platform_quantum_machines: Platform):
-        error_string = "Parallel execution is not supported in Quantum Machines."
-        qp1 = QProgram()
-        qp2 = QProgram()
-        qp3 = QProgram()
-        qp1.play(bus="drive_q0", waveform=Square(amplitude=1, duration=5))
-        qp2.play(bus="flux_q0", waveform=Square(amplitude=1, duration=25))
-
-        with (
-            patch("builtins.open") as patched_open,
-            patch.object(Bus, "upload_qpysequence") as upload,
-            patch.object(Bus, "run") as run,
-            patch.object(Bus, "acquire_qprogram_results") as acquire_qprogram_results,
-            patch.object(QbloxModule, "sync_sequencer") as sync_sequencer,
-            patch.object(QbloxModule, "desync_sequencer") as desync_sequencer,
-        ):
-            qp_list = [qp1, qp2, qp3]
-            with pytest.raises(ValueError, match=error_string):
-                platform_quantum_machines.execute_qprograms_parallel(qp_list)
 
     def test_normalize_bus_mappings(self, platform: Platform):
         """Test the normalization of bus mappings"""
@@ -2397,9 +2231,11 @@ class TestMethods:
 
     def test_execute_qprogram_errors_buses_with_same_rf_switch(self, platform_rf_switch: Platform):
         qprogram_1 = QProgram()
-        qprogram_1._buses = {"bus_base", "bus_uses_same_channel"}
+        qprogram_1.wait(bus="bus_base", duration=100)
+        qprogram_1.wait(bus="bus_uses_same_channel", duration=100)
         qprogram_2 = QProgram()
-        qprogram_2._buses = {"bus_base", "bus_uses_different_channel"}
+        qprogram_2.wait(bus="bus_base", duration=100)
+        qprogram_2.wait(bus="bus_uses_different_channel", duration=100)
 
         with (
             patch.object(Platform, "compile_qprogram"),
@@ -2497,11 +2333,11 @@ class TestMethods:
 
     def test_execute_qprograms_parallel_errors_buses_with_same_rf_switch(self, platform_rf_switch: Platform):
             qprogram_1 = QProgram()
-            qprogram_1._buses = {"bus_base"}
+            qprogram_1.wait(bus="bus_base", duration=100)
             qprogram_2 = QProgram()
-            qprogram_2._buses = {"bus_uses_same_channel"}
+            qprogram_2.wait(bus="bus_uses_same_channel", duration=100)
             qprogram_3 = QProgram()
-            qprogram_3._buses = {"bus_uses_different_channel"}
+            qprogram_3.wait(bus="bus_uses_different_channel", duration=100)
     
             with (
                 patch.object(Platform, "compile_qprogram"),
@@ -2560,7 +2396,7 @@ class TestMethods:
             patch.object(QbloxModule, "sync_sequencer") as sync_sequencer,
             patch.object(QbloxModule, "desync_sequencer") as desync_sequencer,
         ):
-            acquire_qprogram_results.return_value = [123]
+            acquire_qprogram_results.return_value = [_raw_acquisition(path0=[1.0], path1=[2.0])]
             qp_list = [qprogram1, qprogram2]
             result_parallel = platform.execute_qprograms_parallel(qp_list, debug=True)
             non_parallel_results1 = platform.execute_qprogram(qprogram=qprogram1, debug=True)
@@ -2568,8 +2404,16 @@ class TestMethods:
             no_qprograms = platform.execute_qprograms_parallel(qprograms=None)
 
             # check that each element of the result list of the parallel execution is the same as the regular execution for each respective qprograms
-            assert result_parallel[0].results == non_parallel_results1.results
-            assert result_parallel[1].results == non_parallel_results2.results
+            assert [(record.bus, record.name) for record in result_parallel[0].measurements] == [
+                ("feedline_input_output_bus", "m0")
+            ]
+            assert [(record.bus, record.name) for record in result_parallel[1].measurements] == [
+                ("feedline_input_output_bus_2", "m0")
+            ]
+            for parallel, single in ((result_parallel[0], non_parallel_results1), (result_parallel[1], non_parallel_results2)):
+                assert [(r.bus, r.name) for r in parallel.measurements] == [(r.bus, r.name) for r in single.measurements]
+                xr.testing.assert_identical(parallel.get("m0"), single.get("m0"))
+            assert result_parallel[0].get("m0").values.tolist() == [1.0, 2.0]
             assert no_qprograms == []
 
     def test_parallelisation_execute_qblox_programs_threshold_with_weight_duration(self, platform: Platform):
@@ -2588,7 +2432,7 @@ class TestMethods:
             patch("builtins.open"),
             patch.object(Bus, "upload_qpysequence"),
             patch.object(Bus, "run"),
-            patch.object(Bus, "acquire_qprogram_results", return_value=[123]),
+            patch.object(Bus, "acquire_qprogram_results", return_value=[_raw_acquisition(path0=[1.0], path1=[2.0])]),
             patch.object(QbloxModule, "sync_sequencer"),
             patch.object(QbloxModule, "desync_sequencer"),
             patch.object(QbloxQRM, "is_device_active", return_value=True),
@@ -2861,16 +2705,6 @@ class TestMethods:
         with pytest.raises(ValueError, match=error_string):
             platform.db_save_results(experiment_name, results, loops, qprogram, description)
 
-    @pytest.mark.qm
-    def test_platform_draw_quantum_machine_raises_error(
-        self, qp_quantum_machine: QProgram, platform_quantum_machines: Platform
-    ):
-
-        with pytest.raises(NotImplementedError) as exc_info:
-            platform_quantum_machines.draw(qp_quantum_machine)
-
-        assert str(exc_info.value) == "The drawing feature is currently only supported for QBlox."
-
     def test_trigger_network_setup_and_reset(self, platform):
         # Build a fake compilation output with one bus “b” → trigger 5
         output = QProgramCompilationOutput()
@@ -2894,58 +2728,167 @@ class TestMethods:
         fake_bus._setup_trigger_network.assert_called_once_with(trigger_address=5)
         controller.device.reset_trigger_monitor_count.assert_called_once_with(address=5)
 
+    @staticmethod
+    def _execute_with_raw_acquisitions(platform: Platform, qprogram: QProgram, raw_acquisitions: list[dict]):
+        """Execute ``qprogram`` on mocked buses whose QRM returns ``raw_acquisitions``.
+
+        Returns:
+            tuple: The result, and the mocks of ``Bus.acquire_qprogram_results`` and ``QbloxQRM.setup_scope``.
+        """
+        with (
+            patch("builtins.open"),
+            patch.object(Bus, "upload_qpysequence"),
+            patch.object(Bus, "run"),
+            patch.object(Bus, "acquire_qprogram_results", return_value=raw_acquisitions) as acquire,
+            patch.object(QbloxModule, "sync_sequencer"),
+            patch.object(QbloxModule, "desync_sequencer"),
+            patch.object(QbloxQRM, "setup_scope") as setup_scope,
+        ):
+            result = platform.execute_qprogram(qprogram=qprogram)
+        return result, acquire, setup_scope
+
     def test_qblox_intertwined_results(self, raw_measurement_data_intertwined: dict, platform: Platform):
-        """Test that the results get unintertwined."""
+        """Two measurements writing into the same acquisition take its bins in turn: each gets its own
+        record, with the sweep around it as a dimension."""
+        weights = IQPair(I=Square(amplitude=1.0, duration=120), Q=Square(amplitude=0.0, duration=120))
+        qprogram = QProgram()
+        amplitude = qprogram.variable("amplitude", label="Amplitude", units="V")
+        with qprogram.average(10):
+            with qprogram.sweep(amplitude).from_range(0.0, 1.0, 1.0):
+                qprogram.set_gain(bus="feedline_input_output_bus", gain=amplitude)
+                m0 = qprogram.qblox.acquire(
+                    bus="feedline_input_output_bus", weights=weights, fields=[MeasurementField.IQ, MeasurementField.STATE]
+                )
+                m1 = qprogram.qblox.acquire(
+                    bus="feedline_input_output_bus", weights=weights, fields=[MeasurementField.IQ, MeasurementField.STATE]
+                )
 
-        bus_result = QbloxMeasurementResult(bus="drive", raw_measurement_data=raw_measurement_data_intertwined)
-        intertwined = 2
+        result, acquire, setup_scope = self._execute_with_raw_acquisitions(
+            platform, qprogram, [raw_measurement_data_intertwined]
+        )
 
-        unintertwined_results = platform._unintertwined_qblox_results(bus_result, intertwined)
+        acquisitions = acquire.call_args.kwargs["acquisitions"]
+        assert [(acquisition.intertwined, acquisition.shape) for acquisition in acquisitions.values()] == [(2, (2,))]
+        assert [(record.bus, record.name) for record in result.measurements] == [
+            ("feedline_input_output_bus", "m0"),
+            ("feedline_input_output_bus", "m1"),
+        ]
+        expected = {m0: ([[1, 5], [3, 7]], [0.1, 0.3]), m1: ([[2, 6], [4, 8]], [0.2, 0.4])}
+        for handle, (iq, state) in expected.items():
+            assert result.get(handle).dims == ("amplitude", "IQ")
+            assert result.get(handle).values.tolist() == iq
+            assert result.get(handle).coords["amplitude"].values.tolist() == [0.0, 1.0]
+            assert result.get(handle).coords["amplitude"].attrs == {"long_name": "Amplitude", "units": "V"}
+            assert result.get(handle).coords["IQ"].values.tolist() == ["I", "Q"]
+            assert result.get(handle, field="state").dims == ("amplitude",)
+            assert result.get(handle, field="state").values.tolist() == state
+        setup_scope.assert_not_called()
 
-        assert len(unintertwined_results)==intertwined
+    def test_qblox_results_without_state_field_have_no_state(self, platform: Platform):
+        """A measurement only returns the fields it asked for: the IQ ones by default."""
+        weights = IQPair(I=Square(amplitude=1.0, duration=120), Q=Square(amplitude=0.0, duration=120))
+        qprogram = QProgram()
+        m0 = qprogram.qblox.acquire(bus="feedline_input_output_bus", weights=weights)
+        m1 = qprogram.qblox.acquire(bus="feedline_input_output_bus", weights=weights, fields=[MeasurementField.STATE])
 
-        assert unintertwined_results[0].raw_measurement_data == {"bins": {"integration": {"path0": [1, 3], "path1": [5, 7]}, "threshold": [0.1, 0.3], "avg_cnt":[]}, "scope": {"path0":{"data": []}, "path1":{"data": []}}}
-        assert unintertwined_results[1].raw_measurement_data == {"bins": {"integration": {"path0": [2, 4], "path1": [6, 8]}, "threshold": [0.2, 0.4], "avg_cnt":[]}, "scope": {"path0":{"data": []}, "path1":{"data": []}}}
+        result, _, _ = self._execute_with_raw_acquisitions(
+            platform, qprogram, [_raw_acquisition(path0=[1.0, 2.0], path1=[3.0, 4.0], threshold=[0.0, 1.0])]
+        )
 
+        assert list(result.measurements[0].fields) == ["iq"]
+        assert result.get(m0).values.tolist() == [1.0, 3.0]
+        with pytest.raises(KeyError, match="has no field 'state'"):
+            result.get(m0, field="state")
+        assert list(result.measurements[1].fields) == ["state"]
+        assert result.get(m1, field="state").values.tolist() == 1.0
+        assert result.measurements[1].data.dims == ()
+
+    def test_qblox_parallel_sweep_results(self, platform: Platform):
+        """A parallel sweep gives one dimension, named after its variables, carrying the coordinates of each."""
+        weights = IQPair(I=Square(amplitude=1.0, duration=120), Q=Square(amplitude=0.0, duration=120))
+        qprogram = QProgram()
+        gain = qprogram.variable("gain")
+        frequency = qprogram.variable("frequency")
+        with qprogram.sweep(gain).from_range(0.0, 0.5, 0.25) | qprogram.sweep(frequency).from_range(10e6, 30e6, 10e6):
+            qprogram.set_gain(bus="feedline_input_output_bus", gain=gain)
+            qprogram.set_frequency(bus="feedline_input_output_bus", frequency=frequency)
+            measurement = qprogram.qblox.acquire(bus="feedline_input_output_bus", weights=weights)
+
+        result, _, _ = self._execute_with_raw_acquisitions(
+            platform, qprogram, [_raw_acquisition(path0=[1.0, 2.0, 3.0], path1=[4.0, 5.0, 6.0])]
+        )
+
+        data = result.get(measurement)
+        assert data.dims == ("gain|frequency", "IQ")
+        assert data.values.tolist() == [[1.0, 4.0], [2.0, 5.0], [3.0, 6.0]]
+        assert data.coords["gain"].values.tolist() == [0.0, 0.25, 0.5]
+        assert data.coords["frequency"].values.tolist() == [10e6, 20e6, 30e6]
 
     def test_qblox_intertwined_results_scope(self, raw_measurement_data_intertwined_scope: dict, platform: Platform):
-        """Test that the scope results get unintertwined."""
+        """A scoped bus has its scope set up before the run and stored into its first acquisition: the trace is a
+        record of its own, named after the scope, not split between the intertwined measurements."""
+        weights = IQPair(I=Square(amplitude=1.0, duration=120), Q=Square(amplitude=0.0, duration=120))
+        qprogram = QProgram()
+        scope = qprogram.qblox.scope(bus="feedline_input_output_bus", averaging=False, trigger_level=0.25)
+        m0 = qprogram.qblox.acquire(bus="feedline_input_output_bus", weights=weights)
+        m1 = qprogram.qblox.acquire(bus="feedline_input_output_bus", weights=weights)
+        raw = copy.deepcopy(raw_measurement_data_intertwined_scope)
+        raw["bins"] = _raw_acquisition(path0=[1.0, 2.0], path1=[3.0, 4.0])["bins"]
 
-        bus_result = QbloxMeasurementResult(bus="drive", raw_measurement_data=raw_measurement_data_intertwined_scope)
-        intertwined = 2
+        result, acquire, setup_scope = self._execute_with_raw_acquisitions(platform, qprogram, [raw])
 
-        unintertwined_results = platform._unintertwined_qblox_results(bus_result, intertwined)
+        setup_scope.assert_called_once_with(sequencer_id=0, averaging=False, trigger_level=0.25)
+        acquire.assert_called_once_with(acquisitions=ANY, channel_id=0, scope=True)
+        assert [record.name for record in result.measurements] == ["scope0", "m0", "m1"]
+        assert result.get(m0).values.tolist() == [1.0, 3.0]
+        assert result.get(m1).values.tolist() == [2.0, 4.0]
+        trace = result.get(scope, field="raw")
+        assert trace.dims == ("time", "IQ")
+        assert trace.values.tolist() == [[1, 5], [2, 6], [3, 7], [4, 8]]
+        assert trace.coords["time"].values.tolist() == [0, 1, 2, 3]
+        assert result.get("scope0", field="raw").equals(trace)
 
-        assert len(unintertwined_results)==intertwined
+    def test_qblox_scope_set_up_only_on_scoped_bus(self, platform: Platform):
+        """Only the bus a ``qp.qblox.scope`` names is scoped."""
+        weights = IQPair(I=Square(amplitude=1.0, duration=120), Q=Square(amplitude=0.0, duration=120))
+        qprogram = QProgram()
+        qprogram.qblox.scope(bus="feedline_input_output_bus_1")
+        qprogram.qblox.acquire(bus="feedline_input_output_bus", weights=weights)
+        qprogram.qblox.acquire(bus="feedline_input_output_bus_1", weights=weights)
 
-        assert unintertwined_results[0].raw_measurement_data == {"bins": {"integration": {"path0": [], "path1": []}, "threshold": [], "avg_cnt":[]}, "scope": {"path0":{"data": [1, 3]}, "path1":{"data": [5, 7]}}}
-        assert unintertwined_results[1].raw_measurement_data == {"bins": {"integration": {"path0": [], "path1": []}, "threshold": [], "avg_cnt":[]}, "scope": {"path0":{"data": [2, 4]}, "path1":{"data": [6, 8]}}}
+        _, acquire, setup_scope = self._execute_with_raw_acquisitions(
+            platform, qprogram, [_raw_acquisition(path0=[1.0], path1=[2.0], scope=([0.5], [0.6]))]
+        )
+
+        setup_scope.assert_called_once_with(sequencer_id=ANY, averaging=True, trigger_level=None)
+        assert sorted(call.kwargs["scope"] for call in acquire.call_args_list) == [False, True]
 
     def test_unintertwined_qblox_results_more_than_32_interleaved_measures(self, platform: Platform):
-        """Regression: _unintertwined_qblox_results must split N>32 interleaved measures into
-        N separate results (one per measure), not pack them all into the first element."""
+        """Regression: N>32 interleaved measures must be split into N separate results (one per measure), not
+        packed into the first one."""
         n_measures = 33
+        weights = IQPair(I=Square(amplitude=1.0, duration=120), Q=Square(amplitude=0.0, duration=120))
+        qprogram = QProgram()
+        handles = [
+            qprogram.qblox.acquire(
+                bus="feedline_input_output_bus", weights=weights, fields=[MeasurementField.IQ, MeasurementField.STATE]
+            )
+            for _ in range(n_measures)
+        ]
+        raw = _raw_acquisition(
+            path0=[float(i) for i in range(n_measures)],
+            path1=[float(i) for i in range(n_measures)],
+            threshold=[float(i) for i in range(n_measures)],
+        )
 
-        raw_measurement_data = {
-            "bins": {
-                "integration": {
-                    "path0": list(range(n_measures)),
-                    "path1": list(range(n_measures)),
-                },
-                "threshold": [float(i) for i in range(n_measures)],
-                "avg_cnt": [],
-            },
-            "scope": {"path0": {"data": []}, "path1": {"data": []}},
-        }
-        bus_result = QbloxMeasurementResult(bus="readout", raw_measurement_data=raw_measurement_data)
+        result, acquire, _ = self._execute_with_raw_acquisitions(platform, qprogram, [raw])
 
-        unintertwined = platform._unintertwined_qblox_results(bus_result, intertwined=n_measures)
-
-        assert len(unintertwined) == n_measures
-        for i, result in enumerate(unintertwined):
-            assert result.raw_measurement_data["bins"]["integration"]["path0"] == [i]
-            assert result.raw_measurement_data["bins"]["integration"]["path1"] == [i]
-            assert result.raw_measurement_data["bins"]["threshold"] == [float(i)]
+        acquisitions = acquire.call_args.kwargs["acquisitions"]
+        assert [acquisition.intertwined for acquisition in acquisitions.values()] == [n_measures]
+        assert len(result.measurements) == n_measures
+        for i, handle in enumerate(handles):
+            assert result.get(handle).values.tolist() == [float(i), float(i)]
+            assert result.get(handle, field="state").values.tolist() == float(i)
 
     def test_execute_qprogram_n_acquisitions_same_bus_returns_n_results(self, platform: Platform):
         """Regression: with N acquisitions on the same bus, the platform must append exactly N results
@@ -2959,25 +2902,18 @@ class TestMethods:
         # the N² vs N pairing bug.
         qprogram = QProgram()
         with qprogram.average(1):
-            qprogram.qblox.acquire(bus="feedline_input_output_bus", weights=weights_wf)
-        qprogram.qblox.acquire(bus="feedline_input_output_bus", weights=weights_wf)
+            m0 = qprogram.qblox.acquire(bus="feedline_input_output_bus", weights=weights_wf)
+        m1 = qprogram.qblox.acquire(bus="feedline_input_output_bus", weights=weights_wf)
 
-        # _unintertwined_qblox_results is mocked to a pass-through so the test focuses purely
-        # on the loop pairing (zip vs double-loop), not on the unintertwining logic.
-        with (
-            patch("builtins.open"),
-            patch.object(Bus, "upload_qpysequence"),
-            patch.object(Bus, "run"),
-            patch.object(Bus, "acquire_qprogram_results") as mock_acquire,
-            patch.object(QbloxModule, "sync_sequencer"),
-            patch.object(QbloxModule, "desync_sequencer"),
-            patch.object(Platform, "_unintertwined_qblox_results", side_effect=lambda r, i: [r]),
-        ):
-            # [0, 1] — distinct sentinel values
-            mock_acquire.return_value = list(range(n_measures))
-            results = platform.execute_qprogram(qprogram=qprogram)
+        result, _, _ = self._execute_with_raw_acquisitions(
+            platform,
+            qprogram,
+            [_raw_acquisition(path0=[0.0], path1=[10.0]), _raw_acquisition(path0=[1.0], path1=[11.0])],
+        )
 
-        assert len(results.results["feedline_input_output_bus"]) == n_measures
+        assert len(result.measurements) == n_measures
+        assert result.get(m0).values.tolist() == [0.0, 10.0]
+        assert result.get(m1).values.tolist() == [1.0, 11.0]
 
     def test_execute_qprogram_programs_threshold_with_weight_duration(self, platform: Platform):
         """The hardware threshold must be programmed using the weight duration derived from the QProgram,

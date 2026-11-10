@@ -162,7 +162,6 @@ class InstrumentName(str, Enum):
     KEYSIGHT_E5080B = "keysight_e5080b"
     YOKOGAWA_GS200 = "yokogawa_gs200"
     QCMRF = "QCM-RF"
-    QUANTUM_MACHINES_CLUSTER = "quantum_machines_cluster"
     QDEVIL_QDAC2 = "qdevil_qdac2"
     RSWU_SP16TR = "rswu_sp16tr"
 
@@ -303,7 +302,6 @@ class InstrumentControllerName(str, Enum):
     QBLOX_SPIRACK = "qblox_spi_rack"
     KEYSIGHT_E5080B = "keysight_e5080b"
     YOKOGAWA_GS200 = "yokogawa_gs200_controller"
-    QUANTUM_MACHINES_CLUSTER = "quantum_machines_cluster_controller"
     QDEVIL_QDAC2 = "qdevil_qdac2"
     RSWU_SP16TR = "rswu_sp16tr"
 
@@ -485,8 +483,6 @@ class ResultName(str, Enum):
     QBLOX = "qblox"
     QBLOX_QPROGRAM_MEASUREMENT = "qblox_qprogram_measurement"
     VECTOR_NETWORK_ANALYZER = "vector_network_analyzer"
-    QUANTUM_MACHINES = "quantum_machines"
-    QUANTUM_MACHINES_MEASUREMENT = "quantum_machines_measurement"
 
 
 class DistortionState(str, Enum):

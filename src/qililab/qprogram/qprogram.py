@@ -11,50 +11,48 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""qililab's ``QProgram``: qprogram's, with the Qblox and QDAC namespaces and what qililab adds."""
+
+import functools
+import operator
+import warnings
 from collections.abc import Sequence
 from copy import deepcopy
-from typing import TYPE_CHECKING, ClassVar, overload
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
+import qprogram as qp
+from qprogram.blocks import Block
+from qprogram.operations import Measure
+from qprogram.operations import Play as CorePlay
+from qprogram.operations.operation import MeasurementOperation
+from qprogram.waveforms import Arbitrary, IQPair, IQWaveform, Waveform
+from qprogram_qblox import QbloxMixin
+from qprogram_qdac import Play as QdacPlay
+from qprogram_qdac import QdacMixin
 
-from qililab.core.variables import Domain, Variable, requires_domain
-from qililab.qprogram.blocks import Block, Conditional, ForLoop, Parallel, for_loop_iterations
-from qililab.qprogram.calibration import Calibration
-from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix, NonLinearCrosstalkMatrix
-from qililab.qprogram.flux_vector import FluxVector, NonLinearFluxVector
-from qililab.qprogram.operations import (
-    Acquire,
-    AcquireWithCalibratedWeights,
-    Measure,
-    MeasureReset,
-    MeasureResetCalibrated,
-    MeasureWithCalibratedWaveform,
-    MeasureWithCalibratedWaveformWeights,
-    MeasureWithCalibratedWeights,
-    Operation,
-    Play,
-    PlayWithCalibratedWaveform,
-    ResetPhase,
-    SetFrequency,
-    SetGain,
-    SetMarkers,
-    SetOffset,
-    SetPhase,
-    SetTrigger,
-    Sync,
-    Wait,
-    WaitTrigger,
+import qililab.qprogram.vendor  # noqa: F401  (registers qililab's operations and blocks)
+from qililab.qprogram.blocks import (
+    ForLoop,
+    IfTrigger,
+    InfiniteLoop,
+    Loop,
+    reject_variables_swept_by_enclosing_loops,
+    to_scalar,
 )
-from qililab.qprogram.structured_program import StructuredProgram, VariableInfo, _to_scalar
-from qililab.qprogram.utils_crosstalk import CrosstalkElements, NonLinearFlagState
-from qililab.waveforms import Arbitrary, FlatTop, IQPair, IQWaveform, Square, Waveform
-from qililab.yaml import yaml
+from qililab.qprogram.calibration import Calibration
+from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
+from qililab.qprogram.namespace import QililabQbloxNamespace
+from qililab.qprogram.operations.disable_autosync import DisableAutosync
+from qililab.qprogram.operations.measure_reset import MeasureReset
+from qililab.qprogram.operations.play import QbloxPlay
 
 if TYPE_CHECKING:
-    from qililab.extra.quantum_machines.qprogram.quantum_machines_compiler import QuantumMachinesCompilationOutput
     from qililab.pulse_distortion.pulse_distortion import PulseDistortion
     from qililab.qprogram.qblox_compiler import QbloxCompilationOutput
     from qililab.qprogram.qdac_compiler import QdacCompilationOutput
+
+_PLAY_OPERATIONS = (CorePlay, QbloxPlay, QdacPlay)
 
 
 class QProgramCompilationOutput:
@@ -64,21 +62,34 @@ class QProgramCompilationOutput:
         self,
         qblox: "QbloxCompilationOutput | None" = None,
         qdac: "QdacCompilationOutput | None" = None,
-        quantum_machines: "QuantumMachinesCompilationOutput | None" = None,
-    ):
+    ) -> None:
         self.qblox = qblox
         self.qdac = qdac
-        self.quantum_machines = quantum_machines
 
 
-@yaml.register_class
-class QProgram(StructuredProgram):
+class _BlockContext:
+    """Opens one of qililab's blocks: appends it to the active block, then makes it the active block."""
+
+    def __init__(self, program: "QProgram", block: Block) -> None:
+        self._program = program
+        self._block = block
+
+    def __enter__(self) -> Block:
+        self._program._append_to_active(self._block)
+        self._program._block_stack.append(self._block)
+        return self._block
+
+    def __exit__(self, exc_type: object, exc_value: object, exc_tb: object) -> None:
+        self._program._block_stack.pop()
+
+
+class QProgram(QbloxMixin, QdacMixin, qp.QProgram):
     """QProgram is a hardware-agnostic pulse-level programming interface for describing quantum programs.
 
-    This class provides an interface for building quantum programs,
-    including defining operations, managing variables, and handling blocks.
-    It contains methods for creating, manipulating and controlling
-    the execution flow of quantum operations within a program.
+    It is qprogram's ``QProgram`` with the ``qp.qblox`` and ``qp.qdac`` namespaces, plus what qililab adds: the
+    ``infinite_loop`` and ``if_trigger`` blocks, ``qp.qblox.play`` with a ``wait_time`` and
+    ``qp.qblox.measure_reset``, the ``with_*`` transforms the platform applies before compiling, ``draw``, and the
+    deprecated ``for_loop`` and ``parallel``.
 
     Examples:
 
@@ -86,24 +97,24 @@ class QProgram(StructuredProgram):
 
         .. code-block:: python3
 
-            from qililab import QProgram, Domain, IQWaveform, Square
+            from qililab import QProgram, IQDrag, IQPair, Square
 
             qp = QProgram()
 
             # Pulse used for changing the state of qubit
-            control_wf = IQDRAG(amplitude=1.0, duration=40, num_sigmas=4.0, drag_correction=-2.5)
+            control_wf = IQDrag(amplitude=1.0, duration=40, num_sigmas=4.0, drag_coefficient=-2.5)
 
             # Pulse used for exciting the resonator for readout
-            readout_wf = IQWaveform(I=Square(amplitude=1.0, duration=400), Q=Square(amplitude=0.0, duration=400))
+            readout_wf = IQPair(I=Square(amplitude=1.0, duration=400), Q=Square(amplitude=0.0, duration=400))
 
             # Weights used during integration
-            weights = IQWaveform(I=Square(amplitude=1.0, duration=2000), Q=Square(amplitude=1.0, duration=2000))
+            weights = IQPair(I=Square(amplitude=1.0, duration=2000), Q=Square(amplitude=1.0, duration=2000))
 
             # Declare a variable
-            gain = qp.variable(label="gain", domain=Domain.Voltage)
+            gain = qp.variable("gain")
 
-            # Loop the variable's value over the range [0.0, 1.0]
-            with qp.for_loop(variable=gain, start=0.0, stop=1.0, step=0.01):
+            # Sweep the variable's value over the range [0.0, 1.0]
+            with qp.sweep(gain).from_range(0.0, 1.0, 0.01):
                 # Change the gain output of the drive_bus
                 qp.set_gain(bus="drive_bus", gain=gain)
 
@@ -115,1323 +126,92 @@ class QProgram(StructuredProgram):
 
                 # Measure
                 qp.measure(bus="readout_bus", waveform=readout_wf, weights=weights)
-
     """
 
-    _TRIGGER_MODE_DISPLAY_NAMES: ClassVar[dict[str, str]] = {
-        "wait_trigger": "wait_trigger",
-        "if_trigger": "if_trigger()",
-        "measure_reset": "qp.qblox.measure_reset()",
-    }
+    @property
+    def qblox(self) -> QililabQbloxNamespace:  # type: ignore[override]
+        """This program's ``qp.qblox`` namespace, with qililab's Qblox operations and options."""
+        try:
+            return object.__getattribute__(self, "_qblox_ns")
+        except AttributeError:
+            pass
+        namespace = QililabQbloxNamespace(self)
+        object.__setattr__(self, "_qblox_ns", namespace)
+        return namespace
 
-    # if_trigger() is mutually exclusive with wait_trigger() and measure_reset() (checked both ways below).
-    # Class-level default so QPrograms deserialized without this field still have it.
-    _trigger_mode: str | None = None
+    def _append_to_active(self, element: Any) -> None:
+        """Append ``element`` to the active block, refusing a loop over a variable an enclosing loop already sweeps.
 
-    def __init__(self) -> None:
-        super().__init__()
-        self.qblox = self._QbloxInterface(self)
-        self.quantum_machines = self._QuantumMachinesInterface(self)
-        self.qdac = self._QdacInterface(self)
+        Args:
+            element (Any): The operation or block to append.
 
-    def _reject_conflicting_trigger_mode(self, this_op: str, conflicting_modes: tuple[str, ...]) -> None:
-        """Raise if ``_trigger_mode`` is already set to one of ``conflicting_modes``.
-
-        Only one hardware-trigger mechanism (``wait_trigger()``, ``if_trigger()``,
-        ``qp.qblox.measure_reset()``) can gate real-time execution per QProgram; ``if_trigger()`` is
-        mutually exclusive with the other two, which aren't mutually exclusive with each other.
+        Raises:
+            VariableAllocated: If ``element`` is a loop over a variable an enclosing loop already sweeps.
         """
-        if self._trigger_mode in conflicting_modes:
-            raise NotImplementedError(
-                f"{this_op} cannot be used together with {self._TRIGGER_MODE_DISPLAY_NAMES[self._trigger_mode]} "
-                "in the same QProgram."
-            )
+        reject_variables_swept_by_enclosing_loops(element, self._block_stack)
+        super()._append_to_active(element)
 
     def __str__(self) -> str:
-        def traverse(block: Block):
-            string_elements = []
-            for element in block.elements:
-                string_elements.append(f"{type(element).__name__}:\n")
-                for attr_name in vars(element):
-                    # ignore uuid, variables. elements, waveforms and weights are handled separately
-                    if attr_name in ("_uuid", "variable", "elements", "waveform", "weights"):
-                        continue
+        """Return the program written as ``.qp`` text."""
+        return qp.dumps(self)
 
-                    attr_value = getattr(element, attr_name)
-                    # Handle UUID checking and append to string_elements
-                    if "UUID" not in str(attr_value):
-                        string_elements.append(f"\t{attr_name}: {attr_value}\n")
-                    else:
-                        # pragma: no cover
-                        string_elements.append(f"\t{attr_name}: None\n")
+    @classmethod
+    def from_qp(cls, text: str) -> "QProgram":
+        """Read a program written as ``.qp`` text, as ``str(qprogram)`` and the results database store it.
 
-                if isinstance(element, Block):
-                    # handle blocks
-                    for string_element in traverse(element):
-                        string_elements.append(f"\t{string_element}")
-
-                # if not a block, it is assumed that element is type Operation
-                if hasattr(element, "waveform"):
-                    waveform_string = (
-                        [f"\tWaveform {type(element.waveform).__name__}:\n"]
-                        + [f"\t\t{array_line}\n" for array_line in str(element.waveform.envelope()).split("\n")]
-                        if isinstance(element.waveform, Waveform)
-                        else [f"\tWaveform I {type(element.waveform.get_I()).__name__}:\n"]
-                        + [f"\t\t{array_line}\n" for array_line in str(element.waveform.get_I().envelope()).split("\n")]
-                        + [f"\tWaveform Q {type(element.waveform.get_Q()).__name__}):\n"]
-                        + [f"\t\t{array_line}\n" for array_line in str(element.waveform.get_Q().envelope()).split("\n")]
-                    )
-                    string_elements.extend(waveform_string)
-
-                if hasattr(element, "weights"):
-                    string_elements.append(f"\tWeights I {type(element.weights.get_I()).__name__}:\n")
-                    string_elements.extend(
-                        [
-                            f"\t\t{array_element}\n"
-                            for array_element in str(element.weights.get_I().envelope()).split("\n")
-                        ]
-                    )
-                    string_elements.append(f"\tWeights Q {type(element.weights.get_Q()).__name__}:\n")
-                    string_elements.extend(
-                        [
-                            f"\t\t{array_element}\n"
-                            for array_element in str(element.weights.get_Q().envelope()).split("\n")
-                        ]
-                    )
-
-            return string_elements
-
-        return "".join(traverse(self._body))
-
-    def has_calibrated_waveforms_or_weights(self) -> bool:
-        """Checks if QProgram has named waveforms or weights. These need to be mapped before compiling to hardware-native code.
+        Args:
+            text (str): The ``.qp`` text.
 
         Returns:
-            bool: True, if QProgram has waveforms or weights that need to be mapped from calibration.
+            QProgram: The program.
         """
+        program = qp.loads(text)
+        # qililab's QProgram only adds methods to qprogram's, so the parsed program becomes one as it is.
+        program.__class__ = cls
+        return program  # type: ignore[return-value]
 
-        def traverse(block: Block):
-            for element in block.elements:
-                if isinstance(element, Block):
-                    if traverse(element):
-                        return True
-                elif isinstance(
-                    element,
-                    (
-                        PlayWithCalibratedWaveform,
-                        AcquireWithCalibratedWeights,
-                        MeasureWithCalibratedWaveform,
-                        MeasureWithCalibratedWeights,
-                        MeasureWithCalibratedWaveformWeights,
-                        MeasureResetCalibrated,
-                    ),
-                ):
-                    return True
-            return False
+    def insert_block(self, block: Block) -> None:
+        """Append a copy of the elements of ``block`` to the active block.
 
-        return traverse(self.body)
-
-    def with_bus_mapping(self, bus_mapping: dict[str, str]) -> "QProgram":
-        """Returns a copy of the QProgram with bus mappings applied.
+        Each measurement in it gets a new name, allocated like any measurement's, so a block can be inserted several
+        times. A ``qp.qblox.disable_autosync`` setting at the top of ``block`` is left out: it belongs to the program
+        it was set on.
 
         Args:
-            bus_mapping (dict[str, str]): A dictionary mapping old bus names to new bus names.
+            block (Block): The block whose elements to append.
+        """
+        for element in deepcopy(block).elements:
+            if isinstance(element, DisableAutosync):
+                continue
+            for node in element.walk():
+                if isinstance(node, MeasurementOperation):
+                    node.handle.name = self._allocate_measurement_name(node.bus, requested=None)  # type: ignore[attr-defined]
+                    node.handle._auto_named = True
+            self._append_to_active(element)
+
+    def infinite_loop(self) -> _BlockContext:
+        """Define an infinite loop.
+
+        Blocks need to open a scope.
+
+        Examples:
+            >>> with qp.infinite_loop():
+            >>> # operations that shall be executed in the infinite loop block
 
         Returns:
-            QProgram: A new instance of QProgram with updated bus names.
+            _BlockContext: The context manager opening the ``InfiniteLoop`` block.
         """
-
-        def traverse(block: Block):
-            for index, element in enumerate(block.elements):
-                if isinstance(element, Block):
-                    traverse(element)
-                elif isinstance(element, (MeasureReset, MeasureResetCalibrated)):
-                    bus = getattr(element, "bus")
-                    control_bus = getattr(element, "control_bus")
-                    if isinstance(bus, str) and bus in bus_mapping:
-                        setattr(block.elements[index], "bus", bus_mapping[bus])
-                    if isinstance(control_bus, str) and control_bus in bus_mapping:
-                        setattr(block.elements[index], "control_bus", bus_mapping[control_bus])
-                elif hasattr(element, "bus"):
-                    bus = getattr(element, "bus")
-                    if isinstance(bus, str) and bus in bus_mapping:
-                        setattr(block.elements[index], "bus", bus_mapping[bus])
-                elif hasattr(element, "buses"):
-                    buses = getattr(element, "buses")
-                    if isinstance(buses, list):
-                        setattr(
-                            block.elements[index],
-                            "buses",
-                            [bus_mapping[bus] if bus in bus_mapping else bus for bus in buses],
-                        )
-
-        # Copy qprogram so the original remain unaffected
-        copied_qprogram = deepcopy(self)
-
-        # Recursively traverse qprogram applying the bus mapping
-        traverse(copied_qprogram.body)
-
-        # Apply the mapping to buses property
-        for bus in list(copied_qprogram.buses):
-            if bus in bus_mapping:
-                copied_qprogram.buses.remove(bus)
-                copied_qprogram.buses.add(bus_mapping[bus])
-
-        # Apply the mapping to weight_duration keys, merging entries when multiple source buses map onto
-        # the same target bus (e.g. multiplexed readout) instead of one overwriting the other
-        remapped_weight_duration: dict[str, list[int | str]] = {}
-        for bus, durations in copied_qprogram.qblox._weight_duration.items():
-            remapped_weight_duration.setdefault(bus_mapping.get(bus, bus), []).extend(durations)
-        copied_qprogram.qblox._weight_duration = remapped_weight_duration
-
-        return copied_qprogram
-
-    def with_calibration(self, calibration: Calibration):
-        """Apply calibration to the operations within the QProgram.
-
-        This method traverses the elements of the QProgram, replacing any
-        named operations with the corresponding calibrated waveforms specified
-        in the given Calibration instance.
-
-        Args:
-            calibration (Calibration): The calibration data to apply to the operations.
-
-        Returns:
-            QProgram: A new instance of QProgram with calibrated operations.
-        """
-        buses_to_add: set[str] = set()
-
-        def traverse(block: Block):
-            for index, element in enumerate(block.elements):
-                if isinstance(element, Block):
-                    traverse(element)
-                elif isinstance(element, PlayWithCalibratedWaveform) and calibration.has_waveform(
-                    bus=element.bus, name=element.waveform
-                ):
-                    waveform = calibration.get_waveform(bus=element.bus, name=element.waveform)
-                    play_operation = Play(bus=element.bus, waveform=waveform, wait_time=element.wait_time)
-                    block.elements[index] = play_operation
-                elif isinstance(element, AcquireWithCalibratedWeights) and calibration.has_weights(
-                    bus=element.bus, name=element.weights
-                ):
-                    weights = calibration.get_weights(bus=element.bus, name=element.weights)
-                    acquire_operation = Acquire(bus=element.bus, weights=weights, save_adc=element.save_adc)
-                    block.elements[index] = acquire_operation
-                elif isinstance(element, MeasureWithCalibratedWaveform) and calibration.has_waveform(
-                    bus=element.bus, name=element.waveform
-                ):
-                    waveform = calibration.get_waveform(bus=element.bus, name=element.waveform)
-                    measure_operation = Measure(
-                        bus=element.bus,
-                        waveform=waveform,
-                        weights=element.weights,
-                        demodulation=element.demodulation,
-                        save_adc=element.save_adc,
-                    )
-                    block.elements[index] = measure_operation
-                elif isinstance(element, MeasureWithCalibratedWeights) and calibration.has_weights(
-                    bus=element.bus, name=element.weights
-                ):
-                    weights = calibration.get_weights(bus=element.bus, name=element.weights)
-                    measure_operation = Measure(
-                        bus=element.bus,
-                        waveform=element.waveform,
-                        weights=weights,
-                        demodulation=element.demodulation,
-                        save_adc=element.save_adc,
-                    )
-                    block.elements[index] = measure_operation
-                elif (
-                    isinstance(element, MeasureWithCalibratedWaveformWeights)
-                    and calibration.has_waveform(bus=element.bus, name=element.waveform)
-                    and calibration.has_weights(bus=element.bus, name=element.weights)
-                ):
-                    waveform = calibration.get_waveform(bus=element.bus, name=element.waveform)
-                    weights = calibration.get_weights(bus=element.bus, name=element.weights)
-                    measure_operation = Measure(
-                        bus=element.bus,
-                        waveform=waveform,
-                        weights=weights,
-                        demodulation=element.demodulation,
-                        save_adc=element.save_adc,
-                    )
-                    block.elements[index] = measure_operation
-                elif (
-                    isinstance(element, MeasureResetCalibrated)
-                    and calibration.has_waveform(bus=element.bus, name=element.waveform)
-                    and calibration.has_weights(bus=element.bus, name=element.weights)
-                    and calibration.has_waveform(bus=element.control_bus, name=element.reset_pulse)
-                ):
-                    waveform = calibration.get_waveform(bus=element.bus, name=element.waveform)
-                    weights = calibration.get_weights(bus=element.bus, name=element.weights)
-                    reset_pulse = calibration.get_waveform(bus=element.control_bus, name=element.reset_pulse)
-                    measure_reset_operation = MeasureReset(
-                        bus=element.bus,
-                        waveform=waveform,
-                        weights=weights,
-                        control_bus=element.control_bus,
-                        reset_pulse=reset_pulse,
-                        trigger_address=element.trigger_address,
-                        save_adc=element.save_adc,
-                    )
-                    block.elements[index] = measure_reset_operation
-                    buses_to_add.add(element.control_bus)
-
-                if hasattr(element, "bus"):
-                    bus = getattr(element, "bus")
-                    buses_to_add.add(bus)
-
-        copied_qprogram = deepcopy(self)
-        traverse(copied_qprogram.body)
-
-        if buses_to_add:
-            copied_qprogram._buses.update(buses_to_add)
-
-        return copied_qprogram
-
-    def with_resolved_weight_duration(
-        self, calibration: Calibration | None, bus_mapping: dict[str, str] | None = None
-    ) -> "QProgram":
-        """Return a copy of the QProgram with calibrated weight names in ``qblox.weight_duration``
-        resolved to integer durations.
-
-        Calibration lookups use each bus's mapped (physical) alias when ``bus_mapping`` is given,
-        matching how ``with_bus_mapping``/``with_calibration`` resolve calibration after applying the
-        mapping.
-
-        Args:
-            calibration (Calibration | None): Calibration instance used to resolve calibrated weight
-                names. Required if any acquisition uses a calibrated weight name.
-            bus_mapping (dict[str, str] | None): Optional bus mapping; calibration lookups use the
-                mapped bus alias when provided.
-
-        Returns:
-            QProgram: A new instance of QProgram with ``qblox.weight_duration`` resolved.
-        """
-        copied_qprogram = deepcopy(self)
-        resolved: dict[str, list[int | str]] = {}
-        for bus, entries in copied_qprogram.qblox.weight_duration.items():
-            mapped_bus = bus_mapping.get(bus, bus) if bus_mapping else bus
-            resolved_entries: list[int | str] = []
-            for entry in entries:
-                if isinstance(entry, int):
-                    resolved_entries.append(entry)
-                else:
-                    if calibration is None:
-                        raise ValueError(
-                            f"Calibrated weight {entry!r} requires a calibration object, but none was provided."
-                        )
-                    if not calibration.has_weights(mapped_bus, entry):
-                        raise ValueError(f"Calibrated weight {entry!r} not found in calibration.")
-                    resolved_entries.append(calibration.get_weights(mapped_bus, entry).get_duration())
-            resolved[bus] = resolved_entries
-        copied_qprogram.qblox._weight_duration = resolved
-        return copied_qprogram
-
-    @staticmethod
-    def _flux_offset_value(operation: "SetOffset | SetGain") -> int | float | Variable:
-        """The variable/scalar value carried by a SetOffset (path0) or SetGain."""
-        return operation.offset_path0 if isinstance(operation, SetOffset) else operation.gain
-
-    @staticmethod
-    def _set_flux_offset_value(operation: "SetOffset | SetGain", value) -> None:
-        if isinstance(operation, SetOffset):
-            operation.offset_path0 = value
-        else:
-            operation.gain = value
-
-    def with_crosstalk_qblox(self, crosstalk: CrosstalkMatrix):
-        """Apply crosstalk compensation to the qprogram flux buses.
-
-        This method traverses the elements of the QProgram, replacing any
-        Play or Offset instances by the compensated envelope or offset for
-        all flux buses.
-
-        Args:
-            crosstalk (CrosstalkMatrix): Crosstalk matrix class.
-
-        Returns:
-            QProgram: A new instance of QProgram with calibrated crosstalk.
-        """
-        self._bus_variable_map: dict[tuple[Variable | float | None, str], Variable] = {}
-        self._block_variables: dict[Variable | float | None, list[Variable]] = {}
-        self._parallel_loops: dict[Variable, list[ForLoop]] = {}
-        self._active_loops: list[ForLoop | Parallel] = []
-        self._loop_depths: list[int] = []
-        self._bus_loop_depth: dict[str, int] = {}
-        self._constant_bus_variables: set[Variable] = set()
-        # Compensated SetOffset/SetGain (by id) -> (own loop terms, constant bias, buses the user set in its group).
-        # The final value is assembled by `assemble_flux_operations` once every block has been rewritten.
-        self._flux_terms: dict[int, tuple[list[Variable], float, set[str]]] = {}
-        # (operation class, loop variable) -> crosstalk buses that variable sweeps.
-        self._variable_buses: dict[tuple[type, Variable], set[str]] = {}
-
-        non_lin_flux_vector: NonLinearFluxVector | None = None
-        if isinstance(crosstalk, NonLinearCrosstalkMatrix):
-            non_lin_flux_vector = NonLinearFluxVector()
-            non_lin_flux_vector.set_crosstalk(crosstalk)
-
-        non_lin_play_waveforms = []
-        non_lin_offsets = []
-
-        def traverse(
-            block: Block, variables: dict[Variable, VariableInfo], flux_vector: dict[str, FluxVector] | None = None
-        ):
-            """
-            Traverse through all block elements and modify ForLoop, Parallel, Play, SetOffset and SetGain.
-            """
-            crosstalk_elements = CrosstalkElements(crosstalk)
-            crosstalk_elements.flux_vector = flux_vector if flux_vector is not None else {}
-            loop_idx = self._loop_depths[-1] + 1 if self._loop_depths else 0
-
-            non_lin_play_dict: dict[str, Waveform] = {}
-            non_lin_offset_list: list[str] = []
-
-            for i, element in enumerate(block.elements):
-                if isinstance(element, MeasureReset):
-                    raise TypeError(
-                        "qprogram.measure_reset() cannot be used in conjunction with crosstalk compensation."
-                    )
-                if isinstance(element, (Play, SetOffset, SetGain)) and element.bus in crosstalk.matrix.keys():
-                    if non_lin_flux_vector is not None:
-                        if isinstance(element, (SetOffset, SetGain)):
-                            if isinstance(element, SetOffset) and element.bus in non_lin_offset_list:
-                                non_lin_offsets.append(non_lin_flux_vector.get_corrected_offsets())
-                                non_lin_offset_list = []
-                            elif isinstance(element, SetOffset):
-                                non_lin_offset_list.append(element.bus)
-                            value = element.gain if isinstance(element, SetGain) else element.offset_path0
-                            if isinstance(value, Variable) and value.label not in non_lin_flux_vector.variables.keys():
-                                new_loop = next(
-                                    loop
-                                    for loop in self._active_loops
-                                    if (isinstance(loop, ForLoop) and loop.variable == value)
-                                    or (
-                                        isinstance(loop, Parallel)
-                                        and any(for_loop.variable == value for for_loop in loop.loops)
-                                    )
-                                )
-                                non_lin_flux_vector.set_loop(new_loop)
-                                self._active_loops.remove(new_loop)
-                            non_lin_flux_vector.set_element(element)
-                        elif isinstance(element, Play):
-                            if element.bus in non_lin_play_dict:
-                                non_lin_play_waveforms.append(non_lin_flux_vector.get_corrected_play(non_lin_play_dict))
-                                non_lin_offsets.append(non_lin_flux_vector.get_corrected_offsets())
-                                non_lin_play_dict = {}
-                            non_lin_offset_list.append(element.bus)
-                            non_lin_play_dict[element.bus] = (
-                                element.waveform if isinstance(element.waveform, Waveform) else element.waveform.get_I()
-                            )
-                    else:
-                        crosstalk_elements.check_flux_vector(element)
-                        crosstalk_elements.flux_vector[str(element.__class__)] = handle_flux_vector(
-                            flux_vector=crosstalk_elements.flux_vector[str(element.__class__)],
-                            element=element,
-                        )
-                        crosstalk_elements.add_element(element, i)
-                if isinstance(element, (Wait, Acquire, Measure)) or (
-                    isinstance(element, Play) and element.bus not in crosstalk.matrix.keys()
-                ):
-                    crosstalk_elements.restart_flux_vector()
-
-                if isinstance(element, Block):
-                    crosstalk_elements.restart_flux_vector(str(Play.__class__))
-                    variable_list = None
-                    if isinstance(element, ForLoop):
-                        variable_list = [element.variable]
-                        self._active_loops.append(element)
-                        self._loop_depths.append(loop_idx)
-                    if isinstance(element, Parallel) and all(isinstance(loop, ForLoop) for loop in element.loops):
-                        variable_list = [loop.variable for loop in element.loops]
-                        if non_lin_flux_vector is not None:
-                            self._active_loops.append(element)
-                            self._loop_depths.append(loop_idx)
-                        else:
-                            for loop in element.loops:
-                                self._active_loops.append(loop)  # type: ignore [arg-type]
-                                self._loop_depths.append(loop_idx)
-                    if non_lin_flux_vector and non_lin_play_dict:
-                        non_lin_play_waveforms.append(non_lin_flux_vector.get_corrected_play(non_lin_play_dict))
-                        non_lin_offsets.append(non_lin_flux_vector.get_corrected_offsets())
-                        non_lin_play_dict = {}
-                    traverse(element, variables, deepcopy(crosstalk_elements.flux_vector))
-
-                    if variable_list is not None and any(
-                        variable in self._parallel_loops for variable in variable_list
-                    ):
-                        loop_list: list[ForLoop] = []
-                        for variable in (v for v in variable_list if v in self._parallel_loops):
-                            valid_loops = [
-                                loop
-                                for loop in self._parallel_loops[variable]
-                                if loop.variable in self._block_variables[variable]
-                            ]
-                            loop_list.extend(valid_loops)
-
-                            for new_variable in self._block_variables[variable]:
-                                variables[new_variable] = VariableInfo()
-                            self._block_variables[variable] = []
-                        parallel_loop = Parallel(loops=loop_list)
-                        parallel_loop.elements = element.elements
-                        block.elements[i] = parallel_loop
-                        self._active_loops = self._active_loops[:-1]
-                        self._loop_depths = self._loop_depths[:-1]
-
-            if non_lin_flux_vector is None:
-                block = handle_crosstalk_element(block=block, crosstalk_elements=crosstalk_elements)
-            else:
-                if non_lin_play_dict:
-                    non_lin_play_waveforms.append(non_lin_flux_vector.get_corrected_play(non_lin_play_dict))
-                    non_lin_offsets.append(non_lin_flux_vector.get_corrected_offsets())
-                    non_lin_play_dict = {}
-                    non_lin_offset_list = []
-
-                if non_lin_offset_list:
-                    non_lin_offsets.append(non_lin_flux_vector.get_corrected_offsets())
-                    non_lin_offset_list = []
-
-                if (
-                    isinstance(block, ForLoop)
-                    or (isinstance(block, Parallel) and all(isinstance(loop, ForLoop) for loop in block.loops))
-                ) and block in non_lin_flux_vector.loops.values():
-                    non_lin_flux_vector.exit_loop(block)
-
-        def handle_flux_vector(flux_vector: FluxVector, element: Play | SetGain | SetOffset):
-            """
-            Generates the flux vector based on the element parameters, variables and loops.
-            """
-            if isinstance(element, Play):
-                if isinstance(element.waveform, Waveform):
-                    waveform = element.waveform.I if isinstance(element.waveform, IQPair) else element.waveform
-                    envelope = waveform.envelope()
-            elif isinstance(element, SetOffset):
-                envelope = element.offset_path0  # type: ignore [assignment]
-            elif isinstance(element, SetGain):
-                envelope = element.gain  # type: ignore [assignment]
-
-            if isinstance(envelope, Variable):
-                variable_loop = next((loop for loop in self._active_loops[::-1] if loop.variable == envelope), None)
-                if variable_loop:
-                    depth = next(
-                        (d for loop, d in zip(self._active_loops, self._loop_depths) if loop is variable_loop), None
-                    )
-                    if depth is not None:
-                        self._bus_loop_depth[element.bus] = depth
-                    self._variable_buses.setdefault((type(element), envelope), set()).add(element.bus)
-                    envelope = (
-                        np.linspace(
-                            variable_loop.start,
-                            variable_loop.stop,
-                            max(for_loop_iterations(variable_loop.start, variable_loop.stop, variable_loop.step), 0),
-                        )
-                        if isinstance(variable_loop, ForLoop)
-                        else variable_loop
-                    )
-                    if not envelope.tolist():
-                        raise ValueError(
-                            "Parameters of the ForLoop not assigned correctly. Please check start, stop and step values."
-                        )
-            envelope_is_array = isinstance(envelope, np.ndarray) and envelope.ndim > 0
-            # The bus being set is replaced, so its previous value doesn't count.
-            existing_arrays = [
-                value
-                for bus, value in flux_vector.flux_vector.items()
-                if bus != element.bus and isinstance(value, np.ndarray) and value.ndim > 0
-            ]
-            ragged = (
-                isinstance(element, (SetOffset, SetGain))
-                and envelope_is_array
-                and any(value.shape != envelope.shape for value in existing_arrays)
-            )
-            if ragged:
-                flux_vector.flux_vector[element.bus] = envelope
-                if flux_vector.crosstalk:
-                    flux_vector.bias_vector[element.bus] = envelope
-            else:
-                flux_vector[element.bus] = envelope
-            return flux_vector
-
-        def handle_crosstalk_element(block: Block, crosstalk_elements: CrosstalkElements):
-            """
-            Modifies the block for crosstalk compensation.
-            By modifying the voltage of the existing elements and adding new ones based on the compensated bias.
-            """
-            elements: dict[int, Play | SetGain | SetOffset] = {}
-            additional_elements = 0
-
-            handle_crosstalk_loop(block.elements, crosstalk_elements)
-
-            for ii, element_idx in enumerate(crosstalk_elements.element_list.keys()):
-                elements[element_idx] = block.elements.pop(element_idx - ii)  # type: ignore [assignment]
-
-            for ii, element_idx in enumerate(crosstalk_elements.element_list.keys()):
-                flux_vector, element_group = crosstalk_elements.element_list[element_idx]
-                element = elements[element_idx]
-                element_group_bus = [elements[group_id].bus for group_id in element_group]
-
-                for bus in flux_vector.bias_vector.keys():
-                    if bus not in element_group_bus or element.bus == bus:
-                        operation = handle_element(
-                            element, bus, flux_vector, element_group, element_group_bus, elements
-                        )
-                        block.elements.insert(element_idx + additional_elements, operation)
-                        copied_qprogram.buses.add(bus)
-                        if bus not in element_group_bus:
-                            additional_elements += 1
-            return block
-
-        def handle_element(
-            element: SetOffset | SetGain | Play,
-            bus: str,
-            flux_vector: FluxVector,
-            element_group: list[int],
-            element_group_bus: list[str],
-            elements: dict[int, Play | SetGain | SetOffset],
-        ):
-            """
-            Modifies SetOffset, SetGain or Play based on its element type.
-            """
-            bias_vector = flux_vector.bias_vector[bus]
-            if all(isinstance(elements[element], (SetOffset, SetGain)) for element in element_group):
-                _, variable_list = handle_flux_v_flux(elements, flux_vector, element_group, element_group_bus)
-
-            if isinstance(element, (SetOffset, SetGain)):
-                operation, terms = handle_offset_or_gain(
-                    element,
-                    bus,
-                    bias_vector,
-                    element_group,
-                    variable_list,
-                    elements,  # type: ignore [arg-type]
-                )
-                self._flux_terms[id(operation)] = (terms, flux_constant(flux_vector)[bus], set(element_group_bus))
-            if isinstance(element, Play):
-                operation = handle_play(bus, bias_vector, element_group, elements)  # type: ignore [arg-type]
-            return operation
-
-        def handle_offset_or_gain(
-            element: SetOffset | SetGain,
-            bus: str,
-            bias_vector: float | list[float] | np.ndarray,
-            element_group: list[int],
-            variable_list: list[Variable],
-            elements: dict[int, SetOffset | SetGain],
-        ) -> tuple[SetOffset | SetGain, list[Variable]]:
-            """
-            Builds the compensated SetOffset or SetGain on `bus` and returns it with its loop terms.
-
-            The operation only holds the loop terms. Its constant part is added by `assemble_flux_operations`.
-            """
-            terms: list[Variable] = []
-            if isinstance(bias_vector, np.ndarray):
-                value = QProgram._flux_offset_value(element)
-                variable = (
-                    value
-                    if isinstance(value, Variable)
-                    else next(
-                        (
-                            QProgram._flux_offset_value(elements[element_id])
-                            for element_id in element_group
-                            if isinstance(QProgram._flux_offset_value(elements[element_id]), Variable)
-                        ),
-                        None,
-                    )
-                )
-                bus_variable = self._bus_variable_map[variable, bus]
-                if bus_variable not in self._constant_bus_variables:
-                    terms.append(bus_variable)
-                    self._block_variables[variable].append(bus_variable)
-
-                if len(variable_list) > 1 and variable in variable_list:
-                    for var in variable_list:
-                        if isinstance(variable, Variable) and var.label != variable.label:
-                            cross_variable = self._bus_variable_map[var, bus]
-                            if cross_variable in self._constant_bus_variables:
-                                # This loop doesn't change the bias on this bus: no term and no loop.
-                                continue
-                            # Only added if there are more than one loop with different variables.
-                            terms.append(cross_variable)
-                            self._block_variables[var].append(cross_variable)
-
-            return type(element)(bus, terms[0] if terms else 0.0), terms
-
-        def flux_constant(flux_vector: FluxVector) -> dict[str, float]:
-            """
-            Bias with every swept bus at 0, i.e. M⁻¹ · (fixed flux - flux_offsets): the part of the bias that doesn't
-            change with any loop.
-            """
-            fixed = {
-                bus: 0.0 if isinstance(flux, np.ndarray) and flux.ndim > 0 else flux
-                for bus, flux in flux_vector.flux_vector.items()
-            }
-            return FluxVector.from_dict(fixed).set_crosstalk(crosstalk)  # type: ignore [return-value]
-
-        def handle_play(
-            bus: str,
-            bias_vector: float | list[float] | np.ndarray,
-            element_group: list[int],
-            elements: dict[int, Play],
-        ):
-            """
-            Modifies Play creating a compensated Arbitrary pulse.
-            For Square and FlatTop pulses uses the same type instead of an Arbitrary pulse.
-            """
-            play_elements = [elements[element] for element in element_group if isinstance(elements[element], Play)]
-            if (
-                len(
-                    {(play.dwell, play.delay, play.repetitions, play.wait_time, play.stepped) for play in play_elements}
-                )
-                > 1
-            ):
-                raise ValueError("Play elements must be the same for the same play pulse.")
-            dwell, delay, repetitions, stepped, wait_time = (
-                play_elements[0].dwell,
-                play_elements[0].delay,
-                play_elements[0].repetitions,
-                play_elements[0].stepped,
-                play_elements[0].wait_time,
-            )
-
-            waveforms: Sequence[Square | FlatTop] = [elements[element].waveform for element in element_group]  # type: ignore [misc]
-            if any(isinstance(element, SetGain) for element in elements.values()):
-                # Normalizes every time gain is used
-                bias_vector = bias_vector / np.max(np.abs(bias_vector)) * np.sign(bias_vector)
-            if all(isinstance(wf, Square) for wf in waveforms):
-                waveform = Square(amplitude=np.max(bias_vector), duration=waveforms[0].duration)
-            elif all(isinstance(wf, FlatTop) for wf in waveforms):
-                if len({(wf.duration, wf.smooth_duration, wf.buffer) for wf in waveforms}) > 1:  # type: ignore [union-attr]
-                    raise ValueError("FlatTop parameters must be the same for all compensated pulses.")
-                waveform = FlatTop(
-                    amplitude=np.max(np.abs(bias_vector)) * np.sign(bias_vector),
-                    duration=waveforms[0].duration,
-                    smooth_duration=waveforms[0].smooth_duration,  # type: ignore [union-attr]
-                    buffer=waveforms[0].buffer,  # type: ignore [union-attr]
-                )
-            else:
-                if not isinstance(bias_vector, np.ndarray):
-                    raise ValueError("Arbitrary samples must be an array.")
-                waveform = Arbitrary(bias_vector)
-
-            play = Play(
-                bus=bus,
-                waveform=waveform,
-                dwell=dwell,
-                delay=delay,
-                repetitions=repetitions,
-                stepped=stepped,
-                wait_time=wait_time,
-            )
-            return play
-
-        def handle_crosstalk_loop(elements_block: list[Block | Operation], crosstalk_elements: CrosstalkElements):
-            """
-            Generates necessary information to process for loops into parallel loops for compensating variables.
-            In form of ForLoops lists inside self._parallel_loops.
-            """
-            elements: dict[int, Play | SetGain | SetOffset] = {}
-
-            for element_idx in crosstalk_elements.element_list.keys():
-                elements[element_idx] = elements_block[element_idx]  # type: ignore [assignment]
-
-            for element_idx in crosstalk_elements.element_list.keys():
-                flux_vector, element_group = crosstalk_elements.element_list[element_idx]
-                element_group_bus = [elements[group_id].bus for group_id in element_group]
-                element = elements[element_idx]
-                variable = get_element_variable(element)
-
-                if variable is not None:
-                    for_loop_list = []
-                    list_fluxes, _ = handle_flux_v_flux(elements, flux_vector, element_group, element_group_bus)
-
-                    if _flux_loops_are_nested(flux_vector) and element.bus in list_fluxes:
-                        # Nested flux-vs-flux loops: use this bus's per-variable decomposition so each
-                        # loop level contributes only its own crosstalk term; the other levels are
-                        # carried in later by assemble_flux_operations.
-                        source = list_fluxes[element.bus]
-                    else:
-                        # Lockstep (parallel/single) loops: use the combined compensated bias.
-                        source = flux_vector
-                    # The compensated loops sweep only the part of the bias that changes with the loop. The constant
-                    # part is added once per operation by assemble_flux_operations.
-                    constant = flux_constant(source)
-                    for bus in crosstalk.matrix.keys():
-                        for_loop_list.append(make_for_loop(variable, bus, source.bias_vector[bus] - constant[bus]))  # type: ignore [arg-type, operator]
-
-                    self._parallel_loops[variable] = for_loop_list
-
-                    if variable not in self._block_variables:
-                        self._block_variables[variable] = []
-
-        def handle_flux_v_flux(
-            elements: dict[int, Play | SetGain | SetOffset], flux_vector: FluxVector, element_group, element_group_bus
-        ):
-            """
-            Function to get multiple flux vectors by decomposing the flux_vector for each loop that contains a variable.
-            This is for structures where multiple ForLoops are executed one inside the other (such as flux vs flux).
-            """
-            bus_list = []
-            variable_list = []
-            used_loop_indices = set()
-            for ii, element_idx in enumerate(element_group):
-                element = elements[element_idx]
-                variable = get_element_variable(element)
-                if variable is not None and variable in [loop.variable for loop in self._active_loops]:  # type: ignore [union-attr]
-                    loop_idx = next(
-                        (idx for loop, idx in zip(self._active_loops, self._loop_depths) if loop.variable is variable),  # type: ignore [union-attr]
-                        None,
-                    )
-                    if loop_idx is not None and loop_idx not in used_loop_indices:
-                        used_loop_indices.add(loop_idx)
-                        bus_list.append(element_group_bus[ii])
-                        variable_list.append(variable)
-            if _flux_loops_are_nested(flux_vector):
-                reduced = FluxVector.from_dict(
-                    {bus: (flux if bus in bus_list else 0) for bus, flux in flux_vector.flux_vector.items()}
-                )
-                reduced.crosstalk = flux_vector.crosstalk
-                return reduced.get_decomposed_vector(bus_list), variable_list
-            return flux_vector.get_decomposed_vector(bus_list), variable_list
-
-        def _flux_loops_are_nested(flux_vector: FluxVector) -> bool:
-            """True when the array-valued flux buses are swept by loops at different nesting depths
-            (a flux-vs-flux sweep across levels), as opposed to a single lockstep parallel/loop."""
-            depths = {
-                self._bus_loop_depth.get(bus)
-                for bus, flux in flux_vector.flux_vector.items()
-                if isinstance(flux, np.ndarray) and flux.ndim > 0
-            }
-            depths.discard(None)
-            return len(depths) > 1
-
-        def get_element_variable(element: Play | SetGain | SetOffset) -> Variable | None:
-            """
-            Returns variable for SetGain and SetOffset elements.
-            """
-            if isinstance(element, SetGain) and isinstance(element.gain, Variable):
-                return element.gain
-            if isinstance(element, SetOffset) and isinstance(element.offset_path0, Variable):
-                return element.offset_path0
-            return None
-
-        def make_for_loop(variable: Variable, bus: str, bias_vector: Sequence[float]) -> ForLoop:
-            """
-            Creates a for loop for a given variable with the bus and bias vector.
-            """
-            if len(bias_vector) < 2:
-                raise NotImplementedError("Single point loops are not supported.")
-            if (variable, bus) not in self._bus_variable_map:
-                self._bus_variable_map[variable, bus] = Variable(label=f"{bus}_{variable}", domain=Domain.Voltage)
-
-            start, stop = bias_vector[0], bias_vector[-1]
-            step = bias_vector[1] - bias_vector[0]
-
-            if abs(step) < 1e-12:
-                # This loop doesn't change the bias on this bus: no compensated loop and no term.
-                self._constant_bus_variables.add(self._bus_variable_map[variable, bus])
-
-            return ForLoop(variable=self._bus_variable_map[variable, bus], start=start, stop=stop, step=step)
-
-        def ends_in_conditional(element: Block | Operation) -> bool:
-            """Whether `element` is a Conditional, or a Block whose own last element does (recursively)."""
-            if isinstance(element, Conditional):
-                return True
-            if isinstance(element, Block) and element.elements:
-                return ends_in_conditional(element.elements[-1])
-            return False
-
-        def assemble_flux_operations(
-            block: Block,
-            carried: dict[tuple[type, str], list[Variable]],
-            ancestors: list[Block],
-            shifted_loops: dict[tuple[Variable, float], Variable],
-        ) -> None:
-            """
-            Sets the final value of every compensated SetOffset/SetGain: its own loop terms, plus the loop terms of
-            enclosing blocks that are still active, plus its constant bias.
-
-            Operations are followed in program order, as the hardware runs them. A loop's terms stop being carried once
-            the buses it sweeps are set again, so a later operation replaces an earlier one. Constants are never
-            carried: each operation's constant already includes every fixed flux set before it.
-            """
-            ancestors = [*ancestors, block]
-            current = {key: list(terms) for key, terms in carried.items()}
-            # (operation class, loop variable) whose buses have been set again in this block.
-            replaced: set[tuple[type, Variable]] = set()
-            for element in block.elements:
-                if isinstance(element, Block):
-                    active = {
-                        (cls, bus): [term for term in terms if (cls, bus_variable_origin[term]) not in replaced]
-                        for (cls, bus), terms in current.items()
-                    }
-                    assemble_flux_operations(element, active, ancestors, shifted_loops)
-                    continue
-                if not isinstance(element, (SetOffset, SetGain)) or id(element) not in self._flux_terms:
-                    continue
-
-                own_terms, constant, group_buses = self._flux_terms.pop(id(element))
-                operation_class = type(element)
-                for (cls, _), terms in carried.items():
-                    if cls is not operation_class:
-                        continue
-                    for term in terms:
-                        variable = bus_variable_origin[term]
-                        swept = self._variable_buses.get((operation_class, variable), set())
-                        reset = swept & group_buses
-                        if swept and reset == swept:
-                            replaced.add((operation_class, variable))
-                        elif reset:
-                            raise NotImplementedError(
-                                f"Crosstalk compensation can't set only some of the buses an outer loop sweeps "
-                                f"together: loop variable {variable.label!r} sweeps {sorted(swept)}, and an inner "
-                                f"block sets {sorted(reset)} again. Set all of them in the inner block, or none."
-                            )
-
-                key = (operation_class, element.bus)
-                inherited = [
-                    term
-                    for term in carried.get(key, [])
-                    if (operation_class, bus_variable_origin[term]) not in replaced and term not in own_terms
-                ]
-                terms = own_terms + inherited
-                QProgram._set_flux_offset_value(element, combine_terms(terms, constant, ancestors, shifted_loops))
-                current[key] = terms
-
-        def combine_terms(
-            terms: list[Variable],
-            constant: float,
-            ancestors: list[Block],
-            shifted_loops: dict[tuple[Variable, float], Variable],
-        ) -> float | Variable:
-            """
-            Writes `sum(terms) + constant` as a value the Qblox compiler accepts: a VariableExpression allows a single
-            binary operation, so `var + var + constant` is written as `var + shifted_var`, where `shifted_var` is a
-            copy of the innermost compensated loop with its range moved by the constant.
-            """
-            constant = float(constant) if abs(constant) >= 1e-12 else 0.0
-            if not terms:
-                return constant
-            if len(terms) > 2:
-                raise NotImplementedError(
-                    "Crosstalk compensation supports at most two loops sweeping flux at the same time on one bus."
-                )
-            if len(terms) == 1:
-                return terms[0] + constant if constant else terms[0]
-            if not constant:
-                return terms[0] + terms[1]
-
-            parallel, loop = next(
-                (block, loop)
-                for block in reversed(ancestors)
-                if isinstance(block, Parallel)
-                for loop in block.loops
-                if loop.variable in terms
-            )
-            other = next(term for term in terms if term != loop.variable)
-            key = (loop.variable, round(constant, 12))
-            if key not in shifted_loops:
-                shifted = Variable(label=f"{loop.variable.label}{constant:+g}", domain=Domain.Voltage)
-                parallel.loops = [
-                    *parallel.loops,
-                    ForLoop(variable=shifted, start=loop.start + constant, stop=loop.stop + constant, step=loop.step),  # type: ignore [union-attr]
-                ]
-                copied_qprogram._variables[shifted] = VariableInfo()
-                shifted_loops[key] = shifted
-            return other + shifted_loops[key]
-
-        def handle_non_linear(
-            elements: list[Block | Operation],
-            flux_vector: NonLinearFluxVector,
-            offsets: list[dict[str, np.ndarray]],
-            play_waveforms: list[dict[str, np.ndarray]],
-            loop_index: tuple[int, ...] = (),
-            loop_coord: tuple[int, ...] = (0,),
-            state: NonLinearFlagState = NonLinearFlagState(),
-        ):
-            """Handles the Qprogram following Non-linear crosstalk compensation:
-            - Unpacks gain and offset loops involving flux buses.
-            - Calculates the non-linear offset and the non-linear waveforms.
-            - Removes set_gain and to be replaced within the play envelope.
-            - Makes Square pulses more efficient by maintaining the same envelope and changing its gain.
-            - handles offsets and waveforms across all possible combination of loops.
-
-            Args:
-                elements (list[Block  |  Operation]): Initial elements from block
-                flux_vector (NonLinearFluxVector): Non-linear flux vector to be implemented
-                offsets (list[dict[str, np.ndarray]]): list of measured non-linear offsets ordered by order of creation.
-                play_waveforms (list[dict[str, np.ndarray]]): List of measured non-linear waveforms ordered by order of creation.
-                loop_index (tuple[int, ...], optional): Index of the existing loop. Defaults to ().
-                loop_coord (tuple[int, ...], optional): Coordinates ordered to find the right waveform / offset on
-                                                         the non-linear matrices. Defaults to (0,).
-                offsets_0 (int, optional): Order of the offsets by order of creation,
-                                            this is the list index for offsets. Defaults to 0.
-                plays_0 (int, optional): Order of the play waveforms by order of creation,
-                                          this is the list index for play_waveforms. Defaults to 0.
-            Returns:
-                list[Block | Operation]: list of elements converted to nonlinear.
-            """
-            corrected_elements: list[Block | Operation] = []
-            flux_vector_buses = list(flux_vector.buses)
-            flux_vector_buses.sort()
-
-            for element in elements:
-                if isinstance(element, SetGain) and element.bus in flux_vector_buses:
-                    continue
-
-                if isinstance(element, SetOffset) and element.bus in flux_vector_buses:
-                    if state.offsets_index != state.last_appended_offset:
-                        state.on_offset()
-                        for bus in flux_vector_buses:
-                            corrected_offsets = offsets[state.offsets_index][bus][loop_coord]
-                            corrected_elements.append(SetOffset(bus, corrected_offsets))
-                            copied_qprogram.buses.add(bus)
-
-                elif isinstance(element, Play) and element.bus in flux_vector_buses:
-                    if not state.play_bus_list or element.bus in state.play_bus_list:
-                        for bus in flux_vector_buses:
-                            corrected_waveform = play_waveforms[state.plays_index][bus][loop_coord]
-                            if isinstance(corrected_waveform, Square):
-                                gain = SetGain(bus, corrected_waveform.amplitude)
-                                corrected_waveform = Square(amplitude=1, duration=corrected_waveform.duration)
-                                corrected_elements.append(gain)
-                            else:
-                                gain = SetGain(bus, 1)
-                                corrected_elements.append(gain)
-                            if not state.offset_defined:
-                                corrected_offsets = offsets[state.offsets_index][bus][loop_coord]
-                                corrected_elements.append(SetOffset(bus, corrected_offsets))
-                            play = Play(
-                                bus,
-                                corrected_waveform,
-                                element.wait_time,
-                                element.dwell,
-                                element.delay,
-                                element.repetitions,
-                                element.stepped,
-                            )
-                            corrected_elements.append(play)
-                            copied_qprogram.buses.add(bus)
-                        state.on_play(element.bus)
-
-                elif isinstance(element, Wait) and element.bus in flux_vector_buses:
-                    corrected_elements.append(element)
-                    state.on_wait()
-
-                elif isinstance(element, Block):
-                    state.on_block()
-                    if element.uuid in flux_vector.loops_uuid.values():
-                        shape = next(iter(offsets[state.offsets_index].values())).shape
-                        offsets_index = state.offsets_index
-                        plays_index = state.plays_index
-                        for key in range(shape[-len(loop_index) - 1]):
-                            loop_coord = (key, *loop_index[::-1])
-                            corrected_loop, state = handle_non_linear(
-                                elements=element.elements,
-                                flux_vector=flux_vector,
-                                offsets=offsets,
-                                play_waveforms=play_waveforms,
-                                loop_index=(*loop_index, key),
-                                loop_coord=loop_coord,
-                                state=NonLinearFlagState(offsets_index=offsets_index, plays_index=plays_index),
-                            )
-                            corrected_elements.extend(corrected_loop)
-                        loop_coord = loop_coord[:-1]
-                        if not loop_coord:
-                            loop_coord = (0,)
-                    else:
-                        corrected_loop, state = handle_non_linear(
-                            elements=element.elements,
-                            flux_vector=flux_vector,
-                            offsets=offsets,
-                            play_waveforms=play_waveforms,
-                            loop_index=loop_index,
-                            loop_coord=loop_coord,
-                            state=NonLinearFlagState(offsets_index=state.offsets_index, plays_index=state.plays_index),
-                        )
-                        element_copy = deepcopy(element)
-                        element_copy.elements = corrected_loop
-                        corrected_elements.append(element_copy)
-                    state.after_block()
-                else:
-                    corrected_elements.append(element)
-
-            # Needs to sync at the end of every loop for the unpack to work with non-flux buses.
-            # Skipped when the tail ends in a Conditional (possibly wrapped in ForLoop/Parallel/etc.):
-            # a qp.if_trigger() block already self-times its own exit (see
-            # QbloxCompiler._handle_conditional_trigger_epilogue), and appending a Sync right after it
-            # would touch the conditional's gated bus outside the block, which the Qblox pre-pass
-            # (qililab.qprogram.prepass.qblox_prepass) forbids.
-            if (
-                corrected_elements
-                and not isinstance(corrected_elements[-1], Sync)
-                and not ends_in_conditional(corrected_elements[-1])
-            ):
-                corrected_elements.append(Sync())
-            return corrected_elements, state
-
-        copied_qprogram = deepcopy(self)
-        traverse(copied_qprogram.body, copied_qprogram._variables)
-        if isinstance(non_lin_flux_vector, NonLinearFluxVector):
-            corrected_elements, _ = handle_non_linear(
-                deepcopy(copied_qprogram.body.elements),
-                non_lin_flux_vector,
-                non_lin_offsets,
-                non_lin_play_waveforms,
-            )
-            copied_qprogram.body.elements = corrected_elements
-        else:
-            bus_variable_origin: dict[Variable, Variable] = {
-                bus_variable: variable
-                for (variable, _), bus_variable in self._bus_variable_map.items()
-                if isinstance(variable, Variable)
-            }
-            assemble_flux_operations(copied_qprogram.body, {}, [], {})
-        return copied_qprogram
-
-    def with_crosstalk_qdac(
-        self,
-        crosstalk: CrosstalkMatrix,
-        qdac_buses_offset: dict[str, float],
-        target_fluxes: dict[str, float | list[float] | np.ndarray] | None = None,
-    ):
-        """Apply crosstalk compensation to the qprogram flux buses.
-        This method traverses the elements of the QProgram, replacing any
-        Play or Offset instances by the compensated envelope or offset for
-        all flux buses.
-
-        Args:
-            crosstalk (CrosstalkMatrix): Crosstalk matrix class.
-            qdac_buses_offset (dict[str, float]): Hardware bias voltage per bus, used to recover the parked flux only when ``target_fluxes`` is not provided.
-            target_fluxes (dict[str, float] | None, optional): Target flux per bus for the parked operating point. Defaults to None.
-
-        Returns:
-            QProgram: A new instance of QProgram with calibrated crosstalk.
-        """
-
-        def traverse(block: Block, flux_vector: FluxVector | None = None):
-            element_list = []
-
-            if flux_vector is None:
-                flux_vector = FluxVector()
-                if target_fluxes:
-                    flux_vector.set_crosstalk(crosstalk)
-                    flux_vector.flux_vector.update(
-                        {bus: target_fluxes[bus] for bus in crosstalk.matrix if bus in target_fluxes}
-                    )
-                else:
-                    # Fallback: no tracked target flux -> recover it from the hardware bias voltage.
-                    flux_vector.set_crosstalk_from_bias(crosstalk, qdac_buses_offset)  # type: ignore[arg-type]
-
-            for i, element in enumerate(block.elements):
-                if isinstance(element, (Play, SetOffset)) and element.bus in crosstalk.matrix.keys():
-                    element_list.append(i)
-                    flux_vector = handle_flux_vector(flux_vector=flux_vector, element=element)  # type: ignore [arg-type]
-
-                if isinstance(element, Block):
-                    traverse(element, flux_vector)
-
-            block = handle_crosstalk_element(block=block, element_list=element_list, flux_vector=flux_vector)  # type: ignore [arg-type]
-
-        def handle_flux_vector(flux_vector: FluxVector, element: Play | SetOffset):
-            if isinstance(element, Play):
-                if isinstance(element.waveform, Waveform):
-                    envelope = element.waveform.envelope()
-                elif isinstance(element.waveform, IQWaveform):
-                    envelope = element.waveform.get_I().envelope()
-            # square with same dimension as play
-            elif isinstance(element, SetOffset):
-                envelope = element.offset_path0  # type: ignore
-
-            if isinstance(envelope, np.ndarray):
-                existing_lengths = {
-                    len(flux_v) for flux_v in flux_vector.flux_vector.values() if isinstance(flux_v, (np.ndarray, list))
-                }
-                if existing_lengths and envelope.shape[0] not in existing_lengths:
-                    raise ValueError("QProgram.play elements must have the same size.")
-            flux_vector.flux_vector[element.bus] = envelope
-            return flux_vector
-
-        def handle_crosstalk_element(block: Block, element_list: list[int], flux_vector: FluxVector):
-            flux_vector.update_bias_vector()
-            if element_list:
-                elements = []
-                for ii, element_idx in enumerate(element_list):
-                    elements.append(block.elements.pop(element_idx - ii))
-
-                play_elements = [element for element in elements if isinstance(element, Play)]
-                if play_elements:
-                    dwell, delay, repetitions, stepped = (
-                        play_elements[0].dwell,
-                        play_elements[0].delay,
-                        play_elements[0].repetitions,
-                        play_elements[0].stepped,
-                    )
-
-                for bus in flux_vector.bias_vector.keys():
-                    if isinstance(flux_vector.bias_vector[bus], float):
-                        offset = SetOffset(bus, flux_vector.bias_vector[bus])  # type: ignore
-                        block.elements.insert(element_list[0], offset)
-                        copied_qprogram.buses.add(bus)
-                    elif isinstance(flux_vector.bias_vector[bus], (np.ndarray, list)) and play_elements:
-                        play = Play(
-                            bus,
-                            Arbitrary(flux_vector.bias_vector[bus]),  # type: ignore
-                            dwell=dwell,
-                            delay=delay,
-                            repetitions=repetitions,
-                            stepped=stepped,
-                        )
-                        block.elements.insert(element_list[0], play)
-                        copied_qprogram.buses.add(bus)
-
-        copied_qprogram = deepcopy(self)
-        traverse(copied_qprogram.body)
-        return copied_qprogram
-
-    def with_distortions(self, bus_distortions: dict[str, list["PulseDistortion"]]) -> "QProgram":
-        """Returns a copy of the QProgram with pulse distortions applied to the played waveforms.
-
-        For every ``Play``, ``Measure`` and ``MeasureReset`` operation whose bus is present in
-        ``bus_distortions``, the corresponding distortions are applied in order to the operation's
-        waveform. Each distortion is evaluated on the waveform's envelope and the result is stored as
-        an ``Arbitrary`` waveform (an ``IQPair`` of ``Arbitrary`` waveforms for I/Q waveforms), so the
-        applied distortions are baked into the samples that will later be compiled and uploaded.
-
-        Note:
-            The ``reset_pulse`` of a ``MeasureReset`` operation is played on ``control_bus`` at
-            compile time (not part of the QProgram tree this method traverses), so it cannot be
-            distorted here. Configuring distortions on a bus used as ``control_bus`` in a
-            ``MeasureReset`` is not supported and raises ``NotImplementedError``.
-
-        Args:
-            bus_distortions (dict[str, list[PulseDistortion]]): A dictionary mapping each bus alias to
-                the list of distortions to apply, in the order they should be applied, to the
-                waveforms played on that bus.
-
-        Returns:
-            QProgram: A new instance of QProgram with the distortions applied to the affected
-            waveforms. The original QProgram is left unchanged.
-
-        Raises:
-            NotImplementedError: If a ``MeasureReset`` operation uses, as its ``control_bus``, a bus
-                that has distortions configured.
-        """
-
-        def traverse(block: Block):
-            for index, element in enumerate(block.elements):
-                if isinstance(element, Block):
-                    traverse(element)
-                elif isinstance(element, (Play, Measure, MeasureReset)):
-                    if isinstance(element, MeasureReset) and element.control_bus in bus_distortions:
-                        raise NotImplementedError(
-                            "Applying pulse distortions to the control bus of a `MeasureReset` (active "
-                            f"reset) operation is not supported, but bus '{element.control_bus}' has "
-                            "distortions configured."
-                        )
-                    if element.bus in bus_distortions:
-                        waveform = element.waveform
-                        for distortion in bus_distortions[element.bus]:
-                            if isinstance(waveform, IQWaveform):
-                                distorted_waveform_I = Arbitrary(distortion.apply(waveform.get_I().envelope()))
-                                distorted_waveform_Q = Arbitrary(distortion.apply(waveform.get_Q().envelope()))
-                                distorted_waveform: IQPair | Arbitrary = IQPair(
-                                    I=distorted_waveform_I, Q=distorted_waveform_Q
-                                )
-                            elif isinstance(waveform, Waveform):
-                                distorted_waveform = Arbitrary(distortion.apply(waveform.envelope()))
-                            else:
-                                raise NotImplementedError(
-                                    f"Cannot apply distortions to waveform of type {type(waveform)}."
-                                )
-                            waveform = distorted_waveform
-                        block.elements[index].waveform = waveform  # type: ignore [union-attr]
-
-        # Copy qprogram so the original remain unaffected
-        copied_qprogram = deepcopy(self)
-
-        # Recursively traverse qprogram applying the distortions to all waveforms
-        traverse(copied_qprogram.body)
-
-        return copied_qprogram
-
-    @overload
-    def play(self, bus: str, waveform: Waveform | IQWaveform) -> None:
-        """Play a single waveform or an I/Q pair of waveforms on the bus.
-
-        Args:
-            bus (str): Unique identifier of the bus.
-            waveform (Waveform | IQWaveform): A single waveform or an I/Q pair of waveforms
-        """
-
-    @overload
-    def play(
-        self,
-        bus: str,
-        waveform: str,
-    ) -> None:
-        """Play a named waveform on the bus.
-
-        Args:
-            bus (str): Unique identifier of the bus.
-            waveform (str): An identifier of a named waveform.
-        """
-
-    def play(self, bus: str, waveform: Waveform | IQWaveform | str) -> None:
-        """Play a waveform, IQWaveform, or calibrated operation on the specified bus.
-
-        This method handles both playing a waveform or IQWaveform, and playing a
-        calibrated operation based on the type of the argument provided.
-
-        Args:
-            bus (str): Unique identifier of the bus.
-            waveform (Waveform | IQWaveform | str): The waveform, IQWaveform, or alias of named waveform to play.
-        """
-        operation = (
-            PlayWithCalibratedWaveform(bus=bus, waveform=waveform)
-            if isinstance(waveform, str)
-            else Play(bus=bus, waveform=waveform)
-        )
-        self._active_block.append(operation)
-        self._buses.add(bus)
-
-    @requires_domain("duration", Domain.Time)
-    def wait(self, bus: str, duration: int):
-        """Adds a delay on the bus with a specified time.
-
-        Args:
-            bus (str): Unique identifier of the bus.
-            time (int): Duration of the delay.
-        """
-        operation = Wait(bus=bus, duration=_to_scalar(duration))
-        self._active_block.append(operation)
-        self._buses.add(bus)
-
-    @requires_domain("duration", Domain.Time)
-    def wait_trigger(self, bus: str, duration: int, port: int | None = None):
-        """Adds a delay on the bus and wait for an trigger signal to arrive.
-
-        Args:
-            bus (str): Unique identifier of the bus.
-            duration (int): Duration of the delay after the trigger is received, in ns. Minimum of 4 ns. Ignored on
-                QDAC-driven buses.
-            port (optional, int | None): Trigger input port. Only used by the QDACII compiler.
-                Qblox buses always wait on the cluster's external trigger address. Defaults to None.
-
-        Raises:
-            NotImplementedError: If ``qp.if_trigger()`` is also used in this QProgram.
-        """
-        self._reject_conflicting_trigger_mode("wait_trigger", ("if_trigger",))
-        self._trigger_mode = "wait_trigger"
-        operation = WaitTrigger(bus=bus, duration=_to_scalar(duration), port=port)
-        self._active_block.append(operation)
-        self._buses.add(bus)
-
-    def if_trigger(self, trigger_padding_ns: int | None = None, expected_wait_time_ns: int | None = None):
+        return _BlockContext(self, InfiniteLoop())
+
+    def if_trigger(
+        self, trigger_padding_ns: int | None = None, expected_wait_time_ns: int | None = None
+    ) -> _BlockContext:
         """Define a block that only executes if the external trigger was received in time.
 
-        Guards a block so it only runs if the external trigger the bus is waiting on arrived in time;
-        otherwise the block is skipped so its bus moves on to the next bin (recorded as NaN) instead of
-        hanging on a missed trigger.
+        Guards a block so it only runs if the external trigger the bus is waiting on arrived in time; otherwise the
+        block is skipped so its bus moves on to the next bin (recorded as NaN) instead of hanging on a missed trigger.
+        It cannot be used together with ``qp.qblox.wait_trigger``, ``qp.qdac.wait_trigger`` or
+        ``qp.qblox.measure_reset`` in the same QProgram: compiling raises.
 
         Blocks need to open a scope.
 
@@ -1442,664 +222,292 @@ class QProgram(StructuredProgram):
                 the trigger network's own propagation delay.
             expected_wait_time_ns (int | None, optional): The trigger period, i.e. the time between two
                 consecutive triggers, in ns. Each pass through the block is padded to exactly this duration
-                so the bus stays in step with the trigger. If not given, it is derived from the QDAC bus driving the trigger in this QProgram (its ``dwell``,
-                when ``qp.set_trigger(..., position="step")`` is used). Compiling raises if neither an
-                explicit value nor a derivable QDAC dwell is available.
+                so the bus stays in step with the trigger. If not given, it is derived from the QDAC bus driving
+                the trigger in this QProgram (its ``dwell``, when ``qp.qdac.set_trigger(..., position="step")`` is
+                used). Compiling raises if neither an explicit value nor a derivable QDAC dwell is available.
 
         Returns:
-            Conditional: The conditional block.
-
-        Raises:
-            NotImplementedError: If ``qp.wait_trigger`` or ``qp.qblox.measure_reset`` is also used in this
-                QProgram.
-            ValueError: If ``trigger_padding_ns`` is given and is lower than the trigger network's own
-                propagation delay.
+            _BlockContext: The context manager opening the ``IfTrigger`` block.
 
         Examples:
-
             >>> with qp.if_trigger():
             >>> # operations that shall be executed if the trigger was received
         """
-        self._reject_conflicting_trigger_mode("if_trigger()", ("wait_trigger", "measure_reset"))
-        self._trigger_mode = "if_trigger"
-        return QProgram._ConditionalContext(
-            program=self, trigger_padding_ns=trigger_padding_ns, expected_wait_time_ns=expected_wait_time_ns
+        return _BlockContext(
+            self, IfTrigger(trigger_padding_ns=trigger_padding_ns, expected_wait_time_ns=expected_wait_time_ns)
         )
 
-    class _ConditionalContext(StructuredProgram._BlockContext):
-        program: "QProgram"
+    def for_loop(self, variable: qp.Variable, start: int | float, stop: int | float, step: int | float = 1) -> Any:
+        """Sweep ``variable`` from ``start`` to ``stop`` by ``step``. Deprecated: use ``qp.sweep(variable).from_range``.
 
-        def __init__(self, program: "QProgram", trigger_padding_ns: int | None, expected_wait_time_ns: int | None):
-            self.program = program
-            self.block: Conditional = Conditional(
-                trigger_padding_ns=trigger_padding_ns, expected_wait_time_ns=expected_wait_time_ns
-            )
-
-        def __enter__(self) -> "Conditional":
-            return super().__enter__()
-
-    @overload
-    def measure(self, bus: str, waveform: IQWaveform, weights: IQWaveform, save_adc: bool = False):
-        """Play a pulse and acquire results.
+        The loop keeps its point count, rounded down when ``step`` does not divide ``stop - start``
+        (``from_range`` rounds to the nearest).
 
         Args:
-            bus (str): Unique identifier of the bus.
-            waveform (IQWaveform): Waveform played during measurement.
-            weights (IQWaveform): Weights used during demodulation/integration.
-            save_adc (bool, optional): If ADC data should be saved. Defaults to False.
+            variable (Variable): The variable to be affected from the loop.
+            start (int | float): The start value.
+            stop (int | float): The stop value.
+            step (int | float, optional): The step value. Defaults to 1.
+
+        Returns:
+            The context manager opening the ``Sweep`` block.
+
+        Raises:
+            ValidationError: If ``step`` is zero or points away from ``stop``.
         """
-
-    @overload
-    def measure(self, bus: str, waveform: str, weights: IQWaveform, save_adc: bool = False):
-        """Play a named pulse and acquire results.
-
-        Args:
-            bus (str): Unique identifier of the bus.
-            waveform (str): Waveform played during measurement.
-            weights (IQWaveform): Weights used during demodulation/integration.
-            save_adc (bool, optional): If ADC data should be saved. Defaults to False.
-        """
-
-    @overload
-    def measure(self, bus: str, waveform: IQWaveform, weights: str, save_adc: bool = False):
-        """Play a named pulse and acquire results.
-
-        Args:
-            bus (str): Unique identifier of the bus.
-            waveform (IQWaveform): Waveform played during measurement.
-            weights (str): Weights used during demodulation/integration.
-            save_adc (bool, optional): If ADC data should be saved. Defaults to False.
-        """
-
-    @overload
-    def measure(self, bus: str, waveform: str, weights: str, save_adc: bool = False):
-        """Play a named pulse and acquire results.
-
-        Args:
-            bus (str): Unique identifier of the bus.
-            waveform (str): Waveform played during measurement.
-            weights (str): Weights used during demodulation/integration.
-            save_adc (bool, optional): If ADC data should be saved. Defaults to False.
-        """
-
-    def measure(self, bus: str, waveform: IQWaveform | str, weights: IQWaveform | str, save_adc: bool = False):
-        """Play a pulse and acquire results.
-
-        Args:
-            bus (str): Unique identifier of the bus.
-            waveform (IQWaveform): Waveform played during measurement.
-            weights (IQWaveform): Weights used during demodulation/integration.
-            save_adc (bool, optional): If ADC data should be saved. Defaults to False.
-        """
-        operation: (
-            Measure
-            | MeasureWithCalibratedWaveform
-            | MeasureWithCalibratedWeights
-            | MeasureWithCalibratedWaveformWeights
+        warnings.warn(
+            "qp.for_loop is deprecated and will be removed in a future release: use "
+            "qp.sweep(variable).from_range(start, stop, step), which rounds the number of points to the nearest "
+            "when step does not divide stop - start.",
+            FutureWarning,
+            stacklevel=2,
         )
-        if isinstance(waveform, IQWaveform) and isinstance(weights, IQWaveform):
-            operation = Measure(bus=bus, waveform=waveform, weights=weights, save_adc=save_adc)
-        elif isinstance(waveform, str) and isinstance(weights, IQWaveform):
-            operation = MeasureWithCalibratedWaveform(bus=bus, waveform=waveform, weights=weights, save_adc=save_adc)
-        elif isinstance(waveform, IQWaveform) and isinstance(weights, str):
-            operation = MeasureWithCalibratedWeights(bus=bus, waveform=waveform, weights=weights, save_adc=save_adc)
-        elif isinstance(waveform, str) and isinstance(weights, str):
-            operation = MeasureWithCalibratedWaveformWeights(
-                bus=bus, waveform=waveform, weights=weights, save_adc=save_adc
-            )
-        self._active_block.append(operation)
-        self._buses.add(bus)
-        self.qblox._weight_duration.setdefault(bus, []).append(
-            weights.get_duration() if isinstance(weights, IQWaveform) else weights
+        return self.sweep(variable, ForLoop(variable, start, stop, step).to_range())
+
+    def parallel(self, loops: Sequence[ForLoop | Loop]) -> Any:
+        """Run several loops in lockstep. Deprecated: combine sweeps with ``|``.
+
+        It builds the same ``Parallel`` block as sweeps combined with ``|``, so the loops must have the same number of
+        points.
+
+        Args:
+            loops (Sequence[ForLoop | Loop]): The loops to run in parallel.
+
+        Returns:
+            The context manager opening the ``Parallel`` block, or the ``Sweep`` block for a single loop.
+
+        Raises:
+            ValidationError: If the loops do not all have the same number of points.
+        """
+        warnings.warn(
+            "qp.parallel is deprecated and will be removed in a future release: combine sweeps with |, as in "
+            "qp.sweep(a).from_range(...) | qp.sweep(b).from_range(...).",
+            FutureWarning,
+            stacklevel=2,
+        )
+        contexts = [
+            self.sweep(loop.variable, loop.to_range() if isinstance(loop, ForLoop) else loop.to_values())
+            for loop in loops
+        ]
+        return functools.reduce(operator.or_, contexts)
+
+    def wait(self, bus: str, duration: int | qp.Expression) -> None:
+        """Add a delay of ``duration`` ns on ``bus``.
+
+        Args:
+            bus (str): Unique identifier of the bus.
+            duration (int | Expression): Duration of the delay, in ns.
+        """
+        super().wait(bus, to_scalar(duration))  # type: ignore[arg-type]
+
+    # qprogram refuses numpy integers where it takes a number, and the values often come from numpy: these methods
+    # convert numpy numbers to Python ones, as qililab always did.
+
+    def average(self, shots: int) -> Any:
+        """Open a block that repeats its body ``shots`` times on the instruments and averages its measurements.
+
+        Args:
+            shots (int): How many times to repeat the body.
+
+        Returns:
+            The context manager opening the ``Average`` block.
+        """
+        return super().average(to_scalar(shots))  # type: ignore[arg-type]
+
+    def set_frequency(self, bus: str, frequency: float | qp.Expression) -> None:
+        """Set the frequency of the NCO of ``bus``.
+
+        Args:
+            bus (str): Unique identifier of the bus.
+            frequency (float | Expression): The frequency, in Hz.
+        """
+        super().set_frequency(bus, to_scalar(frequency))  # type: ignore[arg-type]
+
+    def set_phase(self, bus: str, phase: float | qp.Expression) -> None:
+        """Set the phase of the NCO of ``bus``.
+
+        Args:
+            bus (str): Unique identifier of the bus.
+            phase (float | Expression): The phase, in radians.
+        """
+        super().set_phase(bus, to_scalar(phase))  # type: ignore[arg-type]
+
+    def set_gain(self, bus: str, gain: float | qp.Expression) -> None:
+        """Set the gain of the AWG of ``bus``.
+
+        Args:
+            bus (str): Unique identifier of the bus.
+            gain (float | Expression): The gain.
+        """
+        super().set_gain(bus, to_scalar(gain))  # type: ignore[arg-type]
+
+    def set_offset(
+        self, bus: str, offset_path0: float | qp.Expression, offset_path1: float | qp.Expression | None = None
+    ) -> None:
+        """Set the DC offset of the AWG of ``bus``, normalised between -1 and 1.
+
+        Args:
+            bus (str): Unique identifier of the bus.
+            offset_path0 (float | Expression): The offset of path 0.
+            offset_path1 (float | Expression | None, optional): The offset of path 1. None uses the offset of path 0.
+                Defaults to None.
+        """
+        super().set_offset(bus, to_scalar(offset_path0), to_scalar(offset_path1))  # type: ignore[arg-type]
+
+    def has_calibrated_waveforms_or_weights(self) -> bool:
+        """Checks if QProgram has named waveforms or weights. These need to be mapped before compiling to hardware-native code.
+
+        Returns:
+            bool: True, if QProgram has waveforms or weights that need to be mapped from calibration.
+        """
+        return any(
+            isinstance(getattr(node, attribute, None), str)
+            for node in self.body.walk()
+            for attribute in getattr(node, "WAVEFORM_ATTRS", ())
         )
 
-    def sync(self, buses: list[str] | None = None):
-        """Synchronize operations between buses, so the operations following will start at the same time.
-
-        If no buses are given, then the synchronization will involve all buses present in the QProgram.
+    def with_bus_mapping(self, bus_mapping: dict[str, str]) -> "QProgram":
+        """Returns a copy of the QProgram with bus mappings applied.
 
         Args:
-            buses (list[str], optional): List of unique identifiers of the buses. Defaults to None.
-        """
-        operation = Sync(buses=buses)
-        self._active_block.append(operation)
-        if buses:
-            self._buses.update(buses)
+            bus_mapping (dict[str, str]): A dictionary mapping old bus names to new bus names.
 
-    def reset_phase(self, bus: str):
-        """Reset the absolute phase of the NCO associated with the bus.
+        Returns:
+            QProgram: A new instance of QProgram with updated bus names.
+        """
+        return self.rebind(strings=bus_mapping, allow_unported_strings=True)  # type: ignore[return-value]
+
+    def with_calibration(self, calibration: Calibration) -> "QProgram":
+        """Apply calibration to the operations within the QProgram.
+
+        Replaces each waveform or weights given by name with the one the calibration holds under that name for the
+        operation's bus (the control bus for a reset pulse). Names the calibration does not hold are left as they
+        are. A ``measure_reset`` is only resolved when the calibration holds all three of its waveforms.
 
         Args:
-            bus (str): Unique identifier of the bus.
+            calibration (Calibration): The calibration data to apply to the operations.
+
+        Returns:
+            QProgram: A new instance of QProgram with calibrated operations.
         """
-        operation = ResetPhase(bus=bus)
-        self._active_block.append(operation)
-        self._buses.add(bus)
 
-    @requires_domain("phase", Domain.Phase)
-    def set_phase(self, bus: str, phase: float):
-        """Set the absolute phase of the NCO associated with the bus.
-
-        Args:
-            bus (str): Unique identifier of the bus.
-            phase (float): The new absolute phase of the NCO.
-        """
-        operation = SetPhase(bus=bus, phase=_to_scalar(phase))
-        self._active_block.append(operation)
-        self._buses.add(bus)
-
-    @requires_domain("frequency", Domain.Frequency)
-    def set_frequency(self, bus: str, frequency: float):
-        """Set the frequency of the NCO associated with bus.
-
-        Args:
-            bus (str): Unique identifier of the bus.
-            frequency (float): The new frequency of the NCO.
-        """
-        operation = SetFrequency(bus=bus, frequency=_to_scalar(frequency))
-        self._active_block.append(operation)
-        self._buses.add(bus)
-
-    @requires_domain("gain", Domain.Voltage)
-    def set_gain(self, bus: str, gain: float):
-        """Set the gain of the AWG associated with bus.
-
-        Args:
-            bus (str): Unique identifier of the bus.
-            gain (float): The new gain of the AWG.
-        """
-        operation = SetGain(bus=bus, gain=_to_scalar(gain))
-        self._active_block.append(operation)
-        self._buses.add(bus)
-
-    @requires_domain("offset_path0", Domain.Voltage)
-    @requires_domain("offset_path1", Domain.Voltage)
-    def set_offset(self, bus: str, offset_path0: float, offset_path1: float | None = None):
-        """Set the DC offset of the bus.
-
-        The unit depends on which instrument the bus maps to: for a Qblox-driven bus, the offset of the AWG, normalised
-        between -1 and 1; for a QDAC-driven bus, the DC voltage of the channel, in volts.
-
-        Args:
-            bus (str): Unique identifier of the bus.
-            offset_path0 (float): The new offset for path0.
-            offset_path1 (float | None, optional): The new offset for path1. On a Qblox-driven bus, ``None`` uses the
-                offset of path0. Ignored on QDAC-driven buses. Defaults to None.
-        """
-        operation = SetOffset(
-            bus=bus,
-            offset_path0=_to_scalar(offset_path0),
-            offset_path1=_to_scalar(offset_path1) if offset_path1 is not None else None,
-        )
-        self._active_block.append(operation)
-        self._buses.add(bus)
-
-    @requires_domain("duration", Domain.Time)
-    def set_trigger(self, bus: str, duration: float, outputs: list[int] | int | None = None, position: str = "start"):
-        """Set the trigger output for a given instrument.
-
-        Args:
-            bus (str): Unique identifier of the bus.
-            duration (float): Duration of the trigger pulse. Unit depends on which instrument the bus maps
-                to: for a QDAC-driven bus, in seconds (passed straight through to the QDAC-II driver's
-                ``width_s``, from 1e-6 s to 3600 s); for a Qblox-driven bus, in nanoseconds (minimum 4 ns).
-            outputs (list[int] | int | None, optional): Port channel/s of the trigger output. Defaults to None.
-            position (str, optional): Trigger position relative to the pulse location: ``"start"``, ``"end"``, ``"step"`` or ``"end_step"``. Only QDAC buses use it. Defaults to ``"start"``.
-        """
-        operation = SetTrigger(bus=bus, outputs=outputs, duration=_to_scalar(duration), position=position)
-        self._active_block.append(operation)
-        self._buses.add(bus)
-
-    @yaml.register_class
-    class _QbloxInterface:
-        def __init__(self, qprogram: "QProgram"):
-            self.qprogram = qprogram
-            self.disable_autosync: bool = False
-            self._weight_duration: dict[str, list[int | str]] = {}
-
-        @property
-        def weight_duration(self) -> dict[str, list[int | str]]:
-            """Weight durations per bus: list of durations (int ns or calibrated weight name str) in acquisition order."""
-            return self._weight_duration
-
-        @overload
-        def acquire(self, bus: str, weights: IQWaveform, save_adc: bool = False):
-            """Acquire results based on the given weights.
-
-            Args:
-                bus (str): Unique identifier of the bus.
-                weights (IQWaveform): Weights used during acquisition.
-            """
-
-        @overload
-        def acquire(self, bus: str, weights: str, save_adc: bool = False):
-            """Acquire results based on the given weights.
-
-            Args:
-                bus (str): Unique identifier of the bus.
-                weights (str): Weights used during acquisition.
-            """
-
-        def acquire(self, bus: str, weights: IQWaveform | str, save_adc: bool = False):
-            """Acquire results based on the given weights.
-
-            Args:
-                bus (str): Unique identifier of the bus.
-                weights (IQWaveform | str): Weights used during acquisition.
-            """
-            operation = (
-                Acquire(bus=bus, weights=weights, save_adc=save_adc)
-                if isinstance(weights, IQWaveform)
-                else AcquireWithCalibratedWeights(bus=bus, weights=weights, save_adc=save_adc)
-            )
-            self.qprogram._active_block.append(operation)
-            self.qprogram._buses.add(bus)
-            self._weight_duration.setdefault(bus, []).append(
-                weights.get_duration() if isinstance(weights, IQWaveform) else weights
-            )
-
-        @overload
-        def play(self, bus: str, waveform: Waveform | IQWaveform, wait_time: int) -> None:
-            """Play a single waveform or an I/Q pair of waveforms on the bus.
-
-            Args:
-                bus (str): Unique identifier of the bus.
-                waveform (Waveform | IQWaveform): A single waveform or an I/Q pair of waveforms
-            """
-
-        @overload
-        def play(self, bus: str, waveform: str, wait_time: int) -> None:
-            """Play a named waveform on the bus.
-
-            Args:
-                bus (str): Unique identifier of the bus.
-                waveform (str): An identifier of a named waveform.
-            """
-
-        def play(self, bus: str, waveform: Waveform | IQWaveform | str, wait_time: int) -> None:
-            """Play a waveform, IQWaveform, or calibrated operation on the specified bus.
-
-            This method handles both playing a waveform or IQWaveform, and playing a
-            calibrated operation based on the type of the argument provided.
-
-            Args:
-                bus (str): Unique identifier of the bus.
-                waveform (Waveform | IQWaveform | str): The waveform, IQWaveform, or alias of named waveform to play.
-                wait_time (int): Overwrite the value of Q1ASM play instruction's wait_time parameter.
-            """
-            operation = (
-                PlayWithCalibratedWaveform(bus=bus, waveform=waveform, wait_time=wait_time)
-                if isinstance(waveform, str)
-                else Play(bus=bus, waveform=waveform, wait_time=wait_time)
-            )
-            self.qprogram._active_block.append(operation)
-            self.qprogram._buses.add(bus)
-
-        @overload
-        def measure_reset(
-            self,
-            bus: str,
-            waveform: IQWaveform,
-            weights: IQWaveform,
-            control_bus: str,
-            reset_pulse: IQWaveform,
-            trigger_address: int = 1,
-            save_adc: bool = False,
-        ):
-            """Play a measurement and conditionally apply a reset pulse based on the result. This enables active reset for transmon qubits.
-
-            If the thresholded measurement result is 1, a corrective pulse is applied on the control_bus.
-            If the result is 0, the control_bus waits instead.
-
-            Args:
-                bus (str): Identifier of the measurement bus.
-                waveform (IQWaveform): Waveform played during measurement.
-                weights (IQWaveform): Weights used for demodulation/integration.
-                control_bus (str): Identifier of the control/reset bus.
-                reset_pulse (IQWaveform): Pulse used for active reset.
-                trigger_address (int, optional): Trigger address for synchronization. Defaults to 1.
-                save_adc (bool, optional): Whether to save ADC data. Defaults to False.
-            """
-
-        @overload
-        def measure_reset(
-            self,
-            bus: str,
-            waveform: str,
-            weights: str,
-            control_bus: str,
-            reset_pulse: str,
-            trigger_address: int = 1,
-            save_adc: bool = False,
-        ):
-            """Play a measurement and conditionally apply a reset pulse based on the result. This enables active reset for transmon qubits.
-
-            If the thresholded measurement result is 1, a corrective pulse is applied on the control_bus.
-            If the result is 0, the control_bus waits instead.
-
-            Args:
-                bus (str): Identifier of the measurement bus.
-                waveform (str): Waveform played during measurement.
-                weights (str): Weights used for demodulation/integration.
-                control_bus (str): Identifier of the control/reset bus.
-                reset_pulse (str): Pulse used for active reset.
-                trigger_address (int, optional): Trigger address for synchronization. Defaults to 1.
-                save_adc (bool, optional): Whether to save ADC data. Defaults to False.
-            """
-
-        def measure_reset(
-            self,
-            bus: str,
-            waveform: IQWaveform | str,
-            weights: IQWaveform | str,
-            control_bus: str,
-            reset_pulse: IQWaveform | str,
-            trigger_address: int = 1,
-            save_adc: bool = False,
-        ):
-            """Play a measurement and conditionally apply a reset pulse based on the result. This enables active reset for transmon qubits.
-
-            If the thresholded measurement result is 1, a corrective pulse is applied on the control_bus.
-            If the result is 0, the control_bus waits instead.
-
-            Args:
-                bus (str): Identifier of the measurement bus.
-                waveform (IQWaveform | str): Waveform played during measurement.
-                weights (IQWaveform | str): Weights used for demodulation/integration.
-                control_bus (str): Identifier of the control/reset bus.
-                reset_pulse (IQWaveform | str): Pulse used for active reset.
-                trigger_address (int, optional): Trigger address for synchronization. Defaults to 1.
-                save_adc (bool, optional): Whether to save ADC data. Defaults to False.
-
-            Raises:
-                NotImplementedError: If ``qp.if_trigger()`` is also used in this QProgram.
-            """
-            self.qprogram._reject_conflicting_trigger_mode("qp.qblox.measure_reset()", ("if_trigger",))
-            self.qprogram._trigger_mode = "measure_reset"
-            operation: MeasureReset | MeasureResetCalibrated
-            if (
-                isinstance(waveform, IQWaveform)
-                and isinstance(weights, IQWaveform)
-                and isinstance(reset_pulse, IQWaveform)
-            ):
-                operation = MeasureReset(
-                    bus=bus,
-                    waveform=waveform,
-                    weights=weights,
-                    control_bus=control_bus,
-                    reset_pulse=reset_pulse,
-                    trigger_address=trigger_address,
-                    save_adc=save_adc,
+        def lookup(bus: str, attribute: str, name: str) -> Waveform | IQWaveform | None:
+            if attribute == "weights":
+                return (
+                    calibration.get_weights(bus=bus, name=name) if calibration.has_weights(bus=bus, name=name) else None
                 )
-            elif isinstance(waveform, str) and isinstance(weights, str) and isinstance(reset_pulse, str):
-                operation = MeasureResetCalibrated(
-                    bus=bus,
-                    waveform=waveform,
-                    weights=weights,
-                    control_bus=control_bus,
-                    reset_pulse=reset_pulse,
-                    trigger_address=trigger_address,
-                    save_adc=save_adc,
-                )
+            return (
+                calibration.get_waveform(bus=bus, name=name) if calibration.has_waveform(bus=bus, name=name) else None
+            )
 
-            #  Raise an error if a calibrated component has been used in conjunction with a non calibrated one
-            elif any(isinstance(component, str) for component in (waveform, weights, reset_pulse)):
+        program = deepcopy(self)
+        for node in program.body.walk():
+            attributes = getattr(node, "WAVEFORM_ATTRS", ())
+            names = {attribute: getattr(node, attribute) for attribute in attributes}
+            if not any(isinstance(name, str) for name in names.values()):
+                continue
+            resolved = {
+                attribute: lookup(
+                    node.control_bus if attribute == "reset_pulse" else node.bus,  # type: ignore[union-attr]
+                    attribute,
+                    name,
+                )
+                for attribute, name in names.items()
+                if isinstance(name, str)
+            }
+            if isinstance(node, MeasureReset) and any(waveform is None for waveform in resolved.values()):
+                continue
+            for attribute, waveform in resolved.items():
+                if waveform is not None:
+                    setattr(node, attribute, waveform)
+        return program
+
+    def with_crosstalk_qblox(self, crosstalk: CrosstalkMatrix) -> "QProgram":
+        """Apply crosstalk compensation to the qprogram flux buses.
+
+        Args:
+            crosstalk (CrosstalkMatrix): Crosstalk matrix class.
+
+        Returns:
+            QProgram: A new instance of QProgram with calibrated crosstalk.
+        """
+        from qililab.qprogram.crosstalk_transform import apply_crosstalk_qblox
+
+        return apply_crosstalk_qblox(self, crosstalk)
+
+    def with_crosstalk_qdac(
+        self,
+        crosstalk: CrosstalkMatrix,
+        qdac_buses_offset: dict[str, float],
+        target_fluxes: dict[str, float | list[float] | np.ndarray] | None = None,
+    ) -> "QProgram":
+        """Apply crosstalk compensation to the qprogram flux buses.
+
+        Args:
+            crosstalk (CrosstalkMatrix): Crosstalk matrix class.
+            qdac_buses_offset (dict[str, float]): Hardware bias voltage per bus, used to recover the parked flux only
+                when ``target_fluxes`` is not provided.
+            target_fluxes (dict[str, float] | None, optional): Target flux per bus for the parked operating point.
+                Defaults to None.
+
+        Returns:
+            QProgram: A new instance of QProgram with calibrated crosstalk.
+        """
+        from qililab.qprogram.crosstalk_transform import apply_crosstalk_qdac
+
+        return apply_crosstalk_qdac(self, crosstalk, qdac_buses_offset, target_fluxes)
+
+    def with_distortions(self, bus_distortions: dict[str, list["PulseDistortion"]]) -> "QProgram":
+        """Returns a copy of the QProgram with pulse distortions applied to the played waveforms.
+
+        For every play (``play``, ``qp.qblox.play``, ``qp.qdac.play``), ``measure`` and ``qp.qblox.measure_reset``
+        whose bus is present in ``bus_distortions``, the corresponding distortions are applied in order to the
+        operation's waveform. Each distortion is evaluated on the waveform's envelope and the result is stored as an
+        ``Arbitrary`` waveform (an ``IQPair`` of ``Arbitrary`` waveforms for I/Q waveforms), so the applied
+        distortions are baked into the samples that will later be compiled and uploaded.
+
+        Note:
+            The ``reset_pulse`` of a ``measure_reset`` is played on ``control_bus`` at compile time, so it cannot be
+            distorted here. Configuring distortions on a bus used as ``control_bus`` in a ``measure_reset`` is not
+            supported and raises ``NotImplementedError``.
+
+        Args:
+            bus_distortions (dict[str, list[PulseDistortion]]): A dictionary mapping each bus alias to the list of
+                distortions to apply, in the order they should be applied, to the waveforms played on that bus.
+
+        Returns:
+            QProgram: A new instance of QProgram with the distortions applied to the affected waveforms. The original
+            QProgram is left unchanged.
+
+        Raises:
+            NotImplementedError: If a ``measure_reset`` uses, as its ``control_bus``, a bus that has distortions
+                configured, or if a waveform to distort is not a concrete waveform.
+        """
+        program = deepcopy(self)
+        for node in program.body.walk():
+            if not isinstance(node, (*_PLAY_OPERATIONS, Measure, MeasureReset)):
+                continue
+            if isinstance(node, MeasureReset) and node.control_bus in bus_distortions:
                 raise NotImplementedError(
-                    "For the waveform, weight, and reset pulse, you must either use the calibration file for all three or not use it at all."
+                    "Applying pulse distortions to the control bus of a `MeasureReset` (active "
+                    f"reset) operation is not supported, but bus '{node.control_bus}' has "
+                    "distortions configured."
                 )
-
-            self.qprogram._active_block.append(operation)
-            self.qprogram._buses.add(bus)
-            self.qprogram._buses.add(control_bus)
-            self._weight_duration.setdefault(bus, []).append(
-                weights.get_duration() if isinstance(weights, IQWaveform) else weights
-            )
-
-        def set_markers(self, bus: str, mask: str):
-            """Set the markers based on a 4-bit binary mask.
-
-            Args:
-                bus (str): Unique identifier of the bus.
-                mask (str): A 4-bit mask, where 0 means that the associated marker is open (no signal), and 1 means that the marker is closed (signal).
-            """
-            operation = SetMarkers(bus=bus, mask=mask)
-            self.qprogram._active_block.append(operation)
-            self.qprogram._buses.add(bus)
-
-    @yaml.register_class
-    class _QuantumMachinesInterface:
-        def __init__(self, qprogram: "QProgram"):
-            self.qprogram = qprogram
-
-        @overload
-        def measure(
-            self,
-            bus: str,
-            waveform: IQWaveform,
-            weights: IQWaveform,
-            save_adc: bool = False,
-            rotation: float = 0.0,
-            demodulation: bool = True,
-        ):
-            """Play a pulse and acquire results.
-
-            Args:
-                bus (str): Unique identifier of the bus.
-                waveform (IQWaveform): Waveform played during measurement.
-                weights (IQWaveform): Weights used during demodulation/integration.
-                save_adc (bool, optional): If ADC data should be saved. Defaults to False.
-                rotation (float, optional): Angle in radians to rotate the IQ plane during demodulation/integration. Defaults to 0.0
-                demodulation (bool, optional): If demodulation is enabled. Defaults to True.
-            """
-
-        @overload
-        def measure(
-            self,
-            bus: str,
-            waveform: str,
-            weights: IQWaveform,
-            save_adc: bool = False,
-            rotation: float = 0.0,
-            demodulation: bool = True,
-        ):
-            """Play a named pulse and acquire results.
-
-            Args:
-                bus (str): Unique identifier of the bus.
-                waveform (str): Waveform played during measurement.
-                weights (IQWaveform): Weights used during demodulation/integration.
-                save_adc (bool, optional): If ADC data should be saved. Defaults to False.
-                rotation (float, optional): Angle in radians to rotate the IQ plane during demodulation/integration. Defaults to 0.0
-                demodulation (bool, optional): If demodulation is enabled. Defaults to True.
-            """
-
-        @overload
-        def measure(
-            self,
-            bus: str,
-            waveform: IQWaveform,
-            weights: str,
-            save_adc: bool = False,
-            rotation: float = 0.0,
-            demodulation: bool = True,
-        ):
-            """Play a named pulse and acquire results.
-
-            Args:
-                bus (str): Unique identifier of the bus.
-                waveform (IQWaveform): Waveform played during measurement.
-                weights (str): Weights used during demodulation/integration.
-                save_adc (bool, optional): If ADC data should be saved. Defaults to False.
-                rotation (float, optional): Angle in radians to rotate the IQ plane during demodulation/integration. Defaults to 0.0
-                demodulation (bool, optional): If demodulation is enabled. Defaults to True.
-            """
-
-        @overload
-        def measure(
-            self,
-            bus: str,
-            waveform: str,
-            weights: str,
-            save_adc: bool = False,
-            rotation: float = 0.0,
-            demodulation: bool = True,
-        ):
-            """Play a named pulse and acquire results.
-
-            Args:
-                bus (str): Unique identifier of the bus.
-                waveform (str): Waveform played during measurement.
-                weights (str): Weights used during demodulation/integration.
-                save_adc (bool, optional): If ADC data should be saved. Defaults to False.
-                rotation (float, optional): Angle in radians to rotate the IQ plane during demodulation/integration. Defaults to 0.0
-                demodulation (bool, optional): If demodulation is enabled. Defaults to True.
-            """
-
-        def measure(
-            self,
-            bus: str,
-            waveform: IQWaveform | str,
-            weights: IQWaveform | str,
-            save_adc: bool = False,
-            rotation: float = 0.0,
-            demodulation: bool = True,
-        ):
-            """Play a pulse and acquire results.
-
-            Args:
-                bus (str): Unique identifier of the bus.
-                waveform (IQWaveform): Waveform played during measurement.
-                weights (IQWaveform): Weights used during demodulation/integration.
-                save_adc (bool, optional): If raw ADC data should be saved. Defaults to False.
-                rotation (float, optional): Angle in radians to rotate the IQ plane during demodulation/integration. Defaults to 0.0
-                demodulation (bool, optional): If demodulation is enabled. Defaults to True.
-            """
-            operation: (
-                Measure
-                | MeasureWithCalibratedWaveform
-                | MeasureWithCalibratedWeights
-                | MeasureWithCalibratedWaveformWeights
-            )
-            if isinstance(waveform, IQWaveform) and isinstance(weights, IQWaveform):
-                operation = Measure(
-                    bus=bus,
-                    waveform=waveform,
-                    weights=weights,
-                    save_adc=save_adc,
-                    rotation=rotation,
-                    demodulation=demodulation,
-                )
-            elif isinstance(waveform, str) and isinstance(weights, IQWaveform):
-                operation = MeasureWithCalibratedWaveform(
-                    bus=bus,
-                    waveform=waveform,
-                    weights=weights,
-                    save_adc=save_adc,
-                    rotation=rotation,
-                    demodulation=demodulation,
-                )
-            elif isinstance(waveform, IQWaveform) and isinstance(weights, str):
-                operation = MeasureWithCalibratedWeights(
-                    bus=bus,
-                    waveform=waveform,
-                    weights=weights,
-                    save_adc=save_adc,
-                    rotation=rotation,
-                    demodulation=demodulation,
-                )
-            elif isinstance(waveform, str) and isinstance(weights, str):
-                operation = MeasureWithCalibratedWaveformWeights(
-                    bus=bus,
-                    waveform=waveform,
-                    weights=weights,
-                    save_adc=save_adc,
-                    rotation=rotation,
-                    demodulation=demodulation,
-                )
-            self.qprogram._active_block.append(operation)
-            self.qprogram._buses.add(bus)
-
-    @yaml.register_class
-    class _QdacInterface:
-        def __init__(self, qprogram: "QProgram"):
-            self.qprogram = qprogram
-
-        @overload
-        def play(
-            self,
-            bus: str,
-            waveform: Waveform | IQWaveform,
-            dwell: int | None = None,
-            delay: float | None = None,
-            repetitions: int | None = None,
-            stepped: bool | None = None,
-        ) -> None:
-            """Play a single waveform or an I/Q pair of waveforms on the bus.
-
-            Args:
-                bus (str): Unique identifier of the bus.
-                waveform (Waveform | IQWaveform): A single waveform or an I/Q pair of waveforms
-                dwell (int | None, optional): Time spent on each voltage of the list, in us. Minimum of 2 us. Defaults to 2 inside QDACII compiler.
-                delay (float | None, optional): Delay from the trigger until the QDACII starts the list, in seconds. Defaults to 0 inside QDACII compiler.
-                repetitions (int | None, optional): Number of pulse repetitions. Defaults to the default repetitions inside QDACII compiler.
-                stepped (bool | None, optional): Defining if the ramp will have a stair shape. Defaults to False.
-            """
-
-        @overload
-        def play(
-            self,
-            bus: str,
-            waveform: str,
-            dwell: int | None = None,
-            delay: float | None = None,
-            repetitions: int | None = None,
-            stepped: bool | None = None,
-        ) -> None:
-            """Play a named waveform on the bus.
-
-            Args:
-                bus (str): Unique identifier of the bus.
-                waveform (str): An identifier of a named waveform.
-                dwell (int | None, optional): Time spent on each voltage of the list, in us. Minimum of 2 us. Defaults to 2 inside QDACII compiler.
-                delay (float | None, optional): Delay from the trigger until the QDACII starts the list, in seconds. Defaults to 0 inside QDACII compiler.
-                repetitions (int | None, optional): Number of pulse repetitions. Defaults to the default repetitions inside QDACII compiler.
-                stepped (bool | None, optional): Defining if the ramp will have a stair shape. Defaults to False.
-            """
-
-        def play(
-            self,
-            bus: str,
-            waveform: Waveform | IQWaveform | str,
-            dwell: int | None = None,
-            delay: float | None = None,
-            repetitions: int | None = None,
-            stepped: bool | None = None,
-        ) -> None:
-            """Play a waveform, IQWaveform, or calibrated operation on the specified bus.
-
-            This method handles both playing a waveform or IQWaveform, and playing a
-            calibrated operation based on the type of the argument provided.
-
-            Args:
-                bus (str): Unique identifier of the bus.
-                waveform (Waveform | IQWaveform | str): The waveform, IQWaveform, or alias of named waveform to play.
-                dwell (int | None, optional): Time spent on each voltage of the list, in us. Minimum of 2 us. Defaults to 2 inside QDACII compiler.
-                delay (float | None, optional): Delay from the trigger until the QDACII starts the list, in seconds. Defaults to 0 inside QDACII compiler.
-                repetitions (int | None, optional): Number of pulse repetitions. Defaults to the default repetitions inside QDACII compiler.
-                stepped (bool | None, optional): Defining if the ramp will have a stair shape. Defaults to False inside QDACII compiler.
-            """
-
-            operation = (
-                PlayWithCalibratedWaveform(
-                    bus=bus, waveform=waveform, dwell=dwell, delay=delay, repetitions=repetitions, stepped=stepped
-                )
-                if isinstance(waveform, str)
-                else Play(
-                    bus=bus, waveform=waveform, dwell=dwell, delay=delay, repetitions=repetitions, stepped=stepped
-                )
-            )
-            self.qprogram._active_block.append(operation)
-            self.qprogram._buses.add(bus)
+            if node.bus not in bus_distortions:
+                continue
+            waveform = node.waveform
+            for distortion in bus_distortions[node.bus]:
+                if isinstance(waveform, IQWaveform):
+                    waveform = IQPair(
+                        I=Arbitrary(distortion.apply(waveform.get_I().envelope())),
+                        Q=Arbitrary(distortion.apply(waveform.get_Q().envelope())),
+                    )
+                elif isinstance(waveform, Waveform):
+                    waveform = Arbitrary(distortion.apply(waveform.envelope()))
+                else:
+                    raise NotImplementedError(f"Cannot apply distortions to waveform of type {type(waveform)}.")
+            node.waveform = waveform
+        return program
 
     def draw(
         self,
@@ -2107,19 +515,21 @@ class QProgram(StructuredProgram):
         averages_displayed: bool = False,
         acquisition_showing: bool = True,
         calibration: Calibration | None = None,
-    ):
+    ) -> Any:
         """Draw the QProgram using QBlox Compiler
 
         Args:
-            time_window (int): Allows the user to stop the plotting after the specified number of ns have been plotted. The plotting might not be the precise number of ns inputted.
-                For example, if the timeout is 100 ns but there is a play operation of 150 ns, the plot will display the data until 150 ns. Defaults to None.
-            averages_displayed (bool): False means that all loops on the sequencer starting with avg will only loop once, and True shows all iterations. Defaults to False.
+            time_window (int): Allows the user to stop the plotting after the specified number of ns have been plotted.
+                The plotting might not be the precise number of ns inputted. For example, if the timeout is 100 ns but
+                there is a play operation of 150 ns, the plot will display the data until 150 ns. Defaults to None.
+            averages_displayed (bool): False means that all loops on the sequencer starting with avg will only loop
+                once, and True shows all iterations. Defaults to False.
             acquisition_showing (bool): Allows visualing the acquisition period on the plot. Defaults to True.
+            calibration (Calibration | None): Calibration used to resolve named waveforms. Defaults to None.
 
         Returns:
             plotly object: plotly.graph_objs._figure.Figure
         """
-
         from qililab.instruments.qblox.qblox_draw import QbloxDraw
         from qililab.qprogram.qblox_compiler import QbloxCompiler
 
@@ -2133,3 +543,6 @@ class QProgram(StructuredProgram):
             acquisition_showing=acquisition_showing,
         )
         return plotly_figure
+
+
+__all__ = ["QProgram", "QProgramCompilationOutput"]

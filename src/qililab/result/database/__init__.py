@@ -24,8 +24,6 @@ Classes
 
     experiment_results.ExperimentResults
     Result
-    MeasurementResult
-    QbloxMeasurementResult
 
 
 Functions

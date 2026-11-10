@@ -11,17 +11,17 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from qililab.core.variables import Variable
-
 """VariableAllocated Exception class"""
+
+from qprogram import Variable
 
 
 class VariableAllocated(Exception):
-    """Exception raised when trying to allocate a variable in a loop that is already been allocated by another loop.
+    """Exception raised when a loop sweeps a variable an enclosing loop already sweeps.
 
     Args:
         message (str): Optional message to be displayed
     """
 
-    def __init__(self, variable: Variable):
+    def __init__(self, variable: Variable) -> None:
         super().__init__(f"Cannot allocate variable {variable}. Variable is already allocated.")

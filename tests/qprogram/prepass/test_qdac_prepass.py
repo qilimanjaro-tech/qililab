@@ -1,12 +1,15 @@
 import numpy as np
 import pytest
+from qprogram.blocks import Average
+from qprogram.operations import Sync
+from qprogram_qdac import Play as QdacPlay
+from qprogram_qdac import SetOffset as QdacSetOffset
+from qprogram_qdac import SetTrigger as QdacSetTrigger
 
-from qililab import Calibration, IQPair, QProgram, Square
-from qililab.qprogram.blocks import Average, Conditional
+from qililab import Arbitrary, Calibration, IQPair, QProgram, Square
+from qililab.qprogram.blocks import IfTrigger
 from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
-from qililab.qprogram.operations import Play, SetOffset, SetTrigger, Sync
 from qililab.qprogram.prepass import prepare_qdac
-from qililab.waveforms import Arbitrary
 
 QDAC_BUSES_OFFSET = {"flux1": 0.0, "flux2": 0.0}
 
@@ -14,9 +17,8 @@ QDAC_BUSES_OFFSET = {"flux1": 0.0, "flux2": 0.0}
 @pytest.fixture(name="flux_qprogram")
 def fixture_flux_qprogram() -> QProgram:
     qp = QProgram()
-    with qp.average(10):
-        qp.set_offset(bus="flux2", offset_path0=0.3)
-        qp.qdac.play(bus="flux1", waveform=Arbitrary(samples=np.array([0.0, 0.1, 0.2, 0.1, 0.0])), dwell=2)
+    qp.qdac.set_offset(bus="flux2", offset=0.3)
+    qp.qdac.play(bus="flux1", waveform=Arbitrary(samples=np.array([0.0, 0.1, 0.2, 0.1, 0.0])), dwell=2)
     return qp
 
 
@@ -24,17 +26,23 @@ class TestPrepareQdac:
     def test_keeps_only_operations_on_qdac_buses(self):
         qp = QProgram()
         qp.qdac.play(bus="flux1", waveform=Square(amplitude=0.5, duration=10), dwell=2)
-        qp.set_trigger(bus="flux1", duration=10e-6, outputs=1, position="step")
+        qp.qdac.set_trigger(bus="flux1", duration=10e-6, position="step", outputs=[1])
         with qp.if_trigger(expected_wait_time_ns=2252):
             with qp.average(shots=10):
                 qp.qblox.acquire(bus="readout", weights=IQPair(I=Square(1.0, 100), Q=Square(0.0, 100)))
-        qp.set_offset(bus="flux2", offset_path0=0.2)
+        qp.qdac.set_offset(bus="flux2", offset=0.2)
         qp.sync()
 
         result = prepare_qdac(qp, qdac_buses=["flux1", "flux2"], qdac_buses_offset=QDAC_BUSES_OFFSET)
 
         assert result.buses == {"flux1", "flux2"}
-        assert [type(element) for element in result.body.elements] == [Play, SetTrigger, Conditional, SetOffset, Sync]
+        assert [type(element) for element in result.body.elements] == [
+            QdacPlay,
+            QdacSetTrigger,
+            IfTrigger,
+            QdacSetOffset,
+            Sync,
+        ]
         conditional = result.body.elements[2]
         assert isinstance(conditional.elements[0], Average)
         assert conditional.elements[0].elements == []

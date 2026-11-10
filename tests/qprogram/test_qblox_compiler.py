@@ -4,12 +4,12 @@ from unittest.mock import MagicMock, patch
 import numpy as np
 from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix, NonLinearCrosstalkMatrix
 from qililab.pulse_distortion import ExponentialCorrection
-from qililab.waveforms.arbitrary import Arbitrary
 import pytest
+import qprogram
 import qpysequence as QPy
 import qpysequence.program.instructions as QPyInstructions
-from qililab.qprogram.operations import SetFrequency, SetPhase, SetGain, SetOffset, Wait, ResetPhase
-from qililab import Calibration, Domain, FlatTop, Gaussian, IQPair, IQDrag, QProgram, Square, SuddenNetZero
+from qprogram.operations import SetFrequency, SetPhase, SetGain, SetOffset, Wait, ResetPhase
+from qililab import Arbitrary, Calibration, FlatTop, Gaussian, IQPair, IQDrag, QProgram, Square, SuddenNetZero
 from qililab.qprogram.blocks import ForLoop
 from qililab.qprogram import QbloxCompiler
 from tests.test_utils import is_q1asm_equal
@@ -56,9 +56,9 @@ def fixture_run_qdac_buses() -> QProgram:
     qp.reset_phase(bus="qdac_flux")
     qp.set_gain(bus="qdac_flux", gain=0.1)
     qp.qblox.set_markers(bus="qdac_flux", mask="0000")
-    qp.set_trigger(bus="qdac_flux", duration=100)
+    qp.qdac.set_trigger(bus="qdac_flux", duration=100, outputs=[1])
     qp.wait(bus="qdac_flux", duration=100)
-    qp.wait_trigger(bus="qdac_flux", duration=100)
+    qp.qdac.wait_trigger(bus="qdac_flux", port=1)
     qp.measure(bus="qdac_flux", waveform=wf, weights=wf)
     qp.play(bus="qdac_flux", waveform=wf)
     qp.qblox.acquire(bus="qdac_flux", weights=wf)
@@ -123,10 +123,10 @@ def fixture_offset_no_path1() -> QProgram:
 @pytest.fixture(name="offset_loop")
 def fixture_offset_loop() -> QProgram:
     qp = QProgram()
-    variable_offset = qp.variable(label="offset", domain=Domain.Voltage)
-    with qp.for_loop(variable=variable_offset, start=0.0, stop=0.2, step=0.1):
+    variable_offset = qp.variable("offset")
+    with qp.sweep(variable_offset).from_range(0.0, 0.2, 0.1):
         qp.set_offset(bus="drive", offset_path0=variable_offset, offset_path1=0.2)
-    with qp.for_loop(variable=variable_offset, start=0.0, stop=0.2, step=0.1):
+    with qp.sweep(variable_offset).from_range(0.0, 0.2, 0.1):
         qp.set_offset(bus="drive", offset_path0=0.2, offset_path1=variable_offset)
     return qp
 
@@ -134,10 +134,10 @@ def fixture_offset_loop() -> QProgram:
 @pytest.fixture(name="offset_loop_negative")
 def fixture_offset_loop_negative() -> QProgram:
     qp = QProgram()
-    variable_offset = qp.variable(label="offset", domain=Domain.Voltage)
-    with qp.for_loop(variable=variable_offset, start=0.0, stop=0.2, step=0.1):
+    variable_offset = qp.variable("offset")
+    with qp.sweep(variable_offset).from_range(0.0, 0.2, 0.1):
         qp.set_offset(bus="drive", offset_path0=variable_offset, offset_path1=-0.5)
-    with qp.for_loop(variable=variable_offset, start=0.0, stop=0.2, step=0.1):
+    with qp.sweep(variable_offset).from_range(0.0, 0.2, 0.1):
         qp.set_offset(bus="drive", offset_path0=-0.5, offset_path1=variable_offset)
     return qp
 
@@ -145,10 +145,10 @@ def fixture_offset_loop_negative() -> QProgram:
 @pytest.fixture(name="offset_loop_two_variables")
 def fixture_offset_loop_two_variables() -> QProgram:
     qp = QProgram()
-    offset_a = qp.variable(label="offset_a", domain=Domain.Voltage)
-    offset_b = qp.variable(label="offset_b", domain=Domain.Voltage)
-    with qp.for_loop(variable=offset_a, start=0.0, stop=0.2, step=0.1):
-        with qp.for_loop(variable=offset_b, start=0.0, stop=0.3, step=0.1):
+    offset_a = qp.variable("offset_a")
+    offset_b = qp.variable("offset_b")
+    with qp.sweep(offset_a).from_range(0.0, 0.2, 0.1):
+        with qp.sweep(offset_b).from_range(0.0, 0.3, 0.1):
             qp.set_offset(bus="drive", offset_path0=offset_a, offset_path1=offset_b)
     return qp
 
@@ -157,8 +157,8 @@ def fixture_offset_loop_two_variables() -> QProgram:
 def fixture_dynamic_wait() -> QProgram:
     drag_pair = IQDrag(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=1.2)
     qp = QProgram()
-    duration = qp.variable(label="time", domain=Domain.Time)
-    with qp.for_loop(variable=duration, start=100, stop=200, step=10):
+    duration = qp.variable("time")
+    with qp.sweep(duration).from_range(100, 200, 10):
         qp.play(bus="drive", waveform=drag_pair)
         qp.wait(bus="drive", duration=duration)
     return qp
@@ -168,8 +168,8 @@ def fixture_dynamic_wait() -> QProgram:
 def fixture_dynamic_wait_multiple_buses() -> QProgram:
     drag_pair = IQDrag(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=1.2)
     qp = QProgram()
-    duration = qp.variable(label="time", domain=Domain.Time)
-    with qp.for_loop(variable=duration, start=100, stop=200, step=10):
+    duration = qp.variable("time")
+    with qp.sweep(duration).from_range(100, 200, 10):
         qp.play(bus="drive", waveform=drag_pair)
         qp.wait(bus="readout", duration=duration)
         qp.play(bus="readout", waveform=drag_pair)
@@ -181,8 +181,8 @@ def fixture_dynamic_wait_multiple_buses_with_disable_autosync() -> QProgram:
     drag_pair = IQDrag(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=1.2)
     qp = QProgram()
     qp.qblox.disable_autosync = True
-    duration = qp.variable(label="time", domain=Domain.Time)
-    with qp.for_loop(variable=duration, start=100, stop=200, step=10):
+    duration = qp.variable("time")
+    with qp.sweep(duration).from_range(100, 200, 10):
         qp.play(bus="drive", waveform=drag_pair)
         qp.wait(bus="readout", duration=duration)
         qp.play(bus="readout", waveform=drag_pair)
@@ -193,8 +193,8 @@ def fixture_dynamic_wait_multiple_buses_with_disable_autosync() -> QProgram:
 def fixture_sync_with_dynamic_wait() -> QProgram:
     drag_pair = IQDrag(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=1.2)
     qp = QProgram()
-    duration = qp.variable(label="time", domain=Domain.Time)
-    with qp.for_loop(variable=duration, start=100, stop=200, step=10):
+    duration = qp.variable("time")
+    with qp.sweep(duration).from_range(100, 200, 10):
         qp.play(bus="drive", waveform=drag_pair)
         qp.wait(bus="drive", duration=duration)
         qp.sync()
@@ -271,9 +271,9 @@ def fixture_average_with_for_loop() -> QProgram:
     readout_pair = IQPair(I=Square(amplitude=1.0, duration=1000), Q=Square(amplitude=0.0, duration=1000))
     weights_pair = IQPair(I=Square(amplitude=1.0, duration=2000), Q=Square(amplitude=0.0, duration=2000))
     qp = QProgram()
-    gain = qp.variable(label="gain", domain=Domain.Voltage)
+    gain = qp.variable("gain")
     with qp.average(shots=1000):
-        with qp.for_loop(variable=gain, start=0, stop=1.0, step=0.1):
+        with qp.sweep(gain).from_range(0, 1.0, 0.1):
             qp.play(bus="drive", waveform=drag_pair)
             qp.set_gain(bus="readout", gain=gain)
             qp.play(bus="readout", waveform=readout_pair)
@@ -287,9 +287,9 @@ def fixture_average_with_for_loop_nshots() -> QProgram:
     readout_pair = IQPair(I=Square(amplitude=1.0, duration=1000), Q=Square(amplitude=0.0, duration=1000))
     weights_pair = IQPair(I=Square(amplitude=1.0, duration=2000), Q=Square(amplitude=0.0, duration=2000))
     qp = QProgram()
-    nshots = qp.variable(label="nshots", domain=Domain.Scalar, type=int)
+    nshots = qp.variable("nshots")
     with qp.average(shots=1000):
-        with qp.for_loop(variable=nshots, start=0, stop=2, step=1):
+        with qp.sweep(nshots).from_range(0, 2, 1):
             qp.play(bus="drive", waveform=drag_pair)
             qp.play(bus="readout", waveform=readout_pair)
             qp.qblox.acquire(bus="readout", weights=weights_pair)
@@ -305,9 +305,9 @@ def fixture_acquire_loop_with_for_loop_with_weights_of_same_waveform() -> QProgr
         Q=Gaussian(amplitude=1.0, duration=1000, num_sigmas=2.5),
     )
     qp = QProgram()
-    gain = qp.variable(label="gain", domain=Domain.Voltage)
+    gain = qp.variable("gain")
     with qp.average(shots=1000):
-        with qp.for_loop(variable=gain, start=0, stop=1.0, step=0.1):
+        with qp.sweep(gain).from_range(0, 1.0, 0.1):
             qp.play(bus="drive", waveform=drag_pair)
             qp.set_gain(bus="readout", gain=gain)
             qp.play(bus="readout", waveform=readout_pair)
@@ -322,15 +322,15 @@ def fixture_average_with_multiple_for_loops_and_acquires() -> QProgram:
     weights_pair_1 = IQPair(I=Square(amplitude=1.0, duration=1000), Q=Square(amplitude=0.0, duration=1000))
     weights_pair_2 = IQPair(I=Square(amplitude=1.0, duration=500), Q=Square(amplitude=0.0, duration=500))
     qp = QProgram()
-    frequency = qp.variable(label="frequency", domain=Domain.Frequency)
-    gain = qp.variable(label="gain", domain=Domain.Voltage)
+    frequency = qp.variable("frequency")
+    gain = qp.variable("gain")
     with qp.average(shots=1000):
-        with qp.for_loop(variable=frequency, start=0, stop=500, step=10):
+        with qp.sweep(frequency).from_range(0, 500, 10):
             qp.set_frequency(bus="readout", frequency=frequency)
             qp.play(bus="readout", waveform=readout_pair)
             qp.qblox.acquire(bus="readout", weights=weights_pair_0)
         qp.qblox.acquire(bus="readout", weights=weights_pair_1)
-        with qp.for_loop(variable=gain, start=0.0, stop=1.0, step=0.1):
+        with qp.sweep(gain).from_range(0.0, 1.0, 0.1):
             qp.set_gain(bus="readout", gain=gain)
             qp.play(bus="readout", waveform=readout_pair)
             qp.qblox.acquire(bus="readout", weights=weights_pair_2)
@@ -380,9 +380,9 @@ def fixture_exceeds_depth_for_loop_blocks() -> QProgram:
     """33 separate for_loop blocks each with 1 acquire — must raise because only average blocks are supported."""
     weights = IQPair(I=Square(amplitude=1.0, duration=20), Q=Square(amplitude=0.0, duration=20))
     qp = QProgram()
-    bins = qp.variable("bins", Domain.Scalar, int)
+    bins = qp.variable("bins")
     for _ in range(33):
-        with qp.for_loop(bins, 0, 10, 1):
+        with qp.sweep(bins).from_range(0, 10, 1):
             qp.qblox.acquire(bus="readout", weights=weights)
     return qp
 
@@ -464,12 +464,12 @@ def fixture_average_with_nested_for_loops() -> QProgram:
     readout_pair = IQPair(I=Square(amplitude=1.0, duration=1000), Q=Square(amplitude=0.0, duration=1000))
     weights_pair = IQPair(I=Square(amplitude=1.0, duration=2000), Q=Square(amplitude=0.0, duration=2000))
     qp = QProgram()
-    frequency = qp.variable(label="frequency", domain=Domain.Frequency)
-    gain = qp.variable(label="gain", domain=Domain.Voltage)
+    frequency = qp.variable("frequency")
+    gain = qp.variable("gain")
     with qp.average(shots=1000):
-        with qp.for_loop(variable=gain, start=0, stop=1, step=0.1):
+        with qp.sweep(gain).from_range(0, 1, 0.1):
             qp.set_gain(bus="drive", gain=gain)
-            with qp.for_loop(variable=frequency, start=0, stop=500, step=10):
+            with qp.sweep(frequency).from_range(0, 500, 10):
                 qp.play(bus="drive", waveform=drag_pair)
                 qp.sync()
                 qp.set_frequency(bus="readout", frequency=frequency)
@@ -493,15 +493,10 @@ def fixture_average_with_parallel_for_loops() -> QProgram:
     readout_pair = IQPair(I=Square(amplitude=1.0, duration=1000), Q=Square(amplitude=0.0, duration=1000))
     weights_pair = IQPair(I=Square(amplitude=1.0, duration=2000), Q=Square(amplitude=0.0, duration=2000))
     qp = QProgram()
-    frequency = qp.variable(label="frequency", domain=Domain.Frequency)
-    gain = qp.variable(label="gain", domain=Domain.Voltage)
+    frequency = qp.variable("frequency")
+    gain = qp.variable("gain")
     with qp.average(shots=1000):
-        with qp.parallel(
-            loops=[
-                ForLoop(variable=frequency, start=100, stop=200, step=10),
-                ForLoop(variable=gain, start=0, stop=1, step=0.1),
-            ]
-        ):
+        with qp.sweep(frequency).from_range(100, 200, 10) | qp.sweep(gain).from_range(0, 1, 0.1):
             qp.set_gain(bus="drive", gain=gain)
             qp.set_frequency(bus="readout", frequency=frequency)
             qp.play(bus="drive", waveform=drag_pair)
@@ -514,9 +509,9 @@ def fixture_average_with_parallel_for_loops() -> QProgram:
 @pytest.fixture(name="for_loop_variable_with_no_target")
 def fixture_for_loop_variable_with_no_target() -> QProgram:
     qp = QProgram()
-    variable = qp.variable(label="float_scalar", domain=Domain.Scalar, type=float)
+    variable = qp.variable("float_scalar")
     with qp.average(shots=1000):
-        with qp.for_loop(variable=variable, start=0, stop=100, step=4):
+        with qp.sweep(variable).from_range(0, 100, 4):
             qp.set_frequency(bus="drive", frequency=100)
             qp.set_phase(bus="drive", phase=90)
     return qp
@@ -543,7 +538,7 @@ def fixture_multiple_play_operations_with_same_waveform() -> QProgram:
 @pytest.fixture(name="set_trigger")
 def fixture_set_trigger() -> QProgram:
     qp = QProgram()
-    qp.set_trigger(bus="drive", duration=100, outputs=1)
+    qp.qblox.set_trigger(bus="drive", duration=100, outputs=1)
     qp.wait(bus="drive", duration=100)
     return qp
 
@@ -554,17 +549,17 @@ def fixture_wait_trigger() -> QProgram:
     # With update parameter pending
     qp.set_frequency(bus="drive", frequency=1e6)
     qp.set_frequency(bus="readout", frequency=1e6)
-    qp.wait_trigger(bus="drive", duration=4)
+    qp.qblox.wait_trigger(bus="drive", duration=4)
     qp.set_frequency(bus="drive", frequency=1e6)
     # A non-default port is passed, but on Qblox every wait_trigger must resolve to the external
     # trigger address (EXT_TRIGGER_ADDRESS = 15); the port argument is ignored (see QHC-1593).
-    qp.wait_trigger(bus="drive", duration=1000, port=7)
+    qp.qblox.wait_trigger(bus="drive", duration=1000, port=7)
     qp.set_frequency(bus="drive", frequency=1e6)
-    qp.wait_trigger(bus="drive", duration=70000, port=7)
+    qp.qblox.wait_trigger(bus="drive", duration=70000, port=7)
 
     # No instructions pending
-    qp.wait_trigger(bus="drive", duration=1000, port=7)
-    qp.wait_trigger(bus="drive", duration=70000, port=7)
+    qp.qblox.wait_trigger(bus="drive", duration=1000, port=7)
+    qp.qblox.wait_trigger(bus="drive", duration=70000, port=7)
     return qp
 
 
@@ -575,7 +570,7 @@ def fixture_wait_trigger_upd_param_extension() -> QProgram:
     qp.wait(bus="readout", duration=100)
     # With update parameter pending, on drive only
     qp.set_frequency(bus="drive", frequency=1e6)
-    qp.wait_trigger(bus="drive", duration=4)
+    qp.qblox.wait_trigger(bus="drive", duration=4)
     return qp
 
 
@@ -651,7 +646,7 @@ def fixture_play_square_smooth_waveforms_with_optimization() -> QProgram:
 @pytest.fixture(name="play_operation_with_variable_in_waveform")
 def fixture_play_operation_with_variable_in_waveform() -> QProgram:
     qp = QProgram()
-    amplitude = qp.variable(label="amplitude", domain=Domain.Voltage)
+    amplitude = qp.variable("amplitude")
     qp.play(bus="drive", waveform=Square(amplitude=amplitude, duration=100))
     return qp
 
@@ -677,20 +672,22 @@ def update_latched_param() -> QProgram:
     qp.wait(bus="drive", duration=6)
     return qp
 
+
 @pytest.fixture(name="dynamic_sync")
 def fixture_dynamic_sync() -> QProgram:
     drag_pair = IQDrag(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=1.2)
     readout_pair = IQPair(I=Square(amplitude=1.0, duration=1000), Q=Square(amplitude=0.0, duration=1000))
     weights_pair = IQPair(I=Square(amplitude=1.0, duration=2000), Q=Square(amplitude=0.0, duration=2000))
     qp = QProgram()
-    duration = qp.variable(label="time", domain=Domain.Time)
-    with qp.for_loop(variable=duration, start=100, stop=200, step=10):
+    duration = qp.variable("time")
+    with qp.sweep(duration).from_range(100, 200, 10):
         qp.play(bus="drive", waveform=drag_pair)
         qp.wait(bus="drive", duration=duration)
         qp.sync()
-        qp.wait(bus="drive", duration=duration-30)
+        qp.wait(bus="drive", duration=duration - 30)
         qp.measure(bus="readout", waveform=readout_pair, weights=weights_pair)
     return qp
+
 
 @pytest.fixture(name="dynamic_sync_long_wait")
 def fixture_dynamic_sync_long_wait() -> QProgram:
@@ -698,14 +695,15 @@ def fixture_dynamic_sync_long_wait() -> QProgram:
     readout_pair = IQPair(I=Square(amplitude=1.0, duration=1000), Q=Square(amplitude=0.0, duration=1000))
     weights_pair = IQPair(I=Square(amplitude=1.0, duration=1000), Q=Square(amplitude=0.0, duration=1000))
     qp = QProgram()
-    duration = qp.variable(label="time", domain=Domain.Time)
-    with qp.for_loop(variable=duration, start=0, stop=200_000, step=10):
+    duration = qp.variable("time")
+    with qp.sweep(duration).from_range(0, 200_000, 10):
         qp.play(bus="drive", waveform=drag_pair)
         qp.wait(bus="drive", duration=duration)
         qp.sync()
         qp.measure(bus="readout", waveform=readout_pair, weights=weights_pair)
         qp.sync()
     return qp
+
 
 @pytest.fixture(name="dynamic_sync_variable_expression_difference")
 def fixture_dynamic_sync_variable_expression_difference() -> QProgram:
@@ -713,16 +711,17 @@ def fixture_dynamic_sync_variable_expression_difference() -> QProgram:
     readout_pair = IQPair(I=Square(amplitude=1.0, duration=1000), Q=Square(amplitude=0.0, duration=1000))
     weights_pair = IQPair(I=Square(amplitude=1.0, duration=2000), Q=Square(amplitude=0.0, duration=2000))
     qp = QProgram()
-    duration = qp.variable(label="time", domain=Domain.Time)
-    with qp.for_loop(variable=duration, start=100, stop=200, step=10):
+    duration = qp.variable("time")
+    with qp.sweep(duration).from_range(100, 200, 10):
         qp.play(bus="drive", waveform=drag_pair)
-        qp.wait(bus="drive", duration=duration-50)
+        qp.wait(bus="drive", duration=duration - 50)
         qp.sync()
-        qp.wait(bus="drive", duration=50-duration)
-        qp.sync() 
+        qp.wait(bus="drive", duration=50 - duration)
+        qp.sync()
         qp.measure(bus="readout", waveform=readout_pair, weights=weights_pair)
         qp.sync()
     return qp
+
 
 @pytest.fixture(name="dynamic_sync_variable_expression_sum")
 def fixture_dynamic_sync_variable_expression_sum() -> QProgram:
@@ -730,16 +729,17 @@ def fixture_dynamic_sync_variable_expression_sum() -> QProgram:
     readout_pair = IQPair(I=Square(amplitude=1.0, duration=1000), Q=Square(amplitude=0.0, duration=1000))
     weights_pair = IQPair(I=Square(amplitude=1.0, duration=2000), Q=Square(amplitude=0.0, duration=2000))
     qp = QProgram()
-    duration = qp.variable(label="time", domain=Domain.Time)
-    with qp.for_loop(variable=duration, start=100, stop=50_000, step=10):
+    duration = qp.variable("time")
+    with qp.sweep(duration).from_range(100, 50_000, 10):
         qp.play(bus="drive", waveform=drag_pair)
-        qp.wait(bus="drive", duration=duration+500)
+        qp.wait(bus="drive", duration=duration + 500)
         qp.sync()
-        qp.wait(bus="drive", duration=duration+20_000)
+        qp.wait(bus="drive", duration=duration + 20_000)
         qp.sync()
         qp.measure(bus="readout", waveform=readout_pair, weights=weights_pair)
         qp.sync()
     return qp
+
 
 @pytest.fixture(name="dynamic_sync_delay")
 def fixture_dynamic_sync_delay() -> QProgram:
@@ -747,13 +747,14 @@ def fixture_dynamic_sync_delay() -> QProgram:
     readout_pair = IQPair(I=Square(amplitude=1.0, duration=1000), Q=Square(amplitude=0.0, duration=1000))
     weights_pair = IQPair(I=Square(amplitude=1.0, duration=2000), Q=Square(amplitude=0.0, duration=2000))
     qp = QProgram()
-    duration = qp.variable(label="time", domain=Domain.Time)
-    with qp.for_loop(variable=duration, start=100, stop=200, step=10):
+    duration = qp.variable("time")
+    with qp.sweep(duration).from_range(100, 200, 10):
         qp.play(bus="drive", waveform=drag_pair)
         qp.wait(bus="drive", duration=duration)
         qp.sync()
         qp.measure(bus="readout", waveform=readout_pair, weights=weights_pair)
     return qp
+
 
 @pytest.fixture(name="measure_reset_program")
 def fixture_measure_reset_program() -> QProgram:
@@ -761,17 +762,19 @@ def fixture_measure_reset_program() -> QProgram:
     weights_pair = IQPair(I=Square(amplitude=1.0, duration=2000), Q=Square(amplitude=0.0, duration=2000))
     qp = QProgram()
     drag_wf = IQDrag(amplitude=1.0, duration=100, num_sigmas=5, drag_coefficient=1.5)
-    qp.qblox.measure_reset(bus="readout", waveform=readout_pair, weights=weights_pair, control_bus="drive", reset_pulse=drag_wf)
+    qp.qblox.measure_reset(
+        bus="readout", waveform=readout_pair, weights=weights_pair, control_bus="drive", reset_pulse=drag_wf
+    )
     return qp
 
 
 @pytest.fixture(name="wait_comprised_between_65535_65538")
 def fixture_wait_comprised_between_65535_65538() -> QProgram:
     qp = QProgram()
-    qp.wait("drive",duration=65535*2)
-    qp.play("drive", Square(1,20))
+    qp.wait("drive", duration=65535 * 2)
+    qp.play("drive", Square(1, 20))
     qp.wait(bus="drive", duration=65535)
-    qp.play("drive", Square(1,20))
+    qp.play("drive", Square(1, 20))
     qp.wait(bus="drive", duration=65537)
     return qp
 
@@ -784,20 +787,13 @@ def fixture_single_bin_different_depth_qp() -> QProgram:
     square_wf = IQPair(I=Square(amplitude=1, duration=10), Q=Square(amplitude=0, duration=10))
 
     with qp.average(100):
-        qp.measure(bus=f"readout",
-            waveform=square_wf,
-            weights=weights_shape)
-        qp.measure(bus=f"readout",
-            waveform=square_wf,
-            weights=weights_shape)
+        qp.measure(bus=f"readout", waveform=square_wf, weights=weights_shape)
+        qp.measure(bus=f"readout", waveform=square_wf, weights=weights_shape)
 
-    qp.measure(bus=f"readout",
-                waveform=square_wf,
-                weights=weights_shape)
-    qp.measure(bus=f"readout",
-                waveform=square_wf,
-                weights=weights_shape)
+    qp.measure(bus=f"readout", waveform=square_wf, weights=weights_shape)
+    qp.measure(bus=f"readout", waveform=square_wf, weights=weights_shape)
     return qp
+
 
 @pytest.fixture(name="bus_mappping_acquire")
 def fixture_bus_mappping_acquire() -> QProgram:
@@ -805,17 +801,24 @@ def fixture_bus_mappping_acquire() -> QProgram:
     square_wf = IQPair(I=Square(amplitude=1, duration=10), Q=Square(amplitude=0, duration=10))
     with qp.average(10):
         qp.play("drive", square_wf)
-        qp.measure(bus=f"readout",
-                    waveform=square_wf,
-                    weights=square_wf,)
-        qp.measure(bus=f"readout",
-                waveform=square_wf,
-                weights=square_wf,)
-        qp.wait("readout",100)
-    qp.measure(bus=f"readout",
-                waveform=square_wf,
-                weights=square_wf,)
+        qp.measure(
+            bus=f"readout",
+            waveform=square_wf,
+            weights=square_wf,
+        )
+        qp.measure(
+            bus=f"readout",
+            waveform=square_wf,
+            weights=square_wf,
+        )
+        qp.wait("readout", 100)
+    qp.measure(
+        bus=f"readout",
+        waveform=square_wf,
+        weights=square_wf,
+    )
     return qp
+
 
 @pytest.fixture(name="calibration_reset")
 def fixture_calibration_reset() -> Calibration:
@@ -828,12 +831,14 @@ def fixture_calibration_reset() -> Calibration:
     calibration_reset.add_waveform(bus="drive_q0_bus", name="drag_reset", waveform=drag_reset)
     return calibration_reset
 
+
 @pytest.fixture(name="measure_reset_calibrated_bus_mapping")
 def fixture_measure_reset_calibrated_bus_mapping() -> QProgram:
     qp = QProgram()
-    qp.qblox.measure_reset(bus="readout_bus", waveform="readout", weights="weights", control_bus="drive_bus", reset_pulse="drag_reset")
+    qp.qblox.measure_reset(
+        bus="readout_bus", waveform="readout", weights="weights", control_bus="drive_bus", reset_pulse="drag_reset"
+    )
     return qp
-
 
 
 @pytest.fixture(name="cryoscope_qprogram")
@@ -843,107 +848,113 @@ def fixture_cryoscope_qprogram() -> QProgram:
     REPETITION_DURATION = 200_000
     POST_DRIVE_BUFFER = 30
     POST_FLUX_BUFFER = 30
-    AMPLITUDE_VALUES = np.linspace(-.3, .3, num=21)
+    AMPLITUDE_VALUES = np.linspace(-0.3, 0.3, num=21)
     DURATION_VALUES = np.arange(80, 160, step=1)
-    T_SEP = np.max(DURATION_VALUES) + 100 
-    flux_wf = Square(amplitude = 1, duration = 500)
+    T_SEP = np.max(DURATION_VALUES) + 100
+    flux_wf = Square(amplitude=1, duration=500)
     drag_pair = IQDrag(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=1.2)
-    flux_amplitude = qp.variable(label='flux_amplitude', domain = Domain.Voltage)
+    flux_amplitude = qp.variable("flux_amplitude")
     square_wf = Square(amplitude=1, duration=1385)
     square_iq = IQPair(I=square_wf, Q=square_wf)
-    time = qp.variable(label='time', domain = Domain.Time)
+    time = qp.variable("time")
     qp.set_gain(bus=f"drive", gain=1)
     qp.set_gain(bus=f"readout", gain=1)
     with qp.average(HW_AVG):
-        with qp.for_loop(variable = flux_amplitude, start=AMPLITUDE_VALUES[0], stop=AMPLITUDE_VALUES[-1], step=AMPLITUDE_VALUES[1]-AMPLITUDE_VALUES[0]):
-            with qp.for_loop(variable = time, start=DURATION_VALUES[0], stop=DURATION_VALUES[-1], step=DURATION_VALUES[1]-DURATION_VALUES[0]):
-            
-                qp.set_gain(bus=f'flux', gain=flux_amplitude)
+        with qp.sweep(flux_amplitude).from_range(
+            AMPLITUDE_VALUES[0], AMPLITUDE_VALUES[-1], AMPLITUDE_VALUES[1] - AMPLITUDE_VALUES[0]
+        ):
+            with qp.sweep(time).from_range(
+                int(DURATION_VALUES[0]), int(DURATION_VALUES[-1]), int(DURATION_VALUES[1] - DURATION_VALUES[0])
+            ):
+                qp.set_gain(bus=f"flux", gain=flux_amplitude)
                 qp.sync()
                 qp.play(bus=f"drive", waveform=drag_pair)
                 qp.sync()
-                qp.wait(bus=f"flux",duration=POST_DRIVE_BUFFER)
+                qp.wait(bus=f"flux", duration=POST_DRIVE_BUFFER)
                 qp.sync()
 
                 # play a flux pulse of varying duration
-                qp.qblox.play(bus=f'flux', waveform=flux_wf,wait_time=4)
-                qp.wait(bus=f"drive",duration=time)
+                qp.qblox.play(bus=f"flux", waveform=flux_wf, wait_time=4)
+                qp.wait(bus=f"drive", duration=time)
                 qp.sync()
-                qp.qblox.play(bus=f'flux', waveform=Square(0,500),wait_time=4)
+                qp.qblox.play(bus=f"flux", waveform=Square(0, 500), wait_time=4)
 
-                qp.wait(bus=f"drive",duration=POST_FLUX_BUFFER+ T_SEP-time)
+                qp.wait(bus=f"drive", duration=POST_FLUX_BUFFER + T_SEP - time)
                 qp.play(bus=f"drive", waveform=drag_pair)
                 qp.sync()
-                qp.wait(bus=f"readout",duration=POST_DRIVE_BUFFER)
-                qp.measure(bus=f"readout", waveform=square_iq , weights=square_iq )
+                qp.wait(bus=f"readout", duration=POST_DRIVE_BUFFER)
+                qp.measure(bus=f"readout", waveform=square_iq, weights=square_iq)
                 qp.sync()
-                qp.wait(bus=f"drive",duration=REPETITION_DURATION)
+                qp.wait(bus=f"drive", duration=REPETITION_DURATION)
 
                 qp.sync()
                 qp.play(bus=f"drive", waveform=drag_pair)
                 qp.sync()
-                qp.wait(bus=f"flux",duration=POST_DRIVE_BUFFER)
+                qp.wait(bus=f"flux", duration=POST_DRIVE_BUFFER)
                 qp.sync()
 
                 # play a flux pulse of varying duration
-                qp.qblox.play(bus=f'flux', waveform=flux_wf,wait_time=4)
-                qp.wait(bus=f"drive",duration=time)
+                qp.qblox.play(bus=f"flux", waveform=flux_wf, wait_time=4)
+                qp.wait(bus=f"drive", duration=time)
                 qp.sync()
-                qp.qblox.play(bus=f'flux', waveform=Square(0,500),wait_time=4)
-                
-                qp.wait(bus=f"drive",duration=POST_FLUX_BUFFER+ T_SEP-time)
+                qp.qblox.play(bus=f"flux", waveform=Square(0, 500), wait_time=4)
+
+                qp.wait(bus=f"drive", duration=POST_FLUX_BUFFER + T_SEP - time)
                 qp.play(bus=f"drive", waveform=drag_pair)
                 qp.sync()
-                qp.wait(bus=f"readout",duration=POST_DRIVE_BUFFER)
-                qp.measure(bus=f"readout", waveform=square_iq, weights=square_iq )
+                qp.wait(bus=f"readout", duration=POST_DRIVE_BUFFER)
+                qp.measure(bus=f"readout", waveform=square_iq, weights=square_iq)
                 qp.sync()
-                qp.wait(bus=f"drive",duration=REPETITION_DURATION)
+                qp.wait(bus=f"drive", duration=REPETITION_DURATION)
                 qp.sync()
     return qp
+
 
 @pytest.fixture(name="dynamic_wait_three_buses_dynamic_static")
 def fixture_dynamic_wait_three_buses_dynamic_static() -> QProgram:
     drag_pair = IQDrag(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=1.2)
     qp = QProgram()
-    duration = qp.variable(label="time", domain=Domain.Time)
-    with qp.for_loop(variable=duration, start=100, stop=200, step=10):
+    duration = qp.variable("time")
+    with qp.sweep(duration).from_range(100, 200, 10):
         qp.wait(bus="drive", duration=duration)
         qp.sync()
         qp.play(bus="drive", waveform=drag_pair)
-        qp.sync(["drive","readout"])
+        qp.sync(["drive", "readout"])
         qp.wait(bus="drive", duration=duration)
         qp.sync()
         qp.play(bus="flux", waveform=drag_pair)
         qp.sync()
     return qp
 
+
 @pytest.fixture(name="dynamic_wait_three_buses_static_static")
 def fixture_dynamic_wait_three_buses_static_static() -> QProgram:
     drag_pair = IQDrag(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=1.2)
     qp = QProgram()
-    duration = qp.variable(label="time", domain=Domain.Time)
-    with qp.for_loop(variable=duration, start=100, stop=200, step=10):
+    duration = qp.variable("time")
+    with qp.sweep(duration).from_range(100, 200, 10):
         qp.wait(bus="drive", duration=duration)
         qp.sync()
         qp.play(bus="drive", waveform=drag_pair)
-        qp.sync(["drive","readout"])
+        qp.sync(["drive", "readout"])
         qp.wait(bus="drive", duration=10)
         qp.sync()
         qp.play(bus="flux", waveform=drag_pair)
         qp.sync()
     return qp
 
+
 @pytest.fixture(name="variable_expression_one_gain")
 def variable_expression_one_gain() -> QProgram:
     drag_pair = IQDrag(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=1.2)
     qp = QProgram()
-    gain = qp.variable(label="gain", domain=Domain.Voltage)
-    with qp.for_loop(variable=gain, start=0.1, stop=0.9, step=0.1):
-        qp.set_gain("drive",gain + 0.1)
+    gain = qp.variable("gain")
+    with qp.sweep(gain).from_range(0.1, 0.9, 0.1):
+        qp.set_gain("drive", gain + 0.1)
         qp.play(bus="drive", waveform=drag_pair)
-        qp.set_gain("drive",gain - 0.1)
+        qp.set_gain("drive", gain - 0.1)
         qp.play(bus="drive", waveform=drag_pair)
-        qp.set_gain("drive",-0.1 + gain)
+        qp.set_gain("drive", -0.1 + gain)
         qp.play(bus="drive", waveform=drag_pair)
         qp.set_gain("drive", -0.1 - gain)
         qp.play(bus="drive", waveform=drag_pair)
@@ -951,25 +962,26 @@ def variable_expression_one_gain() -> QProgram:
         qp.play(bus="drive", waveform=drag_pair)
         qp.set_gain("drive", 0.1 - gain)
         qp.play(bus="drive", waveform=drag_pair)
-        qp.set_gain("drive", - gain)
+        qp.set_gain("drive", -gain)
         qp.play(bus="drive", waveform=drag_pair)
-        qp.set_gain("drive", gain -- 0.1)
+        qp.set_gain("drive", gain - -0.1)
         qp.play(bus="drive", waveform=drag_pair)
-        qp.set_gain("drive", gain +-0.1)
+        qp.set_gain("drive", gain + -0.1)
         qp.play(bus="drive", waveform=drag_pair)
     return qp
+
 
 @pytest.fixture(name="variable_expression_offset")
 def variable_expression_offset() -> QProgram:
     drag_pair = IQDrag(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=1.2)
     qp = QProgram()
-    offset = qp.variable(label="offset", domain=Domain.Voltage)
-    with qp.for_loop(variable=offset, start=0.1, stop=0.9, step=0.1):
-        qp.set_offset("drive",offset + 0.1)
+    offset = qp.variable("offset")
+    with qp.sweep(offset).from_range(0.1, 0.9, 0.1):
+        qp.set_offset("drive", offset + 0.1)
         qp.play(bus="drive", waveform=drag_pair)
-        qp.set_offset("drive",offset - 0.1)
+        qp.set_offset("drive", offset - 0.1)
         qp.play(bus="drive", waveform=drag_pair)
-        qp.set_offset("drive",-0.1 + offset)
+        qp.set_offset("drive", -0.1 + offset)
         qp.play(bus="drive", waveform=drag_pair)
         qp.set_offset("drive", -0.1 - offset)
         qp.play(bus="drive", waveform=drag_pair)
@@ -977,28 +989,30 @@ def variable_expression_offset() -> QProgram:
         qp.play(bus="drive", waveform=drag_pair)
         qp.set_offset("drive", 0.1 - offset)
         qp.play(bus="drive", waveform=drag_pair)
-        qp.set_offset("drive", - offset)
+        qp.set_offset("drive", -offset)
         qp.play(bus="drive", waveform=drag_pair)
-        qp.set_offset("drive", offset -- 0.1)
+        qp.set_offset("drive", offset - -0.1)
         qp.play(bus="drive", waveform=drag_pair)
-        qp.set_offset("drive", offset +-0.1)
+        qp.set_offset("drive", offset + -0.1)
         qp.play(bus="drive", waveform=drag_pair)
     return qp
+
 
 @pytest.fixture(name="variable_expression_two_offset_offseti_variable_expression")
 def variable_expression_two_offset() -> QProgram:
     qp = QProgram()
-    offset = qp.variable(label="offset", domain=Domain.Voltage)
-    with qp.for_loop(variable=offset, start=0, stop=1, step=0.1):
-        qp.set_offset(bus="drive", offset_path0=offset+10, offset_path1=30)
+    offset = qp.variable("offset")
+    with qp.sweep(offset).from_range(0, 1, 0.1):
+        qp.set_offset(bus="drive", offset_path0=offset + 10, offset_path1=30)
     return qp
+
 
 @pytest.fixture(name="variable_expression_two_offset_offsetq_variable_expression")
 def variable_expression_offsetq_variable_expression() -> QProgram:
     qp = QProgram()
-    offset = qp.variable(label="offset", domain=Domain.Voltage)
-    with qp.for_loop(variable=offset, start=0, stop=1, step=0.1):
-        qp.set_offset(bus="drive", offset_path0=10, offset_path1=30+offset)
+    offset = qp.variable("offset")
+    with qp.sweep(offset).from_range(0, 1, 0.1):
+        qp.set_offset(bus="drive", offset_path0=10, offset_path1=30 + offset)
     return qp
 
 
@@ -1006,15 +1020,16 @@ def variable_expression_offsetq_variable_expression() -> QProgram:
 def variable_expression_two_gains() -> QProgram:
     drag_pair = IQDrag(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=1.2)
     qp = QProgram()
-    gain1 = qp.variable(label="gain1", domain=Domain.Voltage)
-    gain2 = qp.variable(label="gain2", domain=Domain.Voltage)
-    with qp.for_loop(variable=gain1, start=0, stop=1, step=0.1):
-        with qp.for_loop(variable=gain2, start=1, stop=0, step=-0.1):
+    gain1 = qp.variable("gain1")
+    gain2 = qp.variable("gain2")
+    with qp.sweep(gain1).from_range(0, 1, 0.1):
+        with qp.sweep(gain2).from_range(1, 0, -0.1):
             qp.set_gain("drive", gain1 + gain2)
             qp.play(bus="drive", waveform=drag_pair)
             qp.set_gain("drive", gain1 - gain2)
             qp.play(bus="drive", waveform=drag_pair)
     return qp
+
 
 @pytest.fixture(name="calibration_crosstalk")
 def fixture_calibration_crosstalk() -> Calibration:
@@ -1032,8 +1047,8 @@ def fixture_crosstalk_qprogram() -> QProgram:
     square_wf = Square(amplitude=0.1, duration=50)
     square_iq = IQPair(I=square_wf, Q=square_wf)
     qp = QProgram()
-    offset = qp.variable(label="offset", domain=Domain.Voltage)
-    with qp.for_loop(variable=offset, start=0, stop=0.1, step=0.01):
+    offset = qp.variable("offset")
+    with qp.sweep(offset).from_range(0, 0.1, 0.01):
         qp.set_offset(bus="flux1", offset_path0=offset)
         qp.wait(bus="drive", duration=10)
         qp.wait(bus="flux1", duration=10)
@@ -1041,17 +1056,18 @@ def fixture_crosstalk_qprogram() -> QProgram:
         qp.set_gain(bus="flux2", gain=0.05)
         qp.play(bus="flux1", waveform=square_wf)
         qp.play(bus="drive", waveform=square_iq)
-        qp.sync(["drive","readout"])
+        qp.sync(["drive", "readout"])
         qp.measure(bus="readout", waveform=square_iq, weights=square_iq)
     return qp
+
 
 @pytest.fixture(name="crosstalk_qprogram_gain_loop")
 def fixture_crosstalk_qprogram_gain_loop() -> QProgram:
     square_wf = Square(amplitude=0.1, duration=50)
     square_iq = IQPair(I=square_wf, Q=square_wf)
     qp = QProgram()
-    gain = qp.variable(label="gain", domain=Domain.Voltage)
-    with qp.for_loop(variable=gain, start=0, stop=0.1, step=0.01):
+    gain = qp.variable("gain")
+    with qp.sweep(gain).from_range(0, 0.1, 0.01):
         qp.set_offset(bus="flux1", offset_path0=0.05)
         qp.wait(bus="drive", duration=10)
         qp.wait(bus="flux1", duration=10)
@@ -1059,28 +1075,30 @@ def fixture_crosstalk_qprogram_gain_loop() -> QProgram:
         qp.set_gain(bus="flux2", gain=gain)
         qp.play(bus="flux1", waveform=square_wf)
         qp.play(bus="drive", waveform=square_iq)
-        qp.sync(["drive","readout"])
+        qp.sync(["drive", "readout"])
         qp.measure(bus="readout", waveform=square_iq, weights=square_iq)
     return qp
+
 
 @pytest.fixture(name="crosstalk_qprogram_parallel")
 def fixture_crosstalk_qprogram_parallel() -> QProgram:
     square_wf = Square(amplitude=0.1, duration=50)
     qp = QProgram()
-    gain_1 = qp.variable(label="gain_1", domain=Domain.Voltage)
-    gain_2 = qp.variable(label="gain_2", domain=Domain.Voltage)
-    offset_1 = qp.variable(label="offset_1", domain=Domain.Voltage)
-    offset_2 = qp.variable(label="offset_2", domain=Domain.Voltage)
-    with qp.parallel(loops=[ForLoop(variable=gain_1, start=0, stop=0.1, step=0.01), ForLoop(variable=gain_2, start=0.1, stop=0, step=-0.01)]):
+    gain_1 = qp.variable("gain_1")
+    gain_2 = qp.variable("gain_2")
+    offset_1 = qp.variable("offset_1")
+    offset_2 = qp.variable("offset_2")
+    with qp.sweep(gain_1).from_range(0, 0.1, 0.01) | qp.sweep(gain_2).from_range(0.1, 0, -0.01):
         qp.set_gain(bus="flux1", gain=gain_1)
         qp.set_gain(bus="flux2", gain=gain_2)
         qp.play(bus="flux1", waveform=square_wf)
-    with qp.parallel(loops=[ForLoop(variable=offset_1, start=0, stop=0.1, step=0.01), ForLoop(variable=offset_2, start=0.1, stop=0, step=-0.01)]):
+    with qp.sweep(offset_1).from_range(0, 0.1, 0.01) | qp.sweep(offset_2).from_range(0.1, 0, -0.01):
         qp.set_offset(bus="flux1", offset_path0=offset_1)
         qp.set_offset(bus="flux2", offset_path0=offset_2)
         qp.wait(bus="flux1", duration=10)
         qp.wait(bus="flux2", duration=10)
     return qp
+
 
 @pytest.fixture(name="crosstalk_qprogram_plays")
 def fixture_crosstalk_qprogram_plays() -> QProgram:
@@ -1097,39 +1115,42 @@ def fixture_crosstalk_qprogram_plays() -> QProgram:
     qp.play(bus="flux2", waveform=flattop_iq)
     return qp
 
+
 @pytest.fixture(name="crosstalk_qprogram_double_gain_loop")
 def fixture_crosstalk_qprogram_double_gain_loop() -> QProgram:
     square_wf = Square(amplitude=0.1, duration=50)
     qp = QProgram()
-    gain_1 = qp.variable(label="gain_1", domain=Domain.Voltage)
-    gain_2 = qp.variable(label="gain_2", domain=Domain.Voltage)
-    with qp.for_loop(variable=gain_1, start=0, stop=0.1, step=0.01):
-        with qp.for_loop(variable=gain_2, start=0.1, stop=0, step=-0.01):
+    gain_1 = qp.variable("gain_1")
+    gain_2 = qp.variable("gain_2")
+    with qp.sweep(gain_1).from_range(0, 0.1, 0.01):
+        with qp.sweep(gain_2).from_range(0.1, 0, -0.01):
             qp.set_gain(bus="flux1", gain=gain_1)
             qp.set_gain(bus="flux2", gain=gain_2)
             qp.play(bus="flux1", waveform=square_wf)
     return qp
 
+
 @pytest.fixture(name="crosstalk_qprogram_double_offset_loop")
 def fixture_crosstalk_qprogram_double_offset_loop() -> QProgram:
     square_wf = Square(amplitude=0.1, duration=50)
     qp = QProgram()
-    offset_1 = qp.variable(label="offset_1", domain=Domain.Voltage)
-    offset_2 = qp.variable(label="offset_2", domain=Domain.Voltage)
-    with qp.for_loop(variable=offset_1, start=0, stop=0.1, step=0.01):
-        with qp.for_loop(variable=offset_2, start=0.1, stop=0, step=-0.01):
+    offset_1 = qp.variable("offset_1")
+    offset_2 = qp.variable("offset_2")
+    with qp.sweep(offset_1).from_range(0, 0.1, 0.01):
+        with qp.sweep(offset_2).from_range(0.1, 0, -0.01):
             qp.set_offset(bus="flux1", offset_path0=offset_1)
             qp.set_offset(bus="flux2", offset_path0=offset_2)
             qp.play(bus="flux1", waveform=square_wf)
     return qp
+
 
 @pytest.fixture(name="inner_average_outer_sweep")
 def inner_average_outer_sweep() -> QProgram:
     readout_pair = IQPair(I=Square(amplitude=1.0, duration=1000), Q=Square(amplitude=0.0, duration=1000))
     weights_pair = IQPair(I=Square(amplitude=1.0, duration=2000), Q=Square(amplitude=0.0, duration=2000))
     qp = QProgram()
-    frequency = qp.variable(label="frequency", domain=Domain.Frequency)
-    with qp.for_loop(variable=frequency, start=100, stop=200, step=10):
+    frequency = qp.variable("frequency")
+    with qp.sweep(frequency).from_range(100, 200, 10):
         with qp.average(shots=100):
             qp.set_frequency(bus="readout", frequency=frequency)
             qp.measure(bus="readout", waveform=readout_pair, weights=weights_pair)
@@ -1141,7 +1162,7 @@ def fixture_non_linear_crosstalk_qprogram() -> QProgram:
     square_wf = Square(amplitude=0.1, duration=50)
     square_iq = IQPair(I=square_wf, Q=square_wf)
     qp = QProgram()
-    offset = qp.variable(label="offset", domain=Domain.Voltage)
+    offset = qp.variable("offset")
     with qp.for_loop(variable=offset, start=0, stop=0.1, step=0.08):
         qp.set_offset(bus="flux1", offset_path0=offset)
         qp.wait(bus="drive", duration=10)
@@ -1160,10 +1181,10 @@ def fixture_non_linear_crosstalk_qprogram_inner_non_flux_loop() -> QProgram:
     square_wf = Square(amplitude=0.1, duration=50)
     square_iq = IQPair(I=square_wf, Q=square_wf)
     qp = QProgram()
-    frequency = qp.variable(label="frequency", domain=Domain.Frequency)
-    offset = qp.variable(label="offset", domain=Domain.Voltage)
+    frequency = qp.variable("frequency")
+    offset = qp.variable("offset")
     with qp.for_loop(variable=offset, start=0, stop=0.1, step=0.08):
-        with qp.for_loop(variable=frequency, start=100, stop=200, step=10):
+        with qp.sweep(frequency).from_range(100, 200, 10):
             qp.set_frequency(bus="drive", frequency=frequency)
             qp.set_offset(bus="flux2", offset_path0=offset)
             qp.wait(bus="drive", duration=10)
@@ -1179,7 +1200,7 @@ def fixture_non_linear_crosstalk_qprogram_gain() -> QProgram:
     square_wf = Square(amplitude=0.1, duration=50)
     square_iq = IQPair(I=square_wf, Q=square_wf)
     qp = QProgram()
-    gain = qp.variable(label="gain", domain=Domain.Voltage)
+    gain = qp.variable("gain")
     with qp.for_loop(variable=gain, start=0, stop=0.1, step=0.08):
         qp.set_offset(bus="flux1", offset_path0=0.05)
         qp.wait(bus="drive", duration=10)
@@ -1197,10 +1218,10 @@ def fixture_non_linear_crosstalk_qprogram_gain() -> QProgram:
 def fixture_non_linear_crosstalk_qprogram_parallel() -> QProgram:
     square_wf = Square(amplitude=0.1, duration=50)
     qp = QProgram()
-    gain_1 = qp.variable(label="gain_1", domain=Domain.Voltage)
-    gain_2 = qp.variable(label="gain_2", domain=Domain.Voltage)
-    offset_1 = qp.variable(label="offset_1", domain=Domain.Voltage)
-    offset_2 = qp.variable(label="offset_2", domain=Domain.Voltage)
+    gain_1 = qp.variable("gain_1")
+    gain_2 = qp.variable("gain_2")
+    offset_1 = qp.variable("offset_1")
+    offset_2 = qp.variable("offset_2")
     with qp.parallel(
         loops=[
             ForLoop(variable=gain_1, start=0, stop=0.1, step=0.08),
@@ -1227,8 +1248,8 @@ def fixture_non_linear_crosstalk_qprogram_parallel() -> QProgram:
 def fixture_non_linear_crosstalk_qprogram_double_offset_loop() -> QProgram:
     square_wf = Square(amplitude=0.1, duration=50)
     qp = QProgram()
-    offset_1 = qp.variable(label="offset_1", domain=Domain.Voltage)
-    offset_2 = qp.variable(label="offset_2", domain=Domain.Voltage)
+    offset_1 = qp.variable("offset_1")
+    offset_2 = qp.variable("offset_2")
     with qp.for_loop(variable=offset_1, start=0, stop=0.1, step=0.08):
         with qp.for_loop(variable=offset_2, start=0.1, stop=0, step=-0.08):
             qp.set_offset(bus="flux1", offset_path0=offset_1)
@@ -1241,8 +1262,8 @@ def fixture_non_linear_crosstalk_qprogram_double_offset_loop() -> QProgram:
 def fixture_non_linear_crosstalk_qprogram_double_gain_loop() -> QProgram:
     square_wf = Square(amplitude=0.1, duration=50)
     qp = QProgram()
-    gain_1 = qp.variable(label="gain_1", domain=Domain.Voltage)
-    gain_2 = qp.variable(label="gain_2", domain=Domain.Voltage)
+    gain_1 = qp.variable("gain_1")
+    gain_2 = qp.variable("gain_2")
     with qp.for_loop(variable=gain_1, start=0, stop=0.1, step=0.08):
         with qp.for_loop(variable=gain_2, start=0.1, stop=0, step=-0.08):
             qp.set_gain(bus="flux1", gain=gain_1)
@@ -1250,32 +1271,35 @@ def fixture_non_linear_crosstalk_qprogram_double_gain_loop() -> QProgram:
             qp.play(bus="flux1", waveform=square_wf)
     return qp
 
+
 @pytest.fixture(name="inner_average_outer_sweep_two_measures")
 def inner_average_outer_sweep_two_measures() -> QProgram:
     readout_pair = IQPair(I=Square(amplitude=1.0, duration=1000), Q=Square(amplitude=0.0, duration=1000))
     weights_pair = IQPair(I=Square(amplitude=1.0, duration=2000), Q=Square(amplitude=0.0, duration=2000))
     qp = QProgram()
-    frequency = qp.variable(label="frequency", domain=Domain.Frequency)
-    with qp.for_loop(variable=frequency, start=100, stop=200, step=10):
+    frequency = qp.variable("frequency")
+    with qp.sweep(frequency).from_range(100, 200, 10):
         with qp.average(shots=100):
             qp.set_frequency(bus="readout", frequency=frequency)
             qp.measure(bus="readout", waveform=readout_pair, weights=weights_pair)
             qp.measure(bus="readout", waveform=readout_pair, weights=weights_pair)
     return qp
 
+
 @pytest.fixture(name="inner_average_outer_sweep_three_measures")
 def inner_average_outer_sweep_three_measures() -> QProgram:
     readout_pair = IQPair(I=Square(amplitude=1.0, duration=1000), Q=Square(amplitude=0.0, duration=1000))
     weights_pair = IQPair(I=Square(amplitude=1.0, duration=2000), Q=Square(amplitude=0.0, duration=2000))
     qp = QProgram()
-    frequency = qp.variable(label="frequency", domain=Domain.Frequency)
-    with qp.for_loop(variable=frequency, start=100, stop=200, step=10):
+    frequency = qp.variable("frequency")
+    with qp.sweep(frequency).from_range(100, 200, 10):
         with qp.average(shots=100):
             qp.set_frequency("readout", frequency)
             qp.measure(bus="readout", waveform=readout_pair, weights=weights_pair)
             qp.measure(bus="readout", waveform=readout_pair, weights=weights_pair)
             qp.measure(bus="readout", waveform=readout_pair, weights=weights_pair)
     return qp
+
 
 @pytest.fixture(name="average_only_two_measures")
 def average_only_two_measures() -> QProgram:
@@ -1316,9 +1340,7 @@ class TestQBloxCompiler:
     def test_qdac_bus_ignored(self, run_qdac_buses: QProgram):
 
         compiler = QbloxCompiler()
-        output = compiler.compile(
-            qprogram=run_qdac_buses, bus_mapping={"drive": "drive_q0"}, qblox_buses=["drive_q0"]
-        )
+        output = compiler.compile(qprogram=run_qdac_buses, bus_mapping={"drive": "drive_q0"}, qblox_buses=["drive_q0"])
 
         assert len(output.sequences) == 1
         assert "drive_q0" in output.sequences
@@ -1379,16 +1401,16 @@ class TestQBloxCompiler:
 
     def test_set_trigger_raises_no_output_error(self):
         qp = QProgram()
-        qp.set_trigger(bus="drive", duration=10)
+        qp.qblox.set_trigger(bus="drive", duration=10)
 
         compiler = QbloxCompiler()
 
-        with pytest.raises(ValueError, match="Missing qblox trigger outputs at qp.set_trigger."):
+        with pytest.raises(ValueError, match="Missing qblox trigger outputs at qp.qblox.set_trigger."):
             compiler.compile(qprogram=qp)
 
     def test_set_trigger_raises_output_out_of_range_error(self):
         qp = QProgram()
-        qp.set_trigger(bus="drive", duration=10, outputs=5)
+        qp.qblox.set_trigger(bus="drive", duration=10, outputs=5)
 
         compiler = QbloxCompiler()
 
@@ -1465,8 +1487,10 @@ class TestQBloxCompiler:
 
         qp_wait_trigger = QProgram()
         qp_wait_trigger.play(bus="drive", waveform=Square(amplitude=1.0, duration=100))
-        qp_wait_trigger.wait_trigger(bus="flux", duration=100)
-        assert QbloxCompiler().compile(qprogram=qp_wait_trigger, qblox_buses=["drive"]).requires_external_trigger is False
+        qp_wait_trigger.qblox.wait_trigger(bus="flux", duration=100)
+        assert (
+            QbloxCompiler().compile(qprogram=qp_wait_trigger, qblox_buses=["drive"]).requires_external_trigger is False
+        )
         assert (
             QbloxCompiler().compile(qprogram=qp_wait_trigger, qblox_buses=["drive", "flux"]).requires_external_trigger
             is True
@@ -1475,7 +1499,9 @@ class TestQBloxCompiler:
         qp_if_trigger = QProgram()
         with qp_if_trigger.if_trigger(expected_wait_time_ns=2252):
             qp_if_trigger.qblox.acquire(bus="readout", weights=IQPair(I=Square(1, 100), Q=Square(0, 100)))
-        assert QbloxCompiler().compile(qprogram=qp_if_trigger, qblox_buses=["readout"]).requires_external_trigger is True
+        assert (
+            QbloxCompiler().compile(qprogram=qp_if_trigger, qblox_buses=["readout"]).requires_external_trigger is True
+        )
 
     def test_wait_trigger_extends_bus_without_pending_upd_param_to_match_upd_param_floor(
         self, wait_trigger_upd_param_extension: QProgram
@@ -1520,7 +1546,7 @@ class TestQBloxCompiler:
     def test_wait_trigger_duration_above_max_wait_is_not_overshot(self):
         """A wait_trigger longer than INST_MAX_WAIT must be split by LongWait without dropping the remainder."""
         qp = QProgram()
-        qp.wait_trigger(bus="drive", duration=70000)
+        qp.qblox.wait_trigger(bus="drive", duration=70000)
 
         compiler = QbloxCompiler()
         sequences, _ = compiler.compile(qprogram=qp)
@@ -1539,9 +1565,9 @@ class TestQBloxCompiler:
     def test_wait_trigger_var_duration_raises_error_mapping(self):
 
         qp = QProgram()
-        duration = qp.variable(label="duration", domain=Domain.Time)
-        with qp.for_loop(variable=duration, start=4, stop=100, step=4):
-            qp.wait_trigger(bus="drive", duration=duration)
+        duration = qp.variable("duration")
+        with qp.sweep(duration).from_range(4, 100, 4):
+            qp.qblox.wait_trigger(bus="drive", duration=duration)
 
         compiler = QbloxCompiler()
         with pytest.raises(ValueError, match="WaitTrigger does not support variable sweep in a loop."):
@@ -1550,10 +1576,10 @@ class TestQBloxCompiler:
     def test_wait_trigger_var_duration_raises_error_handler(self):
 
         qp = QProgram()
-        duration = qp.variable(label="duration", domain=Domain.Time)
-        with qp.for_loop(variable=duration, start=4, stop=100, step=4):
+        duration = qp.variable("duration")
+        with qp.sweep(duration).from_range(4, 100, 4):
             qp.wait(bus="drive", duration=duration)
-            qp.wait_trigger(bus="drive", duration=duration)
+            qp.qblox.wait_trigger(bus="drive", duration=duration)
 
         compiler = QbloxCompiler()
         with pytest.raises(ValueError, match="Wait trigger duration cannot be a Variable, it must be an int."):
@@ -1601,7 +1627,7 @@ class TestQBloxCompiler:
     def test_if_trigger_derives_wait_time_from_qdac_dwell(self):
         qp = QProgram()
         qp.qdac.play(bus="qdac_flux", waveform=Square(1, 100), dwell=3)
-        qp.set_trigger(bus="qdac_flux", duration=100, position="step")
+        qp.qdac.set_trigger(bus="qdac_flux", duration=100, position="step", outputs=[1])
         with qp.if_trigger():
             with qp.average(shots=10):
                 qp.qblox.acquire(
@@ -1645,9 +1671,9 @@ class TestQBloxCompiler:
         """A ForLoop nested inside qp.if_trigger() must have its real-time instruction count scaled by its
         iteration count, same as Average, since its body actually repeats that many times at runtime."""
         qp = QProgram()
-        idx = qp.variable(label="idx", domain=Domain.Time)
+        idx = qp.variable("idx")
         with qp.if_trigger(expected_wait_time_ns=3000):
-            with qp.for_loop(variable=idx, start=4, stop=12, step=4):  # 3 iterations
+            with qp.sweep(idx).from_range(4, 12, 4):  # 3 iterations
                 qp.wait(bus="readout", duration=100)
                 qp.qblox.acquire(
                     bus="readout",
@@ -1747,14 +1773,14 @@ class TestQBloxCompiler:
             ValueError,
             match=re.escape(
                 "qp.if_trigger() on bus 'readout' has no expected_wait_time_ns and no QDAC "
-                "set_trigger(position='step') + play(dwell=...) in this QProgram to derive it from."
+                "qp.qdac.set_trigger(position='step') + qp.qdac.play(dwell=...) in this QProgram to derive it from."
             ),
         ):
             compiler.compile(qprogram=qp, qblox_buses=["readout"])
 
     def test_if_trigger_qdac_settrigger_without_preceding_dwell_raises_error(self):
         qp = QProgram()
-        qp.set_trigger(bus="qdac_flux", duration=100, position="step")
+        qp.qdac.set_trigger(bus="qdac_flux", duration=100, position="step", outputs=[1])
         with qp.if_trigger():
             with qp.average(shots=10):
                 qp.qblox.acquire(bus="readout", weights=IQPair(I=Square(1, 100), Q=Square(0, 100)))
@@ -1763,7 +1789,7 @@ class TestQBloxCompiler:
         with pytest.raises(
             ValueError,
             match=re.escape(
-                "qp.set_trigger(bus='qdac_flux', position='step') has no preceding "
+                "qp.qdac.set_trigger(bus='qdac_flux', position='step') has no preceding "
                 "qp.qdac.play(bus='qdac_flux', dwell=...) in this QProgram to derive its wait time from."
             ),
         ):
@@ -1801,14 +1827,15 @@ class TestQBloxCompiler:
 
         compiler = QbloxCompiler()
         with pytest.raises(
-            NotImplementedError, match="Conditional instructions based on a trigger can only be associated with one bus for now."
+            NotImplementedError,
+            match="Conditional instructions based on a trigger can only be associated with one bus for now.",
         ):
             compiler.compile(qprogram=qp, qblox_buses=["readout", "readout2"])
 
     def test_if_trigger_dynamic_wait_duration_raises_error(self):
         qp = QProgram()
-        duration = qp.variable(label="duration", domain=Domain.Time)
-        with qp.for_loop(variable=duration, start=4, stop=20, step=4):
+        duration = qp.variable("duration")
+        with qp.sweep(duration).from_range(4, 20, 4):
             with qp.if_trigger(expected_wait_time_ns=2252):
                 qp.wait(bus="readout", duration=duration)
                 qp.qblox.acquire(bus="readout", weights=IQPair(I=Square(1, 100), Q=Square(0, 100)))
@@ -1825,17 +1852,19 @@ class TestQBloxCompiler:
             compiler.compile(qprogram=qp, qblox_buses=["readout"])
 
     def test_if_trigger_nested_parallel_block_raises_error(self):
-        """Only qp.average(...)/qp.for_loop(...) can nest inside qp.if_trigger(); a qp.parallel(...) cannot."""
+        """Only qp.average(...) and sweeps can nest inside qp.if_trigger(); a parallel sweep cannot."""
         qp = QProgram()
+        a = qp.variable("a")
+        b = qp.variable("b")
         with qp.if_trigger(expected_wait_time_ns=2252):
-            with qp.parallel(loops=[]):
+            with qp.sweep(a).from_range(0, 1, 1) | qp.sweep(b).from_range(0, 1, 1):
                 qp.qblox.acquire(bus="readout", weights=IQPair(I=Square(1, 100), Q=Square(0, 100)))
 
         compiler = QbloxCompiler()
         with pytest.raises(
             NotImplementedError,
             match=re.escape(
-                "Parallel block cannot be nested inside qp.if_trigger() (only qp.average(...)/qp.for_loop(...) can be)."
+                "Parallel block cannot be nested inside qp.if_trigger() (only qp.average(...) and sweeps can be)."
             ),
         ):
             compiler.compile(qprogram=qp, qblox_buses=["readout"])
@@ -1850,7 +1879,7 @@ class TestQBloxCompiler:
         with pytest.raises(
             NotImplementedError,
             match=re.escape(
-                "Block block cannot be nested inside qp.if_trigger() (only qp.average(...)/qp.for_loop(...) can be)."
+                "Block block cannot be nested inside qp.if_trigger() (only qp.average(...) and sweeps can be)."
             ),
         ):
             compiler.compile(qprogram=qp, qblox_buses=["readout"])
@@ -1866,7 +1895,7 @@ class TestQBloxCompiler:
         with pytest.raises(
             NotImplementedError,
             match=re.escape(
-                "Conditional block cannot be nested inside qp.if_trigger() (only qp.average(...)/qp.for_loop(...) can be)."
+                "IfTrigger block cannot be nested inside qp.if_trigger() (only qp.average(...) and sweeps can be)."
             ),
         ):
             compiler.compile(qprogram=qp, qblox_buses=["readout"])
@@ -1919,7 +1948,7 @@ class TestQBloxCompiler:
     def test_if_trigger_qdac_settrigger_wrong_position_raises_error(self):
         qp = QProgram()
         qp.qdac.play(bus="qdac_flux", waveform=Square(1, 100), dwell=3)
-        qp.set_trigger(bus="qdac_flux", duration=100, position="start")
+        qp.qdac.set_trigger(bus="qdac_flux", duration=100, position="start", outputs=[1])
         with qp.if_trigger():
             with qp.average(shots=10):
                 qp.qblox.acquire(bus="readout", weights=IQPair(I=Square(1, 100), Q=Square(0, 100)))
@@ -1928,21 +1957,19 @@ class TestQBloxCompiler:
         with pytest.raises(
             NotImplementedError,
             match=re.escape(
-                "qp.if_trigger() requires qp.set_trigger(bus='qdac_flux', position='step'); got position='start'."
+                "qp.if_trigger() requires qp.qdac.set_trigger(bus='qdac_flux', position='step'); got position='start'."
             ),
         ):
             compiler.compile(qprogram=qp, qblox_buses=["readout"])
 
     def test_if_trigger_no_qblox_bus_raises_error(self):
+        """An if_trigger holding only QDAC operations has no real-time operation to gate: validation rejects it."""
         qp = QProgram()
         with qp.if_trigger(expected_wait_time_ns=2252):
             qp.qdac.play(bus="qdac_flux", waveform=Square(1, 100), dwell=3)
 
         compiler = QbloxCompiler()
-        with pytest.raises(
-            ValueError,
-            match=re.escape("qp.if_trigger()'s body must contain at least one instruction on a qblox bus to gate."),
-        ):
+        with pytest.raises(qprogram.ValidationError, match="empty-domain: Block 'IfTrigger' has no executable domain"):
             compiler.compile(qprogram=qp, qblox_buses=["readout"])
 
     def test_if_trigger_padding_too_small_raises_error(self):
@@ -2086,9 +2113,7 @@ class TestQBloxCompiler:
             in caplog.text
         )
 
-    def test_set_offset_with_loop(
-        self, offset_loop: QProgram
-    ):
+    def test_set_offset_with_loop(self, offset_loop: QProgram):
         compiler = QbloxCompiler()
         sequences, _ = compiler.compile(qprogram=offset_loop)
 
@@ -2219,6 +2244,20 @@ class TestQBloxCompiler:
         """
 
         assert is_q1asm_equal(sequences["drive"], drive_str)
+
+    def test_disable_autosync_survives_qp_round_trip(self, dynamic_wait_multiple_buses_with_disable_autosync: QProgram):
+        """A program read back from .qp compiles as the original: without the sync autosync would add."""
+        qp = dynamic_wait_multiple_buses_with_disable_autosync
+        loaded = QProgram.from_qp(str(qp))
+
+        sequences, _ = QbloxCompiler().compile(qprogram=qp)
+        loaded_sequences, _ = QbloxCompiler().compile(qprogram=loaded)
+        qp.qblox.disable_autosync = False
+        autosynced_sequences, _ = QbloxCompiler().compile(qprogram=qp)
+
+        for bus in ("drive", "readout"):
+            assert is_q1asm_equal(loaded_sequences[bus], sequences[bus])
+        assert not is_q1asm_equal(autosynced_sequences["drive"], sequences["drive"])
 
     def test_dynamic_wait_multiple_buses_with_disable_autosync(
         self, dynamic_wait_multiple_buses_with_disable_autosync: QProgram
@@ -3152,12 +3191,11 @@ class TestQBloxCompiler:
         with pytest.raises(ValueError, match=re.escape("smooth_duration + buffer of both I and Q must be the same.")):
             compiler.compile(qprogram=qp)
 
-    def test_play_operation_with_variable_in_waveform(self, caplog, play_operation_with_variable_in_waveform: QProgram):
+    def test_play_operation_with_variable_in_waveform(self, play_operation_with_variable_in_waveform: QProgram):
+        """A variable in a waveform's parameters is rejected by validation, where it was logged and skipped."""
         compiler = QbloxCompiler()
-        with caplog.at_level(logging.ERROR):
-            _ = compiler.compile(qprogram=play_operation_with_variable_in_waveform)
-
-        assert "Variables in waveforms are not supported in Qblox." in caplog.text
+        with pytest.raises(qprogram.ValidationError, match="qililab.variable-in-waveform"):
+            compiler.compile(qprogram=play_operation_with_variable_in_waveform)
 
     def test_delay(self, average_with_for_loop_nshots: QProgram):
         compiler = QbloxCompiler()
@@ -3363,11 +3401,10 @@ class TestQBloxCompiler:
 
         assert is_q1asm_equal(sequences["drive"], drive_str)
 
-
     def test_acquire_single_bin_different_nested_level(self, single_bin_different_depth_qp: QProgram):
         "Check that having single binned acquisitions at different nested level resets the bin index counter to 0"
         compiler = QbloxCompiler()
-        sequences,_ = compiler.compile(single_bin_different_depth_qp)
+        sequences, _ = compiler.compile(single_bin_different_depth_qp)
         readout_str = """ 
         setup:
                 wait_sync        4              
@@ -3392,7 +3429,6 @@ class TestQBloxCompiler:
         """
         assert is_q1asm_equal(sequences["readout"], readout_str)
 
-    
     def test_bus_mapping_and_acquire(self, bus_mappping_acquire):
         """Test bus mapping and acquisition together"""
         compiler = QbloxCompiler()
@@ -3419,7 +3455,10 @@ class TestQBloxCompiler:
                 stop"""
 
         assert is_q1asm_equal(sequences.sequences["readout"], readout_str)
-        assert acquisition_dict == {'Acquisition 0': {'num_bins': 2, 'index': 0}, 'Acquisition 1': {'num_bins': 1, 'index': 1}}
+        assert acquisition_dict == {
+            "Acquisition 0": {"num_bins": 2, "index": 0},
+            "Acquisition 1": {"num_bins": 1, "index": 1},
+        }
 
     def test_measure_reset(self, measure_reset_program: QProgram):
         compiler = QbloxCompiler()
@@ -3464,7 +3503,7 @@ class TestQBloxCompiler:
 
         assert is_q1asm_equal(sequences["drive"], drive_str)
         assert is_q1asm_equal(sequences["readout"], readout_str)
-        
+
     def test_dynamic_sync(self, dynamic_sync_delay: QProgram):
         compiler = QbloxCompiler()
         sequences, _ = compiler.compile(qprogram=dynamic_sync_delay)
@@ -3533,7 +3572,7 @@ class TestQBloxCompiler:
                             jge              R4, 65535, @long_wait_sync_0
                             jmp              @dynamic_sync_0
         """
-        
+
         readout_str = """
             setup:
                             wait_sync        4              
@@ -3739,7 +3778,6 @@ class TestQBloxCompiler:
         """
         assert is_q1asm_equal(sequences["readout"], readout_str)
         assert is_q1asm_equal(sequences["drive"], drive_str)
-
 
     def test_dynamic_sync_variable_expression_difference(self, dynamic_sync_variable_expression_difference: QProgram):
         compiler = QbloxCompiler()
@@ -3948,7 +3986,6 @@ class TestQBloxCompiler:
         """
         assert is_q1asm_equal(sequences["readout"], readout_str)
         assert is_q1asm_equal(sequences["drive"], drive_str)
-
 
     def test_dynamic_sync_variable_expression_sum(self, dynamic_sync_variable_expression_sum: QProgram):
         compiler = QbloxCompiler()
@@ -4355,359 +4392,596 @@ class TestQBloxCompiler:
         assert is_q1asm_equal(sequences["readout"], readout_str)
 
     def test_cryoscope(self, cryoscope_qprogram):
+        """The cryoscope of the hardware loop over time. ``T_SEP`` is a numpy integer, so the wait after the flux
+        pulse, ``POST_FLUX_BUFFER + T_SEP - time``, is a numpy number minus a variable: it must stay ``289 - time``,
+        where the former variables dropped ``time`` and waited a fixed 289 ns."""
         compiler = QbloxCompiler()
         sequences = compiler.compile(cryoscope_qprogram)
-        drive_str = """setup:
-                                wait_sync        4              
-                                set_mrk          0              
-                                upd_param        4              
-                        main: 
-                                set_awg_gain     32767, 32767   
-                                move             2000, R0       
-                        avg_0:       
-                                move             9830, R1       
-                                nop                             
-                                not              R1, R1        
-                                nop                             
-                                add              R1, 1, R1
-                                move             21, R2     
-                        loop_0:
-                                move             80, R3         
-                                move             80, R4         
-                        loop_1:
-                                play             0, 1, 40       
-                                wait             30             
-                                wait             R3             
-                                move             4, R5          
-                                add              R3, 0, R6      
-                                nop                             
-                                sub              R5, R6, R7
-                                nop                               
-                                jlt              R7, 2147483648, @dynamic_sync_0
-                                jge              R7, 4294967293, @negative_one_two_three_0
-                        after_dynamic_sync_0:
-                                wait             289            
-                                play             0, 1, 40       
-                                wait             1419           
-                                wait             65535          
-                                wait             65535          
-                                wait             65535          
-                                wait             3395           
-                                play             0, 1, 40       
-                                wait             30             
-                                wait             R3             
-                                move             4, R5          
-                                add              R3, 0, R6      
-                                nop                             
-                                sub              R5, R6, R7
-                                nop                               
-                                jlt              R7, 2147483648, @dynamic_sync_1
-                                jge              R7, 4294967293, @negative_one_two_three_1
-                        after_dynamic_sync_1:
-                                wait             289            
-                                play             0, 1, 40       
-                                wait             1419           
-                                wait             65535          
-                                wait             65535          
-                                wait             65535          
-                                wait             3395            
-                                add              R3, 1, R3      
-                                loop             R4, @loop_1    
-                                add              R1, 983, R1    
-                                loop             R2, @loop_0    
-                                loop             R0, @avg_0     
-                                set_mrk          0              
-                                upd_param        4              
-                                stop                            
-                        dynamic_sync_0:
-                                jlt              R7, 1, @after_dynamic_sync_0
-                                jlt              R7, 4, @one_two_three_0
-                                jge              R7, 65535, @long_wait_sync_0
-                                wait             R7             
-                                jmp              @after_dynamic_sync_0
-                        one_two_three_0:
-                                add              R7, 4, R7      
-                                nop                             
-                                wait             R7             
-                                jmp              @after_dynamic_sync_0
-                        negative_one_two_three_0:
-                                wait             4              
-                                jmp              @after_dynamic_sync_0
-                        long_wait_sync_0:
-                                wait             65535          
-                                sub              R7, 65535, R7
-                                nop                              
-                                jge              R7, 65535, @long_wait_sync_0
-                                jmp              @dynamic_sync_0
-                        dynamic_sync_1:
-                                jlt              R7, 1, @after_dynamic_sync_1
-                                jlt              R7, 4, @one_two_three_1
-                                jge              R7, 65535, @long_wait_sync_1
-                                wait             R7             
-                                jmp              @after_dynamic_sync_1
-                        one_two_three_1:
-                                add              R7, 4, R7      
-                                nop                             
-                                wait             R7             
-                                jmp              @after_dynamic_sync_1
-                        negative_one_two_three_1:
-                                wait             4              
-                                jmp              @after_dynamic_sync_1
-                        long_wait_sync_1:
-                                wait             65535          
-                                sub              R7, 65535, R7
-                                nop                              
-                                jge              R7, 65535, @long_wait_sync_1
-                                jmp              @dynamic_sync_1"""
+        drive_str = """
+            setup:
+                            wait_sync        4
+                            set_mrk          0
+                            upd_param        4
 
-        readout_str="""setup:
-                                wait_sync        4              
-                                set_mrk          0              
-                                upd_param        4              
-                    main: 
-                                set_awg_gain     32767, 32767 
-                                move             0, R0            
-                                move             2000, R1       
-                avg_0:
-                                move             0, R2
-                                move             9830, R3       
-                                nop                             
-                                not              R3, R3         
-                                nop                             
-                                add              R3, 1, R3      
-                                move             21, R4     
-                loop_0:
-                                move             80, R5         
-                                move             80, R6         
-                loop_1:
-                                upd_param        40
-                                wait             30
-                                move             4, R7
-                                add              R5, 0, R8
-                                nop
-                                sub              R7, R8, R9
-                                nop
-                                jlt              R9, 2147483648, @other_max_duration_0
-                                move             R8, R9
-                after_other_max_duration_0:
-                                move             0, R10
-                                nop
-                                sub              R9, R10, R11
-                                nop                        
-                                jlt              R11, 2147483648, @dynamic_sync_0
-                                jge              R11, 4294967293, @negative_one_two_three_0
-                after_dynamic_sync_0:
-                                wait             359            
-                                play             0, 0, 4        
-                                acquire_weighed  0, R2, R0, R0, 1385
-                                add              R2, 1, R2     
-                                wait             65535          
-                                wait             65535          
-                                wait             65535          
-                                wait             3465           
-                                move             4, R7          
-                                add              R5, 0, R8      
-                                nop                             
-                                sub              R7, R8, R9
-                                nop                               
-                                jlt              R9, 2147483648, @other_max_duration_1
-                                move             R8, R9         
-                after_other_max_duration_1:
-                                move             0, R12         
-                                nop                             
-                                sub              R9, R12, R11
-                                nop                             
-                                jlt              R11, 2147483648, @dynamic_sync_1
-                                jge              R11, 4294967293, @negative_one_two_three_1
-                after_dynamic_sync_1:
-                                wait             359            
-                                play             0, 0, 4        
-                                acquire_weighed  0, R2, R0, R0, 1385
-                                add              R2, 1, R2      
-                                wait             65535          
-                                wait             65535          
-                                wait             65535          
-                                wait             3395           
-                                add              R5, 1, R5      
-                                loop             R6, @loop_1    
-                                add              R3, 983, R3    
-                                loop             R4, @loop_0    
-                                loop             R1, @avg_0     
-                                set_mrk          0              
-                                upd_param        4              
-                                stop                            
-                dynamic_sync_0:
-                                jlt              R11, 1, @after_dynamic_sync_0
-                                jlt              R11, 4, @one_two_three_0
-                                jge              R11, 65535, @long_wait_sync_0
-                                wait             R11            
-                                jmp              @after_dynamic_sync_0
-                one_two_three_0:
-                                add              R11, 4, R11    
-                                nop                             
-                                wait             R11            
-                                jmp              @after_dynamic_sync_0
-                negative_one_two_three_0:
-                                wait             4              
-                                jmp              @after_dynamic_sync_0
-                long_wait_sync_0:
-                                wait             65535          
-                                sub              R11, 65535, R11
-                                nop                           
-                                jge              R11, 65535, @long_wait_sync_0
-                                jmp              @dynamic_sync_0
-                other_max_duration_0:
-                                move             R7, R9         
-                                jmp              @after_other_max_duration_0
-                dynamic_sync_1:
-                                jlt              R11, 1, @after_dynamic_sync_1
-                                jlt              R11, 4, @one_two_three_1
-                                jge              R11, 65535, @long_wait_sync_1
-                                wait             R11            
-                                jmp              @after_dynamic_sync_1
-                one_two_three_1:
-                                add              R11, 4, R11    
-                                nop                             
-                                wait             R11            
-                                jmp              @after_dynamic_sync_1
-                negative_one_two_three_1:
-                                wait             4              
-                                jmp              @after_dynamic_sync_1
-                long_wait_sync_1:
-                                wait             65535          
-                                sub              R11, 65535, R11
-                                nop                            
-                                jge              R11, 65535, @long_wait_sync_1
-                                jmp              @dynamic_sync_1
-                other_max_duration_1:
-                                move             R7, R9         
-                                jmp              @after_other_max_duration_1"""
+            main:
+                            set_awg_gain     32767, 32767
+                            move             2000, R0
+            avg_0:
+                            move             9830, R1
+                            nop
+                            not              R1, R1
+                            nop
+                            add              R1, 1, R1
+                            move             21, R2
+            loop_0:
+                            move             80, R3
+                            move             80, R4
+            loop_1:
+                            play             0, 1, 40
+                            wait             30
+                            wait             R3
+                            move             4, R5
+                            add              R3, 0, R6
+                            nop
+                            sub              R5, R6, R7
+                            nop
+                            jlt              R7, 2147483648, @dynamic_sync_0
+                            jge              R7, 4294967293, @negative_one_two_three_0
+            after_dynamic_sync_0:
+                            move             289, R8
+                            nop
+                            sub              R8, R3, R9
+                            nop
+                            wait             R9
+                            play             0, 1, 40
+                            move             4, R5
+                            add              R9, 40, R6
+                            nop
+                            sub              R5, R6, R7
+                            nop
+                            jlt              R7, 2147483648, @dynamic_sync_1
+                            jge              R7, 4294967293, @negative_one_two_three_1
+            after_dynamic_sync_1:
+                            wait             1419
+                            wait             65535
+                            wait             65535
+                            wait             65535
+                            wait             3395
+                            play             0, 1, 40
+                            wait             30
+                            wait             R3
+                            move             4, R5
+                            add              R3, 0, R6
+                            nop
+                            sub              R5, R6, R7
+                            nop
+                            jlt              R7, 2147483648, @dynamic_sync_2
+                            jge              R7, 4294967293, @negative_one_two_three_2
+            after_dynamic_sync_2:
+                            move             289, R10
+                            nop
+                            sub              R10, R3, R11
+                            nop
+                            wait             R11
+                            play             0, 1, 40
+                            move             4, R5
+                            add              R11, 40, R6
+                            nop
+                            sub              R5, R6, R7
+                            nop
+                            jlt              R7, 2147483648, @dynamic_sync_3
+                            jge              R7, 4294967293, @negative_one_two_three_3
+            after_dynamic_sync_3:
+                            wait             1419
+                            wait             65535
+                            wait             65535
+                            wait             65535
+                            wait             3395
+                            add              R3, 1, R3
+                            loop             R4, @loop_1
+                            add              R1, 983, R1
+                            loop             R2, @loop_0
+                            loop             R0, @avg_0
+                            set_mrk          0
+                            upd_param        4
+                            stop
+            dynamic_sync_0:
+                            jlt              R7, 1, @after_dynamic_sync_0
+                            jlt              R7, 4, @one_two_three_0
+                            jge              R7, 65535, @long_wait_sync_0
+                            wait             R7
+                            jmp              @after_dynamic_sync_0
+            one_two_three_0:
+                            add              R7, 4, R7
+                            nop
+                            wait             R7
+                            jmp              @after_dynamic_sync_0
+            negative_one_two_three_0:
+                            wait             4
+                            jmp              @after_dynamic_sync_0
+            long_wait_sync_0:
+                            wait             65535
+                            sub              R7, 65535, R7
+                            nop
+                            jge              R7, 65535, @long_wait_sync_0
+                            jmp              @dynamic_sync_0
+            dynamic_sync_1:
+                            jlt              R7, 1, @after_dynamic_sync_1
+                            jlt              R7, 4, @one_two_three_1
+                            jge              R7, 65535, @long_wait_sync_1
+                            wait             R7
+                            jmp              @after_dynamic_sync_1
+            one_two_three_1:
+                            add              R7, 4, R7
+                            nop
+                            wait             R7
+                            jmp              @after_dynamic_sync_1
+            negative_one_two_three_1:
+                            wait             4
+                            jmp              @after_dynamic_sync_1
+            long_wait_sync_1:
+                            wait             65535
+                            sub              R7, 65535, R7
+                            nop
+                            jge              R7, 65535, @long_wait_sync_1
+                            jmp              @dynamic_sync_1
+            dynamic_sync_2:
+                            jlt              R7, 1, @after_dynamic_sync_2
+                            jlt              R7, 4, @one_two_three_2
+                            jge              R7, 65535, @long_wait_sync_2
+                            wait             R7
+                            jmp              @after_dynamic_sync_2
+            one_two_three_2:
+                            add              R7, 4, R7
+                            nop
+                            wait             R7
+                            jmp              @after_dynamic_sync_2
+            negative_one_two_three_2:
+                            wait             4
+                            jmp              @after_dynamic_sync_2
+            long_wait_sync_2:
+                            wait             65535
+                            sub              R7, 65535, R7
+                            nop
+                            jge              R7, 65535, @long_wait_sync_2
+                            jmp              @dynamic_sync_2
+            dynamic_sync_3:
+                            jlt              R7, 1, @after_dynamic_sync_3
+                            jlt              R7, 4, @one_two_three_3
+                            jge              R7, 65535, @long_wait_sync_3
+                            wait             R7
+                            jmp              @after_dynamic_sync_3
+            one_two_three_3:
+                            add              R7, 4, R7
+                            nop
+                            wait             R7
+                            jmp              @after_dynamic_sync_3
+            negative_one_two_three_3:
+                            wait             4
+                            jmp              @after_dynamic_sync_3
+            long_wait_sync_3:
+                            wait             65535
+                            sub              R7, 65535, R7
+                            nop
+                            jge              R7, 65535, @long_wait_sync_3
+                            jmp              @dynamic_sync_3
+        """
 
-        flux_str="""setup:
-                                wait_sync        4              
-                                set_mrk          0              
-                                upd_param        4              
-                main:
-                                move             2000, R0       
-                avg_0:
-                                move             9830, R1                
-                                nop                             
-                                not              R1, R1        
-                                nop                             
-                                add              R1, 1, R1  
-                                move             21, R2    
-                loop_0:
-                                move             80, R3         
-                                move             80, R4         
-                loop_1:
-                                set_awg_gain     R1, R1
-                                upd_param        40
-                                wait             30
-                                play             0, 1, 4
-                                move             0, R5          
-                                add              R3, 0, R6      
-                                nop                             
-                                sub              R5, R6, R7
-                                nop                                
-                                jlt              R7, 2147483648, @other_max_duration_0
-                                move             R6, R7         
-                after_other_max_duration_0:
-                                move             4, R8          
-                                nop                             
-                                sub              R7, R8, R9
-                                nop                                 
-                                jlt              R9, 2147483648, @dynamic_sync_0
-                                jge              R9, 4294967293, @negative_one_two_three_0
-                after_dynamic_sync_0:
-                                play             2, 1, 4        
-                                wait             1744           
-                                wait             65535          
-                                wait             65535          
-                                wait             65535          
-                                wait             3465           
-                                play             0, 1, 4        
-                                move             0, R5          
-                                add              R3, 0, R6      
-                                nop                             
-                                sub              R5, R6, R7 
-                                nop                               
-                                jlt              R7, 2147483648, @other_max_duration_1
-                                move             R6, R7         
-                after_other_max_duration_1:
-                                move             4, R10         
-                                nop                             
-                                sub              R7, R10, R9
-                                nop                              
-                                jlt              R9, 2147483648, @dynamic_sync_1
-                                jge              R9, 4294967293, @negative_one_two_three_1
-                after_dynamic_sync_1:
-                                play             2, 1, 4        
-                                wait             1744           
-                                wait             65535          
-                                wait             65535          
-                                wait             65535          
-                                wait             3395           
-                                add              R3, 1, R3      
-                                loop             R4, @loop_1    
-                                add              R1, 983, R1    
-                                loop             R2, @loop_0    
-                                loop             R0, @avg_0     
-                                set_mrk          0              
-                                upd_param        4              
-                                stop                            
-                dynamic_sync_0:
-                                jlt              R9, 1, @after_dynamic_sync_0
-                                jlt              R9, 4, @one_two_three_0
-                                jge              R9, 65535, @long_wait_sync_0
-                                wait             R9             
-                                jmp              @after_dynamic_sync_0
-                one_two_three_0:
-                                add              R9, 4, R9      
-                                nop                             
-                                wait             R9             
-                                jmp              @after_dynamic_sync_0
-                negative_one_two_three_0:
-                                wait             4              
-                                jmp              @after_dynamic_sync_0
-                long_wait_sync_0:
-                                wait             65535          
-                                sub              R9, 65535, R9
-                                nop                             
-                                jge              R9, 65535, @long_wait_sync_0
-                                jmp              @dynamic_sync_0
-                other_max_duration_0:
-                                move             R5, R7         
-                                jmp              @after_other_max_duration_0
-                dynamic_sync_1:
-                                jlt              R9, 1, @after_dynamic_sync_1
-                                jlt              R9, 4, @one_two_three_1
-                                jge              R9, 65535, @long_wait_sync_1
-                                wait             R9             
-                                jmp              @after_dynamic_sync_1
-                one_two_three_1:
-                                add              R9, 4, R9      
-                                nop                             
-                                wait             R9             
-                                jmp              @after_dynamic_sync_1
-                negative_one_two_three_1:
-                                wait             4              
-                                jmp              @after_dynamic_sync_1
-                long_wait_sync_1:
-                                wait             65535          
-                                sub              R9, 65535, R9
-                                nop                              
-                                jge              R9, 65535, @long_wait_sync_1
-                                jmp              @dynamic_sync_1
-                other_max_duration_1:
-                                move             R5, R7         
-                                jmp              @after_other_max_duration_1
-                                
-                                """
+        readout_str = """
+            setup:
+                            wait_sync        4
+                            set_mrk          0
+                            upd_param        4
+
+            main:
+                            set_awg_gain     32767, 32767
+                            move             0, R0
+                            move             2000, R1
+            avg_0:
+                            move             0, R2
+                            move             9830, R3
+                            nop
+                            not              R3, R3
+                            nop
+                            add              R3, 1, R3
+                            move             21, R4
+            loop_0:
+                            move             80, R5
+                            move             80, R6
+            loop_1:
+                            upd_param        40
+                            wait             30
+                            move             4, R7
+                            add              R5, 0, R8
+                            nop
+                            sub              R7, R8, R9
+                            nop
+                            jlt              R9, 2147483648, @other_max_duration_0
+                            move             R8, R9
+            after_other_max_duration_0:
+                            move             0, R10
+                            nop
+                            sub              R9, R10, R11
+                            nop
+                            jlt              R11, 2147483648, @dynamic_sync_0
+                            jge              R11, 4294967293, @negative_one_two_three_0
+            after_dynamic_sync_0:
+                            move             289, R12
+                            nop
+                            sub              R12, R5, R13
+                            move             40, R7
+                            add              R13, 40, R8
+                            nop
+                            sub              R7, R8, R9
+                            nop
+                            jlt              R9, 2147483648, @other_max_duration_1
+                            move             R8, R9
+            after_other_max_duration_1:
+                            move             0, R14
+                            nop
+                            sub              R9, R14, R11
+                            nop
+                            jlt              R11, 2147483648, @dynamic_sync_1
+                            jge              R11, 4294967293, @negative_one_two_three_1
+            after_dynamic_sync_1:
+                            wait             30
+                            play             0, 0, 4
+                            acquire_weighed  0, R2, R0, R0, 1385
+                            add              R2, 1, R2
+                            wait             65535
+                            wait             65535
+                            wait             65535
+                            wait             3465
+                            move             4, R7
+                            add              R5, 0, R8
+                            nop
+                            sub              R7, R8, R9
+                            nop
+                            jlt              R9, 2147483648, @other_max_duration_2
+                            move             R8, R9
+            after_other_max_duration_2:
+                            move             0, R15
+                            nop
+                            sub              R9, R15, R11
+                            nop
+                            jlt              R11, 2147483648, @dynamic_sync_2
+                            jge              R11, 4294967293, @negative_one_two_three_2
+            after_dynamic_sync_2:
+                            move             289, R16
+                            nop
+                            sub              R16, R5, R13
+                            move             40, R7
+                            add              R13, 40, R8
+                            nop
+                            sub              R7, R8, R9
+                            nop
+                            jlt              R9, 2147483648, @other_max_duration_3
+                            move             R8, R9
+            after_other_max_duration_3:
+                            move             0, R17
+                            nop
+                            sub              R9, R17, R11
+                            nop
+                            jlt              R11, 2147483648, @dynamic_sync_3
+                            jge              R11, 4294967293, @negative_one_two_three_3
+            after_dynamic_sync_3:
+                            wait             30
+                            play             0, 0, 4
+                            acquire_weighed  0, R2, R0, R0, 1385
+                            add              R2, 1, R2
+                            wait             65535
+                            wait             65535
+                            wait             65535
+                            wait             3395
+                            add              R5, 1, R5
+                            loop             R6, @loop_1
+                            add              R3, 983, R3
+                            loop             R4, @loop_0
+                            loop             R1, @avg_0
+                            set_mrk          0
+                            upd_param        4
+                            stop
+            dynamic_sync_0:
+                            jlt              R11, 1, @after_dynamic_sync_0
+                            jlt              R11, 4, @one_two_three_0
+                            jge              R11, 65535, @long_wait_sync_0
+                            wait             R11
+                            jmp              @after_dynamic_sync_0
+            one_two_three_0:
+                            add              R11, 4, R11
+                            nop
+                            wait             R11
+                            jmp              @after_dynamic_sync_0
+            negative_one_two_three_0:
+                            wait             4
+                            jmp              @after_dynamic_sync_0
+            long_wait_sync_0:
+                            wait             65535
+                            sub              R11, 65535, R11
+                            nop
+                            jge              R11, 65535, @long_wait_sync_0
+                            jmp              @dynamic_sync_0
+            other_max_duration_0:
+                            move             R7, R9
+                            jmp              @after_other_max_duration_0
+            dynamic_sync_1:
+                            jlt              R11, 1, @after_dynamic_sync_1
+                            jlt              R11, 4, @one_two_three_1
+                            jge              R11, 65535, @long_wait_sync_1
+                            wait             R11
+                            jmp              @after_dynamic_sync_1
+            one_two_three_1:
+                            add              R11, 4, R11
+                            nop
+                            wait             R11
+                            jmp              @after_dynamic_sync_1
+            negative_one_two_three_1:
+                            wait             4
+                            jmp              @after_dynamic_sync_1
+            long_wait_sync_1:
+                            wait             65535
+                            sub              R11, 65535, R11
+                            nop
+                            jge              R11, 65535, @long_wait_sync_1
+                            jmp              @dynamic_sync_1
+            other_max_duration_1:
+                            move             R7, R9
+                            jmp              @after_other_max_duration_1
+            dynamic_sync_2:
+                            jlt              R11, 1, @after_dynamic_sync_2
+                            jlt              R11, 4, @one_two_three_2
+                            jge              R11, 65535, @long_wait_sync_2
+                            wait             R11
+                            jmp              @after_dynamic_sync_2
+            one_two_three_2:
+                            add              R11, 4, R11
+                            nop
+                            wait             R11
+                            jmp              @after_dynamic_sync_2
+            negative_one_two_three_2:
+                            wait             4
+                            jmp              @after_dynamic_sync_2
+            long_wait_sync_2:
+                            wait             65535
+                            sub              R11, 65535, R11
+                            nop
+                            jge              R11, 65535, @long_wait_sync_2
+                            jmp              @dynamic_sync_2
+            other_max_duration_2:
+                            move             R7, R9
+                            jmp              @after_other_max_duration_2
+            dynamic_sync_3:
+                            jlt              R11, 1, @after_dynamic_sync_3
+                            jlt              R11, 4, @one_two_three_3
+                            jge              R11, 65535, @long_wait_sync_3
+                            wait             R11
+                            jmp              @after_dynamic_sync_3
+            one_two_three_3:
+                            add              R11, 4, R11
+                            nop
+                            wait             R11
+                            jmp              @after_dynamic_sync_3
+            negative_one_two_three_3:
+                            wait             4
+                            jmp              @after_dynamic_sync_3
+            long_wait_sync_3:
+                            wait             65535
+                            sub              R11, 65535, R11
+                            nop
+                            jge              R11, 65535, @long_wait_sync_3
+                            jmp              @dynamic_sync_3
+            other_max_duration_3:
+                            move             R7, R9
+                            jmp              @after_other_max_duration_3
+        """
+
+        flux_str = """
+            setup:
+                            wait_sync        4
+                            set_mrk          0
+                            upd_param        4
+
+            main:
+                            move             2000, R0
+            avg_0:
+                            move             9830, R1
+                            nop
+                            not              R1, R1
+                            nop
+                            add              R1, 1, R1
+                            move             21, R2
+            loop_0:
+                            move             80, R3
+                            move             80, R4
+            loop_1:
+                            set_awg_gain     R1, R1
+                            upd_param        40
+                            wait             30
+                            play             0, 1, 4
+                            move             0, R5
+                            add              R3, 0, R6
+                            nop
+                            sub              R5, R6, R7
+                            nop
+                            jlt              R7, 2147483648, @other_max_duration_0
+                            move             R6, R7
+            after_other_max_duration_0:
+                            move             4, R8
+                            nop
+                            sub              R7, R8, R9
+                            nop
+                            jlt              R9, 2147483648, @dynamic_sync_0
+                            jge              R9, 4294967293, @negative_one_two_three_0
+            after_dynamic_sync_0:
+                            play             2, 1, 4
+                            move             289, R10
+                            nop
+                            sub              R10, R3, R11
+                            move             40, R5
+                            add              R11, 40, R6
+                            nop
+                            sub              R5, R6, R7
+                            nop
+                            jlt              R7, 2147483648, @other_max_duration_1
+                            move             R6, R7
+            after_other_max_duration_1:
+                            move             4, R12
+                            nop
+                            sub              R7, R12, R9
+                            nop
+                            jlt              R9, 2147483648, @dynamic_sync_1
+                            jge              R9, 4294967293, @negative_one_two_three_1
+            after_dynamic_sync_1:
+                            wait             1419
+                            wait             65535
+                            wait             65535
+                            wait             65535
+                            wait             3465
+                            play             0, 1, 4
+                            move             0, R5
+                            add              R3, 0, R6
+                            nop
+                            sub              R5, R6, R7
+                            nop
+                            jlt              R7, 2147483648, @other_max_duration_2
+                            move             R6, R7
+            after_other_max_duration_2:
+                            move             4, R13
+                            nop
+                            sub              R7, R13, R9
+                            nop
+                            jlt              R9, 2147483648, @dynamic_sync_2
+                            jge              R9, 4294967293, @negative_one_two_three_2
+            after_dynamic_sync_2:
+                            play             2, 1, 4
+                            move             289, R14
+                            nop
+                            sub              R14, R3, R11
+                            move             40, R5
+                            add              R11, 40, R6
+                            nop
+                            sub              R5, R6, R7
+                            nop
+                            jlt              R7, 2147483648, @other_max_duration_3
+                            move             R6, R7
+            after_other_max_duration_3:
+                            move             4, R15
+                            nop
+                            sub              R7, R15, R9
+                            nop
+                            jlt              R9, 2147483648, @dynamic_sync_3
+                            jge              R9, 4294967293, @negative_one_two_three_3
+            after_dynamic_sync_3:
+                            wait             1419
+                            wait             65535
+                            wait             65535
+                            wait             65535
+                            wait             3395
+                            add              R3, 1, R3
+                            loop             R4, @loop_1
+                            add              R1, 983, R1
+                            loop             R2, @loop_0
+                            loop             R0, @avg_0
+                            set_mrk          0
+                            upd_param        4
+                            stop
+            dynamic_sync_0:
+                            jlt              R9, 1, @after_dynamic_sync_0
+                            jlt              R9, 4, @one_two_three_0
+                            jge              R9, 65535, @long_wait_sync_0
+                            wait             R9
+                            jmp              @after_dynamic_sync_0
+            one_two_three_0:
+                            add              R9, 4, R9
+                            nop
+                            wait             R9
+                            jmp              @after_dynamic_sync_0
+            negative_one_two_three_0:
+                            wait             4
+                            jmp              @after_dynamic_sync_0
+            long_wait_sync_0:
+                            wait             65535
+                            sub              R9, 65535, R9
+                            nop
+                            jge              R9, 65535, @long_wait_sync_0
+                            jmp              @dynamic_sync_0
+            other_max_duration_0:
+                            move             R5, R7
+                            jmp              @after_other_max_duration_0
+            dynamic_sync_1:
+                            jlt              R9, 1, @after_dynamic_sync_1
+                            jlt              R9, 4, @one_two_three_1
+                            jge              R9, 65535, @long_wait_sync_1
+                            wait             R9
+                            jmp              @after_dynamic_sync_1
+            one_two_three_1:
+                            add              R9, 4, R9
+                            nop
+                            wait             R9
+                            jmp              @after_dynamic_sync_1
+            negative_one_two_three_1:
+                            wait             4
+                            jmp              @after_dynamic_sync_1
+            long_wait_sync_1:
+                            wait             65535
+                            sub              R9, 65535, R9
+                            nop
+                            jge              R9, 65535, @long_wait_sync_1
+                            jmp              @dynamic_sync_1
+            other_max_duration_1:
+                            move             R5, R7
+                            jmp              @after_other_max_duration_1
+            dynamic_sync_2:
+                            jlt              R9, 1, @after_dynamic_sync_2
+                            jlt              R9, 4, @one_two_three_2
+                            jge              R9, 65535, @long_wait_sync_2
+                            wait             R9
+                            jmp              @after_dynamic_sync_2
+            one_two_three_2:
+                            add              R9, 4, R9
+                            nop
+                            wait             R9
+                            jmp              @after_dynamic_sync_2
+            negative_one_two_three_2:
+                            wait             4
+                            jmp              @after_dynamic_sync_2
+            long_wait_sync_2:
+                            wait             65535
+                            sub              R9, 65535, R9
+                            nop
+                            jge              R9, 65535, @long_wait_sync_2
+                            jmp              @dynamic_sync_2
+            other_max_duration_2:
+                            move             R5, R7
+                            jmp              @after_other_max_duration_2
+            dynamic_sync_3:
+                            jlt              R9, 1, @after_dynamic_sync_3
+                            jlt              R9, 4, @one_two_three_3
+                            jge              R9, 65535, @long_wait_sync_3
+                            wait             R9
+                            jmp              @after_dynamic_sync_3
+            one_two_three_3:
+                            add              R9, 4, R9
+                            nop
+                            wait             R9
+                            jmp              @after_dynamic_sync_3
+            negative_one_two_three_3:
+                            wait             4
+                            jmp              @after_dynamic_sync_3
+            long_wait_sync_3:
+                            wait             65535
+                            sub              R9, 65535, R9
+                            nop
+                            jge              R9, 65535, @long_wait_sync_3
+                            jmp              @dynamic_sync_3
+            other_max_duration_3:
+                            move             R5, R7
+                            jmp              @after_other_max_duration_3
+        """
 
         assert is_q1asm_equal(sequences.sequences["drive"], drive_str)
         assert is_q1asm_equal(sequences.sequences["readout"], readout_str)
         assert is_q1asm_equal(sequences.sequences["flux"], flux_str)
-
 
     def test_dynamic_wait_three_buses_dynamic_static(self, dynamic_wait_three_buses_dynamic_static):
         compiler = QbloxCompiler()
@@ -4805,7 +5079,7 @@ class TestQBloxCompiler:
                 other_max_duration_1:
                                 move             R2, R4         
                                 jmp              @after_other_max_duration_1"""
-        
+
         assert is_q1asm_equal(sequences.sequences["flux"], flux_str)
 
     def test_dynamic_wait_three_buses_static_static(self, dynamic_wait_three_buses_static_static):
@@ -4868,13 +5142,16 @@ class TestQBloxCompiler:
                                     jmp              @after_other_max_duration_0"""
         assert is_q1asm_equal(sequences.sequences["flux"], flux_str)
 
-    def test_measure_reset_calibration_and_mapping(self, measure_reset_calibrated_bus_mapping: QProgram, calibration_reset: Calibration):
+    def test_measure_reset_calibration_and_mapping(
+        self, measure_reset_calibrated_bus_mapping: QProgram, calibration_reset: Calibration
+    ):
         compiler = QbloxCompiler()
 
         bus_mapping = {"drive_bus": "drive_q0_bus", "readout_bus": "readout_q0_bus"}
 
-
-        sequences, _ = compiler.compile(qprogram=measure_reset_calibrated_bus_mapping, bus_mapping=bus_mapping, calibration=calibration_reset)
+        sequences, _ = compiler.compile(
+            qprogram=measure_reset_calibrated_bus_mapping, bus_mapping=bus_mapping, calibration=calibration_reset
+        )
 
         assert len(sequences) == 2
         assert "drive_q0_bus" in sequences
@@ -4938,11 +5215,9 @@ class TestQBloxCompiler:
     def test_parallel_loop_wait_start_below_minimum_is_clamped(self, caplog):
         drag_pair = IQDrag(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=1.2)
         qp = QProgram()
-        duration = qp.variable(label="time", domain=Domain.Time)
-        gain = qp.variable(label="gain", domain=Domain.Voltage)
-        duration_loop = ForLoop(variable=duration, start=0, stop=100, step=10)
-        gain_loop = ForLoop(variable=gain, start=0, stop=1, step=0.1)
-        with qp.parallel(loops=[duration_loop, gain_loop]):
+        duration = qp.variable("time")
+        gain = qp.variable("gain")
+        with qp.sweep(duration).from_range(0, 100, 10) | qp.sweep(gain).from_range(0, 1, 0.1) as parallel:
             qp.set_gain(bus="drive", gain=gain)
             qp.play(bus="drive", waveform=drag_pair)
             qp.wait(bus="drive", duration=duration)
@@ -4953,8 +5228,9 @@ class TestQBloxCompiler:
 
         assert "Wait duration 0 ns is below the Q1ASM minimum (4 ns), clamping to 4 ns." in caplog.text
         # The compiler clamps its own copy: the caller's loops are unchanged
-        assert duration_loop.start == 0
-        assert gain_loop.start == 0
+        duration_loop, gain_loop = parallel.loops
+        assert duration_loop.source.start == 0
+        assert gain_loop.source.start == 0
 
         expected = """
             setup:
@@ -4982,11 +5258,10 @@ class TestQBloxCompiler:
     def test_parallel_loop_wait_stop_below_minimum_is_clamped(self, caplog):
         drag_pair = IQDrag(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=1.2)
         qp = QProgram()
-        duration = qp.variable(label="time", domain=Domain.Time)
-        gain = qp.variable(label="gain", domain=Domain.Voltage)
-        duration_loop = ForLoop(variable=duration, start=100, stop=0, step=-25)
-        gain_loop = ForLoop(variable=gain, start=0, stop=1, step=0.1)
-        with qp.parallel(loops=[duration_loop, gain_loop]):
+        duration = qp.variable("time")
+        gain = qp.variable("gain")
+        # Parallel loops must have the same number of points: 5 each
+        with qp.sweep(duration).from_range(100, 0, -25) | qp.sweep(gain).from_range(0, 0.4, 0.1) as parallel:
             qp.set_gain(bus="drive", gain=gain)
             qp.play(bus="drive", waveform=drag_pair)
             qp.wait(bus="drive", duration=duration)
@@ -4997,8 +5272,9 @@ class TestQBloxCompiler:
 
         assert "Wait duration 0 ns is below the Q1ASM minimum (4 ns), clamping to 4 ns." in caplog.text
         # The compiler clamps its own copy: the caller's loop is unchanged
-        assert duration_loop.start == 100
-        assert duration_loop.stop == 0
+        duration_loop = parallel.loops[0]
+        assert duration_loop.source.start == 100
+        assert duration_loop.source.stop == 0
 
         expected = """
             setup:
@@ -5025,8 +5301,8 @@ class TestQBloxCompiler:
 
     def test_for_loop_wait_stop_below_minimum_is_clamped(self, caplog):
         qp = QProgram()
-        duration = qp.variable(label="time", domain=Domain.Time)
-        with qp.for_loop(variable=duration, start=100, stop=0, step=-25) as loop:
+        duration = qp.variable("time")
+        with qp.sweep(duration).from_range(100, 0, -25) as loop:
             qp.wait(bus="drive", duration=duration)
 
         compiler = QbloxCompiler()
@@ -5035,8 +5311,8 @@ class TestQBloxCompiler:
 
         assert "Wait duration 0 ns is below the Q1ASM minimum (4 ns), clamping to 4 ns." in caplog.text
         # The compiler clamps its own copy: the caller's loop is unchanged
-        assert loop.start == 100
-        assert loop.stop == 0
+        assert loop.source.start == 100
+        assert loop.source.stop == 0
 
         expected = """
             setup:
@@ -5059,8 +5335,8 @@ class TestQBloxCompiler:
 
     def test_set_phase_with_variable_uses_register(self):
         qp = QProgram()
-        phase = qp.variable(label="phase", domain=Domain.Phase)
-        with qp.for_loop(variable=phase, start=0, stop=0.5, step=0.1):
+        phase = qp.variable("phase")
+        with qp.sweep(phase).from_range(0, 0.5, 0.1):
             qp.set_phase(bus="drive", phase=phase)
 
         compiler = QbloxCompiler()
@@ -5129,7 +5405,7 @@ class TestQBloxCompiler:
 
     def test_wait_trigger_duration_zero_is_clamped_to_minimum(self, caplog):
         qp = QProgram()
-        qp.wait_trigger(bus="drive", duration=0)
+        qp.qblox.wait_trigger(bus="drive", duration=0)
         compiler = QbloxCompiler()
         with caplog.at_level(logging.WARNING):
             sequences, _ = compiler.compile(qprogram=qp)
@@ -5151,7 +5427,7 @@ class TestQBloxCompiler:
 
     def test_wait_trigger_duration_below_minimum_is_clamped(self, caplog):
         qp = QProgram()
-        qp.wait_trigger(bus="drive", duration=2)
+        qp.qblox.wait_trigger(bus="drive", duration=2)
         compiler = QbloxCompiler()
         with caplog.at_level(logging.WARNING):
             sequences, _ = compiler.compile(qprogram=qp)
@@ -5173,7 +5449,7 @@ class TestQBloxCompiler:
         """Passing a port on a Qblox bus is ignored: the wait always targets the external trigger
         address (EXT_TRIGGER_ADDRESS = 15), and a warning is emitted (see QHC-1593)."""
         qp = QProgram()
-        qp.wait_trigger(bus="drive", duration=100, port=7)
+        qp.qblox.wait_trigger(bus="drive", duration=100, port=7)
         compiler = QbloxCompiler()
         with caplog.at_level(logging.WARNING):
             sequences, _ = compiler.compile(qprogram=qp)
@@ -5194,7 +5470,7 @@ class TestQBloxCompiler:
     def test_wait_trigger_without_port_on_qblox_does_not_warn(self, caplog):
         """Omitting the port (the expected usage on Qblox) must not emit the port warning."""
         qp = QProgram()
-        qp.wait_trigger(bus="drive", duration=100)
+        qp.qblox.wait_trigger(bus="drive", duration=100)
         compiler = QbloxCompiler()
         with caplog.at_level(logging.WARNING):
             compiler.compile(qprogram=qp)
@@ -5204,7 +5480,7 @@ class TestQBloxCompiler:
         """A single-bus wait_trigger flushing a pending upd_param must not emit a wait_sync."""
         qp = QProgram()
         qp.set_frequency(bus="drive", frequency=1e6)
-        qp.wait_trigger(bus="drive", duration=6)
+        qp.qblox.wait_trigger(bus="drive", duration=6)
         compiler = QbloxCompiler()
         sequences, _ = compiler.compile(qprogram=qp)
         expected = """
@@ -5226,7 +5502,7 @@ class TestQBloxCompiler:
         """A single-bus long wait_trigger flushing a pending upd_param must not emit a wait_sync."""
         qp = QProgram()
         qp.set_frequency(bus="drive", frequency=1e6)
-        qp.wait_trigger(bus="drive", duration=70000)
+        qp.qblox.wait_trigger(bus="drive", duration=70000)
         compiler = QbloxCompiler()
         sequences, _ = compiler.compile(qprogram=qp)
         expected = """
@@ -5292,10 +5568,22 @@ class TestQBloxCompiler:
         assert result is None
 
     def test_get_conversion_instructions_known_operations(self):
-        assert QbloxCompiler._get_qpysequence_conversion_instructions(SetFrequency("drive", 1e6)) is QPyInstructions.SetFrequencyHz
-        assert QbloxCompiler._get_qpysequence_conversion_instructions(SetPhase("drive", 0.5)) is QPyInstructions.SetPhaseRad
-        assert QbloxCompiler._get_qpysequence_conversion_instructions(SetGain("drive", 0.5)) is QPyInstructions.SetNormalisedGain
-        assert QbloxCompiler._get_qpysequence_conversion_instructions(SetOffset("drive", 0.5)) is QPyInstructions.SetNormalisedOffs
+        assert (
+            QbloxCompiler._get_qpysequence_conversion_instructions(SetFrequency("drive", 1e6))
+            is QPyInstructions.SetFrequencyHz
+        )
+        assert (
+            QbloxCompiler._get_qpysequence_conversion_instructions(SetPhase("drive", 0.5))
+            is QPyInstructions.SetPhaseRad
+        )
+        assert (
+            QbloxCompiler._get_qpysequence_conversion_instructions(SetGain("drive", 0.5))
+            is QPyInstructions.SetNormalisedGain
+        )
+        assert (
+            QbloxCompiler._get_qpysequence_conversion_instructions(SetOffset("drive", 0.5))
+            is QPyInstructions.SetNormalisedOffs
+        )
         assert QbloxCompiler._get_qpysequence_conversion_instructions(Wait("drive", 100)) is None
 
     def test_get_conversion_instructions_unknown_raises_value_error(self):
@@ -5303,7 +5591,6 @@ class TestQBloxCompiler:
         with pytest.raises(ValueError, match="ResetPhase does not support variable sweep in a loop."):
             QbloxCompiler._get_qpysequence_conversion_instructions(operation)
 
-    
     def test_variable_expression_one_gain(self, variable_expression_one_gain: QProgram):
         compiler = QbloxCompiler()
         sequences, _ = compiler.compile(qprogram=variable_expression_one_gain)
@@ -5370,7 +5657,6 @@ class TestQBloxCompiler:
                             stop                
         """
         assert is_q1asm_equal(sequences["drive"], drive_str)
-
 
     def test_variable_expression_offset(self, variable_expression_offset: QProgram):
         compiler = QbloxCompiler()
@@ -5439,14 +5725,24 @@ class TestQBloxCompiler:
         """
         assert is_q1asm_equal(sequences["drive"], drive_str)
 
-    def test_variable_expression_two_offset_raise_error_offseti_variable_expression(self, variable_expression_two_offset_offseti_variable_expression: QProgram):
+    def test_variable_expression_two_offset_raise_error_offseti_variable_expression(
+        self, variable_expression_two_offset_offseti_variable_expression: QProgram
+    ):
         compiler = QbloxCompiler()
-        with pytest.raises(NotImplementedError, match="Having a different offset for I and Q whilst using VariableExpressions is not supported."):
+        with pytest.raises(
+            NotImplementedError,
+            match="Having a different offset for I and Q whilst using VariableExpressions is not supported.",
+        ):
             _ = compiler.compile(qprogram=variable_expression_two_offset_offseti_variable_expression)
 
-    def test_variable_expression_two_offset_raise_error_offsetq_variable_expression(self, variable_expression_two_offset_offsetq_variable_expression: QProgram):
+    def test_variable_expression_two_offset_raise_error_offsetq_variable_expression(
+        self, variable_expression_two_offset_offsetq_variable_expression: QProgram
+    ):
         compiler = QbloxCompiler()
-        with pytest.raises(NotImplementedError, match="Having a different offset for I and Q whilst using VariableExpressions is not supported."):
+        with pytest.raises(
+            NotImplementedError,
+            match="Having a different offset for I and Q whilst using VariableExpressions is not supported.",
+        ):
             _ = compiler.compile(qprogram=variable_expression_two_offset_offsetq_variable_expression)
 
     def test_variable_expression_two_gains(self, variable_expression_two_gains: QProgram):
@@ -5494,8 +5790,8 @@ class TestQBloxCompiler:
         averaged physical-unit step -- the two disagree by up to 1 LSB and drift in opposite
         directions depending on sweep direction."""
         qp = QProgram()
-        gain = qp.variable(label="gain", domain=Domain.Voltage)
-        with qp.for_loop(variable=gain, start=1.0, stop=-1.0, step=-2 / 3):
+        gain = qp.variable("gain")
+        with qp.sweep(gain).from_range(1.0, -1.0, -2 / 3):
             qp.set_gain(bus="drive", gain=gain)
 
         compiler = QbloxCompiler()
@@ -5525,8 +5821,8 @@ class TestQBloxCompiler:
         irrational-derived -- exercises the float round-trip nudge needed to reproduce the exact
         pre-migration integer step without going through qpysequence's own scaling code."""
         qp = QProgram()
-        phase = qp.variable(label="phase", domain=Domain.Phase)
-        with qp.for_loop(variable=phase, start=2 * np.pi, stop=0.0, step=-2 * np.pi / 3):
+        phase = qp.variable("phase")
+        with qp.sweep(phase).from_range(2 * np.pi, 0.0, -2 * np.pi / 3):
             qp.set_phase(bus="drive", phase=phase)
 
         compiler = QbloxCompiler()
@@ -5561,7 +5857,7 @@ class TestQBloxCompiler:
 
         for bus in sequences:
             assert isinstance(sequences[bus], QPy.Sequence)
-            
+
         flux1_str = """
         setup:
                 wait_sync        4              
@@ -6114,7 +6410,7 @@ class TestQBloxCompiler:
 
         assert is_q1asm_equal(sequences["flux1"], flux1_str)
         assert is_q1asm_equal(sequences["flux2"], flux2_str)
-        
+
     def test_non_linear_crosstalk_compensation_double_gain_loop(
         self, non_linear_crosstalk_qprogram_double_gain_loop: QProgram
     ):
@@ -6181,7 +6477,7 @@ class TestQBloxCompiler:
 
         assert is_q1asm_equal(sequences["flux1"], flux1_str)
         assert is_q1asm_equal(sequences["flux2"], flux2_str)
-        
+
     def test_crosstalk_compensation_gain_loop(self, crosstalk_qprogram_gain_loop: QProgram):
 
         inverse_xtalk_array = np.linalg.inv([[1, 0.5], [0.5, 1]])
@@ -6189,11 +6485,13 @@ class TestQBloxCompiler:
         qblox_buses = ["flux1", "flux2", "drive", "readout"]
 
         compiler = QbloxCompiler()
-        sequences, _ = compiler.compile(qprogram=crosstalk_qprogram_gain_loop, crosstalk=crosstalk, qblox_buses=qblox_buses)
+        sequences, _ = compiler.compile(
+            qprogram=crosstalk_qprogram_gain_loop, crosstalk=crosstalk, qblox_buses=qblox_buses
+        )
 
         for bus in sequences:
             assert isinstance(sequences[bus], QPy.Sequence)
-            
+
         flux1_str = """
         setup:
                 wait_sync        4              
@@ -6301,7 +6599,7 @@ class TestQBloxCompiler:
 
         for bus in compiled_qblox.sequences:
             assert isinstance(compiled_qblox.sequences[bus], QPy.Sequence)
-            
+
         flux1_str = """
         setup:
                 wait_sync        4              
@@ -6334,25 +6632,25 @@ class TestQBloxCompiler:
                 upd_param        4              
                 stop  
         """
-        
+
         # 1st 2 plays being Square
         assert isinstance(compiled_qblox.qprogram.body.elements[0].waveform, Square)
         assert compiled_qblox.qprogram.body.elements[0].bus == "flux2"
         assert isinstance(compiled_qblox.qprogram.body.elements[1].waveform, Square)
         assert compiled_qblox.qprogram.body.elements[1].bus == "flux1"
-        
+
         # 2nd 2 plays being FlatTop
         assert isinstance(compiled_qblox.qprogram.body.elements[2].waveform, FlatTop)
         assert compiled_qblox.qprogram.body.elements[2].bus == "flux2"
         assert isinstance(compiled_qblox.qprogram.body.elements[3].waveform, FlatTop)
         assert compiled_qblox.qprogram.body.elements[3].bus == "flux1"
-        
+
         # 3rd 2 plays being ARbitrary
         assert isinstance(compiled_qblox.qprogram.body.elements[4].waveform, Arbitrary)
         assert compiled_qblox.qprogram.body.elements[4].bus == "flux2"
         assert isinstance(compiled_qblox.qprogram.body.elements[5].waveform, Arbitrary)
         assert compiled_qblox.qprogram.body.elements[5].bus == "flux1"
-        
+
         # Last 2 plays being Arbitrary (FlatTop + Square)
         assert isinstance(compiled_qblox.qprogram.body.elements[8].waveform, Arbitrary)
         assert compiled_qblox.qprogram.body.elements[8].bus == "flux1"
@@ -6361,7 +6659,7 @@ class TestQBloxCompiler:
 
         assert is_q1asm_equal(compiled_qblox.sequences["flux1"], flux1_str)
         assert is_q1asm_equal(compiled_qblox.sequences["flux2"], flux2_str)
-        
+
     def test_crosstalk_compensation_parallel(self, crosstalk_qprogram_parallel: QProgram):
 
         inverse_xtalk_array = np.linalg.inv([[1, 0.5], [0.5, 1]])
@@ -6372,7 +6670,7 @@ class TestQBloxCompiler:
 
         for bus in sequences:
             assert isinstance(sequences[bus], QPy.Sequence)
-            
+
         flux1_str = """
         setup:
                 wait_sync        4
@@ -6436,8 +6734,7 @@ class TestQBloxCompiler:
         assert is_q1asm_equal(sequences["flux2"], flux2_str)
 
     def test_crosstalk_compensation_double_loop_gain(self, crosstalk_qprogram_double_gain_loop: QProgram):
-        """Test to create double loop qprogram with crosstalk. 
-        """
+        """Test to create double loop qprogram with crosstalk."""
         inverse_xtalk_array = np.linalg.inv([[1, 0.5], [0.5, 1]])
         crosstalk = CrosstalkMatrix().from_array(["flux1", "flux2"], inverse_xtalk_array)
 
@@ -6510,8 +6807,7 @@ class TestQBloxCompiler:
         assert is_q1asm_equal(sequences["flux2"], flux2_gain)
 
     def test_crosstalk_compensation_double_loop_offset(self, crosstalk_qprogram_double_offset_loop: QProgram):
-        """Test to create double loop qprogram with crosstalk. 
-        """
+        """Test to create double loop qprogram with crosstalk."""
         inverse_xtalk_array = np.linalg.inv([[1, 0.5], [0.5, 1]])
         crosstalk = CrosstalkMatrix().from_array(["flux1", "flux2"], inverse_xtalk_array)
 
@@ -6580,7 +6876,9 @@ class TestQBloxCompiler:
         assert is_q1asm_equal(sequences["flux1"], flux1_offset)
         assert is_q1asm_equal(sequences["flux2"], flux2_offset)
 
-    def test_crosstalk_compensation_through_calibration(self, crosstalk_qprogram: QProgram, calibration_crosstalk: Calibration):
+    def test_crosstalk_compensation_through_calibration(
+        self, crosstalk_qprogram: QProgram, calibration_crosstalk: Calibration
+    ):
 
         compiler = QbloxCompiler()
         sequences, _ = compiler.compile(qprogram=crosstalk_qprogram, calibration=calibration_crosstalk)
@@ -6669,7 +6967,7 @@ class TestQBloxCompiler:
         square_wf = Square(amplitude=0.1, duration=50)
         qp.qblox.play(bus="flux1", waveform=square_wf, wait_time=10)
         qp.qblox.play(bus="flux2", waveform=square_wf, wait_time=20)
-        
+
         compiler = QbloxCompiler()
         with pytest.raises(ValueError, match="Play elements must be the same for the same play pulse."):
             compiler.compile(qprogram=qp, crosstalk=crosstalk)
@@ -6680,7 +6978,7 @@ class TestQBloxCompiler:
         square_wf_wrong = Square(amplitude=0.1, duration=500)
         qp.play(bus="flux1", waveform=square_wf)
         qp.play(bus="flux2", waveform=square_wf_wrong)
-        
+
         compiler = QbloxCompiler()
         with pytest.raises(ValueError, match="could not be broadcast together"):
             compiler.compile(qprogram=qp, crosstalk=crosstalk)
@@ -6688,21 +6986,22 @@ class TestQBloxCompiler:
         # Raise error for FlatTop pulses with different elements (duration, smooth_duration or buffer)
         qp = QProgram()
         flattop_wf = FlatTop(amplitude=0.1, duration=49, smooth_duration=10)
-        flattop_wf_wrong  = FlatTop(amplitude=0.1, duration=49, smooth_duration=20)
+        flattop_wf_wrong = FlatTop(amplitude=0.1, duration=49, smooth_duration=20)
         qp.play(bus="flux1", waveform=flattop_wf)
         qp.play(bus="flux2", waveform=flattop_wf_wrong)
-        
+
         compiler = QbloxCompiler()
         with pytest.raises(ValueError, match="FlatTop parameters must be the same for all compensated pulses."):
             compiler.compile(qprogram=qp, crosstalk=crosstalk)
 
-        # Raise error for Arbitrary pulse with of one single point.
+        # Raise error for Arbitrary pulse with of one single point: qprogram's Arbitrary stores its samples as an
+        # array, so the compensated single-sample pulse reaches Q1ASM, where a 1 ns play is out of bounds.
         qp = QProgram()
         arbitrary = Arbitrary(samples=1)
         qp.play(bus="flux1", waveform=arbitrary)
-        
+
         compiler = QbloxCompiler()
-        with pytest.raises(ValueError, match="Arbitrary samples must be an array."):
+        with pytest.raises(ValueError, match=re.escape("play: 'duration' must be >= 4, received 1.")):
             compiler.compile(qprogram=qp, crosstalk=crosstalk)
 
     def test_crosstalk_compensation_wrong_for_loops_raise_errors(self):
@@ -6712,16 +7011,12 @@ class TestQBloxCompiler:
         crosstalk = CrosstalkMatrix().from_array(["flux1", "flux2"], inverse_xtalk_array)
 
         qp = QProgram()
-        offset = qp.variable(label="offset", domain=Domain.Voltage)
-        # This for loop is empty as the steps point to the wrong direction
-        with qp.for_loop(variable=offset, start=0, stop=0.1, step=-0.01):
-            qp.set_offset(bus="flux1", offset_path0=offset)
-            qp.wait(bus="flux1", duration=10)
-            qp.wait(bus="flux2", duration=10)
-        
-        compiler = QbloxCompiler()
-        with pytest.raises(ValueError, match="Parameters of the ForLoop not assigned correctly. Please check start, stop and step values."):
-            compiler.compile(qprogram=qp, crosstalk=crosstalk)
+        offset = qp.variable("offset")
+        # This for loop is empty as the steps point to the wrong direction: the loop can't even be built
+        with pytest.raises(
+            qprogram.ValidationError, match=re.escape("Range step -0.01 moves away from stop (0.0 -> 0.1)")
+        ):
+            qp.for_loop(variable=offset, start=0, stop=0.1, step=-0.01)
 
     def test_crosstalk_compensation_measure_reset_raise_errors(self):
         """Test the error that raises when the for loop parameter are incorrectly introduced."""
@@ -6741,9 +7036,12 @@ class TestQBloxCompiler:
             reset_pulse=square_wf,
             trigger_address=1,
         )
-        
+
         compiler = QbloxCompiler()
-        with pytest.raises(TypeError, match=re.escape("qprogram.measure_reset() cannot be used in conjunction with crosstalk compensation.")):
+        with pytest.raises(
+            TypeError,
+            match=re.escape("qprogram.measure_reset() cannot be used in conjunction with crosstalk compensation."),
+        ):
             compiler.compile(qprogram=qp, crosstalk=crosstalk)
 
     def test_bus_distortions_applied_at_compile_time(self):
@@ -7029,10 +7327,9 @@ class TestQBloxCompiler:
         np.testing.assert_array_equal(waveforms[1].data, np.zeros(400))
 
     @pytest.mark.parametrize(
-        "domain, start, stop, step, body, drive_str",
+        "start, stop, step, body, drive_str",
         [
             pytest.param(
-                Domain.Voltage,
                 0.0,
                 1.0,
                 0.3,
@@ -7058,7 +7355,6 @@ class TestQBloxCompiler:
                 id="gain_ascending",
             ),
             pytest.param(
-                Domain.Voltage,
                 1.0,
                 0.0,
                 -0.3,
@@ -7084,7 +7380,6 @@ class TestQBloxCompiler:
                 id="gain_descending",
             ),
             pytest.param(
-                Domain.Frequency,
                 10e6,
                 55e6,
                 10e6,
@@ -7110,7 +7405,6 @@ class TestQBloxCompiler:
                 id="frequency_ascending",
             ),
             pytest.param(
-                Domain.Time,
                 100,
                 250,
                 40,
@@ -7136,7 +7430,6 @@ class TestQBloxCompiler:
                 id="wait_ascending",
             ),
             pytest.param(
-                Domain.Phase,
                 3.0,
                 0.0,
                 -0.7,
@@ -7162,7 +7455,6 @@ class TestQBloxCompiler:
                 id="phase_descending",
             ),
             pytest.param(
-                Domain.Voltage,
                 0.5,
                 -0.5,
                 -0.3,
@@ -7188,7 +7480,6 @@ class TestQBloxCompiler:
                 id="offset_descending",
             ),
             pytest.param(
-                Domain.Voltage,
                 0.5,
                 0.5,
                 0.1,
@@ -7213,7 +7504,6 @@ class TestQBloxCompiler:
                 id="gain_start_equals_stop",
             ),
             pytest.param(
-                Domain.Voltage,
                 0.0,
                 0.05,
                 0.1,
@@ -7238,7 +7528,6 @@ class TestQBloxCompiler:
                 id="gain_step_larger_than_range",
             ),
             pytest.param(
-                Domain.Time,
                 100,
                 100,
                 10,
@@ -7263,7 +7552,6 @@ class TestQBloxCompiler:
                 id="wait_start_equals_stop",
             ),
             pytest.param(
-                Domain.Time,
                 100,
                 150,
                 100,
@@ -7288,7 +7576,6 @@ class TestQBloxCompiler:
                 id="wait_step_larger_than_range",
             ),
             pytest.param(
-                Domain.Phase,
                 1.0,
                 1.0,
                 -0.1,
@@ -7314,15 +7601,19 @@ class TestQBloxCompiler:
             ),
         ],
     )
-    def test_for_loop_number_of_points(self, domain, start, stop, step, body, drive_str):
-        """When the step doesn't divide the range, the number of points is rounded down in both directions, and the
-        register step is stretched so the last point lands on ``stop``. A single point (``start == stop``, or a step
-        larger than the range) runs one iteration at ``start``."""
+    def test_for_loop_number_of_points(self, start, stop, step, body, drive_str):
+        """When the step doesn't divide the range, the deprecated ``qp.for_loop`` rounds the number of points down in
+        both directions, and the register step is stretched so the last point lands on ``stop``. A single point
+        (``start == stop``, or a step larger than the range) runs one iteration at ``start``."""
         qp = QProgram()
-        variable = qp.variable(label="variable", domain=domain)
-        with qp.for_loop(variable=variable, start=start, stop=stop, step=step):
+        variable = qp.variable("variable")
+        with pytest.warns(FutureWarning, match="qp.for_loop is deprecated"):
+            loop = qp.for_loop(variable=variable, start=start, stop=stop, step=step)
+        with loop:
             body(qp, variable)
-            qp.play(bus="drive", waveform=IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40)))
+            qp.play(
+                bus="drive", waveform=IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
+            )
 
         compiler = QbloxCompiler()
         sequences, _ = compiler.compile(qprogram=qp)
@@ -7330,13 +7621,14 @@ class TestQBloxCompiler:
         assert is_q1asm_equal(sequences["drive"], drive_str)
 
     def test_parallel_loops_with_single_point_loop(self):
-        """A parallel block with a single-point loop runs one iteration, at the start of every loop."""
+        """A parallel block of single-point loops runs one iteration, at the start of every loop, and steps no
+        register."""
         qp = QProgram()
-        frequency = qp.variable(label="frequency", domain=Domain.Frequency)
-        gain = qp.variable(label="gain", domain=Domain.Voltage)
+        frequency = qp.variable("frequency")
+        gain = qp.variable("gain")
         with qp.parallel(
             loops=[
-                ForLoop(variable=frequency, start=10e6, stop=50e6, step=10e6),
+                ForLoop(variable=frequency, start=10e6, stop=10e6, step=10e6),
                 ForLoop(variable=gain, start=0.5, stop=0.5, step=0.1),
             ]
         ):
@@ -7363,7 +7655,6 @@ class TestQBloxCompiler:
                             set_freq         R0
                             set_awg_gain     R1, R1
                             play             0, 1, 40
-                            add              R0, 40000000, R0
                             loop             R2, @loop_0
                             set_mrk          0
                             upd_param        4
@@ -7371,18 +7662,18 @@ class TestQBloxCompiler:
         """
         assert is_q1asm_equal(sequences["drive"], drive_str)
 
-    def test_parallel_loops_with_different_number_of_points(self):
-        """A parallel block runs the number of points of its shortest loop, here with steps that don't divide the
-        range, inside an average."""
+    def test_parallel_loops_with_step_not_dividing_the_range(self):
+        """A parallel block inside an average, where the gain step doesn't divide the range: the gain loop keeps its 4
+        points, rounded down, spread from start to stop, as the frequency loop has."""
         drive_wf = IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
         readout_wf = IQPair(I=Square(amplitude=1.0, duration=100), Q=Square(amplitude=0.0, duration=100))
         qp = QProgram()
-        frequency = qp.variable(label="frequency", domain=Domain.Frequency)
-        gain = qp.variable(label="gain", domain=Domain.Voltage)
+        frequency = qp.variable("frequency")
+        gain = qp.variable("gain")
         with qp.average(shots=10):
             with qp.parallel(
                 loops=[
-                    ForLoop(variable=frequency, start=10e6, stop=50e6, step=10e6),
+                    ForLoop(variable=frequency, start=10e6, stop=40e6, step=10e6),
                     ForLoop(variable=gain, start=0.0, stop=1.0, step=0.3),
                 ]
             ):
@@ -7452,13 +7743,33 @@ class TestQBloxCompiler:
         assert is_q1asm_equal(sequences["readout"], readout_str)
         assert acquisitions["readout"]["Acquisition 0"].shape == (4,)
 
+    def test_parallel_sweeps_with_different_number_of_points_raise_error(self):
+        """Sweeps in parallel must have the same number of points: combining them with ``|``, or with the deprecated
+        ``qp.parallel``, raises when the program is built."""
+        qp = QProgram()
+        frequency = qp.variable("frequency")
+        gain = qp.variable("gain")
+        message = "parallel loops must have the same number of iterations to advance in lockstep"
+        with pytest.raises(qprogram.ValidationError, match=message):
+            with qp.sweep(frequency).from_range(10e6, 50e6, 10e6) | qp.sweep(gain).from_range(0.0, 1.0, 0.5):
+                qp.set_frequency(bus="drive", frequency=frequency)
+        with pytest.warns(FutureWarning, match="qp.parallel is deprecated"):
+            with pytest.raises(qprogram.ValidationError, match=message):
+                with qp.parallel(
+                    loops=[
+                        ForLoop(variable=frequency, start=10e6, stop=50e6, step=10e6),
+                        ForLoop(variable=gain, start=0.0, stop=1.0, step=0.5),
+                    ]
+                ):
+                    qp.set_frequency(bus="drive", frequency=frequency)
+
     def test_parallel_loop_and_its_descending_mirror_sweep_the_same_points(self):
         """A loop and its descending mirror, with a step that doesn't divide the range, run in parallel for 2
         points: gain_2 sweeps 0.1, 0.0 and reaches ``stop``."""
         square_wf = Square(amplitude=0.1, duration=50)
         qp = QProgram()
-        gain_1 = qp.variable(label="gain_1", domain=Domain.Voltage)
-        gain_2 = qp.variable(label="gain_2", domain=Domain.Voltage)
+        gain_1 = qp.variable("gain_1")
+        gain_2 = qp.variable("gain_2")
         with qp.parallel(loops=[ForLoop(gain_1, 0, 0.1, 0.08), ForLoop(gain_2, 0.1, 0, -0.08)]):
             qp.set_gain(bus="flux_1", gain=gain_1)
             qp.set_gain(bus="flux_2", gain=gain_2)
@@ -7492,14 +7803,15 @@ class TestQBloxCompiler:
     def test_for_loop_step_pointing_away_from_stop_raises(self):
         """A step pointing away from ``stop`` gives no point, so the loop can't be compiled."""
         qp = QProgram()
-        gain = qp.variable(label="gain", domain=Domain.Voltage)
-        with qp.for_loop(variable=gain, start=0, stop=1, step=-2):
-            qp.set_gain(bus="drive", gain=gain)
-            qp.play(bus="drive", waveform=IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40)))
-
-        compiler = QbloxCompiler()
-        with pytest.raises(ValueError, match="Iterations must be greater than 0"):
-            compiler.compile(qprogram=qp)
+        gain = qp.variable("gain")
+        with pytest.raises(
+            qprogram.ValidationError, match=re.escape("Range step -2.0 moves away from stop (0.0 -> 1.0)")
+        ):
+            qp.for_loop(variable=gain, start=0, stop=1, step=-2)
+        with pytest.raises(
+            qprogram.ValidationError, match=re.escape("Range step -2.0 moves away from stop (0.0 -> 1.0)")
+        ):
+            qp.sweep(gain).from_range(0, 1, -2)
 
     def test_qdac_bus_operations_do_not_change_qblox_q1asm(self):
         """Operations of every kind on a bus left out of ``qblox_buses`` don't appear in the Qblox bus Q1ASM, and a
@@ -7512,14 +7824,14 @@ class TestQBloxCompiler:
         qp.reset_phase(bus="qdac_flux")
         qp.set_gain(bus="qdac_flux", gain=0.1)
         qp.qblox.set_markers(bus="qdac_flux", mask="0000")
-        qp.set_trigger(bus="qdac_flux", duration=100)
+        qp.qdac.set_trigger(bus="qdac_flux", duration=100, outputs=[1])
         qp.wait(bus="qdac_flux", duration=100)
-        qp.wait_trigger(bus="qdac_flux", duration=100)
+        qp.qdac.wait_trigger(bus="qdac_flux", port=1)
         qp.measure(bus="qdac_flux", waveform=wf, weights=wf)
         qp.play(bus="qdac_flux", waveform=wf)
         qp.qblox.acquire(bus="qdac_flux", weights=wf)
         qp.qdac.play(bus="qdac_flux", waveform=Square(amplitude=0.5, duration=10), dwell=2)
-        qp.set_offset(bus="qdac_flux", offset_path0=0.2)
+        qp.qdac.set_offset(bus="qdac_flux", offset=0.2)
         qp.play(bus="drive", waveform=wf)
 
         compiler = QbloxCompiler()
@@ -7553,7 +7865,8 @@ class TestQBloxCompiler:
 
     def test_delay_is_inserted_at_first_qblox_play_of_block(self):
         """Bus delays are inserted at the first play on a Qblox bus of each block: a QDAC play earlier in the block
-        doesn't trigger them, so the delay comes after the set_gain or set_phase on the Qblox bus."""
+        doesn't trigger them, so the delay comes after the set_gain or set_phase on the Qblox bus. (A QDAC play can
+        only be outside loops: validation rejects one inside the average.)"""
         drive_wf = IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
         readout_wf = IQPair(I=Square(amplitude=1.0, duration=100), Q=Square(amplitude=0.0, duration=100))
         qp = QProgram()
@@ -7562,7 +7875,6 @@ class TestQBloxCompiler:
         qp.play(bus="drive", waveform=drive_wf)
         qp.play(bus="readout", waveform=readout_wf)
         with qp.average(shots=5):
-            qp.qdac.play(bus="qdac_flux", waveform=Square(amplitude=0.5, duration=10), dwell=2)
             qp.set_phase(bus="drive", phase=0.1)
             qp.play(bus="drive", waveform=drive_wf)
             qp.play(bus="readout", waveform=readout_wf)
@@ -7622,10 +7934,12 @@ class TestQBloxCompiler:
         """A loop whose variable is only used by a set_offset on a non-Qblox bus doesn't sweep any Qblox register:
         only operations on Qblox buses set how the loop register is scaled."""
         qp = QProgram()
-        voltage = qp.variable(label="voltage", domain=Domain.Voltage)
-        with qp.for_loop(variable=voltage, start=0.0, stop=0.5, step=0.1):
+        voltage = qp.variable("voltage")
+        with qp.sweep(voltage).from_range(0.0, 0.5, 0.1):
             qp.set_offset(bus="qdac_flux", offset_path0=voltage)
-            qp.play(bus="drive", waveform=IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40)))
+            qp.play(
+                bus="drive", waveform=IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
+            )
 
         compiler = QbloxCompiler()
         sequences, _ = compiler.compile(qprogram=qp, qblox_buses=["drive"])
@@ -7652,9 +7966,9 @@ class TestQBloxCompiler:
         """A loop with no operation on a Qblox bus still compiles to a Qblox loop, with nothing inside."""
         pulse = IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
         qp = QProgram()
-        voltage = qp.variable(label="voltage", domain=Domain.Voltage)
+        voltage = qp.variable("voltage")
         qp.play(bus="drive", waveform=pulse)
-        with qp.for_loop(variable=voltage, start=0.0, stop=1.0, step=0.1):
+        with qp.sweep(voltage).from_range(0.0, 1.0, 0.1):
             qp.set_offset(bus="qdac_flux", offset_path0=voltage)
         qp.play(bus="drive", waveform=pulse)
 
@@ -7685,7 +7999,7 @@ class TestQBloxCompiler:
         """qp.if_trigger() on mapped buses, its wait time derived from a mapped QDAC play(dwell=...)."""
         qp = QProgram()
         qp.qdac.play(bus="flux", waveform=Square(amplitude=1.0, duration=100), dwell=3)
-        qp.set_trigger(bus="flux", duration=100e-6, outputs=1, position="step")
+        qp.qdac.set_trigger(bus="flux", duration=100e-6, position="step", outputs=[1])
         with qp.if_trigger():
             with qp.average(shots=10):
                 qp.qblox.acquire(
@@ -7728,18 +8042,17 @@ class TestQBloxCompiler:
         assert output.requires_external_trigger is True
 
     def test_loop_over_values_raises_error_even_if_only_used_on_qdac_bus(self):
-        """qp.loop() cannot be compiled for Qblox, even when its variable only drives a QDAC bus."""
+        """A sweep over values cannot be compiled for Qblox, even when its variable only drives a QDAC bus."""
         qp = QProgram()
-        voltage = qp.variable(label="voltage", domain=Domain.Voltage)
-        with qp.loop(variable=voltage, values=np.array([0.1, 0.2, 0.3])):
-            qp.qdac.play(bus="qdac_flux", waveform=Square(amplitude=0.5, duration=10), dwell=2)
-            qp.play(bus="drive", waveform=IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40)))
+        voltage = qp.variable("voltage")
+        with qp.sweep(voltage).from_values(np.array([0.1, 0.2, 0.3])):
+            qp.qdac.set_offset(bus="qdac_flux", offset=voltage)
+            qp.play(
+                bus="drive", waveform=IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
+            )
 
         compiler = QbloxCompiler()
-        with pytest.raises(
-            NotImplementedError,
-            match=re.escape("Loops with arbitrary numpy arrays are not currently supported for QBlox."),
-        ):
+        with pytest.raises(qprogram.ValidationError, match="sweep.values"):
             compiler.compile(qprogram=qp, qblox_buses=["drive"])
 
     def test_measure_reset_on_bus_outside_qblox_buses_raises_error(self):
@@ -7760,8 +8073,7 @@ class TestQBloxCompiler:
 
 
 class TestAcquisition:
-    """Tests for acquisition compilation in QbloxCompiler.
-    """
+    """Tests for acquisition compilation in QbloxCompiler."""
 
     def test_compiler_reuse_resets_metadata(self, multiple_separate_average_blocks: QProgram):
         """Calling compile() twice on the same instance produces independent results.
@@ -7776,9 +8088,7 @@ class TestAcquisition:
         for name in acquisitions_first["readout"]:
             assert acquisitions_first["readout"][name].intertwined == acquisitions_second["readout"][name].intertwined
 
-    def test_multiple_separate_average_blocks_produce_one_index_each(
-        self, multiple_separate_average_blocks: QProgram
-    ):
+    def test_multiple_separate_average_blocks_produce_one_index_each(self, multiple_separate_average_blocks: QProgram):
         """3 separate average blocks each produce their own hardware acquisition index with intertwined=1."""
         compiler = QbloxCompiler()
         sequences, acquisitions = compiler.compile(qprogram=multiple_separate_average_blocks)
@@ -7824,11 +8134,8 @@ class TestAcquisition:
         assert len(sequences["readout"]._acquisitions._acquisitions) == 1
         assert sequences["readout"]._acquisitions._acquisitions[0].num_bins == 33
         assert acquisitions["readout"]["Acquisition 0"].intertwined == 33
-        
 
-    def test_exceeds_depth_multiple_acquires_per_block_raises_error(
-        self, exceeds_depth_multiple_per_block: QProgram
-    ):
+    def test_exceeds_depth_multiple_acquires_per_block_raises_error(self, exceeds_depth_multiple_per_block: QProgram):
         """Multiple acquires per block in the exceeds-depth path must raise NotImplementedError."""
         compiler = QbloxCompiler()
         with pytest.raises(
@@ -7955,7 +8262,7 @@ class TestAcquisition:
 
         compiler = QbloxCompiler()
         sequences, _ = compiler.compile(qprogram=inner_average_outer_sweep)
-        expected_q1asm =    """setup:
+        expected_q1asm = """setup:
                                             wait_sync        4              
                                             set_mrk          0              
                                             upd_param        4         
@@ -7981,16 +8288,13 @@ class TestAcquisition:
                                             upd_param        4              
                                             stop                       """
 
-
         assert is_q1asm_equal(sequences["readout"], expected_q1asm)
 
-    
-    
     def test_inner_average_outer_sweep_two_measures(self, inner_average_outer_sweep_two_measures: QProgram):
 
         compiler = QbloxCompiler()
         sequences, _ = compiler.compile(qprogram=inner_average_outer_sweep_two_measures)
-        expected_q1asm =    """setup:
+        expected_q1asm = """setup:
                                                 wait_sync        4              
                                                 set_mrk          0              
                                                 upd_param        4      
@@ -8020,14 +8324,12 @@ class TestAcquisition:
                                                 upd_param        4              
                                                 stop  """
 
-
         assert is_q1asm_equal(sequences["readout"], expected_q1asm)
-
 
     def test_inner_average_outer_sweep_three_measures(self, inner_average_outer_sweep_three_measures: QProgram):
         compiler = QbloxCompiler()
         sequences, _ = compiler.compile(qprogram=inner_average_outer_sweep_three_measures)
-        expected_q1asm =    """setup:
+        expected_q1asm = """setup:
                                                 wait_sync        4              
                                                 set_mrk          0              
                                                 upd_param        4 

@@ -13,13 +13,17 @@
 # limitations under the License.
 
 
+from typing import ClassVar
+
+from qprogram.operations import Operation
+
 from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
-from qililab.qprogram.operations.operation import Operation
 from qililab.yaml import yaml
 
 
 @yaml.register_class
 class SetCrosstalk(Operation):
+    BUS_ATTRS: ClassVar[tuple[str, ...]] = ()
+
     def __init__(self, crosstalk: CrosstalkMatrix) -> None:
-        super().__init__()
         self.crosstalk: CrosstalkMatrix = crosstalk

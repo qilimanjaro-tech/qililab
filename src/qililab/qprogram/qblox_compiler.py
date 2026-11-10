@@ -15,52 +15,41 @@
 import math
 from collections import deque
 from copy import deepcopy
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Callable, cast
 
 import numpy as np
 import qpysequence as QPy
 import qpysequence.program as QPyProgram
 import qpysequence.program.instructions as QPyInstructions
+from qprogram import BinaryOp, Constant, Range, UnaryOp, Variable
+from qprogram.blocks import Average, Block, Parallel, Sweep
+from qprogram.operations import (
+    Measure,
+    Operation,
+    ResetPhase,
+    SetFrequency,
+    SetGain,
+    SetOffset,
+    SetPhase,
+    Sync,
+    Wait,
+)
+from qprogram.operations import Play as CorePlay
+from qprogram.waveforms import Arbitrary, FlatTop, IQWaveform, Square, Waveform
+from qprogram_qblox import Acquire, Scope, SetMarkers, SetTrigger, WaitTrigger
 from qpysequence.compiler import Compiler as QPyCompiler
 from qpysequence.constants import INST_MAX_WAIT, INST_MIN_WAIT
 from qpysequence.enums import TriggerCondition as QPyTriggerCondition
 
 from qililab.config import logger
 from qililab.constants import QBLOXCONSTANTS
-from qililab.core.variables import Domain, Variable, VariableExpression
-from qililab.qprogram.blocks import (
-    Average,
-    Block,
-    Conditional,
-    ForLoop,
-    InfiniteLoop,
-    Loop,
-    Parallel,
-    for_loop_iterations,
-)
+from qililab.qprogram.blocks import IfTrigger, InfiniteLoop, for_loop_iterations
 from qililab.qprogram.calibration import Calibration
 from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
-from qililab.qprogram.operations import (
-    Acquire,
-    Measure,
-    MeasureReset,
-    Operation,
-    Play,
-    ResetPhase,
-    SetFrequency,
-    SetGain,
-    SetMarkers,
-    SetOffset,
-    SetPhase,
-    SetTrigger,
-    Sync,
-    Wait,
-    WaitTrigger,
-)
+from qililab.qprogram.operations import DisableAutosync, MeasureReset, QbloxPlay
 from qililab.qprogram.prepass import prepare_qblox, prepare_shared
 from qililab.qprogram.qprogram import QProgram
-from qililab.waveforms import Arbitrary, FlatTop, IQWaveform, Square, Waveform
 
 if TYPE_CHECKING:
     from qililab.pulse_distortion.pulse_distortion import PulseDistortion
@@ -87,14 +76,133 @@ def _trigger_address_mask(address: int) -> int:
     return 0 if address == 0 else 2 ** (address - 1)
 
 
+def _number(value: float) -> int | float:
+    """Return ``value`` as an ``int`` when it is integral, else unchanged.
+
+    qprogram stores numbers as floats (a ``Range`` and a ``Constant`` do), where Q1ASM registers take integers.
+
+    Args:
+        value (float): The number.
+
+    Returns:
+        int | float: ``int(value)`` if ``value`` is integral, else ``value``.
+    """
+    return int(value) if float(value).is_integer() else value
+
+
+class _VariableExpression:
+    """A variable plus or minus a constant or another variable, read as ``left operator right``.
+
+    The form the compiler evaluates: a constant added to a variable is always on the right, and adding or subtracting a
+    negative constant is written with the opposite operator and its absolute value. Built by ``_compiled_value``.
+    """
+
+    def __init__(self, left: "Variable | int | float", operator: str, right: "Variable | int | float") -> None:
+        self.left = left
+        self.operator = operator
+        self.right = right
+        self.components = [left, right]
+        self.variables = [component for component in self.components if isinstance(component, Variable)]
+        self.constant = next((component for component in self.components if not isinstance(component, Variable)), None)
+
+    def __repr__(self) -> str:
+        return f"({self.left} {self.operator} {self.right})"
+
+
+def _compiled_value(value: object) -> object:
+    """Return a numeric operation argument as the compiler reads it: a ``Variable``, a number or a ``_VariableExpression``.
+
+    Validation against qililab's profile guarantees an expression is at most one ``+`` or ``-`` between a variable and
+    a constant or another variable, or a negated variable.
+
+    Args:
+        value (object): The argument, a number or a qprogram expression.
+
+    Returns:
+        object: The argument in the compiler's form.
+    """
+    if isinstance(value, Constant):
+        return _number(value.value)
+    if isinstance(value, UnaryOp):
+        return _VariableExpression(0, "-", value.operand)  # type: ignore[arg-type]
+    if isinstance(value, BinaryOp):
+        left, right, operator = _compiled_value(value.left), _compiled_value(value.right), value.op
+        if operator == "+" and not isinstance(left, Variable):
+            left, right = right, left
+        if isinstance(left, Variable) and not isinstance(right, Variable) and right < 0:  # type: ignore[operator]
+            operator, right = ("-" if operator == "+" else "+"), abs(right)  # type: ignore[arg-type]
+        return _VariableExpression(left, operator, right)  # type: ignore[arg-type]
+    return value
+
+
+def _waveforms_of(element: "CorePlay | QbloxPlay") -> tuple[Waveform, Waveform | None]:
+    """Return the I and Q waveforms a play plays; Q is None for a single waveform.
+
+    Args:
+        element (CorePlay | QbloxPlay): The play.
+
+    Returns:
+        tuple[Waveform, Waveform | None]: The I and Q waveforms.
+    """
+    waveform = element.waveform
+    if isinstance(waveform, IQWaveform):
+        return waveform.get_I(), waveform.get_Q()
+    return waveform, None  # type: ignore[return-value]
+
+
+@dataclass
+class _LoopRange:
+    """The range a sweep runs over, as the compiler reads a for_loop: integral bounds as ints, and ``stop`` on the last
+    point, since a ``Range`` holds ``round((stop - start) / step) + 1`` points that may stop short of ``stop`` or step
+    past it."""
+
+    variable: Variable
+    start: int | float
+    stop: int | float
+    step: int | float
+
+    @classmethod
+    def of(cls, sweep: Sweep) -> "_LoopRange":
+        """Read the range of ``sweep``.
+
+        Args:
+            sweep (Sweep): The sweep.
+
+        Returns:
+            _LoopRange: Its variable and its range.
+
+        Raises:
+            NotImplementedError: If the sweep's source is not a ``Range``.
+        """
+        if not isinstance(sweep.source, Range):
+            raise NotImplementedError("Loops with arbitrary numpy arrays are not currently supported for QBlox.")
+        source = sweep.source
+        last = source.start + source.step * (source.length() - 1)
+        # A for_loop's range ends on its stop: keep it as written, so no rounding error reaches the Q1ASM.
+        if math.isclose(last, source.stop, rel_tol=1e-9, abs_tol=1e-12):
+            last = source.stop
+        return cls(sweep.variable, _number(source.start), _number(last), _number(source.step))
+
+
 @dataclass
 class AcquisitionData:
-    """Class representing the output information generated by QbloxCompiler for an acquisition."""
+    """Class representing the output information generated by QbloxCompiler for an acquisition.
+
+    Attributes:
+        bus (str): The bus acquiring.
+        shape (tuple): The number of points of each loop around the acquisitions, outermost first.
+        intertwined (int): How many measurements write into the acquisition, one bin each in turn.
+        measurements (list[str]): The names of those measurements, in the order their bins come.
+        fields (list[tuple[str, ...]]): The fields each of those measurements returns.
+        loops (list[Sweep | Parallel]): The loops around the acquisitions, outermost first, one per entry of ``shape``.
+    """
 
     bus: str
-    save_adc: bool
     shape: tuple
     intertwined: int
+    measurements: list[str] = field(default_factory=list)
+    fields: list[tuple[str, ...]] = field(default_factory=list)
+    loops: list[Sweep | Parallel] = field(default_factory=list)
 
 
 Sequences = dict[str, QPy.Sequence]
@@ -106,6 +214,7 @@ class QbloxCompilationOutput:
 
     Attributes:
         qprogram (QProgram): The compiled QProgram, with only the operations on Qblox buses.
+        scopes (dict[str, Scope]): The ``qp.qblox.scope`` of each scoped bus.
         sequences (Sequence): A dictionary with the buses participating in the QProgram as keys and the corresponding Sequence as values.
         acquisitions (Acquisitions): A dictionary with the buses participating in the acquisitions as keys and the corresponding Acquisitions as values.
         requires_external_trigger (bool): Whether the compiled sequences wait on the cluster's external trigger, i.e. the
@@ -121,10 +230,12 @@ class QbloxCompilationOutput:
         acquisitions: Acquisitions,
         requires_external_trigger: bool = False,
         trigger_network_addresses: dict[str, int] | None = None,
+        scopes: dict[str, Scope] | None = None,
     ):
         self.qprogram = qprogram
         self.sequences = sequences
         self.acquisitions = acquisitions
+        self.scopes = scopes if scopes is not None else {}
         self.requires_external_trigger = requires_external_trigger
         self.trigger_network_addresses = trigger_network_addresses if trigger_network_addresses is not None else {}
 
@@ -251,8 +362,7 @@ class QbloxCompiler:
             InfiniteLoop: self._handle_infinite_loop,
             Parallel: self._handle_parallel,
             Average: self._handle_average,
-            ForLoop: self._handle_for_loop,
-            Loop: self._handle_loop,
+            Sweep: self._handle_sweep,
             SetFrequency: self._handle_set_frequency,
             SetPhase: self._handle_set_phase,
             ResetPhase: self._handle_reset_phase,
@@ -266,8 +376,11 @@ class QbloxCompiler:
             Measure: self._handle_measure,
             MeasureReset: self._handle_measure_reset,
             Acquire: self._handle_acquire,
-            Play: self._handle_play,
-            Conditional: self._handle_block,
+            Scope: self._handle_scope,
+            CorePlay: self._handle_play,
+            QbloxPlay: self._handle_play,
+            DisableAutosync: self._handle_disable_autosync,
+            IfTrigger: self._handle_block,
             Block: self._handle_block,
         }
 
@@ -283,6 +396,7 @@ class QbloxCompiler:
         self._acquisition_metadata: AcquisitionMetadata = {}
         self._conditional: ConditionalTrigger | None = None
         self._single_channel: list[str] = []
+        self._scopes: dict[str, Scope] = {}
 
     def compile(
         self,
@@ -296,6 +410,7 @@ class QbloxCompiler:
         single_channel: list[str] | None = None,
         bus_distortions: dict[str, list["PulseDistortion"]] | None = None,
         crosstalk: CrosstalkMatrix | None = None,
+        readout_modules: dict[str, str] | None = None,
     ) -> QbloxCompilationOutput:
         """Compile QProgram to qpysequence.Sequence
 
@@ -303,6 +418,8 @@ class QbloxCompiler:
             qprogram (QProgram): The QProgram to be compiled
             bus_mapping (dict[str, str], optional): Optional mapping of bus names. Defaults to None.
             times_of_flight (dict[str, int], optional): Optional time of flight of bus. Defaults to None.
+            readout_modules (dict[str, str], optional): The QRM of each bus that has one, used to check the program's
+                ``qp.qblox.scope``. Defaults to None.
 
         Returns:
             QbloxCompilationOutput: Compiled sequences keyed by bus name, alongside acquisition
@@ -315,7 +432,7 @@ class QbloxCompiler:
                 self._buses[bus].qprogram_block_stack.append(block)
                 self._buses[bus].first_acquire_of_block = True
             for element in block.elements:
-                if isinstance(element, Play) and not delay_implemented:
+                if isinstance(element, (CorePlay, QbloxPlay)) and not delay_implemented:
                     for bus in self._buses:
                         if self._buses[bus].delay > 0:
                             self._handle_wait(element=Wait(bus=bus, duration=self._buses[bus].delay), delay=True)
@@ -333,7 +450,7 @@ class QbloxCompiler:
                     and self._buses[element.bus].first_acquire_of_block is True
                 ):
                     self._buses[element.bus].count_nested_level_acquire += 1
-                    self._buses[element.bus].counter_acquire = self._acquisition_metadata[element.bus][block.uuid][0]
+                    self._buses[element.bus].counter_acquire = self._acquisition_metadata[element.bus][id(block)][0]
                     self._buses[element.bus].first_acquire_of_block = False
 
                 handler = self._handlers.get(type(element))
@@ -341,10 +458,10 @@ class QbloxCompiler:
                     raise NotImplementedError(f"{element.__class__} is currently not supported in QBlox.")
                 appended = handler(element)
                 if isinstance(element, Block):
-                    if isinstance(element, Conditional):
+                    if isinstance(element, IfTrigger):
                         self._handle_conditional_trigger_prologue()
                     traverse(element)
-                    if isinstance(element, Conditional):
+                    if isinstance(element, IfTrigger):
                         self._handle_conditional_trigger_epilogue()
                     else:
                         # Conditional is deliberately excluded here: _handle_conditional_trigger_epilogue already
@@ -353,9 +470,9 @@ class QbloxCompiler:
                         # outside the block -- an autosync here would stretch it to match unrelated buses and
                         # drift it out of phase with the QDAC's fixed trigger cadence on every iteration.
                         if not self._qprogram.qblox.disable_autosync and isinstance(
-                            element, (ForLoop, Parallel, Loop, Average)
+                            element, (Sweep, Parallel, Average)
                         ):
-                            self._handle_sync(element=Sync(buses=None), delay=True)
+                            self._handle_sync(element=Sync(targets=None), delay=True)
                         if appended:
                             for bus in self._buses:
                                 self._buses[bus].qpy_block_stack.pop()
@@ -369,12 +486,14 @@ class QbloxCompiler:
             crosstalk=crosstalk,
             bus_distortions=bus_distortions,
             qblox_buses=qblox_buses,
+            readout_modules=readout_modules,
         )
         self._qprogram = prepass.qprogram
         # Every Qblox bus, not only those of the QProgram: a sync naming any other bus is rejected
         self._qblox_buses = prepass.qblox_buses
 
         self._sync_counter = 0
+        self._scopes = {}
         self._buses = self._populate_buses()
         self._single_channel = single_channel if single_channel is not None else []
         self._acquisition_metadata = prepass.acquisition_metadata
@@ -555,6 +674,7 @@ class QbloxCompiler:
             acquisitions=acquisitions,
             requires_external_trigger=prepass.requires_external_trigger,
             trigger_network_addresses=prepass.trigger_network_addresses,
+            scopes=self._scopes,
         )
 
     def _populate_buses(self) -> dict[str, BusCompilationInfo]:
@@ -626,17 +746,16 @@ class QbloxCompiler:
     def _handle_parallel(self, element: Parallel) -> bool:
         if not element.loops:
             raise NotImplementedError("Parallel block should contain loops.")
-        if any(isinstance(loop, Loop) for loop in element.loops):
-            raise NotImplementedError("Loops with arbitrary numpy arrays are not currently supported for QBlox.")
 
         loops = []
         iterations = []
-        for loop in element.loops:
-            operation = QbloxCompiler._get_reference_operation_of_loop(loop=loop, starting_block=element)
+        for sweep in element.loops:
+            loop = _LoopRange.of(sweep)
+            operation = QbloxCompiler._get_reference_operation_of_loop(loop=sweep, starting_block=element)
             qpysequence_operation = (
                 QbloxCompiler._get_qpysequence_conversion_instructions(operation) if operation is not None else None
             )
-            if isinstance(operation, Wait) and isinstance(loop, ForLoop):
+            if isinstance(operation, Wait):
                 if loop.start < INST_MIN_WAIT:
                     logger.warning(
                         f"Wait duration {loop.start} ns is below the Q1ASM minimum (4 ns), clamping to 4 ns."
@@ -655,8 +774,8 @@ class QbloxCompiler:
             qpy_loop = QPyProgram.IterativeLoop(
                 name=f"loop_{self._buses[bus].loop_counter}", iterations=min_iterations, loops=loops
             )
-            for i, loop in enumerate(element.loops):
-                self._buses[bus].variable_to_register[loop.variable] = qpy_loop.loop_registers[i]
+            for i, sweep in enumerate(element.loops):
+                self._buses[bus].variable_to_register[sweep.variable] = qpy_loop.loop_registers[i]
             self._buses[bus].qpy_block_stack[-1].add(qpy_loop)
             self._buses[bus].qpy_block_stack.append(qpy_loop)
             self._buses[bus].loop_counter += 1
@@ -678,8 +797,9 @@ class QbloxCompiler:
             self._buses[bus].loop_counter += 1
         return True
 
-    def _handle_for_loop(self, element: ForLoop) -> bool:
-        operation = QbloxCompiler._get_reference_operation_of_loop(element)
+    def _handle_sweep(self, sweep: Sweep) -> bool:
+        element = _LoopRange.of(sweep)
+        operation = QbloxCompiler._get_reference_operation_of_loop(sweep)
         qpysequence_operation = (
             QbloxCompiler._get_qpysequence_conversion_instructions(operation) if operation is not None else None
         )
@@ -693,7 +813,7 @@ class QbloxCompiler:
         scale_factor = qpysequence_operation.scale_factor if qpysequence_operation is not None else None
         start, step, iterations = QbloxCompiler._compute_loop_sweep(element, scale_factor)
 
-        if element.variable.domain == Domain.Time and element.stop > INST_MAX_WAIT:
+        if isinstance(operation, Wait) and element.stop > INST_MAX_WAIT:
             self._long_wait_dynamic = True
         self._max_wait_dynamic = int(element.stop)
 
@@ -709,26 +829,25 @@ class QbloxCompiler:
             self._buses[bus].loop_counter += 1
         return True
 
-    def _handle_loop(self, _: Loop) -> None:
-        raise NotImplementedError("Loops with arbitrary numpy arrays are not currently supported for QBlox.")
-
     def _handle_set_frequency(self, element: SetFrequency) -> None:
-        if isinstance(element.frequency, Variable):
-            freq = self._buses[element.bus].variable_to_register[element.frequency]
+        frequency = QbloxCompiler._without_expression(element.frequency, "frequency")
+        if isinstance(frequency, Variable):
+            freq = self._buses[element.bus].variable_to_register[frequency]
             instruction = QPyInstructions.SetFreq(value=freq)
         else:
-            instruction = QPyInstructions.SetFrequencyHz(frequency_hz=element.frequency)
+            instruction = QPyInstructions.SetFrequencyHz(frequency_hz=frequency)
 
         self._buses[element.bus].qpy_block_stack[-1].add(component=instruction)
 
         self._buses[element.bus].upd_param_instruction_pending = True
 
     def _handle_set_phase(self, element: SetPhase) -> None:
-        if isinstance(element.phase, Variable):
-            phase = self._buses[element.bus].variable_to_register[element.phase]
-            instruction = QPyInstructions.SetPh(value=phase)
+        phase = QbloxCompiler._without_expression(element.phase, "phase")
+        if isinstance(phase, Variable):
+            phase_register = self._buses[element.bus].variable_to_register[phase]
+            instruction = QPyInstructions.SetPh(value=phase_register)
         else:
-            instruction = QPyInstructions.SetPhaseRad(phase=element.phase)
+            instruction = QPyInstructions.SetPhaseRad(phase=phase)
 
         self._buses[element.bus].qpy_block_stack[-1].add(component=instruction)
         self._buses[element.bus].upd_param_instruction_pending = True
@@ -743,10 +862,31 @@ class QbloxCompiler:
         self._buses[bus].duration_since_sync += duration
         self._buses[bus].static_duration += duration
 
+    @staticmethod
+    def _without_expression(value: object, name: str) -> object:
+        """Return ``value`` in the compiler's form, refusing an expression where the compiler only takes a variable.
+
+        Args:
+            value (object): The argument.
+            name (str): Its name, for the error message.
+
+        Returns:
+            object: The argument, a variable or a number.
+
+        Raises:
+            NotImplementedError: If ``value`` is an expression.
+        """
+        compiled = _compiled_value(value)
+        if isinstance(compiled, _VariableExpression):
+            raise NotImplementedError(
+                f"An expression cannot be used as the {name} in QBlox, only a variable: {compiled}."
+            )
+        return compiled
+
     def _resolve_binary_expression(
-        self, bus: str, expression: VariableExpression, convert: Callable
+        self, bus: str, expression: _VariableExpression, convert: Callable
     ) -> QPyProgram.Register:
-        """Emit Q1ASM instructions that evaluate a binary VariableExpression and return the result register.
+        """Emit Q1ASM instructions that evaluate a binary expression and return the result register.
 
         Emits: a leading Nop, then Add or Sub, then a trailing Nop to guard
         against a read-after-write hazard on the result register. The caller is
@@ -754,7 +894,7 @@ class QbloxCompiler:
         (SetAwgGain, SetAwgOffs).
 
         Q1ASM forbids an immediate as the first operand of Add and Sub. For
-        "+", QProgram's normalization in variables.py guarantees the constant
+        "+", ``_compiled_value`` guarantees the constant
         is always on the right, so Add(register, immediate, result) is always
         valid here. For "-", the left operand may be an immediate (e.g.
         ``cst - variable``), which is handled explicitly below.
@@ -808,37 +948,40 @@ class QbloxCompiler:
         return result
 
     def _handle_set_gain(self, element: SetGain) -> None:
-        if isinstance(element.gain, VariableExpression):
+        gain = _compiled_value(element.gain)
+        if isinstance(gain, _VariableExpression):
             result = self._resolve_binary_expression(
-                element.bus, element.gain, lambda x: int(x * QPyInstructions.SetNormalisedGain.scale_factor)
+                element.bus, gain, lambda x: int(x * QPyInstructions.SetNormalisedGain.scale_factor)
             )
             self._buses[element.bus].qpy_block_stack[-1].add(
                 component=QPyInstructions.SetAwgGain(value_0=result, value_1=result)
             )
             self._buses[element.bus].upd_param_instruction_pending = True
             return
-        if isinstance(element.gain, Variable):
-            gain = self._buses[element.bus].variable_to_register[element.gain]
-            instruction = QPyInstructions.SetAwgGain(value_0=gain, value_1=gain)
+        if isinstance(gain, Variable):
+            gain_register = self._buses[element.bus].variable_to_register[gain]
+            instruction = QPyInstructions.SetAwgGain(value_0=gain_register, value_1=gain_register)
         else:
-            instruction = QPyInstructions.SetNormalisedGain(gain_i=element.gain, gain_q=element.gain)
+            instruction = QPyInstructions.SetNormalisedGain(gain_i=gain, gain_q=gain)
 
         self._buses[element.bus].qpy_block_stack[-1].add(component=instruction)
         self._buses[element.bus].upd_param_instruction_pending = True
 
     def _handle_set_offset(self, element: SetOffset) -> None:
-        if isinstance(element.offset_path1, VariableExpression):
+        offset_path0 = _compiled_value(element.offset_path0)
+        offset_path1 = _compiled_value(element.offset_path1)
+        if isinstance(offset_path1, _VariableExpression):
             raise NotImplementedError(
                 "Having a different offset for I and Q whilst using VariableExpressions is not supported."
             )
 
-        if isinstance(element.offset_path0, VariableExpression):
-            if element.offset_path1 is not None:
+        if isinstance(offset_path0, _VariableExpression):
+            if offset_path1 is not None:
                 raise NotImplementedError(
                     "Having a different offset for I and Q whilst using VariableExpressions is not supported."
                 )
             result = self._resolve_binary_expression(
-                element.bus, element.offset_path0, lambda x: int(x * QPyInstructions.SetNormalisedOffs.scale_factor)
+                element.bus, offset_path0, lambda x: int(x * QPyInstructions.SetNormalisedOffs.scale_factor)
             )
             self._buses[element.bus].qpy_block_stack[-1].add(
                 component=QPyInstructions.SetAwgOffs(value_0=result, value_1=result)
@@ -847,11 +990,11 @@ class QbloxCompiler:
         # TODO: the flattening of all variable expressions will be moved to qpysequence
         else:
             offset_0 = (
-                self._buses[element.bus].variable_to_register[element.offset_path0]
-                if isinstance(element.offset_path0, Variable)
-                else element.offset_path0
+                self._buses[element.bus].variable_to_register[offset_path0]
+                if isinstance(offset_path0, Variable)
+                else offset_path0
             )
-            if element.offset_path1 is None:
+            if offset_path1 is None:
                 offset_1 = offset_0
                 logger.warning(
                     "Qblox requires an offset for the two paths, the offset of the second path has been set to the same as the first path."
@@ -859,9 +1002,9 @@ class QbloxCompiler:
 
             else:
                 offset_1 = (
-                    self._buses[element.bus].variable_to_register[element.offset_path1]
-                    if isinstance(element.offset_path1, Variable)
-                    else element.offset_path1
+                    self._buses[element.bus].variable_to_register[offset_path1]
+                    if isinstance(offset_path1, Variable)
+                    else offset_path1
                 )
 
             if (isinstance(offset_0, QPyProgram.Register) and not isinstance(offset_1, QPyProgram.Register)) or (
@@ -916,7 +1059,7 @@ class QbloxCompiler:
     def _handle_set_trigger(self, element: SetTrigger) -> None:
         mask = self._markers[element.bus] if self._markers is not None and element.bus in self._markers else "0000"
         if not element.outputs:
-            raise ValueError("Missing qblox trigger outputs at qp.set_trigger.")
+            raise ValueError("Missing qblox trigger outputs at qp.qblox.set_trigger.")
         for output in element.outputs if isinstance(element.outputs, list) else [element.outputs]:
             if int(mask, 2) > 0:
                 output_map = {1: 3, 2: 2}
@@ -942,20 +1085,21 @@ class QbloxCompiler:
         self._buses[element.bus].upd_param_instruction_pending = True
 
     def _handle_wait(self, element: Wait, delay: bool = False) -> None:
-        if isinstance(element.duration, Variable):
+        duration = _compiled_value(element.duration)
+        if isinstance(duration, _VariableExpression) and len(duration.variables) > 1:
+            raise NotImplementedError("A wait duration cannot combine several variables in one expression.")
+        if isinstance(duration, (Variable, _VariableExpression)):
             if self._buses[element.bus].marked_for_dynamic_sync is True:
                 raise NotImplementedError(
                     "It is not currently not possible to have two dynamic wait without a sync in between them."
                 )
             buses = set(self._buses)
-            if not isinstance(element.duration, VariableExpression):
+            if not isinstance(duration, _VariableExpression):
                 for bus in buses:
                     if self._buses[bus].dynamic_duration_register is None:
-                        self._buses[bus].dynamic_duration_register = self._buses[bus].variable_to_register[
-                            element.duration
-                        ]
-                if element.duration not in self._buses[element.bus].dynamic_durations:
-                    self._buses[element.bus].dynamic_durations.append(element.duration)
+                        self._buses[bus].dynamic_duration_register = self._buses[bus].variable_to_register[duration]
+                if duration not in self._buses[element.bus].dynamic_durations:
+                    self._buses[element.bus].dynamic_durations.append(duration)
 
                 if self._long_wait_dynamic:
                     for bus in buses:
@@ -993,14 +1137,14 @@ class QbloxCompiler:
             else:
                 self._buses[element.bus].dynamic_expression_register = QPyProgram.Register()
 
-                # Retrieve the uuid of the variable instead of the whole expression
-                variable_duration = element.duration.variables[0]
+                # Retrieve the variable instead of the whole expression
+                variable_duration = duration.variables[0]
                 variable_duration_register = self._buses[element.bus].variable_to_register[variable_duration]
-                constant_duration = element.duration.constant
+                constant_duration = cast("int", duration.constant)
                 if variable_duration not in self._buses[element.bus].dynamic_durations:
                     self._buses[element.bus].dynamic_durations.append(variable_duration)
 
-                if element.duration.operator == "+":
+                if duration.operator == "+":
                     self._buses[element.bus].qpy_block_stack[-1].add(
                         component=QPyInstructions.Add(
                             variable_duration_register,
@@ -1018,9 +1162,9 @@ class QbloxCompiler:
                             component=QPyInstructions.Wait(self._buses[element.bus].dynamic_expression_register)
                         )
 
-                elif element.duration.operator == "-":
+                elif duration.operator == "-":
                     # CST - Time
-                    if isinstance(element.duration.right, Variable):
+                    if isinstance(duration.right, Variable):
                         constant_duration_register = QPyProgram.Register()
                         self._buses[element.bus].qpy_block_stack[-1].add(
                             component=QPyInstructions.Move(constant_duration, constant_duration_register)
@@ -1081,7 +1225,7 @@ class QbloxCompiler:
 
                         variable_duration_register = self._buses[bus].variable_to_register[variable_duration]
 
-                        if element.duration.operator == "+":
+                        if duration.operator == "+":
                             self._buses[bus].qpy_block_stack[-1].add(
                                 component=QPyInstructions.Add(
                                     variable_duration_register,
@@ -1090,9 +1234,9 @@ class QbloxCompiler:
                                 )
                             )
 
-                        elif element.duration.operator == "-":
+                        elif duration.operator == "-":
                             # CST - Time
-                            if isinstance(element.duration.right, Variable):
+                            if isinstance(duration.right, Variable):
                                 constant_duration_register = QPyProgram.Register()
                                 self._buses[bus].qpy_block_stack[-1].add(
                                     component=QPyInstructions.Move(constant_duration, constant_duration_register)
@@ -1120,12 +1264,12 @@ class QbloxCompiler:
             self._time_loop_counter += 1
 
         else:
-            element.duration = QbloxCompiler._clamp_duration(element.duration, label="wait")
+            static_duration = QbloxCompiler._clamp_duration(duration, label="wait")  # type: ignore[arg-type]
             if not delay:
-                self._buses[element.bus].static_duration += element.duration
-                self._buses[element.bus].duration_since_sync += element.duration
+                self._buses[element.bus].static_duration += static_duration
+                self._buses[element.bus].duration_since_sync += static_duration
             # loop over wait instructions if static duration is longer than allowed qblox max wait time of 2**16 -4
-            self._handle_add_waits(bus=element.bus, duration=element.duration)
+            self._handle_add_waits(bus=element.bus, duration=static_duration)
 
         self._buses[element.bus].marked_for_sync = True
 
@@ -1186,10 +1330,10 @@ class QbloxCompiler:
         Raises:
             ValueError: If `element.duration` is a Variable.
         """
-        if isinstance(element.duration, Variable):
+        if not isinstance(element.duration, (int, float)):
             raise ValueError("Wait trigger duration cannot be a Variable, it must be an int.")
 
-        element.duration = QbloxCompiler._clamp_duration(element.duration, label="wait_trigger")
+        duration = QbloxCompiler._clamp_duration(element.duration, label="wait_trigger")
 
         # Flush any pending upd_param before the sync, so every bus reaches the trigger aligned and
         # waits on it with the same plain wait_trigger.
@@ -1201,7 +1345,7 @@ class QbloxCompiler:
                 self._buses[bus].upd_param_instruction_pending = False
                 self._buses[bus].marked_for_sync = True
 
-        self._handle_sync(element=Sync(buses=None), delay=True)
+        self._handle_sync(element=Sync(targets=None), delay=True)
 
         if element.port is not None:
             logger.warning(
@@ -1209,7 +1353,7 @@ class QbloxCompiler:
                 "trigger address. The port argument only applies to QDACII buses."
             )
         for bus in self._buses:
-            self._handle_add_trigger_waits(bus=bus, duration=element.duration, port=QBLOXCONSTANTS.EXT_TRIGGER_ADDRESS)
+            self._handle_add_trigger_waits(bus=bus, duration=duration, port=QBLOXCONSTANTS.EXT_TRIGGER_ADDRESS)
 
         # All buses received an identical duration above, so they remain balanced; just clear sync bookkeeping.
         for bus in self._buses:
@@ -1237,12 +1381,15 @@ class QbloxCompiler:
         self._buses[bus].duration_since_sync += duration
         self._buses[bus].marked_for_sync = True
 
+    def _handle_disable_autosync(self, element: DisableAutosync) -> None:
+        """Nothing to emit: ``qp.qblox.disable_autosync`` is read before the program is walked."""
+
     def _handle_sync(self, element: Sync, delay: bool = False) -> None:
-        if element.buses and any(bus not in self._qblox_buses for bus in element.buses):
+        if element.targets and any(bus not in self._qblox_buses for bus in element.targets):
             raise ValueError("Non QBLOX buses not allowed inside sync function")
 
         # Get the buses involved in the sync operation.
-        buses = set(element.buses or self._buses)
+        buses = set(element.targets or self._buses)
 
         # If they are zero or one, return.
         if len(buses) <= 1:
@@ -1494,12 +1641,19 @@ class QbloxCompiler:
             element (Measure): measure operation
         """
         time_of_flight = self._buses[element.bus].time_of_flight
-        play = Play(bus=element.bus, waveform=element.waveform, wait_time=time_of_flight)
-        acquire = Acquire(bus=element.bus, weights=element.weights, save_adc=element.save_adc)
+        play = QbloxPlay(bus=element.bus, waveform=element.waveform, wait_time=time_of_flight)
         self._handle_play(play)
-        self._handle_acquire(acquire)
+        self._handle_acquire(element)
 
-    def _handle_acquire(self, element: Acquire) -> None:
+    def _handle_scope(self, element: Scope) -> None:
+        """Record the bus's ``qp.qblox.scope``: it configures the QRM's scope, and adds no instruction.
+
+        Args:
+            element (Scope): The scope operation.
+        """
+        self._scopes[element.bus] = element
+
+    def _handle_acquire(self, element: "Acquire | Measure | MeasureReset") -> None:
         """Compile an ``Acquire`` operation to Q1ASM.
 
         Dispatches to ``_handle_acquire_exceeds_depth`` when the bus has more distinct
@@ -1508,7 +1662,9 @@ class QbloxCompiler:
         sync markers) is applied after both paths.
         """
         # TODO: unify with measure when time of flight is implemented
-        index_I, index_Q, integration_length = self._append_to_weights_of_bus(element.bus, element.weights)
+        # The shared pre-pass resolves every calibrated weight name
+        weights = cast("IQWaveform", element.weights)
+        index_I, index_Q, integration_length = self._append_to_weights_of_bus(element.bus, weights)
         if self._buses[element.bus].exceeds_depth:
             self._handle_acquire_exceeds_depth(element, index_I, index_Q, integration_length)
         else:
@@ -1520,7 +1676,7 @@ class QbloxCompiler:
         self._buses[element.bus].upd_param_instruction_pending = False
 
     def _handle_acquire_exceeds_depth(
-        self, element: Acquire, index_I: int, index_Q: int, integration_length: int
+        self, element: "Acquire | Measure | MeasureReset", index_I: int, index_Q: int, integration_length: int
     ) -> None:
         """Compile an ``Acquire`` when exceeds_depth is True.
 
@@ -1556,7 +1712,6 @@ class QbloxCompiler:
             acquisition_name = f"Acquisition {self._buses[element.bus].count_nested_level_acquire}"
             self._buses[element.bus].acquisitions[acquisition_name] = AcquisitionData(
                 bus=element.bus,
-                save_adc=element.save_adc,
                 shape=(),
                 intertwined=num_acquisitions,
             )
@@ -1571,6 +1726,9 @@ class QbloxCompiler:
                 insert_idx=0,
             )
 
+        acquisition_data = next(iter(self._buses[element.bus].acquisitions.values()))
+        acquisition_data.measurements.append(element.name)
+        acquisition_data.fields.append(element.fields)
         register_I = self._get_or_create_weight_register(element.bus, index_I, block_index_for_move_instruction)
         register_Q = self._get_or_create_weight_register(element.bus, index_Q, block_index_for_move_instruction)
         self._buses[element.bus].qpy_block_stack[-1].add(
@@ -1590,7 +1748,9 @@ class QbloxCompiler:
             )
         )
 
-    def _handle_acquire_per_depth(self, element: Acquire, index_I: int, index_Q: int, integration_length: int) -> None:
+    def _handle_acquire_per_depth(
+        self, element: "Acquire | Measure | MeasureReset", index_I: int, index_Q: int, integration_length: int
+    ) -> None:
         """Compile an ``Acquire`` in the standard case where each distinct nesting depth
         maps to its own acquisition index (index = ``count_nested_level_acquire``).
 
@@ -1632,9 +1792,13 @@ class QbloxCompiler:
             acquisition_name = f"Acquisition {self._buses[element.bus].count_nested_level_acquire}"
             self._buses[element.bus].acquisitions[acquisition_name] = AcquisitionData(
                 bus=element.bus,
-                save_adc=element.save_adc,
                 shape=self._buses[element.bus].shape_acquire,
                 intertwined=self._buses[element.bus].counter_acquire,
+                loops=[
+                    block
+                    for block in self._buses[element.bus].qprogram_block_stack
+                    if isinstance(block, (Sweep, Parallel))
+                ],
             )
             self._buses[element.bus].qpy_sequence._acquisitions.add(
                 name=acquisition_name,
@@ -1663,6 +1827,12 @@ class QbloxCompiler:
                 insert_idx=0,
             )
             self._buses[element.bus].start_bin_idx += 1
+
+        acquisition_data = self._buses[element.bus].acquisitions[
+            f"Acquisition {self._buses[element.bus].count_nested_level_acquire}"
+        ]
+        acquisition_data.measurements.append(element.name)
+        acquisition_data.fields.append(element.fields)
 
         if self._buses[element.bus].num_bins_per_acquire > 1:
             register_I = self._get_or_create_weight_register(element.bus, index_I, block_index_for_move_instruction)
@@ -1781,15 +1951,14 @@ class QbloxCompiler:
         """
 
         time_of_flight = self._buses[element.bus].time_of_flight
-        play = Play(bus=element.bus, waveform=element.waveform, wait_time=time_of_flight)
-        acquire = Acquire(bus=element.bus, weights=element.weights, save_adc=element.save_adc)
+        play = QbloxPlay(bus=element.bus, waveform=element.waveform, wait_time=time_of_flight)
         sync = Sync([element.bus, element.control_bus])
         wait = Wait(bus=element.control_bus, duration=WAIT_TRIGGER_NETWORK_INTERMODULES)
-        play_reset_pulse = Play(bus=element.control_bus, waveform=element.reset_pulse)
+        play_reset_pulse = CorePlay(bus=element.control_bus, waveform=element.reset_pulse)
 
         self._handle_latch_rst(bus=element.control_bus, duration=INST_MIN_WAIT)
         self._handle_play(play)
-        self._handle_acquire(acquire)
+        self._handle_acquire(element)
         self._handle_sync(sync)
         self._handle_wait(wait)
         self._handle_conditional(
@@ -1797,20 +1966,16 @@ class QbloxCompiler:
             enable=ENABLE_CONDITIONAL,
             address=element.trigger_address,
             operator=QPyTriggerCondition.OR,
-            else_duration=play_reset_pulse.waveform.get_duration(),
+            else_duration=play_reset_pulse.waveform.get_duration(),  # type: ignore[union-attr]
         )
         self._handle_play(play_reset_pulse)
         self._handle_conditional(
             bus=element.control_bus, enable=DISABLE_CONDITIONAL, address=0, operator=0, else_duration=INST_MIN_WAIT
         )
 
-    def _handle_play(self, element: Play) -> None:
-        waveform_I, waveform_Q = element.get_waveforms()
-        waveform_variables = element.get_waveform_variables()
-        if waveform_variables:
-            logger.error("Variables in waveforms are not supported in Qblox.")
-            return
-        if element.wait_time is not None:
+    def _handle_play(self, element: "CorePlay | QbloxPlay") -> None:
+        waveform_I, waveform_Q = _waveforms_of(element)
+        if isinstance(element, QbloxPlay):
             # The qp.qblox.play() was used. Don't apply optimizations
             clamped = QbloxCompiler._clamp_duration(element.wait_time, label="play")
             duration = clamped
@@ -1827,7 +1992,7 @@ class QbloxCompiler:
         ):
             copied_waveform_I: Square = deepcopy(waveform_I)
             copied_waveform_Q: Square | None = deepcopy(waveform_Q)
-            duration = copied_waveform_I.duration
+            duration = cast("int", copied_waveform_I.duration)
             chunk_duration, iterations, remainder = QbloxCompiler.calculate_square_waveform_optimization_values(
                 duration
             )
@@ -1860,13 +2025,13 @@ class QbloxCompiler:
         ):
             smooth_waveform_I: FlatTop = deepcopy(waveform_I)
             smooth_waveform_Q: FlatTop | None = deepcopy(waveform_Q)
-            duration = smooth_waveform_I.duration
+            duration = cast("int", smooth_waveform_I.duration)
             smooth_duration_I = (
                 smooth_waveform_I.smooth_duration + smooth_waveform_I.buffer
                 if smooth_waveform_I.smooth_duration + smooth_waveform_I.buffer > INST_MIN_WAIT
                 else INST_MIN_WAIT
             )
-            square_duration = duration - smooth_duration_I * 2
+            square_duration = cast("int", duration - smooth_duration_I * 2)
 
             inital_envelope_I = Arbitrary(samples=smooth_waveform_I.envelope()[:smooth_duration_I])
             end_envelope_I = Arbitrary(samples=smooth_waveform_I.envelope()[-smooth_duration_I:])
@@ -1965,12 +2130,12 @@ class QbloxCompiler:
         pass
 
     @staticmethod
-    def _get_reference_operation_of_loop(loop: Loop | ForLoop, starting_block: Block | None = None) -> Operation | None:
+    def _get_reference_operation_of_loop(loop: Sweep, starting_block: Block | None = None) -> Operation | None:
         def collect_operations(block: Block):
             for element in block.elements:
                 if isinstance(element, Block):
                     yield from collect_operations(element)
-                elif any(variable == loop.variable for variable in element.get_variables()):
+                elif loop.variable in element.variables():
                     yield element
 
         starting_block = starting_block or loop
@@ -1978,8 +2143,6 @@ class QbloxCompiler:
 
         if not operations:
             return None
-        if isinstance(operations[0], Play) and operations[0].get_waveform_variables():
-            raise NotImplementedError("TODO: Variables referenced in a loop cannot be used in Play operation.")
         return operations[0]
 
     @staticmethod
@@ -2000,7 +2163,7 @@ class QbloxCompiler:
         return instruction_map[type(operation)]
 
     @staticmethod
-    def _compute_loop_sweep(for_loop: ForLoop, scale_factor: float | int | None = None) -> tuple[float, float, int]:
+    def _compute_loop_sweep(for_loop: _LoopRange, scale_factor: float | int | None = None) -> tuple[float, float, int]:
         iterations = for_loop_iterations(for_loop.start, for_loop.stop, for_loop.step)
         if iterations == 1:
             # Single point: the formulas below divide by iterations - 1, which is 0. The loop runs once, so use a

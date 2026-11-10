@@ -6,15 +6,14 @@ from unittest.mock import MagicMock, patch
 
 import numpy as np
 import pytest
-from tests.data import Galadriel, SauronQuantumMachines
+from tests.data import Galadriel
 
-from qililab import Domain
+from qililab import Square
 from qililab.data_management import build_platform
 from qililab.qprogram import Calibration, CrosstalkMatrix, FluxVector, QProgram
 from qililab.result import stream_results
 from qililab.result.stream_results import RawStreamArray, StreamArray
 from qililab.typings.enums import Parameter
-from qililab.waveforms import Square
 
 AMP_VALUES = np.arange(0, 1, 2)
 
@@ -180,35 +179,6 @@ def fixture_stream_array_not_in_platform():
         db_manager=db_manager,
         qprogram=qprogram,
         bus_mapping=bus_mapping,
-    )
-
-
-@pytest.fixture(name="stream_array_qm")
-def fixture_stream_array_qm():
-    """fixture_stream_array_qm
-
-    Returns:
-        stream_array: StreamArray
-    """
-    shape = (2, 2, 1)
-    loops = {"test_amp_loop": AMP_VALUES}
-    platform = build_platform(runcard=copy.deepcopy(SauronQuantumMachines.runcard))
-    experiment_name = "test_stream_array_qm"
-    mock_database = MagicMock()
-    mock_database.database_schema = "measurements"
-    db_manager = mock_database
-
-    qprogram = QProgram()
-    qprogram.play("feedline_input_output_bus", Square(1.0, 100))
-    qprogram.wait("feedline_input_output_bus", 100)
-
-    return StreamArray(
-        shape=shape,
-        loops=loops,
-        platform=platform,
-        experiment_name=experiment_name,
-        db_manager=db_manager,
-        qprogram=qprogram,
     )
 
 
@@ -459,6 +429,33 @@ class TestStreamArray:
         stream_array.db_manager.add_measurement.assert_called_once()
         stream_array.db_manager.add_autocal_measurement.assert_not_called()
 
+    @pytest.mark.parametrize("database_schema", ["measurements", "autocal"])
+    def test_stream_array_stores_qprogram_as_qp_text(self, stream_array: StreamArray, database_schema: str):
+        """The QProgram is stored as its ``.qp`` text, which reads back into the same program."""
+        stream_array.db_manager.database_schema = database_schema
+        calibration = Calibration()
+        calibration.parameters = {"sample_name": "sampleA", "cooldown": "cdX", "base_path": "/shared_test/"}
+        stream_array.calibration = calibration
+
+        with patch("h5py.File"):
+            with stream_array:
+                pass
+
+        add_measurement = (
+            stream_array.db_manager.add_autocal_measurement
+            if database_schema == "autocal"
+            else stream_array.db_manager.add_measurement
+        )
+        stored = add_measurement.call_args.kwargs["qprogram"]
+        assert stored == (
+            "#!QProgram 0.3\n"
+            "\n"
+            "body:\n"
+            '  play "feedline_input_output_bus" Square(amplitude=1.0, duration=100)\n'
+            '  wait "feedline_input_output_bus" 100\n'
+        )
+        assert str(QProgram.from_qp(stored)) == stored
+
     def test_stream_array_qaas_schema_raises_error(self, stream_array: StreamArray):
         """StreamArray cannot save to the qaas schema."""
         stream_array.db_manager.database_schema = "qaas"
@@ -563,37 +560,6 @@ class TestStreamArray:
 
                 assert [1, 2] in stream_array
                 assert (stream_array[0] == [1, 2]).all
-
-    @pytest.mark.qm
-    @patch("h5py.File", return_value=MockFile(), autospec=False)
-    def test_context_manager_no_debug(self, mock_h5py: MockFile, stream_array_qm: StreamArray):
-        """Tests context manager real time saving."""
-        with patch("h5py.File") as mock_h5file:
-            mock_file = MagicMock()
-            mock_dataset = MagicMock()
-            mock_file.create_dataset.return_value = mock_dataset
-            mock_h5file.return_value = mock_file
-
-            with stream_array_qm:
-
-                # test adding outside the context manager
-                stream_array_qm[0, 0] = [-2]
-
-                # test adding inside the context manager
-                with stream_array_qm:
-                    stream_array_qm[0, 0] = [1]
-                    stream_array_qm[0, 1] = [2]
-                    stream_array_qm[1, 0] = [3]
-                    stream_array_qm[1, 1] = [4]
-
-                assert (stream_array_qm.results == [[1, 2], [3, 4]]).all
-
-                assert len(stream_array_qm) == 2
-                assert sum(1 for _ in iter(stream_array_qm)) == 2
-                assert str(stream_array_qm) == "[[[1.]\n  [2.]]\n\n [[3.]\n  [4.]]]"
-
-                assert [1, 2] in stream_array_qm
-                assert (stream_array_qm[0] == [1, 2]).all
 
     @patch("h5py.File", return_value=MockFile(), autospec=False)
     def test_context_manager_complex_values(self, mock_h5py: MockFile, stream_array_complex: StreamArray):
@@ -703,6 +669,29 @@ class TestFluxOffsets:
 
         assert stream_array._get_qprogram_flux_vector() == {"flux_q0": 0.15, "flux_q1": 0.2}
 
+    def test_qprogram_flux_vector_reads_qdac_set_offset(self, stream_array: StreamArray):
+        """Offsets set with ``qp.qdac.set_offset`` are collected like ``set_offset`` ones."""
+        stream_array.calibration = _calibration_with_crosstalk(["flux_q0", "flux_q1"])
+        qprogram = QProgram()
+        qprogram.set_offset("flux_q0", 0.15)
+        qprogram.qdac.set_offset("flux_q1", 0.2)
+        stream_array.qprogram = qprogram
+
+        assert stream_array._get_qprogram_flux_vector() == {"flux_q0": 0.15, "flux_q1": 0.2}
+
+    def test_qprogram_flux_vector_set_offset_and_qdac_set_offset_on_same_bus_returns_empty(
+        self, stream_array: StreamArray
+    ):
+        """A crosstalk bus offset by both ``set_offset`` and ``qp.qdac.set_offset`` counts as offset twice."""
+        stream_array.calibration = _calibration_with_crosstalk(["flux_q0", "flux_q1"])
+        qprogram = QProgram()
+        qprogram.set_offset("flux_q0", 0.15)
+        qprogram.qdac.set_offset("flux_q0", 0.4)
+        qprogram.set_offset("flux_q1", 0.2)
+        stream_array.qprogram = qprogram
+
+        assert stream_array._get_qprogram_flux_vector() == {}
+
     def test_qprogram_flux_vector_duplicate_bus_returns_empty(self, stream_array: StreamArray):
         """A crosstalk bus offset more than once makes the whole flux vector empty."""
         stream_array.calibration = _calibration_with_crosstalk(["flux_q0", "flux_q1"])
@@ -722,8 +711,8 @@ class TestFluxOffsets:
         stream_array.calibration = _calibration_with_crosstalk(["flux_q0", "flux_q1"])
         qprogram = QProgram()
         qprogram.set_offset("flux_q0", 0.15)
-        variable = qprogram.variable("amp", Domain.Voltage)
-        with qprogram.for_loop(variable=variable, start=0, stop=1, step=0.1):
+        variable = qprogram.variable("amp")
+        with qprogram.sweep(variable).from_range(0, 1, 0.1):
             qprogram.set_offset("flux_q1", variable)
         stream_array.qprogram = qprogram
 

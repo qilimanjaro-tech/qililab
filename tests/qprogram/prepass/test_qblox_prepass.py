@@ -4,11 +4,13 @@ import re
 import numpy as np
 import pytest
 
-from qililab import Calibration, Domain, IQPair, QProgram, Square
+from qprogram.blocks import Average
+from qprogram.operations import Play, Sync
+from qprogram_qblox import Acquire
+
+from qililab import Calibration, IQPair, QProgram, Square
 from qililab.pulse_distortion import ExponentialCorrection
-from qililab.qprogram.blocks import Average
 from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
-from qililab.qprogram.operations import Acquire, Play, Sync
 from qililab.qprogram.prepass import ConditionalTrigger, prepare_qblox, prepare_shared
 
 DRIVE_WF = IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
@@ -30,7 +32,7 @@ class TestPrepareQblox:
         qp.qdac.play(bus="qdac_flux", waveform=Square(amplitude=0.5, duration=10), dwell=2)
         with qp.average(10):
             qp.play(bus="drive", waveform=DRIVE_WF)
-            qp.set_offset(bus="qdac_flux", offset_path0=0.2)
+            qp.qdac.set_offset(bus="qdac_flux", offset=0.2)
             qp.sync()
             qp.qblox.acquire(bus="readout", weights=WEIGHTS)
 
@@ -57,7 +59,7 @@ class TestPrepareQblox:
     def test_acquisition_metadata(self):
         """Per Qblox bus and block: the acquisitions directly in the block and the block's depth."""
         qp = QProgram()
-        with qp.average(10) as average:
+        with qp.average(10):
             qp.qblox.acquire(bus="readout", weights=WEIGHTS)
             qp.measure(bus="readout", waveform=WEIGHTS, weights=WEIGHTS)
             qp.qblox.acquire(bus="qdac_flux", weights=WEIGHTS)
@@ -65,24 +67,31 @@ class TestPrepareQblox:
 
         result = prepare_qblox(qp, qblox_buses=["readout"])
 
-        assert result.acquisition_metadata == {"readout": {average.uuid: (2, 1), qp.body.uuid: (1, 0)}}
+        # Keyed by the id of the blocks of the QProgram handed to the compiler
+        body = result.qprogram.body
+        assert result.acquisition_metadata == {"readout": {id(body.elements[0]): (2, 1), id(body): (1, 0)}}
 
     @pytest.mark.parametrize(
-        "wait_trigger_bus, qblox_buses, expected",
-        [(None, ["drive"], False), ("drive", ["drive"], True), ("qdac_flux", ["drive"], False)],
+        "wait_trigger, expected",
+        [
+            (None, False),
+            (lambda qp: qp.qblox.wait_trigger(bus="drive", duration=100), True),
+            (lambda qp: qp.qblox.wait_trigger(bus="qdac_flux", duration=100), False),
+            (lambda qp: qp.qdac.wait_trigger(bus="qdac_flux", port=1), False),
+        ],
     )
-    def test_requires_external_trigger_with_wait_trigger(self, wait_trigger_bus, qblox_buses, expected):
+    def test_requires_external_trigger_with_wait_trigger(self, wait_trigger, expected):
         qp = QProgram()
         qp.play(bus="drive", waveform=DRIVE_WF)
-        if wait_trigger_bus is not None:
-            qp.wait_trigger(bus=wait_trigger_bus, duration=100)
+        if wait_trigger is not None:
+            wait_trigger(qp)
 
-        assert prepare_qblox(qp, qblox_buses=qblox_buses).requires_external_trigger is expected
+        assert prepare_qblox(qp, qblox_buses=["drive"]).requires_external_trigger is expected
 
     def test_if_trigger_wait_time_derived_from_qdac_dwell(self):
         qp = QProgram()
         qp.qdac.play(bus="qdac_flux", waveform=Square(amplitude=1.0, duration=100), dwell=3)
-        qp.set_trigger(bus="qdac_flux", duration=100e-6, outputs=1, position="step")
+        qp.qdac.set_trigger(bus="qdac_flux", duration=100e-6, position="step", outputs=[1])
         with qp.if_trigger():
             with qp.average(shots=10):
                 qp.qblox.acquire(bus="readout", weights=WEIGHTS)
@@ -111,7 +120,7 @@ class TestPrepareQblox:
         with pytest.raises(
             NotImplementedError,
             match=re.escape(
-                "Block block cannot be nested inside qp.if_trigger() (only qp.average(...)/qp.for_loop(...) can be)."
+                "Block block cannot be nested inside qp.if_trigger() (only qp.average(...) and sweeps can be)."
             ),
         ):
             prepare_qblox(qp, qblox_buses=["readout"])

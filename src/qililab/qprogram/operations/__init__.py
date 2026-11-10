@@ -12,55 +12,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from .acquire import Acquire, AcquireWithCalibratedWeights
+"""The operations qililab adds to qprogram's, and the operations of an ``Experiment``."""
+
+from .disable_autosync import DisableAutosync
 from .execute_qprogram import ExecuteQProgram
 from .get_parameter import GetParameter
-from .measure import (
-    Measure,
-    MeasureWithCalibratedWaveform,
-    MeasureWithCalibratedWaveformWeights,
-    MeasureWithCalibratedWeights,
-)
-from .measure_reset import MeasureReset, MeasureResetCalibrated
-from .operation import Operation
-from .play import Play, PlayWithCalibratedWaveform
-from .reset_phase import ResetPhase
+from .measure_reset import MeasureReset
+from .play import QbloxPlay
 from .set_crosstalk import SetCrosstalk
-from .set_frequency import SetFrequency
-from .set_gain import SetGain
-from .set_markers import SetMarkers
-from .set_offset import SetOffset
 from .set_parameter import SetParameter
-from .set_phase import SetPhase
-from .set_trigger import SetTrigger
-from .sync import Sync
-from .wait import Wait
-from .wait_trigger import WaitTrigger
 
 __all__ = [
-    "Acquire",
-    "AcquireWithCalibratedWeights",
+    "DisableAutosync",
     "ExecuteQProgram",
     "GetParameter",
-    "Measure",
     "MeasureReset",
-    "MeasureResetCalibrated",
-    "MeasureWithCalibratedWaveform",
-    "MeasureWithCalibratedWaveformWeights",
-    "MeasureWithCalibratedWeights",
-    "Operation",
-    "Play",
-    "PlayWithCalibratedWaveform",
-    "ResetPhase",
+    "QbloxPlay",
     "SetCrosstalk",
-    "SetFrequency",
-    "SetGain",
-    "SetMarkers",
-    "SetOffset",
     "SetParameter",
-    "SetPhase",
-    "SetTrigger",
-    "Sync",
-    "Wait",
-    "WaitTrigger",
 ]

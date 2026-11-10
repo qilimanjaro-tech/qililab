@@ -6,13 +6,12 @@ Each case compares the compensated program with ``flux_to_bias`` of the original
 
 import numpy as np
 import pytest
+from qprogram.waveforms import Square
 
-from qililab.core.variables import Domain
 from qililab.qprogram import QProgram
 from qililab.qprogram.blocks import ForLoop, for_loop_iterations
 from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
 from qililab.qprogram.qblox_compiler import QbloxCompiler
-from qililab.waveforms import Square
 from tests.qprogram.crosstalk.crosstalk_simulation import assert_compensated
 
 BUSES = ["flux1", "flux2"]
@@ -35,8 +34,8 @@ def check(build, crosstalk, quantity="offset"):
 
 def single_sweep_with_fixed_flux():
     qp = QProgram()
-    x = qp.variable("x", Domain.Voltage)
-    with qp.for_loop(x, 0, 0.2, 0.1):
+    x = qp.variable("x")
+    with qp.sweep(x).from_range(0, 0.2, 0.1):
         qp.set_offset("flux1", x)
         qp.set_offset("flux2", 0.05)
         qp.wait("flux1", 100)
@@ -45,11 +44,11 @@ def single_sweep_with_fixed_flux():
 
 def flux_vs_flux_at_different_levels():
     qp = QProgram()
-    x = qp.variable("x", Domain.Voltage)
-    y = qp.variable("y", Domain.Voltage)
-    with qp.for_loop(x, 0, 0.2, 0.1):
+    x = qp.variable("x")
+    y = qp.variable("y")
+    with qp.sweep(x).from_range(0, 0.2, 0.1):
         qp.set_offset("flux1", x)
-        with qp.for_loop(y, 0, 0.2, 0.1):
+        with qp.sweep(y).from_range(0, 0.2, 0.1):
             qp.set_offset("flux2", y)
             qp.wait("flux1", 100)
     return qp
@@ -57,10 +56,10 @@ def flux_vs_flux_at_different_levels():
 
 def flux_vs_flux_in_the_inner_loop():
     qp = QProgram()
-    x = qp.variable("x", Domain.Voltage)
-    y = qp.variable("y", Domain.Voltage)
-    with qp.for_loop(x, 0, 0.2, 0.1):
-        with qp.for_loop(y, 0, 0.2, 0.1):
+    x = qp.variable("x")
+    y = qp.variable("y")
+    with qp.sweep(x).from_range(0, 0.2, 0.1):
+        with qp.sweep(y).from_range(0, 0.2, 0.1):
             qp.set_offset("flux1", x)
             qp.set_offset("flux2", y)
             qp.wait("flux1", 100)
@@ -69,8 +68,8 @@ def flux_vs_flux_in_the_inner_loop():
 
 def fixed_flux_next_to_a_sweep():
     qp = QProgram()
-    x = qp.variable("x", Domain.Voltage)
-    with qp.for_loop(x, 0, 0.2, 0.1):
+    x = qp.variable("x")
+    with qp.sweep(x).from_range(0, 0.2, 0.1):
         qp.set_offset("flux1", x)
         qp.set_offset("flux2", 0.3)
         qp.wait("flux1", 100)
@@ -79,10 +78,10 @@ def fixed_flux_next_to_a_sweep():
 
 def park_then_sweep_the_same_bus():
     qp = QProgram()
-    x = qp.variable("x", Domain.Voltage)
+    x = qp.variable("x")
     qp.set_offset("flux1", 0.2)
     qp.wait("flux1", 100)
-    with qp.for_loop(x, 0, 0.2, 0.1):
+    with qp.sweep(x).from_range(0, 0.2, 0.1):
         qp.set_offset("flux1", x)
         qp.wait("flux1", 100)
     return qp
@@ -90,9 +89,9 @@ def park_then_sweep_the_same_bus():
 
 def fixed_flux_on_another_bus_then_sweep():
     qp = QProgram()
-    x = qp.variable("x", Domain.Voltage)
+    x = qp.variable("x")
     qp.set_offset("flux2", 0.05)
-    with qp.for_loop(x, 0, 0.2, 0.1):
+    with qp.sweep(x).from_range(0, 0.2, 0.1):
         qp.set_offset("flux1", x)
         qp.wait("flux1", 100)
     return qp
@@ -100,8 +99,8 @@ def fixed_flux_on_another_bus_then_sweep():
 
 def reset_after_a_sweep():
     qp = QProgram()
-    x = qp.variable("x", Domain.Voltage)
-    with qp.for_loop(x, 0, 0.2, 0.1):
+    x = qp.variable("x")
+    with qp.sweep(x).from_range(0, 0.2, 0.1):
         qp.set_offset("flux1", x)
         qp.wait("flux1", 100)
     qp.set_offset("flux1", 0.0)
@@ -111,11 +110,11 @@ def reset_after_a_sweep():
 
 def inner_loop_sweeps_the_same_bus_again():
     qp = QProgram()
-    x = qp.variable("x", Domain.Voltage)
-    y = qp.variable("y", Domain.Voltage)
-    with qp.for_loop(x, 0, 0.2, 0.1):
+    x = qp.variable("x")
+    y = qp.variable("y")
+    with qp.sweep(x).from_range(0, 0.2, 0.1):
         qp.set_offset("flux1", x)
-        with qp.for_loop(y, 0, 0.2, 0.1):
+        with qp.sweep(y).from_range(0, 0.2, 0.1):
             qp.set_offset("flux1", y)
             qp.wait("flux1", 100)
     return qp
@@ -123,11 +122,11 @@ def inner_loop_sweeps_the_same_bus_again():
 
 def inner_loop_sweeps_the_same_bus_again_with_more_points():
     qp = QProgram()
-    x = qp.variable("x", Domain.Voltage)
-    y = qp.variable("y", Domain.Voltage)
-    with qp.for_loop(x, 0, 0.2, 0.1):
+    x = qp.variable("x")
+    y = qp.variable("y")
+    with qp.sweep(x).from_range(0, 0.2, 0.1):
         qp.set_offset("flux1", x)
-        with qp.for_loop(y, 0, 0.5, 0.1):
+        with qp.sweep(y).from_range(0, 0.5, 0.1):
             qp.set_offset("flux1", y)
             qp.wait("flux1", 100)
     return qp
@@ -135,11 +134,11 @@ def inner_loop_sweeps_the_same_bus_again_with_more_points():
 
 def inner_loop_sweeps_the_same_bus_again_with_fewer_points():
     qp = QProgram()
-    x = qp.variable("x", Domain.Voltage)
-    y = qp.variable("y", Domain.Voltage)
-    with qp.for_loop(x, 0, 0.2, 0.1):
+    x = qp.variable("x")
+    y = qp.variable("y")
+    with qp.sweep(x).from_range(0, 0.2, 0.1):
         qp.set_offset("flux1", x)
-        with qp.for_loop(y, 0, 0.1, 0.1):
+        with qp.sweep(y).from_range(0, 0.1, 0.1):
             qp.set_offset("flux1", y)
             qp.wait("flux1", 100)
     return qp
@@ -147,24 +146,38 @@ def inner_loop_sweeps_the_same_bus_again_with_fewer_points():
 
 def inner_parallel_sweeps_the_same_bus_again_with_more_points():
     qp = QProgram()
-    x = qp.variable("x", Domain.Voltage)
-    y = qp.variable("y", Domain.Voltage)
-    with qp.for_loop(x, 0, 0.2, 0.1):
+    x = qp.variable("x")
+    y = qp.variable("y")
+    with qp.sweep(x).from_range(0, 0.2, 0.1):
         qp.set_offset("flux1", x)
-        with qp.parallel([ForLoop(y, 0, 0.5, 0.1)]):
+        with pytest.warns(FutureWarning), qp.parallel([ForLoop(y, 0, 0.5, 0.1)]):
             qp.set_offset("flux1", y)
+            qp.wait("flux1", 100)
+    return qp
+
+
+def inner_parallel_of_two_loops_sweeps_both_buses_again():
+    qp = QProgram()
+    x = qp.variable("x")
+    y = qp.variable("y")
+    z = qp.variable("z")
+    with qp.sweep(x).from_range(0, 0.2, 0.1):
+        qp.set_offset("flux1", x)
+        with qp.sweep(y).from_range(0, 0.5, 0.1) | qp.sweep(z).from_range(-0.1, 0.4, 0.1):
+            qp.set_offset("flux1", y)
+            qp.set_offset("flux2", z)
             qp.wait("flux1", 100)
     return qp
 
 
 def park_then_nested_sweep():
     qp = QProgram()
-    x = qp.variable("x", Domain.Voltage)
-    y = qp.variable("y", Domain.Voltage)
+    x = qp.variable("x")
+    y = qp.variable("y")
     qp.set_offset("flux1", 0.2)
-    with qp.for_loop(x, 0, 0.2, 0.1):
+    with qp.sweep(x).from_range(0, 0.2, 0.1):
         qp.set_offset("flux2", x)
-        with qp.for_loop(y, 0, 0.2, 0.1):
+        with qp.sweep(y).from_range(0, 0.2, 0.1):
             qp.set_offset("flux1", y)
             qp.wait("flux1", 100)
     return qp
@@ -184,6 +197,7 @@ def park_then_nested_sweep():
         inner_loop_sweeps_the_same_bus_again_with_more_points,
         inner_loop_sweeps_the_same_bus_again_with_fewer_points,
         inner_parallel_sweeps_the_same_bus_again_with_more_points,
+        inner_parallel_of_two_loops_sweeps_both_buses_again,
         park_then_nested_sweep,
     ],
 )
@@ -216,9 +230,9 @@ def test_offsets_match_flux_to_bias(build, matrix, flux_offsets):
 def test_gain_before_a_sweep_is_kept_apart_from_the_offsets(quantity):
     def build():
         qp = QProgram()
-        x = qp.variable("x", Domain.Voltage)
+        x = qp.variable("x")
         qp.set_gain("flux1", 0.5)
-        with qp.for_loop(x, 0, 0.2, 0.1):
+        with qp.sweep(x).from_range(0, 0.2, 0.1):
             qp.set_offset("flux1", x)
             qp.play("flux1", Square(-0.2, 100))
             qp.wait("flux1", 50)
@@ -234,7 +248,7 @@ def test_constant_folded_into_a_shifted_loop_compiles_with_the_same_iteration_co
     compensated = flux_vs_flux_at_different_levels().with_crosstalk_qblox(crosstalk)
     inner = compensated.body.elements[0].elements[-1]
 
-    counts = {for_loop_iterations(loop.start, loop.stop, loop.step) for loop in inner.loops}
+    counts = {for_loop_iterations(loop.source.start, loop.source.stop, loop.source.step) for loop in inner.loops}
     assert counts == {3}
     assert len(inner.loops) > 2
     QbloxCompiler().compile(compensated)
@@ -242,8 +256,9 @@ def test_constant_folded_into_a_shifted_loop_compiles_with_the_same_iteration_co
 
 def test_single_iteration_loop_raises_a_clear_error():
     qp = QProgram()
-    x = qp.variable("x", Domain.Voltage)
-    with qp.for_loop(x, 0.2, 0.25, 0.051):
+    x = qp.variable("x")
+    # A for_loop rounds its point count down: this one has a single point.
+    with pytest.warns(FutureWarning), qp.for_loop(x, 0.2, 0.25, 0.051):
         qp.set_offset("flux1", x)
         qp.wait("flux1", 100)
     crosstalk = make_crosstalk(COUPLED)
@@ -253,13 +268,13 @@ def test_single_iteration_loop_raises_a_clear_error():
 
 def test_inner_loop_setting_only_some_of_the_buses_an_outer_loop_sweeps_raises():
     qp = QProgram()
-    x = qp.variable("x", Domain.Voltage)
-    y = qp.variable("y", Domain.Voltage)
-    with qp.for_loop(x, 0, 0.2, 0.1):
+    x = qp.variable("x")
+    y = qp.variable("y")
+    with qp.sweep(x).from_range(0, 0.2, 0.1):
         qp.set_offset("flux1", x)
         qp.set_offset("flux2", x)
         qp.wait("flux2", 75)
-        with qp.for_loop(y, 0, 0.2, 0.1):
+        with qp.sweep(y).from_range(0, 0.2, 0.1):
             qp.set_offset("flux2", y)
             qp.wait("flux2", 50)
     crosstalk = make_crosstalk(np.eye(2))
@@ -270,14 +285,14 @@ def test_inner_loop_setting_only_some_of_the_buses_an_outer_loop_sweeps_raises()
 def test_three_loops_on_one_bus_raise_a_clear_error():
     buses = ["flux1", "flux2", "flux3"]
     qp = QProgram()
-    x = qp.variable("x", Domain.Voltage)
-    y = qp.variable("y", Domain.Voltage)
-    z = qp.variable("z", Domain.Voltage)
-    with qp.for_loop(x, 0, 0.2, 0.1):
+    x = qp.variable("x")
+    y = qp.variable("y")
+    z = qp.variable("z")
+    with qp.sweep(x).from_range(0, 0.2, 0.1):
         qp.set_offset("flux1", x)
-        with qp.for_loop(y, 0, 0.2, 0.1):
+        with qp.sweep(y).from_range(0, 0.2, 0.1):
             qp.set_offset("flux2", y)
-            with qp.for_loop(z, 0, 0.2, 0.1):
+            with qp.sweep(z).from_range(0, 0.2, 0.1):
                 qp.set_offset("flux3", z)
                 qp.wait("flux1", 100)
     dense = [[1, 0.2, 0.05], [0.1, 1, 0.15], [0.03, 0.12, 1]]

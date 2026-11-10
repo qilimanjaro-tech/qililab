@@ -16,6 +16,7 @@
 
 import contextlib
 from dataclasses import InitVar, dataclass, field
+from typing import cast
 
 from qpysequence import Sequence as QpySequence
 
@@ -25,7 +26,6 @@ from qililab.instruments.qblox import QbloxQCM, QbloxQRM
 from qililab.instruments.qdevil import QDevilQDac2
 from qililab.pulse_distortion.pulse_distortion import PulseDistortion
 from qililab.qprogram.qblox_compiler import AcquisitionData
-from qililab.result.qprogram import MeasurementResult
 from qililab.settings import Settings
 from qililab.typings import FILTER_PARAMETERS, ChannelID, InstrumentName, OutputID, Parameter, ParameterValue
 
@@ -313,20 +313,24 @@ class Bus:
                 return
 
     def acquire_qprogram_results(
-        self, acquisitions: dict[str, AcquisitionData], channel_id: ChannelID | None = None
-    ) -> list[MeasurementResult]:
+        self, acquisitions: dict[str, AcquisitionData], channel_id: ChannelID | None = None, scope: bool = False
+    ) -> list[dict]:
         """Read the result from the instruments
 
-        Returns:
-            list[Result]: Acquired results in chronological order
+        Args:
+            acquisitions (dict[str, AcquisitionData]): The acquisitions, by name.
             channel_id (int, optional): instrument channel of QRM. Defaults to None.
+            scope (bool, optional): Whether the bus is scoped by a ``qp.qblox.scope``. Defaults to False.
+
+        Returns:
+            list[dict]: The raw acquisitions, in chronological order.
         """
         # TODO: Support acquisition from multiple instruments
-        total_results: list[list[MeasurementResult]] = []
+        total_results: list[list[dict]] = []
         for instrument in self.instruments:
             if isinstance(instrument, QbloxQRM):
                 instrument_results = instrument.acquire_qprogram_results(
-                    acquisitions=acquisitions, channel_id=channel_id
+                    acquisitions=acquisitions, channel_id=channel_id, scope=scope
                 )
                 total_results.append(instrument_results)
 
@@ -340,7 +344,7 @@ class Bus:
     def check_recurrent_timeout(self) -> int:
         for instrument, channel in zip(self.instruments, self.channels):
             if isinstance(instrument, QbloxQRM) and channel is not None:
-                return instrument.get_parameter(Parameter.TIMEOUT_REPETITIONS, channel_id=int(channel))
+                return cast("int", instrument.get_parameter(Parameter.TIMEOUT_REPETITIONS, channel_id=int(channel)))
         return 0
 
     def _setup_trigger_network(self, trigger_address):

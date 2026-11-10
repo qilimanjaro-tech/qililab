@@ -13,19 +13,23 @@
 # limitations under the License.
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Callable
+from typing import TYPE_CHECKING, Callable, ClassVar
 
-from qililab.qprogram.operations.operation import Operation
+from qprogram.operations import Operation
+
 from qililab.yaml import yaml
 
 if TYPE_CHECKING:
-    from qililab.core.variables import Variable
+    from qprogram import Variable
+
     from qililab.qprogram.calibration import Calibration
     from qililab.qprogram.qprogram import QProgram
 
 
 @yaml.register_class
 class ExecuteQProgram(Operation):
+    BUS_ATTRS: ClassVar[tuple[str, ...]] = ()
+
     def __init__(
         self,
         qprogram: QProgram | Callable[..., QProgram],  # type: ignore[misc]
@@ -33,7 +37,6 @@ class ExecuteQProgram(Operation):
         calibration: Calibration | None = None,
         debug: bool = False,
     ) -> None:
-        super().__init__()
         self.qprogram: QProgram | Callable[[Variable, ...], QProgram] = qprogram  # type: ignore[misc]
         self.bus_mapping: dict[str, str] | None = bus_mapping
         self.calibration: Calibration | None = calibration

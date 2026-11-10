@@ -16,41 +16,20 @@ from collections import deque
 from typing import TYPE_CHECKING, Any, Callable
 
 import numpy as np
+from qprogram.blocks import Average, Block, Parallel, Sweep
+from qprogram.operations import Sync
+from qprogram.waveforms import Arbitrary
+from qprogram_qdac import Play, SetOffset, SetTrigger, WaitTrigger
 
-from qililab.config import logger
 from qililab.constants import QDACCONSTANTS
 from qililab.instruments.qdevil import QDevilQDac2
-from qililab.qprogram.blocks import (
-    Average,
-    Block,
-    Conditional,
-    ForLoop,
-    InfiniteLoop,
-    Loop,
-    Parallel,
-    for_loop_iterations,
-)
+from qililab.qprogram.blocks import IfTrigger, InfiniteLoop
 from qililab.qprogram.calibration import Calibration
 from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
-from qililab.qprogram.operations import (
-    Acquire,
-    Measure,
-    Play,
-    ResetPhase,
-    SetFrequency,
-    SetGain,
-    SetMarkers,
-    SetOffset,
-    SetPhase,
-    SetTrigger,
-    Sync,
-    Wait,
-    WaitTrigger,
-)
+from qililab.qprogram.operations import DisableAutosync
 from qililab.qprogram.prepass import prepare_qdac, prepare_shared
 from qililab.qprogram.qprogram import QProgram
 from qililab.typings.enums import Parameter
-from qililab.waveforms import Arbitrary
 
 if TYPE_CHECKING:
     from qililab.platform.components.bus import Bus
@@ -97,13 +76,14 @@ class QdacCompiler:
             InfiniteLoop: self._handle_infinite_loop,
             Parallel: self._handle_parallel,
             Average: self._handle_average,
-            ForLoop: self._handle_for_loop,
-            Loop: self._handle_loop,
+            Sweep: self._handle_sweep,
             SetOffset: self._handle_set_offset,
             Play: self._handle_play,
             WaitTrigger: self._handle_wait_trigger,
             SetTrigger: self._handle_set_trigger,
+            IfTrigger: self._handle_block,
             Block: self._handle_block,
+            DisableAutosync: self._handle_disable_autosync,
         }
 
         self._qprogram: QProgram
@@ -122,8 +102,9 @@ class QdacCompiler:
         self._infinite_loop: bool = False
         self._play_params: dict[str, Any] = {}
 
-        self._trigger_hashes: dict[str, str] = {}
         self._trigger_position: str | None = None
+        # Buses the compiler plays on without the QProgram naming them: the trigger bus of a set_trigger
+        self._extra_buses: set[str] = set()
 
         self._element_popped: dict | None = None
 
@@ -158,13 +139,13 @@ class QdacCompiler:
             for bus in self._buses and self._qdac_buses_alias:
                 self._buses[bus].qprogram_block_stack.append(block)
             for element in block.elements:
-                currently_conditional = inside_conditional or isinstance(element, Conditional)
+                currently_conditional = inside_conditional or isinstance(element, IfTrigger)
                 if currently_conditional:
                     # QDAC generates the external trigger; it has no way to conditionally skip an operation
                     # based on whether that same trigger was received in time on the Qblox side, so a
                     # QDAC-bus operation placed inside qp.if_trigger() would compile and execute
                     # unconditionally, silently ignoring the "only if trigger received" semantics.
-                    buses = (element.buses or []) if isinstance(element, Sync) else [getattr(element, "bus", None)]
+                    buses = (element.targets or []) if isinstance(element, Sync) else [getattr(element, "bus", None)]
                     offending_bus = next((bus for bus in buses if bus in self._qdac_buses_alias), None)
                     if offending_bus is not None:
                         raise NotImplementedError(
@@ -184,6 +165,7 @@ class QdacCompiler:
 
         self._qdacs = qdacs
         self._out_instrument = out_instrument
+        self._extra_buses = set()
         self._qdac_buses = qdac_buses
         self._qdac_buses_by_alias = {bus.alias: bus for bus in self._qdac_buses}
         self._qdac_buses_alias = [bus.alias for bus in self._qdac_buses]
@@ -223,13 +205,7 @@ class QdacCompiler:
         if not element.loops:
             raise NotImplementedError("Parallel block should contain loops.")
 
-        iterations = []
-        for loop in element.loops:
-            if isinstance(loop, ForLoop):
-                iters = for_loop_iterations(loop.start, loop.stop, loop.step)
-            elif isinstance(loop, Loop):
-                iters = int(loop.values.shape[0])
-            iterations.append(iters)
+        iterations = [loop.num_iterations() for loop in element.loops]
         for qdac_bus_alias in self._qdac_buses_alias:
             self._loop_repetitions[qdac_bus_alias] *= min(iterations) + 1
 
@@ -250,17 +226,10 @@ class QdacCompiler:
             self._buses[bus].loop_counter += 1
         return True
 
-    def _handle_for_loop(self, element: ForLoop):
-        iterations = for_loop_iterations(element.start, element.stop, element.step)
+    def _handle_sweep(self, element: Sweep):
+        iterations = element.num_iterations()
         for qdac_bus_alias in self._qdac_buses_alias:
             self._loop_repetitions[qdac_bus_alias] *= iterations + 1
-        for bus in self._buses:
-            self._buses[bus].loop_counter += 1
-        return True
-
-    def _handle_loop(self, element: Loop):
-        for qdac_bus_alias in self._qdac_buses_alias:
-            self._loop_repetitions[qdac_bus_alias] *= int(element.values.shape[0]) + 1
         for bus in self._buses:
             self._buses[bus].loop_counter += 1
         return True
@@ -272,7 +241,7 @@ class QdacCompiler:
             if isinstance(instrument, QDevilQDac2)
         )
         instrument.set_parameter(
-            parameter=Parameter.VOLTAGE, value=element.offset_path0, channel_id=self._channels[element.bus]
+            parameter=Parameter.VOLTAGE, value=element.offset, channel_id=self._channels[element.bus]
         )
         self._buses[element.bus].dc_set = True
 
@@ -319,65 +288,50 @@ class QdacCompiler:
                     Play(
                         bus=trigger_bus,
                         waveform=Arbitrary(np.ones(self._play_params["waveform"].shape) * voltage),  # type: ignore [attr-defined]
-                        dwell=self._play_params["dwell"],  # type: ignore [arg-type]
-                        delay=self._play_params["delay"],  # type: ignore [arg-type]
-                        repetitions=self._play_params["repetitions"],  # type: ignore [arg-type]
-                        stepped=self._play_params["stepped"],  # type: ignore [arg-type]
+                        dwell=self._play_params["dwell"],
+                        delay=self._play_params["delay"],
+                        repetitions=self._play_params["repetitions"],
+                        stepped=self._play_params["stepped"],
                     )
                 )
-                self._qprogram.buses.add(trigger_bus)
+                self._extra_buses.add(trigger_bus)
         else:
             trigger_bus = element.bus
-        if element.outputs:
-            for output in element.outputs if isinstance(element.outputs, list) else [element.outputs]:
-                trigger = self._hash_trigger(element, output)
+        for output in element.outputs:
+            trigger = self._hash_trigger(element, output)
 
-                if element.position == "end":
-                    instrument.set_end_marker_external_trigger(
-                        channel_id=self._channels[trigger_bus],
-                        out_port=output,
-                        trigger=trigger,
-                        width_s=element.duration,
-                    )
-                elif element.position == "start":
-                    instrument.set_start_marker_external_trigger(
-                        channel_id=self._channels[trigger_bus],
-                        out_port=output,
-                        trigger=trigger,
-                        width_s=element.duration,
-                    )
-                elif element.position == "step":
-                    instrument.set_start_marker_external_trigger(
-                        channel_id=self._channels[trigger_bus],
-                        out_port=output,
-                        trigger=trigger,
-                        width_s=element.duration,
-                        step=True,
-                    )
-                elif element.position == "end_step":
-                    instrument.set_end_marker_external_trigger(
-                        channel_id=self._channels[trigger_bus],
-                        out_port=output,
-                        trigger=trigger,
-                        width_s=element.duration,
-                        step=True,
-                    )
-            if not self._trigger_position:
-                self._trigger_position = "front"
-        else:
-            trigger = self._hash_trigger(element, None)
             if element.position == "end":
-                instrument.set_end_marker_internal_trigger(channel_id=self._channels[trigger_bus], trigger=trigger)
+                instrument.set_end_marker_external_trigger(
+                    channel_id=self._channels[trigger_bus],
+                    out_port=output,
+                    trigger=trigger,
+                    width_s=element.duration,
+                )
             elif element.position == "start":
-                instrument.set_start_marker_internal_trigger(channel_id=self._channels[trigger_bus], trigger=trigger)
+                instrument.set_start_marker_external_trigger(
+                    channel_id=self._channels[trigger_bus],
+                    out_port=output,
+                    trigger=trigger,
+                    width_s=element.duration,
+                )
             elif element.position == "step":
-                instrument.set_start_marker_internal_trigger(
-                    channel_id=self._channels[trigger_bus], trigger=trigger, step=True
+                instrument.set_start_marker_external_trigger(
+                    channel_id=self._channels[trigger_bus],
+                    out_port=output,
+                    trigger=trigger,
+                    width_s=element.duration,
+                    step=True,
                 )
             elif element.position == "end_step":
-                instrument.set_end_marker_internal_trigger(
-                    channel_id=self._channels[trigger_bus], trigger=trigger, step=True
+                instrument.set_end_marker_external_trigger(
+                    channel_id=self._channels[trigger_bus],
+                    out_port=output,
+                    trigger=trigger,
+                    width_s=element.duration,
+                    step=True,
                 )
+        if not self._trigger_position:
+            self._trigger_position = "front"
 
     def _handle_wait_trigger(self, element: WaitTrigger):
         instrument = next(
@@ -385,15 +339,9 @@ class QdacCompiler:
             for instrument in self._qdac_buses_by_alias[element.bus].instruments
             if isinstance(instrument, QDevilQDac2)
         )
-        if element.port:
-            instrument.set_in_external_trigger(channel_id=self._channels[element.bus], in_port=element.port)
-            if not self._trigger_position:
-                self._trigger_position = "back"
-        else:
-            instrument.set_in_internal_trigger(
-                channel_id=self._channels[element.bus],
-                trigger=next(trigger for _, trigger in self._trigger_hashes.items()),
-            )
+        instrument.set_in_external_trigger(channel_id=self._channels[element.bus], in_port=element.port)
+        if not self._trigger_position:
+            self._trigger_position = "back"
 
     def _handle_play(self, element: Play):
         instrument = next(
@@ -401,15 +349,11 @@ class QdacCompiler:
             for instrument in self._qdac_buses_by_alias[element.bus].instruments
             if isinstance(instrument, QDevilQDac2)
         )
-        waveform, _ = element.get_waveforms()
-        waveform_variables = element.get_waveform_variables()
-        if waveform_variables:
-            logger.error("Variables in waveforms are not supported in Qdac.")
-            return
+        waveform = element.waveform
         if not element.dwell:
             element.dwell = self._dc_dwell
         if not element.delay:
-            element.delay = self._dc_delay
+            element.delay = self._dc_delay  # type: ignore[assignment]
         if not element.stepped:
             element.stepped = self._dc_stepped
         if not element.repetitions:
@@ -440,25 +384,31 @@ class QdacCompiler:
     def _handle_block(self, element: Block):
         pass
 
+    def _handle_disable_autosync(self, element: DisableAutosync) -> None:
+        """Nothing to do: disabling autosync only concerns the Qblox compiler."""
+
     def _handle_unknown(self, element: Any):
-        if type(element) in [SetFrequency, SetPhase, ResetPhase, SetGain, SetMarkers, Wait, Measure, Acquire]:
-            raise NotImplementedError(f"{element.__class__} is not supported in QDACII.")
-
         if type(element) is Sync:
-            if element.buses and any(bus in self._qdac_buses_alias for bus in element.buses):
+            if element.targets and any(bus in self._qdac_buses_alias for bus in element.targets):
                 raise NotImplementedError(f"{element.__class__} is not supported in QDACII.")
+            return
+        if not isinstance(element, Block):
+            hint = {
+                "Play": " Use qp.qdac.play() on a QDAC bus.",
+                "SetOffset": " Use qp.qdac.set_offset() on a QDAC bus.",
+            }.get(type(element).__name__, "")
+            raise NotImplementedError(f"{element.__class__} is not supported in QDACII.{hint}")
 
-    def _hash_trigger(self, element: SetTrigger, output: int | None):
-        hash = f"trigger_{element.bus}_{output}_{element.position}"
-        self._trigger_hashes[element.bus] = hash
-        return hash
+    @staticmethod
+    def _hash_trigger(element: SetTrigger, output: int) -> str:
+        return f"trigger_{element.bus}_{output}_{element.position}"
 
     def _handle_simultaneous_qdacs(self):
         out_bus = next(
             (
                 bus.alias
                 for bus in self._qdac_buses
-                if self._out_instrument in bus.instruments and bus.alias in self._qprogram.buses
+                if self._out_instrument in bus.instruments and bus.alias in self._qprogram.buses | self._extra_buses
             ),
             None,
         )

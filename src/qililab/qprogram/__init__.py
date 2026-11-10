@@ -14,6 +14,7 @@
 
 """Tools for building and manipulating :class:`~qililab.qprogram.qprogram.QProgram` instances."""
 
+from . import legacy  # noqa: F401  (registers the constructors reading QPrograms saved as YAML by former versions)
 from .calibration import Calibration
 from .crosstalk_matrix import CrosstalkMatrix, NonLinearCrosstalkMatrix
 from .experiment import Experiment

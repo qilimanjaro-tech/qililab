@@ -11,92 +11,140 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from types import MappingProxyType
-from typing import Callable
+"""Experiment: platform parameter changes and QProgram executions, looped over on the PC."""
 
-from qililab.core.variables import Domain, Variable
+import functools
+import operator
+import re
+from collections.abc import Sequence
+from typing import Any, Callable
+
+import numpy as np
+import qprogram as qp
+from qprogram import Values, Variable
+
+from qililab.qprogram.blocks import ForLoop, Loop, reject_variables_swept_by_enclosing_loops
 from qililab.qprogram.calibration import Calibration
 from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
 from qililab.qprogram.operations import ExecuteQProgram, GetParameter, SetParameter
 from qililab.qprogram.operations.set_crosstalk import SetCrosstalk
 from qililab.qprogram.qprogram import QProgram
-from qililab.qprogram.structured_program import StructuredProgram
 from qililab.typings.enums import Parameter
 from qililab.yaml import yaml
 
 
 @yaml.register_class
-class Experiment(StructuredProgram):
+class Experiment(qp.QProgram):
     """Represents an experiment.
 
-    This class allows setting platform parameters and executing quantum programs.
+    This class allows setting platform parameters and executing quantum programs, in loops run on the PC by the
+    ``ExperimentExecutor``.
+
+    Args:
+        label (str): The label of the experiment.
+        description (str | None, optional): A description of the experiment. Defaults to None.
     """
 
-    _domain_of_parameter: MappingProxyType[Parameter, Domain] = MappingProxyType(
-        {
-            Parameter.AMPLITUDE: Domain.Voltage,
-            Parameter.GAIN: Domain.Voltage,
-            Parameter.GAIN_I: Domain.Voltage,
-            Parameter.GAIN_Q: Domain.Voltage,
-            Parameter.DC_OFFSET: Domain.Voltage,
-            Parameter.OFFSET_I: Domain.Voltage,
-            Parameter.OFFSET_Q: Domain.Voltage,
-            Parameter.OFFSET_OUT0: Domain.Voltage,
-            Parameter.OFFSET_OUT1: Domain.Voltage,
-            Parameter.OFFSET_OUT2: Domain.Voltage,
-            Parameter.OFFSET_OUT3: Domain.Voltage,
-            Parameter.FLUX: Domain.Flux,
-            Parameter.DURATION: Domain.Time,
-            Parameter.LO_FREQUENCY: Domain.Frequency,
-            Parameter.IF: Domain.Frequency,
-            Parameter.PHASE: Domain.Phase,
-            Parameter.DRAG_COEFFICIENT: Domain.Scalar,
-            Parameter.THRESHOLD: Domain.Scalar,
-            Parameter.THRESHOLD_ROTATION: Domain.Scalar,
-        }
-    )
-
-    _type_of_parameter: MappingProxyType[Parameter, type] = MappingProxyType(
-        {Parameter.DRAG_COEFFICIENT: float, Parameter.THRESHOLD: float, Parameter.THRESHOLD_ROTATION: float}
-    )
-
     def __init__(self, label: str, description: str | None = None) -> None:
-        super().__init__()
+        super().__init__(label=label, description=description)
 
-        self.label: str = label
-        self.description: str | None = description
+    def _append_to_active(self, element: Any) -> None:
+        """Append ``element`` to the active block, refusing a loop over a variable an enclosing loop already sweeps.
 
-    def get_parameter(
+        Args:
+            element (Any): The operation or block to append.
+
+        Raises:
+            VariableAllocated: If ``element`` is a loop over a variable an enclosing loop already sweeps.
+        """
+        reject_variables_swept_by_enclosing_loops(element, self._block_stack)
+        super()._append_to_active(element)
+
+    def for_loop(self, variable: Variable, start: int | float, stop: int | float, step: int | float = 1) -> Any:
+        """Loop ``variable`` from ``start`` to ``stop`` by ``step``.
+
+        Blocks need to open a scope.
+
+        Args:
+            variable (Variable): The variable to be affected from the loop.
+            start (int | float): The start value.
+            stop (int | float): The stop value.
+            step (int | float, optional): The step value. Defaults to 1.
+
+        Returns:
+            The context manager opening the ``Sweep`` block.
+        """
+        return self.sweep(variable, ForLoop(variable, start, stop, step).to_range())
+
+    def loop(self, variable: Variable, values: np.ndarray) -> Any:
+        """Loop ``variable`` over ``values``.
+
+        Blocks need to open a scope.
+
+        Args:
+            variable (Variable): The variable to be affected from the loop.
+            values (np.ndarray): The values to iterate over.
+
+        Returns:
+            The context manager opening the ``Sweep`` block.
+        """
+        return self.sweep(variable, Values(values))
+
+    def parallel(self, loops: Sequence[ForLoop | Loop]) -> Any:
+        """Run several loops in lockstep.
+
+        Blocks need to open a scope.
+
+        Args:
+            loops (Sequence[ForLoop | Loop]): The loops to run in parallel.
+
+        Returns:
+            The context manager opening the ``Parallel`` block, or the ``Sweep`` block for a single loop.
+        """
+        contexts = [
+            self.sweep(loop.variable, loop.to_range() if isinstance(loop, ForLoop) else loop.to_values())
+            for loop in loops
+        ]
+        return functools.reduce(operator.or_, contexts)
+
+    def get_parameter(  # type: ignore[override]
         self, alias: str, parameter: Parameter, channel_id: int | None = None, output_id: int | None = None
-    ):
-        """Set a platform parameter.
+    ) -> Variable:
+        """Get a platform parameter.
 
-        Appends a SetParameter operation to the active block of the experiment.
+        Appends a GetParameter operation to the active block of the experiment.
 
         Args:
             alias (str): The alias for the platform component.
-            parameter (Parameter): The parameter to set.
-            value (int | float): The value to set for the parameter.
+            parameter (Parameter): The parameter to get.
+            channel_id (int | None, optional): The channel of the component. Defaults to None.
+            output_id (int | None, optional): The output of the component. Defaults to None.
+
+        Returns:
+            Variable: The variable the value is stored in.
         """
-        variable = self.variable(
-            label=f"{parameter.value} of {alias}",
-            domain=self._domain_of_parameter.get(parameter, Domain.Scalar),
-            type=self._type_of_parameter.get(parameter, None),
+        base = re.sub(r"\W", "_", f"{alias}_{parameter.value}")
+        base = base if re.match(r"[A-Za-z_]", base) else f"_{base}"
+        existing = {variable.id for variable in self.variables}
+        variable_id, suffix = base, 2
+        while variable_id in existing:
+            variable_id, suffix = f"{base}_{suffix}", suffix + 1
+        variable = self.variable(variable_id, label=f"{parameter.value} of {alias}")
+        self._append_to_active(
+            GetParameter(
+                variable=variable, alias=alias, parameter=parameter, channel_id=channel_id, output_id=output_id
+            )
         )
-        operation = GetParameter(
-            variable=variable, alias=alias, parameter=parameter, channel_id=channel_id, output_id=output_id
-        )
-        self._active_block.append(operation)
         return variable
 
-    def set_parameter(
+    def set_parameter(  # type: ignore[override]
         self,
         alias: str,
         parameter: Parameter,
         value: int | float | bool | Variable,
         channel_id: int | None = None,
         output_id: int | None = None,
-    ):
+    ) -> None:
         """Set a platform parameter.
 
         Appends a SetParameter operation to the active block of the experiment.
@@ -104,30 +152,41 @@ class Experiment(StructuredProgram):
         Args:
             alias (str): The alias for the platform component.
             parameter (Parameter): The parameter to set.
-            value (int | float): The value to set for the parameter.
+            value (int | float | bool | Variable): The value to set for the parameter.
+            channel_id (int | None, optional): The channel of the component. Defaults to None.
+            output_id (int | None, optional): The output of the component. Defaults to None.
         """
-        operation = SetParameter(
-            alias=alias, parameter=parameter, value=value, channel_id=channel_id, output_id=output_id
+        self._append_to_active(
+            SetParameter(alias=alias, parameter=parameter, value=value, channel_id=channel_id, output_id=output_id)
         )
-        self._active_block.append(operation)
 
     def execute_qprogram(
         self,
-        qprogram: QProgram | Callable[..., QProgram],  # type: ignore
+        qprogram: QProgram | Callable[..., QProgram],
         bus_mapping: dict[str, str] | None = None,
         debug: bool = False,
         calibration: Calibration | None = None,
-    ):
+    ) -> None:
         """Execute a quantum program within the experiment.
 
         Appends an ExecuteQProgram operation to the active block of the experiment.
 
         Args:
-            qprogram (QProgram): The quantum program to be executed.
+            qprogram (QProgram | Callable[..., QProgram]): The quantum program to be executed, or a function building
+                it from the experiment's variables.
+            bus_mapping (dict[str, str] | None, optional): Mapping of the QProgram's buses to the platform's. Defaults to
+                None.
+            debug (bool, optional): Whether to write the compiled program to a debug file. Defaults to False.
+            calibration (Calibration | None, optional): Calibration used to compile the QProgram. Defaults to None.
         """
-        operation = ExecuteQProgram(qprogram=qprogram, bus_mapping=bus_mapping, calibration=calibration, debug=debug)
-        self._active_block.append(operation)
+        self._append_to_active(
+            ExecuteQProgram(qprogram=qprogram, bus_mapping=bus_mapping, calibration=calibration, debug=debug)
+        )
 
-    def set_crosstalk(self, crosstalk: CrosstalkMatrix):
-        operation = SetCrosstalk(crosstalk=crosstalk)
-        self._active_block.append(operation)
+    def set_crosstalk(self, crosstalk: CrosstalkMatrix) -> None:
+        """Set the crosstalk matrix of the platform.
+
+        Args:
+            crosstalk (CrosstalkMatrix): The crosstalk matrix.
+        """
+        self._append_to_active(SetCrosstalk(crosstalk=crosstalk))

@@ -4,7 +4,7 @@ import numpy as np
 import plotly.io as pio
 import pytest
 
-from qililab import Domain, IQPair, QProgram, Square
+from qililab import IQPair, QProgram, Square
 from qililab.data_management import build_platform
 from qililab.instruments.qblox.qblox_draw import QbloxDraw
 from qililab.platform import Platform
@@ -15,11 +15,11 @@ from tests.data import Galadriel
 @pytest.fixture(name="parsing")
 def fixture_parsing() -> QProgram:
     qp = QProgram()
-    frequency = qp.variable(label="drive", domain=Domain.Frequency)
+    frequency = qp.variable("drive")
     FREQ_START = 100e6
     FREQ_STOP = 200e6
     FREQ_STEP = 50e6
-    with qp.for_loop(frequency, FREQ_START, FREQ_STOP, FREQ_STEP):
+    with qp.sweep(frequency).from_range(FREQ_START, FREQ_STOP, FREQ_STEP):
         qp.set_frequency(bus="drive", frequency=frequency)
         qp.play(bus="drive", waveform=Square(amplitude=1, duration=10))
         qp.wait("drive", 10)
@@ -29,12 +29,12 @@ def fixture_parsing() -> QProgram:
 @pytest.fixture(name="qp_draw")
 def fixture_qp_draw() -> QProgram:
     qp = QProgram()
-    frequency = qp.variable(label="drive", domain=Domain.Frequency)
+    frequency = qp.variable("drive")
     FREQ_START = 100e6
     FREQ_STOP = 200e6
     FREQ_STEP = 50e6
     qp.set_gain("drive", 1)
-    with qp.for_loop(frequency, FREQ_START, FREQ_STOP, FREQ_STEP):
+    with qp.sweep(frequency).from_range(FREQ_START, FREQ_STOP, FREQ_STEP):
         with qp.average(2):
             qp.reset_phase("drive")
             qp.set_frequency(bus="drive", frequency=frequency)
@@ -54,8 +54,8 @@ def fixture_qp_draw_with_time_window() -> QProgram:
         Q=Square(amplitude=0, duration=5),
     )
     weights_shape = Square(amplitude=1, duration=20)
-    bins = qp.variable(label="bins", domain=Domain.Scalar, type=int)
-    with qp.for_loop(variable=bins, start=1, stop=3):
+    bins = qp.variable("bins")
+    with qp.sweep(bins).from_range(1, 3, 1):
         qp.wait("readout_q13_bus", 10)
         qp.measure(bus="readout_q13_bus", waveform=square_wf, weights=IQPair(I=weights_shape, Q=weights_shape))
     return qp
@@ -64,11 +64,12 @@ def fixture_qp_draw_with_time_window() -> QProgram:
 @pytest.fixture(name="qp_draw_with_time_window_nested_loop")
 def fixture_qp_draw_with_time_window_nested_loop() -> QProgram:
     qp = QProgram()
-    frequency = qp.variable(label="drive", domain=Domain.Frequency)
-    ampl = qp.variable("drive", domain=Domain.Voltage)
+    frequency = qp.variable("frequency")
+    ampl = qp.variable("amplitude")
     with qp.average(3):
-        with qp.for_loop(frequency, 0, 100e6, 100e6):
-            with qp.for_loop(ampl, 0, 1, 0.3):
+        with qp.sweep(frequency).from_range(0, 100e6, 100e6):
+            # The step does not divide the range: the deprecated for_loop keeps its point count rounded down.
+            with pytest.warns(FutureWarning, match="qp.for_loop is deprecated"), qp.for_loop(ampl, 0, 1, 0.3):
                 qp.set_gain("drive", ampl)
                 # will do nothing for the plotting via the platform as HM is disabled
                 qp.set_frequency("drive", frequency)
@@ -154,11 +155,11 @@ def fixture_play_interrupted_by_another_play():
 @pytest.fixture(name="qp_not_sub")
 def fixture_not_sub():
     qp = QProgram()
-    frequency = qp.variable(label="drive", domain=Domain.Frequency)
+    frequency = qp.variable("drive")
     FREQ_START = -100e6
     FREQ_STOP = -200e6
     FREQ_STEP = -50e6
-    with qp.for_loop(frequency, FREQ_START, FREQ_STOP, FREQ_STEP):
+    with qp.sweep(frequency).from_range(FREQ_START, FREQ_STOP, FREQ_STEP):
         qp.set_frequency(bus="drive", frequency=frequency)
         qp.play(bus="drive", waveform=Square(amplitude=1, duration=10))
         qp.wait("drive", 10)
@@ -435,17 +436,6 @@ class TestQBloxDraw:
         )
         assert len(figure.data) == 1
 
-    @pytest.mark.qm
-    def test_platform_draw_quantum_machine_raises_error(
-        self, qp_quantum_machine: QProgram, platform_quantum_machines: Platform
-    ):
-        pio.renderers.default = "json"
-        with pytest.raises(NotImplementedError) as exc_info:
-            platform_quantum_machines.draw(qp_quantum_machine)
-
-        # Optionally check the error message
-        assert str(exc_info.value) == "The drawing feature is currently only supported for QBlox."
-
     def test_play_interrupted_by_another_play(self, qp_play_interrupted_by_another_play: QProgram):
         expected_data_draw_i = [0.70710678, 0.70710678, 0.70710678, 0.70710678, 0.70710678,
                   0.70710678, 0.70710678, -0.70710678, -0.70710678, -0.70710678,
@@ -579,8 +569,8 @@ class TestQBloxDraw:
         drive_wf = IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
         qprogram = QProgram()
 
-        time = qprogram.variable(label="time", domain=Domain.Time)
-        with qprogram.for_loop(variable=time, start=10, stop=500, step=10):
+        time = qprogram.variable("time")
+        with qprogram.sweep(time).from_range(10, 500, 10):
             qprogram.play(bus="drive_line_q0_bus", waveform=drive_wf)
             qprogram.play(bus="drive_line_q1_bus", waveform=drive_wf)
             qprogram.wait(bus="drive_line_q1_bus", duration=time)
