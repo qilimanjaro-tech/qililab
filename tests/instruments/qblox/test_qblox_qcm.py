@@ -357,10 +357,12 @@ class TestQbloxQCM:
         for sequencer in qcm.awg_sequencers:
             qcm.device.sequencers[sequencer.identifier].sync_en.assert_called_with(False)
 
-    def test_run(self, qcm: QbloxQCM):
+    # A short program can already have stopped when the status comes back, so these states must not raise
+    @pytest.mark.parametrize("state", [SequencerStates.RUNNING, SequencerStates.Q1_STOPPED, SequencerStates.STOPPED])
+    def test_run(self, qcm: QbloxQCM, state: SequencerStates):
         """Test running the QCM module."""
         qcm.sequences[0] = Sequence(program=Program(), waveforms=Waveforms(), acquisitions=Acquisitions(), weights=Weights())
-        qcm.device.get_sequencer_status.return_value.state = SequencerStates.RUNNING
+        qcm.device.get_sequencer_status.return_value.state = state
         qcm.run(channel_id=0)
 
         sequencer = qcm.get_sequencer(0)
