@@ -209,6 +209,11 @@ class QbloxModule(Instrument):
         if sequencer is not None and sequencer.identifier in self.sequences:
             self.device.arm_sequencer(sequencer=sequencer.identifier)
             self.device.start_sequencer(sequencer=sequencer.identifier)
+            # With cluster firmware 2.x, qblox-instruments' start_sequencer returns without waiting for any reply
+            # from the module. Asking for the sequencer status waits for one, as qblox-instruments did itself with
+            # firmware 0.13. Without it, an instrument started right after (e.g. a QDAC-II triggering this
+            # sequencer) can send its first trigger before the sequencer is waiting for it (QHC-1843).
+            self.device.get_sequencer_status(sequencer.identifier)
 
     @log_set_parameter
     def set_parameter(

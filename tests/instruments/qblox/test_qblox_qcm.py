@@ -69,6 +69,7 @@ def fixture_qrm(platform: Platform):
         "disconnect_inputs",
         "arm_sequencer",
         "start_sequencer",
+        "get_sequencer_status",
         "reset",
         "module_type",
         "out0_exp0_amplitude",
@@ -363,6 +364,7 @@ class TestQbloxQCM:
         sequencer = qcm.get_sequencer(0)
         qcm.device.arm_sequencer.assert_called_with(sequencer=sequencer.identifier)
         qcm.device.start_sequencer.assert_called_with(sequencer=sequencer.identifier)
+        qcm.device.get_sequencer_status.assert_called_once_with(sequencer.identifier)
 
     def test_upload(self, qcm: QbloxQCM):
         """Test uploading a QpySequence to the QCM module."""
