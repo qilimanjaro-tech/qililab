@@ -215,7 +215,7 @@ class QbloxModule(Instrument):
             # firmware 0.13, and checks that START was applied. Without it, an instrument started right after (e.g.
             # a QDAC-II triggering this sequencer) can send its first trigger before the sequencer is waiting for
             # it (QHC-1843).
-            status = self.device.get_sequencer_status(sequencer.identifier)
+            status = self.device.get_sequencer_status(sequencer=sequencer.identifier)
             if status.state in (SequencerStates.IDLE, SequencerStates.ARMED):
                 raise RuntimeError(f"Sequencer {sequencer.identifier} of {self.alias} did not start: {status}")
 

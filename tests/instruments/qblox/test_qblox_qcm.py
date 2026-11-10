@@ -366,7 +366,10 @@ class TestQbloxQCM:
         sequencer = qcm.get_sequencer(0)
         qcm.device.arm_sequencer.assert_called_with(sequencer=sequencer.identifier)
         qcm.device.start_sequencer.assert_called_with(sequencer=sequencer.identifier)
-        qcm.device.get_sequencer_status.assert_called_once_with(sequencer.identifier)
+        qcm.device.get_sequencer_status.assert_called_once_with(sequencer=sequencer.identifier)
+        # The status query must come after start_sequencer: that order is what makes run() wait for the module
+        run_calls = [c[0] for c in qcm.device.method_calls if c[0] in ("start_sequencer", "get_sequencer_status")]
+        assert run_calls[-2:] == ["start_sequencer", "get_sequencer_status"]
 
     @pytest.mark.parametrize("state", [SequencerStates.IDLE, SequencerStates.ARMED])
     def test_run_raises_if_sequencer_did_not_start(self, qcm: QbloxQCM, state: SequencerStates):

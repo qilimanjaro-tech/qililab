@@ -335,7 +335,10 @@ class TestQbloxQCMRF:
         sequencer = qcm_rf.get_sequencer(0)
         qcm_rf.device.arm_sequencer.assert_called_with(sequencer=sequencer.identifier)
         qcm_rf.device.start_sequencer.assert_called_with(sequencer=sequencer.identifier)
-        qcm_rf.device.get_sequencer_status.assert_called_once_with(sequencer.identifier)
+        qcm_rf.device.get_sequencer_status.assert_called_once_with(sequencer=sequencer.identifier)
+        # The status query must come after start_sequencer: that order is what makes run() wait for the module
+        run_calls = [c[0] for c in qcm_rf.device.method_calls if c[0] in ("start_sequencer", "get_sequencer_status")]
+        assert run_calls[-2:] == ["start_sequencer", "get_sequencer_status"]
 
     def test_upload_qpysequence(self, qcm_rf: QbloxQCMRF):
         """Test uploading a QpySequence to the QCM module."""
