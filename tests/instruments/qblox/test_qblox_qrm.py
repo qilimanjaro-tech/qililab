@@ -5,6 +5,7 @@ from typing import cast
 from unittest.mock import MagicMock
 
 import pytest
+from qblox_instruments import SequencerStates
 from qblox_instruments.qcodes_drivers.module import Module as QcmQrm
 from qblox_instruments.qcodes_drivers.sequencer import Sequencer
 from qpysequence import Acquisitions, Program, Sequence, Waveforms, Weights
@@ -325,6 +326,7 @@ class TestQbloxQRM:
         qrm.sequences[0] = Sequence(
             program=Program(), waveforms=Waveforms(), acquisitions=Acquisitions(), weights=Weights()
         )
+        qrm.device.get_sequencer_status.return_value.state = SequencerStates.RUNNING
         qrm.run(channel_id=0)
 
         sequencer = qrm.get_sequencer(0)

@@ -10,6 +10,7 @@ from qililab.platform import Platform
 from qililab.data_management import build_platform
 from qililab.typings import DistortionState, Parameter
 from typing import cast
+from qblox_instruments import SequencerStates
 from qblox_instruments.qcodes_drivers.sequencer import Sequencer
 from qblox_instruments.qcodes_drivers.module import Module as QcmQrm
 
@@ -359,12 +360,22 @@ class TestQbloxQCM:
     def test_run(self, qcm: QbloxQCM):
         """Test running the QCM module."""
         qcm.sequences[0] = Sequence(program=Program(), waveforms=Waveforms(), acquisitions=Acquisitions(), weights=Weights())
+        qcm.device.get_sequencer_status.return_value.state = SequencerStates.RUNNING
         qcm.run(channel_id=0)
 
         sequencer = qcm.get_sequencer(0)
         qcm.device.arm_sequencer.assert_called_with(sequencer=sequencer.identifier)
         qcm.device.start_sequencer.assert_called_with(sequencer=sequencer.identifier)
         qcm.device.get_sequencer_status.assert_called_once_with(sequencer.identifier)
+
+    @pytest.mark.parametrize("state", [SequencerStates.IDLE, SequencerStates.ARMED])
+    def test_run_raises_if_sequencer_did_not_start(self, qcm: QbloxQCM, state: SequencerStates):
+        """Test that run raises when the module reports the sequencer has not started after START."""
+        qcm.sequences[0] = Sequence(program=Program(), waveforms=Waveforms(), acquisitions=Acquisitions(), weights=Weights())
+        qcm.device.get_sequencer_status.return_value.state = state
+
+        with pytest.raises(RuntimeError, match="did not start"):
+            qcm.run(channel_id=0)
 
     def test_upload(self, qcm: QbloxQCM):
         """Test uploading a QpySequence to the QCM module."""
