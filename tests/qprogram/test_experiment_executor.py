@@ -126,8 +126,9 @@ def fixture_qprogram_uneven_parallel():
     frequency_1 = qp.variable("freq_1")
     frequency_2 = qp.variable("freq_2")
     # The steps don't divide the ranges: the deprecated parallel keeps the for_loops' 10 points (rounded down).
+    loops = [ForLoop(frequency_1, 100e6, 200e6, 11e6), ForLoop(frequency_2, 200e6, 100e6, -11e6)]
     with pytest.warns(FutureWarning, match="qp.parallel is deprecated"):
-        loop = qp.parallel(loops=[ForLoop(frequency_1, 100e6, 200e6, 11e6), ForLoop(frequency_2, 200e6, 100e6, -11e6)])
+        loop = qp.parallel(loops=loops)
     with loop:
         qp.set_frequency(bus="readout_bus", frequency=frequency_1)
         qp.set_frequency(bus="readout_bus", frequency=frequency_2)

@@ -110,38 +110,40 @@ class TestExperiment:
     def test_loops_raise_error_if_variable_is_allocated(self, instance: Experiment):
         """Test loop methods raise an error when the loop variable is already swept by an enclosing loop"""
         variable = instance.variable("int_scalar")
+        values = np.arange(10)
+        loops = [Loop(variable=variable, values=values)]
         # test when ForLoop allocates variable
         with instance.for_loop(variable=variable, start=0, stop=10, step=1):
             with pytest.raises(VariableAllocated):
                 with instance.for_loop(variable=variable, start=100, stop=110, step=1):
                     pass
             with pytest.raises(VariableAllocated):
-                with instance.loop(variable=variable, values=np.arange(10)):
+                with instance.loop(variable=variable, values=values):
                     pass
             with pytest.raises(VariableAllocated):
-                with instance.parallel(loops=[Loop(variable=variable, values=np.arange(10))]):
+                with instance.parallel(loops=loops):
                     pass
         # test when Loop allocates variable
-        with instance.loop(variable=variable, values=np.arange(10)):
+        with instance.loop(variable=variable, values=values):
             with pytest.raises(VariableAllocated):
                 with instance.for_loop(variable=variable, start=100, stop=110, step=1):
                     pass
             with pytest.raises(VariableAllocated):
-                with instance.loop(variable=variable, values=np.arange(10)):
+                with instance.loop(variable=variable, values=values):
                     pass
             with pytest.raises(VariableAllocated):
-                with instance.parallel(loops=[Loop(variable=variable, values=np.arange(10))]):
+                with instance.parallel(loops=loops):
                     pass
         # test when Parallel allocates variable
-        with instance.parallel(loops=[Loop(variable=variable, values=np.arange(10))]):
+        with instance.parallel(loops=loops):
             with pytest.raises(VariableAllocated):
                 with instance.for_loop(variable=variable, start=100, stop=110, step=1):
                     pass
             with pytest.raises(VariableAllocated):
-                with instance.loop(variable=variable, values=np.arange(10)):
+                with instance.loop(variable=variable, values=values):
                     pass
             with pytest.raises(VariableAllocated):
-                with instance.parallel(loops=[Loop(variable=variable, values=np.arange(10))]):
+                with instance.parallel(loops=loops):
                     pass
 
     def test_set_parameter(self, instance: Experiment):

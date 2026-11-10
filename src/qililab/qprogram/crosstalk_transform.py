@@ -191,7 +191,7 @@ def _sanitize_id(name: str) -> str:
     Returns:
         str: ``name`` with every other character replaced by ``_``, prefixed by ``_`` if it starts with a digit.
     """
-    sanitized = re.sub(r"[^A-Za-z0-9_]", "_", name) or "var"
+    sanitized = re.sub(r"\W", "_", name, flags=re.ASCII) or "var"
     return f"_{sanitized}" if sanitized[0].isdigit() else sanitized
 
 

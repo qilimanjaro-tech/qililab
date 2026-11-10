@@ -150,7 +150,10 @@ def inner_parallel_sweeps_the_same_bus_again_with_more_points():
     y = qp.variable("y")
     with qp.sweep(x).from_range(0, 0.2, 0.1):
         qp.set_offset("flux1", x)
-        with pytest.warns(FutureWarning), qp.parallel([ForLoop(y, 0, 0.5, 0.1)]):
+        loops = [ForLoop(y, 0, 0.5, 0.1)]
+        with pytest.warns(FutureWarning):
+            parallel = qp.parallel(loops)
+        with parallel:
             qp.set_offset("flux1", y)
             qp.wait("flux1", 100)
     return qp
@@ -258,7 +261,9 @@ def test_single_iteration_loop_raises_a_clear_error():
     qp = QProgram()
     x = qp.variable("x")
     # A for_loop rounds its point count down: this one has a single point.
-    with pytest.warns(FutureWarning), qp.for_loop(x, 0.2, 0.25, 0.051):
+    with pytest.warns(FutureWarning):
+        loop = qp.for_loop(x, 0.2, 0.25, 0.051)
+    with loop:
         qp.set_offset("flux1", x)
         qp.wait("flux1", 100)
     crosstalk = make_crosstalk(COUPLED)

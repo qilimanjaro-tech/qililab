@@ -28,9 +28,10 @@ something wrong.
 """
 
 from collections.abc import Iterable, Iterator
+from numbers import Real
 
 import qprogram_qblox  # noqa: F401  (registers the qblox tokens)
-import qprogram_qdac  # noqa: F401  (registers the qdac tokens and profile)
+import qprogram_qdac  # also registers the qdac tokens and profile
 from qprogram import BinaryOp, Constant, Expression, UnaryOp, Variable
 from qprogram.protocol import (
     BusCapabilities,
@@ -195,6 +196,41 @@ def _reject_unsupported_arithmetic(node: object, ctx: ValidationContext) -> Iter
             )
 
 
+_QDAC_TIME_RANGES: tuple[tuple[type, str, str, float, float], ...] = (
+    (qprogram_qdac.Play, "qp.qdac.play", "delay", 0.0, 3600.0),
+    (qprogram_qdac.SetTrigger, "qp.qdac.set_trigger", "duration", 1e-6, 3600.0),
+)
+"""The QDAC-II's range, in seconds, of the QDAC times qprogram-qdac passes through unchecked: (operation, its call,
+attribute, minimum, maximum)."""
+
+
+def _reject_qdac_time_out_of_range(node: object, ctx: ValidationContext) -> Iterable[Diagnostic | DomainConstraint]:
+    """Reject a QDAC play delay or trigger width outside what the QDAC-II takes.
+
+    qprogram-qdac only checks the dwell; the delay and the trigger width would otherwise reach the instrument as they
+    are.
+
+    Args:
+        node (object): The AST node being validated.
+        ctx (ValidationContext): Program-wide facts, unused.
+
+    Yields:
+        Diagnostic: A ``qililab.qdac-out-of-range`` error when the value is outside the QDAC-II's range.
+    """
+    for operation, call, attribute, minimum, maximum in _QDAC_TIME_RANGES:
+        value = getattr(node, attribute, None) if isinstance(node, operation) else None
+        if isinstance(value, Real) and not minimum <= float(value) <= maximum:
+            yield Diagnostic(
+                severity="error",
+                code="qililab.qdac-out-of-range",
+                message=(
+                    f"{call}(..., {attribute}={value}) on bus {node.bus!r} is outside the QDAC-II's range: the "  # type: ignore[attr-defined]
+                    f"{attribute} must be from {minimum:g} s to {maximum:g} s."
+                ),
+                node=node,  # type: ignore[arg-type]
+            )
+
+
 QILILAB_QBLOX_PARITY_V1_PROFILE = Profile(
     name="qililab-qblox-parity-v1",
     version=(1, 0, 0),
@@ -256,7 +292,10 @@ QILILAB_QBLOX_PARITY_V1 = PlatformCapabilities(
     ),
     default_bus_profile=BusCapabilities(
         rt=CompilerCapabilities.from_profile("qililab-qblox-bus-parity-v1"),
-        host=CompilerCapabilities.from_profile("qililab-qdac-bus-parity-v1"),
+        host=CompilerCapabilities.from_profile(
+            "qililab-qdac-bus-parity-v1", extra_predicates=(_reject_qdac_time_out_of_range,)
+        ),
     ),
 )
-"""What a qililab platform runs, passed to ``qprogram.validate``. Buses are plain names, so they all share one slot."""
+"""What a qililab platform runs, passed to ``qprogram.validate``. Buses are plain names, so they all share one slot.
+The QDAC half of a bus also checks the QDAC-II's range of a play delay and a trigger width."""

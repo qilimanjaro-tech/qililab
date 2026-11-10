@@ -69,7 +69,9 @@ def fixture_qp_draw_with_time_window_nested_loop() -> QProgram:
     with qp.average(3):
         with qp.sweep(frequency).from_range(0, 100e6, 100e6):
             # The step does not divide the range: the deprecated for_loop keeps its point count rounded down.
-            with pytest.warns(FutureWarning, match="qp.for_loop is deprecated"), qp.for_loop(ampl, 0, 1, 0.3):
+            with pytest.warns(FutureWarning, match="qp.for_loop is deprecated"):
+                amplitude_loop = qp.for_loop(ampl, 0, 1, 0.3)
+            with amplitude_loop:
                 qp.set_gain("drive", ampl)
                 # will do nothing for the plotting via the platform as HM is disabled
                 qp.set_frequency("drive", frequency)

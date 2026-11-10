@@ -18,7 +18,7 @@ A ``.qp`` file using any of them writes them as ``qililab.<name>`` and starts wi
 qprogram imports it by itself through the ``qprogram.vendors`` entry point when it meets that line.
 """
 
-from typing import Any
+from typing import Protocol
 
 import qprogram_qblox  # noqa: F401  (registers the qblox vendor first)
 import qprogram_qdac  # noqa: F401  (registers the qdac vendor first)
@@ -57,12 +57,19 @@ register_vendor_operation("qililab", "disable_autosync", DisableAutosync)
 _IF_TRIGGER_PARAMETERS = ("trigger_padding_ns", "expected_wait_time_ns")
 
 
-def _serialize_if_trigger_header(block: IfTrigger, ctx: Any) -> str:
+class _HeaderParser(Protocol):
+    """What a block header parser needs from qprogram's ``.qp`` parser: building the error it raises."""
+
+    def parse_error(self, message: str) -> Exception:
+        """Return the error to raise for ``message``, pointing at the line being parsed."""
+
+
+def _serialize_if_trigger_header(block: IfTrigger, ctx: object) -> str:
     """Write the header of an ``if_trigger`` block, with the parameters it was given: ``qililab.if_trigger key=value``.
 
     Args:
         block (IfTrigger): The block.
-        ctx (Any): The writer, unused: the parameters are plain integers.
+        ctx (object): The writer, unused: the parameters are plain integers.
 
     Returns:
         str: The header, without its trailing colon.
@@ -71,12 +78,12 @@ def _serialize_if_trigger_header(block: IfTrigger, ctx: Any) -> str:
     return " ".join(["qililab.if_trigger", *given])
 
 
-def _parse_if_trigger_header(tokens: list[str], ctx: Any) -> IfTrigger:
+def _parse_if_trigger_header(tokens: list[str], ctx: _HeaderParser) -> IfTrigger:
     """Read the header of an ``if_trigger`` block: its ``key=value`` parameters.
 
     Args:
         tokens (list[str]): The tokens after the keyword.
-        ctx (Any): The parser, which builds the error.
+        ctx (_HeaderParser): The parser, which builds the error.
 
     Returns:
         IfTrigger: The block, with an empty body.

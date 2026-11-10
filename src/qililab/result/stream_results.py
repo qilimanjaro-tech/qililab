@@ -282,9 +282,7 @@ class StreamArray:
                 sequences = compiled.sequences
                 lines = []
                 for bus_alias, seq in sequences.items():
-                    lines.append(f"Bus {bus_alias}:")
-                    lines.append(str(seq._program))
-                    lines.append("")
+                    lines.extend([f"Bus {bus_alias}:", str(seq._program), ""])
                 return "\n".join(lines)
             except Exception as e:  # noqa: BLE001
                 debug_exception = f"Compilation of the debug has failed with the following error:\n{e}"

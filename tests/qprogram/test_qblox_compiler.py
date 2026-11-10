@@ -7750,18 +7750,19 @@ class TestQBloxCompiler:
         frequency = qp.variable("frequency")
         gain = qp.variable("gain")
         message = "parallel loops must have the same number of iterations to advance in lockstep"
+        combined = qp.sweep(frequency).from_range(10e6, 50e6, 10e6) | qp.sweep(gain).from_range(0.0, 1.0, 0.5)
         with pytest.raises(qprogram.ValidationError, match=message):
-            with qp.sweep(frequency).from_range(10e6, 50e6, 10e6) | qp.sweep(gain).from_range(0.0, 1.0, 0.5):
-                qp.set_frequency(bus="drive", frequency=frequency)
+            with combined:
+                pass
+        loops = [
+            ForLoop(variable=frequency, start=10e6, stop=50e6, step=10e6),
+            ForLoop(variable=gain, start=0.0, stop=1.0, step=0.5),
+        ]
         with pytest.warns(FutureWarning, match="qp.parallel is deprecated"):
-            with pytest.raises(qprogram.ValidationError, match=message):
-                with qp.parallel(
-                    loops=[
-                        ForLoop(variable=frequency, start=10e6, stop=50e6, step=10e6),
-                        ForLoop(variable=gain, start=0.0, stop=1.0, step=0.5),
-                    ]
-                ):
-                    qp.set_frequency(bus="drive", frequency=frequency)
+            parallel = qp.parallel(loops=loops)
+        with pytest.raises(qprogram.ValidationError, match=message):
+            with parallel:
+                pass
 
     def test_parallel_loop_and_its_descending_mirror_sweep_the_same_points(self):
         """A loop and its descending mirror, with a step that doesn't divide the range, run in parallel for 2
@@ -7808,10 +7809,11 @@ class TestQBloxCompiler:
             qprogram.ValidationError, match=re.escape("Range step -2.0 moves away from stop (0.0 -> 1.0)")
         ):
             qp.for_loop(variable=gain, start=0, stop=1, step=-2)
+        gain_sweep = qp.sweep(gain)
         with pytest.raises(
             qprogram.ValidationError, match=re.escape("Range step -2.0 moves away from stop (0.0 -> 1.0)")
         ):
-            qp.sweep(gain).from_range(0, 1, -2)
+            gain_sweep.from_range(0, 1, -2)
 
     def test_qdac_bus_operations_do_not_change_qblox_q1asm(self):
         """Operations of every kind on a bus left out of ``qblox_buses`` don't appear in the Qblox bus Q1ASM, and a

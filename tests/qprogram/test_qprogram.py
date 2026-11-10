@@ -425,9 +425,10 @@ class TestQProgram:
         qp = QProgram()
         variable = qp.variable("int_scalar")
         with pytest.warns(FutureWarning, match="qp.for_loop is deprecated"):
-            with qp.for_loop(variable=variable, start=0, stop=100, step=5) as loop:
-                assert isinstance(loop, Sweep)
-                assert qp._active_block is loop
+            context = qp.for_loop(variable=variable, start=0, stop=100, step=5)
+        with context as loop:
+            assert isinstance(loop, Sweep)
+            assert qp._active_block is loop
         assert loop.variable == variable
         assert (loop.source.start, loop.source.stop, loop.source.step) == (0, 100, 5)
         np.testing.assert_allclose(loop.source.values(), np.arange(0, 101, 5))
@@ -475,14 +476,14 @@ class TestQProgram:
         qp = QProgram()
         var1 = qp.variable("int_scalar")
         var2 = qp.variable("float_scalar")
+        loops = [
+            ForLoop(variable=var1, start=0, stop=10, step=1),
+            ForLoop(variable=var2, start=0.0, stop=1.0, step=0.1),
+        ]
         with pytest.warns(FutureWarning, match="qp.parallel is deprecated"):
-            with qp.parallel(
-                loops=[
-                    ForLoop(variable=var1, start=0, stop=10, step=1),
-                    ForLoop(variable=var2, start=0.0, stop=1.0, step=0.1),
-                ]
-            ) as loop:
-                assert qp._active_block is loop
+            context = qp.parallel(loops=loops)
+        with context as loop:
+            assert qp._active_block is loop
         assert isinstance(loop, Parallel)
         assert [sweep.variable for sweep in loop.loops] == [var1, var2]
         assert [sweep.num_iterations() for sweep in loop.loops] == [11, 11]
@@ -493,23 +494,25 @@ class TestQProgram:
         qp = QProgram()
         var1 = qp.variable("int_scalar")
         var2 = qp.variable("float_scalar")
+        loops = [
+            ForLoop(variable=var1, start=0, stop=10, step=1),
+            ForLoop(variable=var2, start=0.0, stop=0.5, step=0.1),
+        ]
         with pytest.warns(FutureWarning, match="qp.parallel is deprecated"):
-            with pytest.raises(ValidationError, match="parallel loops must have the same number of iterations"):
-                with qp.parallel(
-                    loops=[
-                        ForLoop(variable=var1, start=0, stop=10, step=1),
-                        ForLoop(variable=var2, start=0.0, stop=0.5, step=0.1),
-                    ]
-                ):
-                    pass
+            context = qp.parallel(loops=loops)
+        with pytest.raises(ValidationError, match="parallel loops must have the same number of iterations"):
+            with context:
+                pass
 
     def test_parallel_with_loop_over_values_is_rejected_at_compile_time(self):
         """A Loop over explicit values becomes a sweep over Values, which qililab does not compile on Qblox."""
         qp = QProgram()
         variable = qp.variable("index")
+        loops = [Loop(variable=variable, values=np.arange(10))]
         with pytest.warns(FutureWarning, match="qp.parallel is deprecated"):
-            with qp.parallel(loops=[Loop(variable=variable, values=np.arange(10))]) as loop:
-                qp.wait(bus="drive", duration=100)
+            context = qp.parallel(loops=loops)
+        with context as loop:
+            qp.wait(bus="drive", duration=100)
 
         assert isinstance(loop, Sweep)
         assert isinstance(loop.source, Values)
@@ -517,7 +520,7 @@ class TestQProgram:
             QbloxCompiler().compile(qprogram=qp)
 
     def test_loop_over_a_variable_an_enclosing_loop_sweeps_raises_error(self):
-        """Sweeping a variable an enclosing loop already sweeps raises VariableAllocated when compiling."""
+        """Sweeping a variable an enclosing loop already sweeps raises VariableAllocated when the inner loop opens."""
 
         def nested(outer_parallel: bool, inner_parallel: bool) -> QProgram:
             qp = QProgram()
@@ -535,7 +538,7 @@ class TestQProgram:
 
         for outer_parallel, inner_parallel in [(False, False), (False, True), (True, False), (True, True)]:
             with pytest.raises(VariableAllocated):
-                QbloxCompiler().compile(qprogram=nested(outer_parallel, inner_parallel))
+                nested(outer_parallel, inner_parallel)
 
     def test_str_returns_qp_text(self):
         """str(qp) is the program written as .qp text."""

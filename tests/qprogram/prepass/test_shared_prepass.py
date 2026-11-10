@@ -86,8 +86,9 @@ class TestPrepareShared:
         qp = QProgram()
         x = qp.variable("x")
         with qp.sweep(x).from_range(0, 10, 1):
+            inner = qp.sweep(x).from_range(100, 110, 1)
             with pytest.raises(VariableAllocated):
-                with qp.sweep(x).from_range(100, 110, 1):
+                with inner:
                     pass
 
         text = """#!QProgram 0.3

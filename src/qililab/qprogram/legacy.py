@@ -36,6 +36,7 @@ from qprogram import MeasurementHandle, Values, Variable
 from qprogram.blocks import Average, Block, Parallel, Sweep
 from qprogram.operations import (
     Measure,
+    Operation,
     Play,
     ResetPhase,
     SetFrequency,
@@ -46,7 +47,7 @@ from qprogram.operations import (
     Wait,
 )
 from qprogram.operations.operation import MeasurementOperation
-from qprogram.waveforms import IQWaveform
+from qprogram.waveforms import IQWaveform, Waveform
 from qprogram_qblox import Acquire, SetMarkers
 from qprogram_qblox import SetTrigger as QbloxSetTrigger
 from qprogram_qblox import WaitTrigger as QbloxWaitTrigger
@@ -60,10 +61,10 @@ from qililab.qprogram.operations import MeasureReset, QbloxPlay
 from qililab.yaml import yaml
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator
+    from collections.abc import Callable, Iterator
 
     from ruamel.yaml.constructor import BaseConstructor
-    from ruamel.yaml.nodes import MappingNode, ScalarNode
+    from ruamel.yaml.nodes import MappingNode, Node, ScalarNode
 
     from qililab.qprogram.qprogram import QProgram
 
@@ -140,12 +141,12 @@ def _construct_expression(constructor: BaseConstructor, node: MappingNode) -> qp
     return left + right if mapping["operator"] == "+" else left - right
 
 
-def _construct_ignored(constructor: BaseConstructor, node: Any) -> None:
+def _construct_ignored(constructor: BaseConstructor, node: Node) -> None:
     """Read a former tag whose content qprogram does not keep (``!VariableInfo``).
 
     Args:
         constructor (BaseConstructor): The YAML constructor.
-        node (Any): The node.
+        node (Node): The node.
     """
 
 
@@ -226,12 +227,13 @@ def _construct_play(constructor: BaseConstructor, node: MappingNode) -> Play | Q
     return Play(bus=bus, waveform=waveform)
 
 
-def _qdac_play(bus: str, waveform: Any, arguments: dict[str, Any]) -> QdacPlay:
+def _qdac_play(bus: str, waveform: Waveform | IQWaveform | str, arguments: dict[str, Any]) -> QdacPlay:
     """Build a ``qp.qdac.play``, leaving qprogram-qdac's defaults for the arguments that were not given.
 
     Args:
         bus (str): The bus.
-        waveform (Any): The waveform; the I waveform of an IQ one.
+        waveform (Waveform | IQWaveform | str): The waveform, the I waveform of an IQ one, or the name of a calibrated
+            one.
         arguments (dict[str, Any]): ``dwell``, ``delay``, ``repetitions`` and ``stepped``, None when not given.
 
     Returns:
@@ -239,7 +241,12 @@ def _qdac_play(bus: str, waveform: Any, arguments: dict[str, Any]) -> QdacPlay:
     """
     if isinstance(waveform, IQWaveform):
         waveform = waveform.get_I()
-    return QdacPlay(bus=bus, waveform=waveform, **{key: value for key, value in arguments.items() if value is not None})
+    # a calibrated waveform's name stays a str until the calibration resolves it
+    return QdacPlay(
+        bus=bus,
+        waveform=cast("Waveform", waveform),
+        **{key: value for key, value in arguments.items() if value is not None},
+    )
 
 
 def _construct_measure(constructor: BaseConstructor, node: MappingNode) -> Measure:
@@ -329,23 +336,26 @@ def _construct_set_trigger(constructor: BaseConstructor, node: MappingNode) -> Q
     mapping = _mapping(constructor, node)
     bus, duration, outputs, position = mapping["bus"], mapping["duration"], mapping.get("outputs"), mapping["position"]
     if position in _QDAC_ONLY_TRIGGER_POSITIONS or duration < 1e-3:
-        outputs = [] if outputs is None else outputs if isinstance(outputs, list) else [outputs]
+        if outputs is None:
+            outputs = []
+        elif not isinstance(outputs, list):
+            outputs = [outputs]
         return QdacSetTrigger(bus=bus, duration=duration, position=cast("Any", position), outputs=outputs)
     return QbloxSetTrigger(bus=bus, duration=duration, outputs=outputs, position=position)
 
 
-def _operation(cls: type, *attributes: str) -> Any:
+def _operation(cls: type[Operation], *attributes: str) -> Callable[[BaseConstructor, MappingNode], Operation]:
     """Return a constructor for a former operation that maps onto ``cls`` with the same attributes.
 
     Args:
-        cls (type): The qprogram operation class.
+        cls (type[Operation]): The qprogram operation class.
         *attributes (str): The attributes passed on as keyword arguments.
 
     Returns:
-        Any: The constructor.
+        Callable[[BaseConstructor, MappingNode], Operation]: The constructor.
     """
 
-    def construct(constructor: BaseConstructor, node: MappingNode) -> Any:
+    def construct(constructor: BaseConstructor, node: MappingNode) -> Operation:
         mapping = _mapping(constructor, node)
         return cls(**{attribute: mapping.get(attribute) for attribute in attributes if attribute in mapping})
 
@@ -380,14 +390,14 @@ def _fill(block: Block, elements: list) -> Block:
     return block
 
 
-def _block(factory: Any) -> Any:
+def _block(factory: Callable[[dict[str, Any]], Block]) -> Callable[[BaseConstructor, MappingNode], Block]:
     """Return a constructor for a former block, built by ``factory`` from its mapping.
 
     Args:
-        factory (Any): Builds the empty qprogram block from the former block's mapping.
+        factory (Callable[[dict[str, Any]], Block]): Builds the empty qprogram block from the former block's mapping.
 
     Returns:
-        Any: The constructor.
+        Callable[[BaseConstructor, MappingNode], Block]: The constructor.
     """
 
     def construct(constructor: BaseConstructor, node: MappingNode) -> Block:
@@ -449,7 +459,7 @@ def qdac_operations(qprogram: QProgram, qdac_buses: set[str]) -> QProgram:
 
     program = deepcopy(qprogram)
 
-    def convert(element: Any) -> Any:
+    def convert(element: Block | Operation) -> Block | Operation:
         if getattr(element, "bus", None) not in qdac_buses:
             return element
         if isinstance(element, Play):

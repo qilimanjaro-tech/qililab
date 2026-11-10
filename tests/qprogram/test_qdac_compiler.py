@@ -535,6 +535,40 @@ class TestQdacCompiler:
                 qprogram=qp, qdacs=[qdac], qdac_buses=[flux1, flux2], qdac_offsets=[0, 0], crosstalk=crosstalk
             )
 
+    @pytest.mark.parametrize("delay", [-1e-6, 3600.5])
+    def test_play_delay_out_of_range_raises_error(self, qdac: QDevilQDac2, flux1: Bus, delay: float):
+        """The QDAC-II takes a play delay from 0 s to 3600 s: any other is refused before it reaches the instrument."""
+        qp = QProgram()
+        qp.qdac.play(bus="flux1", waveform=Square(1.0, 100), dwell=2, delay=delay)
+
+        with pytest.raises(ValidationError, match=re.escape(f"qp.qdac.play(..., delay={delay}) on bus 'flux1'")):
+            QdacCompiler().compile(qprogram=qp, qdacs=[qdac], qdac_buses=[flux1], qdac_offsets=[0])
+
+    @pytest.mark.parametrize("duration", [0.0, 0.5e-6, 3601.0])
+    def test_set_trigger_duration_out_of_range_raises_error(self, qdac: QDevilQDac2, flux1: Bus, duration: float):
+        """The QDAC-II takes a trigger width from 1 µs to 3600 s: any other is refused before it reaches the
+        instrument."""
+        qp = QProgram()
+        qp.qdac.play(bus="flux1", waveform=Square(1.0, 100), dwell=2)
+        qp.qdac.set_trigger(bus="flux1", duration=duration, outputs=[1], position="start")
+
+        with pytest.raises(
+            ValidationError, match=re.escape(f"qp.qdac.set_trigger(..., duration={duration}) on bus 'flux1'")
+        ):
+            QdacCompiler().compile(qprogram=qp, qdacs=[qdac], qdac_buses=[flux1], qdac_offsets=[0])
+
+    def test_play_delay_and_trigger_duration_at_their_limits_compile(self, qdac: QDevilQDac2, flux1: Bus):
+        """The largest delay and the shortest trigger width the QDAC-II takes reach the instrument as they are."""
+        qdac_bus = flux1.instruments[0]
+        qp = QProgram()
+        qp.qdac.play(bus="flux1", waveform=Square(1.0, 100), dwell=2, delay=3600.0)
+        qp.qdac.set_trigger(bus="flux1", duration=1e-6, outputs=[1], position="start")
+
+        QdacCompiler().compile(qprogram=qp, qdacs=[qdac], qdac_buses=[flux1], qdac_offsets=[0])
+
+        assert qdac_bus.upload_voltage_list.call_args.kwargs["sync_delay_s"] == 3600.0
+        assert qdac_bus.set_start_marker_external_trigger.call_args.kwargs["width_s"] == 1e-6
+
     def test_play_bus_map(self, qdac: QDevilQDac2, flux1: Bus):
         """Test all possible combinations of play + set_trigger on the QDACII."""
         qdac_bus = flux1.instruments[0]
@@ -692,9 +726,8 @@ class TestQdacCompiler:
         """A loop with a zero step raises when it is built."""
         qp = QProgram()
         loop_variable = qp.variable("test")
-        with pytest.raises(ValidationError, match="Range step must be non-zero"):
-            with pytest.warns(FutureWarning):
-                qp.for_loop(loop_variable, 0, 10, 0)
+        with pytest.warns(FutureWarning), pytest.raises(ValidationError, match="Range step must be non-zero"):
+            qp.for_loop(loop_variable, 0, 10, 0)
 
     def test_play_wait_trigger(self, qdac: QDevilQDac2, flux1: Bus, flux2: Bus):
         """Test play + wait_trigger on an external port on the QDACII."""

@@ -37,6 +37,18 @@ def to_scalar(value: object) -> object:
     return float(value)
 
 
+def _number(value: int | float) -> int | float:
+    """Return ``value`` as a Python ``int`` or ``float``, numpy numbers included.
+
+    Args:
+        value (int | float): The number.
+
+    Returns:
+        int | float: ``int(value)`` for an integral number, else ``float(value)``.
+    """
+    return int(value) if isinstance(value, numbers.Integral) else float(value)
+
+
 class ForLoop:
     """A loop from ``start`` to ``stop`` by ``step``, given to ``qp.parallel(loops=[...])``.
 
@@ -51,9 +63,9 @@ class ForLoop:
 
     def __init__(self, variable: Variable, start: int | float, stop: int | float, step: int | float) -> None:
         self.variable: Variable = variable
-        self.start: int | float = to_scalar(start)  # type: ignore[assignment]
-        self.stop: int | float = to_scalar(stop)  # type: ignore[assignment]
-        self.step: int | float = to_scalar(step)  # type: ignore[assignment]
+        self.start: int | float = _number(start)
+        self.stop: int | float = _number(stop)
+        self.step: int | float = _number(step)
 
     def to_range(self) -> Range:
         """Return the ``Range`` that sweeps the same points as the loop.
