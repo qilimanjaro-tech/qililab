@@ -24,7 +24,6 @@ from qililab.qprogram.calibration import Calibration
 from qililab.qprogram.crosstalk.crosstalk_matrix import CrosstalkMatrix
 from qililab.qprogram.experiment.operations import ExecuteQProgram, GetParameter, SetCrosstalk, SetParameter
 from qililab.qprogram.qprogram import QProgram
-from qililab.qprogram.unary_plus import drop_unary_plus
 from qililab.qprogram.variable_ids import unique_variable_id
 from qililab.typings.enums import Parameter
 from qililab.yaml import yaml
@@ -48,8 +47,6 @@ class Experiment(qp.QProgram):
     def _append_to_active(self, element: Any) -> None:
         """Append ``element`` to the active block, refusing a loop over a variable an enclosing loop already sweeps.
 
-        A unary ``+`` in the expressions of an operation is dropped, as qililab's former variables did: ``+x`` is ``x``.
-
         Args:
             element (Any): The operation or block to append.
 
@@ -57,7 +54,6 @@ class Experiment(qp.QProgram):
             VariableAllocated: If ``element`` is a loop over a variable an enclosing loop already sweeps.
         """
         reject_variables_swept_by_enclosing_loops(element, self._block_stack)
-        drop_unary_plus(element)
         super()._append_to_active(element)
 
     def for_loop(self, variable: Variable, start: int | float, stop: int | float, step: int | float = 1) -> Any:

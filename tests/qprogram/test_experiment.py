@@ -143,15 +143,6 @@ class TestExperiment:
                 with parallel():
                     pass
 
-    def test_set_parameter_with_unary_plus_stores_the_variable(self, instance: Experiment):
-        """``+x`` is ``x`` in an Experiment too."""
-        bias = instance.variable("bias")
-        with instance.for_loop(variable=bias, start=0.0, stop=1.0, step=0.5):
-            instance.set_parameter(alias="flux_q0", parameter=Parameter.VOLTAGE, value=+bias)
-
-        (set_parameter,) = instance.body.elements[0].elements
-        assert set_parameter.value is bias
-
     def test_get_parameter_names_its_variable_after_the_alias_and_parameter(self, instance: Experiment):
         """The variable's id is built from the alias and the parameter, in ASCII, and made unique."""
         first = instance.get_parameter(alias="drive_q0", parameter=Parameter.VOLTAGE)

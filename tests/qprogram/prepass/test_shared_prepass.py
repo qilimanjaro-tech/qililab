@@ -74,9 +74,7 @@ class TestPrepareShared:
 
         with pytest.raises(
             NotImplementedError,
-            match=re.escape(
-                "if_trigger() cannot be used together with qp.qblox.measure_reset() in the same QProgram."
-            ),
+            match=re.escape("if_trigger() cannot be used together with qp.qblox.measure_reset() in the same QProgram."),
         ):
             prepare_shared(qp)
 
@@ -126,8 +124,9 @@ body:
             (lambda g, h: g * h, "qililab.unsupported-arithmetic"),
             (lambda g, h: g > 0.5, "qililab.unsupported-arithmetic"),
             (lambda g, h: abs(g), "qililab.unsupported-arithmetic"),
+            (lambda g, h: +g, "qililab.unsupported-arithmetic"),
         ],
-        ids=["two-additions", "multiplication", "division", "product-of-variables", "comparison", "abs"],
+        ids=["two-additions", "multiplication", "division", "product-of-variables", "comparison", "abs", "unary-plus"],
     )
     def test_unsupported_arithmetic_raises_validation_error(self, expression, code):
         """An expression qililab can't compile is rejected: anything beyond one + or - between a variable and a

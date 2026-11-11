@@ -21,11 +21,11 @@ from qililab.exceptions import VariableAllocated
 from qililab.pulse_distortion import ExponentialCorrection
 from qililab.qprogram.blocks import ForLoop, IfTrigger, InfiniteLoop, for_loop_iterations
 from qililab.qprogram.calibration import Calibration
+from qililab.qprogram.compilers.qblox_compiler import QbloxCompiler
 from qililab.qprogram.crosstalk.crosstalk_matrix import CrosstalkMatrix, NonLinearCrosstalkMatrix
 from qililab.qprogram.formats.legacy import qdac_operations
 from qililab.qprogram.operations import DisableAutosync, MeasureReset, QbloxPlay
 from qililab.qprogram.variable_ids import unique_variable_id
-from qililab.qprogram.compilers.qblox_compiler import QbloxCompiler
 
 # The crosstalk tests below keep qp.for_loop where its step does not divide stop - start: they rely on its rounding.
 ignore_for_loop_deprecation = pytest.mark.filterwarnings("ignore:qp.for_loop is deprecated:FutureWarning")
@@ -2411,32 +2411,6 @@ class TestQProgram:
 
         with pytest.raises(ValidationError, match=re.escape("qililab.variable-in-waveform")):
             compiler.compile(qprogram=qp)
-
-    def test_unary_plus_is_the_variable_itself(self):
-        """``+x`` is ``x``, as with qililab's former variables: the program stores the variable, and compiles as if
-        the ``+`` weren't there."""
-
-        def program(plus: bool) -> QProgram:
-            qp = QProgram()
-            gain = qp.variable("gain")
-            wait = qp.variable("wait")
-            with qp.sweep(gain).from_range(0.0, 1.0, 0.5):
-                with qp.sweep(wait).from_range(100, 200, 100):
-                    qp.set_gain(bus="drive", gain=+gain if plus else gain)
-                    qp.wait(bus="drive", duration=(+wait if plus else wait) + 4)
-            return qp
-
-        with_plus, without_plus = program(plus=True), program(plus=False)
-        set_gain, wait = with_plus.body.elements[0].elements[0].elements
-        gain_variable, wait_variable = with_plus.variables
-
-        assert set_gain.gain is gain_variable
-        assert isinstance(wait.duration, BinaryOp)
-        assert (wait.duration.left, wait.duration.op) == (wait_variable, "+")
-        assert str(with_plus) == str(without_plus)
-        compiled = QbloxCompiler().compile(qprogram=with_plus).sequences["drive"]
-        expected = QbloxCompiler().compile(qprogram=without_plus).sequences["drive"]
-        assert str(compiled._program) == str(expected._program)
 
     def test_measure_reset_method(self):
         """Test measure_reset method"""
