@@ -25,9 +25,7 @@ play's ``dwell``, ``delay``, ``repetitions`` or ``stepped``, a wait for a trigge
 
 from __future__ import annotations
 
-import re
 import warnings
-import weakref
 from collections import deque
 from typing import TYPE_CHECKING, Any, cast
 
@@ -58,6 +56,7 @@ from qprogram_qdac import WaitTrigger as QdacWaitTrigger
 
 from qililab.qprogram.blocks import ForLoop, IfTrigger, InfiniteLoop
 from qililab.qprogram.operations import MeasureReset, QbloxPlay
+from qililab.qprogram.variable_ids import unique_variable_id
 from qililab.yaml import yaml
 
 if TYPE_CHECKING:
@@ -69,28 +68,11 @@ if TYPE_CHECKING:
     from qililab.qprogram.qprogram import QProgram
 
 # The former variables were copied wherever they were used, one YAML mapping per use, sharing only their UUID: one
-# qprogram variable per UUID gives them back their identity.
-_variables: weakref.WeakValueDictionary[int, Variable] = weakref.WeakValueDictionary()
+# qprogram variable per UUID and per document gives them back their identity. They are kept under this key in the
+# constructor's table of the objects read from the document, which ruamel empties after each document.
+_DOCUMENT_VARIABLES = object()
 
 _QDAC_ONLY_TRIGGER_POSITIONS = ("step", "end_step")
-
-
-def _variable_id(label: str) -> str:
-    """Turn a former variable label (any text) into a qprogram variable id.
-
-    Args:
-        label (str): The label.
-
-    Returns:
-        str: The label with every character outside ``[A-Za-z0-9_]`` replaced by ``_``, prefixed with ``_`` when it does
-        not start with a letter or ``_``, and suffixed with ``_`` when it is a reserved ``.qp`` keyword.
-    """
-    identifier = re.sub(r"\W", "_", label, flags=re.ASCII) or "variable"
-    if not re.match(r"[A-Za-z_]", identifier):
-        identifier = f"_{identifier}"
-    if identifier in qp.RESERVED_KEYWORDS:
-        identifier = f"{identifier}_"
-    return identifier
 
 
 def _mapping(constructor: BaseConstructor, node: MappingNode) -> dict[str, Any]:
@@ -107,7 +89,10 @@ def _mapping(constructor: BaseConstructor, node: MappingNode) -> dict[str, Any]:
 
 
 def _construct_variable(constructor: BaseConstructor, node: MappingNode) -> Variable:
-    """Build the qprogram variable of a former ``!IntVariable`` or ``!FloatVariable``, one per UUID.
+    """Build the qprogram variable of a former ``!IntVariable`` or ``!FloatVariable``, one per UUID in the document.
+
+    Former variables were told apart by UUID, so two could share a label: the id is made from the label, unique in
+    the document.
 
     Args:
         constructor (BaseConstructor): The YAML constructor.
@@ -118,11 +103,12 @@ def _construct_variable(constructor: BaseConstructor, node: MappingNode) -> Vari
     """
     mapping = _mapping(constructor, node)
     uuid = mapping["_uuid"].int
-    variable = _variables.get(uuid)
+    variables: dict[int, Variable] = constructor.constructed_objects.setdefault(_DOCUMENT_VARIABLES, {})
+    variable = variables.get(uuid)
     if variable is None:
         label = mapping.get("_label") or "variable"
-        variable = Variable(_variable_id(label), label=label)
-        _variables[uuid] = variable
+        variable = Variable(unique_variable_id(label, {other.id for other in variables.values()}), label=label)
+        variables[uuid] = variable
     return variable
 
 
@@ -427,12 +413,7 @@ def _construct_qprogram(constructor: BaseConstructor, node: MappingNode) -> Iter
     mapping = _mapping(constructor, node)
     program._body = mapping["_body"]
     program._block_stack = deque([program._body])
-    variables: list[Variable] = []
-    for variable in mapping.get("_variables", {}):
-        while any(other.id == variable.id for other in variables):
-            variable._id = f"{variable.id}_"
-        variables.append(variable)
-    program._variables = variables
+    program._variables = list(mapping.get("_variables", {}))
     program.qblox.disable_autosync = bool(mapping.get("qblox", {}).get("disable_autosync", False))
     for index, operation in enumerate(node for node in program.body.walk() if isinstance(node, MeasurementOperation)):
         operation.handle.name = f"m{index}"

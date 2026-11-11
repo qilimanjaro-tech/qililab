@@ -24,6 +24,7 @@ from qililab.qprogram.calibration import Calibration
 from qililab.qprogram.crosstalk.crosstalk_matrix import CrosstalkMatrix, NonLinearCrosstalkMatrix
 from qililab.qprogram.formats.legacy import qdac_operations
 from qililab.qprogram.operations import DisableAutosync, MeasureReset, QbloxPlay
+from qililab.qprogram.variable_ids import unique_variable_id
 from qililab.qprogram.compilers.qblox_compiler import QbloxCompiler
 
 # The crosstalk tests below keep qp.for_loop where its step does not divide stop - start: they rely on its rounding.
@@ -397,6 +398,24 @@ class TestQProgram:
         with pytest.raises(InvalidVariableIdError):
             qp.variable(variable_id)
 
+    @pytest.mark.parametrize(
+        ("text", "taken", "expected"),
+        [
+            ("frequency of drive", set(), "frequency_of_drive"),
+            ("1abc", set(), "_1abc"),
+            ("fréquence", set(), "fr_quence"),
+            ("", set(), "variable"),
+            ("for", set(), "for_2"),
+            ("wait", {"wait", "wait_2"}, "wait_3"),
+        ],
+    )
+    def test_unique_variable_id(self, text, taken, expected):
+        """Any text gives a variable id qprogram accepts, with ``_2``, ``_3``, ... appended until it is free."""
+        variable_id = unique_variable_id(text, taken)
+
+        assert variable_id == expected
+        assert QProgram().variable(variable_id).id == expected
+
     def test_variable_declared_twice_raises_error(self):
         qp = QProgram()
         qp.variable("gain")
@@ -661,6 +680,29 @@ class TestQProgram:
         (calibrated_play,) = index_loop.elements
         assert isinstance(calibrated_play, Play)
         assert calibrated_play.waveform == "pi"
+
+    def test_deserialize_legacy_yaml_qprogram_with_two_variables_sharing_a_label(self):
+        """Former variables were told apart by UUID, so two could share a label: the second one gets ``_2``."""
+        with pytest.warns(UserWarning, match="had save_adc=True, which no longer exists"):
+            qp = ql.deserialize(LEGACY_QPROGRAM_YAML.replace("_label: index", "_label: wait"))
+
+        assert [(variable.id, variable.label) for variable in qp.variables] == [
+            ("gain", "gain"),
+            ("frequency_of_drive", "frequency of drive"),
+            ("wait", "wait"),
+            ("wait_2", "wait"),
+        ]
+        assert "for wait_2 in [1.0, 2.0, 3.0]:" in str(qp)
+
+    def test_deserialize_legacy_yaml_qprogram_twice_keeps_the_variables_of_each_file(self):
+        """Two files sharing variable UUIDs, such as two saves of one program, each get the variables they hold."""
+        with pytest.warns(UserWarning, match="had save_adc=True, which no longer exists"):
+            relabelled = ql.deserialize(LEGACY_QPROGRAM_YAML.replace("_label: index", "_label: wait"))
+        original = load_legacy_qprogram()
+
+        assert [variable.id for variable in relabelled.variables] == ["gain", "frequency_of_drive", "wait", "wait_2"]
+        assert [variable.id for variable in original.variables] == ["gain", "frequency_of_drive", "wait", "index"]
+        assert not set(map(id, relabelled.variables)) & set(map(id, original.variables))
 
     def test_deserialize_legacy_yaml_qprogram_with_if_trigger(self):
         """The former Conditional becomes an IfTrigger with the same parameters, the InfiniteLoop qililab's."""

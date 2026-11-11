@@ -15,12 +15,11 @@
 
 from __future__ import annotations
 
-import re
 from copy import deepcopy
 from typing import TYPE_CHECKING, TypeGuard
 
 import numpy as np
-from qprogram import RESERVED_KEYWORDS, Expression, Range, Variable
+from qprogram import Expression, Range, Variable
 from qprogram.blocks import Block, Parallel, Sweep
 from qprogram.operations import Measure, Play, SetGain, SetOffset, Sync, Wait
 from qprogram.waveforms import Arbitrary, FlatTop, IQWaveform, Square, Waveform
@@ -34,6 +33,7 @@ from qililab.qprogram.crosstalk.flux_vector import FluxVector, NonLinearFluxVect
 from qililab.qprogram.crosstalk.utils_crosstalk import CrosstalkElements, NonLinearFlagState, operation_key
 from qililab.qprogram.operations.measure_reset import MeasureReset
 from qililab.qprogram.operations.play import QbloxPlay
+from qililab.qprogram.variable_ids import unique_variable_id
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -182,19 +182,6 @@ def _ends_in_if_trigger(element: Block | Operation) -> bool:
     return False
 
 
-def _sanitize_id(name: str) -> str:
-    """Turn ``name`` into a valid variable id: ``[A-Za-z_][A-Za-z0-9_]*``.
-
-    Args:
-        name (str): The name, such as a bus alias followed by a variable id.
-
-    Returns:
-        str: ``name`` with every other character replaced by ``_``, prefixed by ``_`` if it starts with a digit.
-    """
-    sanitized = re.sub(r"\W", "_", name, flags=re.ASCII) or "var"
-    return f"_{sanitized}" if sanitized[0].isdigit() else sanitized
-
-
 def _shift_suffix(constant: float) -> str:
     """The id suffix of a loop shifted by ``constant``: ``_plus_0p1`` for ``+0.1``, ``_minus_2em05`` for ``-2e-05``.
 
@@ -283,10 +270,7 @@ class _QbloxCrosstalkCompensation:
         Returns:
             Variable: The new variable. It is not declared on the program yet.
         """
-        base = _sanitize_id(name)
-        variable_id, suffix = base, 2
-        while variable_id in self.taken_ids or variable_id in RESERVED_KEYWORDS:
-            variable_id, suffix = f"{base}_{suffix}", suffix + 1
+        variable_id = unique_variable_id(name, self.taken_ids)
         self.taken_ids.add(variable_id)
         return Variable(variable_id)
 

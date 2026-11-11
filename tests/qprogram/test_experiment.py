@@ -152,6 +152,15 @@ class TestExperiment:
         (set_parameter,) = instance.body.elements[0].elements
         assert set_parameter.value is bias
 
+    def test_get_parameter_names_its_variable_after_the_alias_and_parameter(self, instance: Experiment):
+        """The variable's id is built from the alias and the parameter, in ASCII, and made unique."""
+        first = instance.get_parameter(alias="drive_q0", parameter=Parameter.VOLTAGE)
+        second = instance.get_parameter(alias="drive_q0", parameter=Parameter.VOLTAGE)
+        accented = instance.get_parameter(alias="flux_é1", parameter=Parameter.VOLTAGE)
+
+        assert (first.id, second.id, accented.id) == ("drive_q0_voltage", "drive_q0_voltage_2", "flux__1_voltage")
+        assert first.label == "voltage of drive_q0"
+
     def test_set_parameter(self, instance: Experiment):
         """Test set_awg_gain method"""
         instance.set_parameter(alias="flux_bus", parameter=Parameter.VOLTAGE, value=0.5)

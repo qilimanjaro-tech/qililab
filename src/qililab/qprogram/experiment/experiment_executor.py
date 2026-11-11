@@ -52,7 +52,7 @@ if TYPE_CHECKING:
 class VariableInfo:
     """Dataclass to store information of a Variable"""
 
-    uuid: int
+    key: int
     """The ``id`` of the variable: qprogram variables compare by name, and an experiment's and a QProgram's may share
     one."""
     label: str
@@ -325,12 +325,12 @@ class ExperimentExecutor:
                 # Update the loop index
                 self.loop_indices[id(block)] += 1
 
-            uuids = [variable.uuid for variable in self._variables_per_block[id(block)]]
+            keys = [variable.key for variable in self._variables_per_block[id(block)]]
             values = [variable.values for variable in self._variables_per_block[id(block)]]
 
             for current_values in zip(*values):
-                for uuid, value in zip(uuids, current_values):
-                    current_value_of_variable[uuid] = cast("int | float", to_scalar(value))
+                for key, value in zip(keys, current_values):
+                    current_value_of_variable[key] = cast("int | float", to_scalar(value))
 
                 loop_operations.append(lambda value=current_values: advance_progress_bar(value))  # type: ignore
 
@@ -441,8 +441,8 @@ class ExperimentExecutor:
                                                 # Bind the values that are known
                                                 **call_parameters,
                                                 **{
-                                                    param_name: current_value_of_variable[uuid]
-                                                    for param_name, uuid in deferred_parameters.items()
+                                                    param_name: current_value_of_variable[key]
+                                                    for param_name, key in deferred_parameters.items()
                                                     # Defer retrieving missing values
                                                 },
                                             }
@@ -548,16 +548,16 @@ class ExperimentExecutor:
         for loop in loops:
             values = self._get_loop_values(loop, qprogram)
             label = loop.variable.label or loop.variable.id
-            variable = VariableInfo(uuid=id(loop.variable), label=label, values=values)
+            variable = VariableInfo(key=id(loop.variable), label=label, values=values)
             variables[id(loop.variable)] = variable
 
         self._variables_per_block[id(block)] = list(variables.values())
 
         # Update all_variables registry
         for variable in variables.values():
-            if self._all_variables[variable.uuid]["label"] is None:
-                self._all_variables[variable.uuid]["label"] = variable.label
-            self._all_variables[variable.uuid]["values"][id(block)] = variable.values
+            if self._all_variables[variable.key]["label"] is None:
+                self._all_variables[variable.key]["label"] = variable.label
+            self._all_variables[variable.key]["values"][id(block)] = variable.values
 
         return list(variables.values())
 

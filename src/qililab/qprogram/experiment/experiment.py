@@ -13,7 +13,6 @@
 # limitations under the License.
 """Experiment: platform parameter changes and QProgram executions, looped over on the PC."""
 
-import re
 from typing import Any, Callable
 
 import numpy as np
@@ -26,6 +25,7 @@ from qililab.qprogram.crosstalk.crosstalk_matrix import CrosstalkMatrix
 from qililab.qprogram.experiment.operations import ExecuteQProgram, GetParameter, SetCrosstalk, SetParameter
 from qililab.qprogram.qprogram import QProgram
 from qililab.qprogram.unary_plus import drop_unary_plus
+from qililab.qprogram.variable_ids import unique_variable_id
 from qililab.typings.enums import Parameter
 from qililab.yaml import yaml
 
@@ -90,6 +90,7 @@ class Experiment(qp.QProgram):
         """
         return self.sweep(variable, Values(values))
 
+    # Replaces qprogram's QProgram.get_parameter(bus, parameter), which takes other arguments
     def get_parameter(  # type: ignore[override]
         self, alias: str, parameter: Parameter, channel_id: int | None = None, output_id: int | None = None
     ) -> Variable:
@@ -106,12 +107,7 @@ class Experiment(qp.QProgram):
         Returns:
             Variable: The variable the value is stored in.
         """
-        base = re.sub(r"\W", "_", f"{alias}_{parameter.value}")
-        base = base if re.match(r"[A-Za-z_]", base) else f"_{base}"
-        existing = {variable.id for variable in self.variables}
-        variable_id, suffix = base, 2
-        while variable_id in existing:
-            variable_id, suffix = f"{base}_{suffix}", suffix + 1
+        variable_id = unique_variable_id(f"{alias}_{parameter.value}", {variable.id for variable in self.variables})
         variable = self.variable(variable_id, label=f"{parameter.value} of {alias}")
         self._append_to_active(
             GetParameter(
@@ -120,6 +116,7 @@ class Experiment(qp.QProgram):
         )
         return variable
 
+    # Replaces qprogram's QProgram.set_parameter(bus, parameter, value), which takes other arguments
     def set_parameter(  # type: ignore[override]
         self,
         alias: str,
