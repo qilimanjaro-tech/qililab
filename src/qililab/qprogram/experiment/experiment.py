@@ -23,8 +23,7 @@ from qprogram import Values, Variable
 from qililab.qprogram.blocks import ForLoop, reject_variables_swept_by_enclosing_loops
 from qililab.qprogram.calibration import Calibration
 from qililab.qprogram.crosstalk.crosstalk_matrix import CrosstalkMatrix
-from qililab.qprogram.operations import ExecuteQProgram, GetParameter, SetParameter
-from qililab.qprogram.operations.set_crosstalk import SetCrosstalk
+from qililab.qprogram.experiment.operations import ExecuteQProgram, GetParameter, SetCrosstalk, SetParameter
 from qililab.qprogram.qprogram import QProgram
 from qililab.qprogram.unary_plus import drop_unary_plus
 from qililab.typings.enums import Parameter

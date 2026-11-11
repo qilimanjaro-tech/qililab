@@ -13,8 +13,8 @@
 # limitations under the License.
 """The blocks qililab adds to qprogram's, and the point count of the deprecated ``qp.for_loop``."""
 
-from .conditional import IfTrigger
 from .for_loop import ForLoop, for_loop_iterations, to_scalar
+from .if_trigger import IfTrigger
 from .infinite_loop import InfiniteLoop
 from .loop_variables import reject_variables_swept_by_enclosing_loops, swept_variables
 

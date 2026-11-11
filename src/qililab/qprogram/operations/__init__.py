@@ -12,22 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""The operations qililab adds to qprogram's, and the operations of an ``Experiment``."""
+"""The operations qililab adds to qprogram's."""
 
 from .disable_autosync import DisableAutosync
-from .execute_qprogram import ExecuteQProgram
-from .get_parameter import GetParameter
 from .measure_reset import MeasureReset
 from .play import QbloxPlay
-from .set_crosstalk import SetCrosstalk
-from .set_parameter import SetParameter
 
 __all__ = [
     "DisableAutosync",
-    "ExecuteQProgram",
-    "GetParameter",
     "MeasureReset",
     "QbloxPlay",
-    "SetCrosstalk",
-    "SetParameter",
 ]

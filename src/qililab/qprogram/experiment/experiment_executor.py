@@ -33,8 +33,7 @@ from rich.progress import BarColumn, Progress, TaskID, TextColumn, TimeElapsedCo
 from qililab.qililab_settings import get_settings
 from qililab.qprogram.blocks import to_scalar
 from qililab.qprogram.experiment.experiment import Experiment
-from qililab.qprogram.operations import ExecuteQProgram, GetParameter, SetParameter
-from qililab.qprogram.operations.set_crosstalk import SetCrosstalk
+from qililab.qprogram.experiment.operations import ExecuteQProgram, GetParameter, SetCrosstalk, SetParameter
 from qililab.result.experiment_results_writer import (
     ExperimentDataBaseMetadata,
     ExperimentMetadata,

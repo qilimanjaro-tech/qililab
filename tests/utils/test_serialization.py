@@ -5,7 +5,7 @@ import pytest
 from qililab.qprogram.compilers.qblox_compiler import QbloxCompiler
 from qililab import Gaussian
 from qililab.qprogram import Experiment
-from qililab.qprogram.operations import SetParameter
+from qililab.qprogram.experiment.operations import SetParameter
 from qililab.utils.serialization import (
     DeserializationError,
     SerializationError,
