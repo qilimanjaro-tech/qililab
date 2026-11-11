@@ -16,13 +16,15 @@
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
-from qprogram import Expression
+from qprogram import BinaryOp, Constant, Expression, Range, UnaryOp, Variable
 from qprogram.blocks import Average, Block, Parallel, Sweep
 from qprogram.operations import Measure, ResetPhase, SetFrequency, SetGain, SetOffset, SetPhase, Sync, Wait
 from qprogram_qblox import Acquire, Scope, SetMarkers
+from qprogram_qblox import SetTrigger as QbloxSetTrigger
 from qprogram_qblox import WaitTrigger as QbloxWaitTrigger
 from qprogram_qdac import Play as QdacPlay
 from qprogram_qdac import SetTrigger as QdacSetTrigger
@@ -40,6 +42,9 @@ if TYPE_CHECKING:
     from qililab.qprogram.calibration import Calibration
     from qililab.qprogram.crosstalk.crosstalk_matrix import CrosstalkMatrix
     from qililab.qprogram.qprogram import QProgram
+
+# Highest acquisition index of a Qblox sequencer.
+MAX_ACQUISITION_INDEX = 31
 
 # Default and minimum for qp.if_trigger()'s trigger_padding_ns.
 WAIT_TRIGGER_NETWORK_EXT_TRIGGER = 252
@@ -95,6 +100,10 @@ class QbloxPrepassResult:
     """Whether ``qp.qblox.disable_autosync`` is set: no sync after each loop or average. ``qprogram`` no longer holds
     the setting."""
 
+    exceeds_depth_buses: list[str]
+    """Qblox buses with more acquisitions than a sequencer can index, each in a block of its own: the compiler
+    indexes them per block."""
+
     trigger_network_addresses: dict[str, int]
     """Qblox buses that send on the trigger network, with their trigger address: the measurement buses of
     ``measure_reset``."""
@@ -108,13 +117,15 @@ def prepare_qblox(
     bus_distortions: dict[str, list[PulseDistortion]] | None = None,
     qblox_buses: list[str] | None = None,
     readout_modules: dict[str, str] | None = None,
+    markers: dict[str, str] | None = None,
 ) -> QbloxPrepassResult:
     """Prepare a QProgram, already through the shared pre-pass, for the Qblox compiler.
 
     Applies the crosstalk compensation (the calibration's AC matrix, else the given one, else the calibration's DC
     matrix with a warning) and the bus distortions. Then walks the whole QProgram, including operations on other
     instruments, to collect the acquisition metadata, validate ``qp.if_trigger()`` and ``qp.qblox.measure_reset()``,
-    and find the trigger requirements. Finally keeps only the operations on Qblox buses.
+    and find the trigger requirements. Finally keeps only the operations on Qblox buses, checks them against what
+    the compiler compiles, and writes their expressions and loops the way the compiler reads them.
 
     Args:
         qprogram (QProgram): The QProgram returned by the shared pre-pass. It is not modified.
@@ -124,6 +135,8 @@ def prepare_qblox(
         qblox_buses (list[str], optional): The Qblox buses. Defaults to every bus of the QProgram.
         readout_modules (dict[str, str], optional): The QRM of each Qblox bus that has one, by bus, used to check the
             ``qp.qblox.scope`` of the QProgram. Defaults to None, which skips the checks needing it.
+        markers (dict[str, str], optional): The marker mask of each Qblox bus, a non-zero one for an RF module,
+            used to check the outputs of ``qp.qblox.set_trigger``. Defaults to None: every module is low frequency.
 
     Returns:
         QbloxPrepassResult: The QProgram with only Qblox operations, and what the compiler needs to know about it.
@@ -134,7 +147,11 @@ def prepare_qblox(
             ``qp.qdac.set_trigger(position='step')`` + ``qp.qdac.play(dwell=...)``, or a ``trigger_padding_ns`` below the trigger
             network's propagation delay.
         NotImplementedError: If ``qp.if_trigger()`` is used in a way that isn't supported.
-        ValueError: If a ``qp.sync()`` names a bus that isn't a Qblox bus.
+        ValueError: If a ``qp.sync()`` names a bus that isn't a Qblox bus, a ``qp.qblox.set_trigger`` has no outputs or
+            one its module doesn't have, or a ``qp.qblox.wait_trigger`` duration is a variable.
+        NotImplementedError: If an expression is the frequency or phase of an operation, a wait duration combines
+            several variables, a ``qp.set_offset`` with an expression sets path 1 too, or a bus has more
+            acquisitions than a sequencer can index at different depths or several in a block.
     """
     if calibration is not None:
         if calibration.crosstalk_matrix_ac is not None:
@@ -173,10 +190,14 @@ def prepare_qblox(
         raise ValueError("Non QBLOX buses not allowed inside sync function")
 
     qblox_qprogram = keep_instrument_operations(qprogram, qblox_bus_set, drop=(DisableAutosync,))
+    _prepare_operations(qblox_qprogram.body, markers)
+    _prepare_loops(qblox_qprogram.body)
+    acquisition_metadata = _acquisition_metadata(qblox_qprogram.body, qblox_buses)
     return QbloxPrepassResult(
         qprogram=qblox_qprogram,
         qblox_buses=qblox_buses,
-        acquisition_metadata=_acquisition_metadata(qblox_qprogram.body, qblox_buses),
+        acquisition_metadata=acquisition_metadata,
+        exceeds_depth_buses=_buses_exceeding_acquisition_depth(acquisition_metadata),
         conditional=conditional,
         requires_external_trigger=conditional is not None
         or any(isinstance(leaf, QbloxWaitTrigger) and leaf.bus in qblox_buses for leaf in leaves),
@@ -186,6 +207,128 @@ def prepare_qblox(
             measure_reset.bus: measure_reset.trigger_address for measure_reset in measure_resets
         },
     )
+
+
+def _prepare_operations(body: Block, markers: dict[str, str] | None) -> None:
+    """Check the operations against what the Qblox compiler compiles, and write each expression the way it reads it.
+
+    The compiler reads an expression as ``left operator right`` with a constant only on the right and never negative:
+    ``5 + x`` becomes ``x + 5``, ``x + (-3)`` becomes ``x - 3``, and ``-x`` becomes ``0 - x``. Validation leaves no
+    other expression than a variable, a constant, ``-x``, or one ``+`` or ``-`` between two of those.
+
+    Args:
+        body (Block): The body of the QProgram the compiler walks. It is modified.
+        markers (dict[str, str] | None): The marker mask of each bus, a non-zero one for an RF module.
+
+    Raises:
+        NotImplementedError: If an expression is the frequency or phase of an operation, a wait duration combines
+            several variables, or a ``qp.set_offset`` with an expression sets path 1 too.
+        ValueError: If a ``qp.qblox.set_trigger`` has no outputs or one its module doesn't have, or a
+            ``qp.qblox.wait_trigger`` duration is a variable.
+    """
+    for node in body.walk():
+        if isinstance(node, Block):
+            continue
+        for name, value in list(vars(node).items()):
+            if name.startswith("_") or not isinstance(value, Expression):
+                continue
+            if isinstance(value, UnaryOp):
+                value = BinaryOp("-", Constant(0), value.operand)
+            elif isinstance(value, BinaryOp):
+                left, op, right = value.left, value.op, value.right
+                if op == "+" and isinstance(left, Constant):
+                    left, right = right, left
+                if isinstance(left, Variable) and isinstance(right, Constant) and right.value < 0:
+                    op, right = ("-" if op == "+" else "+"), Constant(-right.value)
+                value = BinaryOp(op, left, right)
+            setattr(node, name, value)
+
+        if isinstance(node, (SetFrequency, SetPhase)):
+            name = "frequency" if isinstance(node, SetFrequency) else "phase"
+            if isinstance(getattr(node, name), BinaryOp):
+                raise NotImplementedError(
+                    f"An expression cannot be used as the {name} in QBlox, only a variable: {getattr(node, name)}."
+                )
+        elif isinstance(node, Wait):
+            duration = node.duration
+            if (
+                isinstance(duration, BinaryOp)
+                and isinstance(duration.left, Variable)
+                and isinstance(duration.right, Variable)
+            ):
+                raise NotImplementedError("A wait duration cannot combine several variables in one expression.")
+        elif isinstance(node, SetOffset):
+            if isinstance(node.offset_path1, BinaryOp) or (
+                isinstance(node.offset_path0, BinaryOp) and node.offset_path1 is not None
+            ):
+                raise NotImplementedError(
+                    "Having a different offset for I and Q whilst using VariableExpressions is not supported."
+                )
+        elif isinstance(node, QbloxSetTrigger):
+            if not node.outputs:
+                raise ValueError("Missing qblox trigger outputs at qp.qblox.set_trigger.")
+            rf_module = markers is not None and int(markers.get(node.bus, "0000"), 2) > 0
+            for output in node.outputs if isinstance(node.outputs, list) else [node.outputs]:
+                if rf_module and output not in (1, 2):
+                    raise ValueError("RF modules only have 2 trigger outputs, either 1 or 2")
+                if not rf_module and output not in (1, 2, 3, 4):
+                    raise ValueError("Low frequency modules only have 4 trigger outputs, out of range")
+        elif isinstance(node, QbloxWaitTrigger) and not isinstance(node.duration, (int, float)):
+            raise ValueError("Wait trigger duration cannot be a Variable, it must be an int.")
+
+
+def _prepare_loops(body: Block) -> None:
+    """Write each loop's ``Range`` the way the Qblox compiler reads it, in place.
+
+    A ``Range`` holds ``round((stop - start) / step) + 1`` points, so its last point can stop short of ``stop`` or step
+    past it: ``stop`` becomes that last point, kept as written when they only differ by rounding. The points don't
+    change. A ``Range`` also stores its bounds as floats, ``Range(0, 10, 2)`` included: the whole ones become ints.
+
+    Args:
+        body (Block): The body of the QProgram the compiler walks. It is modified.
+    """
+    for node in body.walk():
+        for loop in node.loops if isinstance(node, Parallel) else [node]:
+            if not (isinstance(loop, Sweep) and isinstance(loop.source, Range)):
+                continue
+            source = loop.source
+            last = source.start + source.step * (source.length() - 1)
+            if not math.isclose(last, source.stop, rel_tol=1e-9, abs_tol=1e-12):
+                source.stop = last
+            source.start, source.stop, source.step = (
+                int(value) if float(value).is_integer() else value for value in (source.start, source.stop, source.step)
+            )
+
+
+def _buses_exceeding_acquisition_depth(acquisition_metadata: AcquisitionMetadata) -> list[str]:
+    """Return the buses with more acquisitions than a sequencer can index, checking the compiler can index them.
+
+    Args:
+        acquisition_metadata (AcquisitionMetadata): The acquisitions of each Qblox bus, per block.
+
+    Returns:
+        list[str]: The buses with more than ``MAX_ACQUISITION_INDEX + 1`` acquisitions across several blocks.
+
+    Raises:
+        NotImplementedError: If such a bus has acquisitions at different nesting depths, or several in a block.
+    """
+    buses = []
+    for bus, block_data in acquisition_metadata.items():
+        total = sum(count for count, _ in block_data.values())
+        depths = {depth for _, depth in block_data.values()}
+        if len(block_data) > 1 and total > MAX_ACQUISITION_INDEX + 1:
+            if len(depths) > 1:
+                raise NotImplementedError(
+                    f"Bus '{bus}' has {total} acquisitions at inconsistent nesting depths "
+                    f"{sorted(depths)}. For more than {MAX_ACQUISITION_INDEX + 1} acquisitions, they must be at the same nesting depth."
+                )
+            if not all(count == 1 for count, _ in block_data.values()):
+                raise NotImplementedError(
+                    f"Bus '{bus}' has {total} acquisitions across {len(block_data)} blocks, "
+                    f"but only 1 acquisition per block is supported when total acquisitions exceed {MAX_ACQUISITION_INDEX + 1}."
+                )
+            buses.append(bus)
+    return buses
 
 
 def _walk_tree(body: Block) -> tuple[list[Operation], tuple[IfTrigger, int, int] | None]:
@@ -454,11 +597,6 @@ def _validate_scopes(body: Block, readout_modules: dict[str, str] | None) -> Non
             scoped_modules[module] = scope.bus
         acquisitions = acquisitions_per_bus.get(scope.bus, [])
         if not acquisitions:
-            if scope.trigger_level is None:
-                raise ValueError(
-                    f"qp.qblox.scope() on bus '{scope.bus}' is triggered by the bus's acquisitions, but the bus has "
-                    "none."
-                )
             raise ValueError(
                 f"qp.qblox.scope() on bus '{scope.bus}' stores its trace into the bus's first acquisition, but the "
                 "bus has none: add a qp.qblox.acquire() on it."

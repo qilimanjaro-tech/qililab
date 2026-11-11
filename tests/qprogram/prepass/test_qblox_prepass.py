@@ -65,6 +65,70 @@ class TestPrepareQblox:
         with pytest.raises(ValueError, match="Non QBLOX buses not allowed inside sync function"):
             prepare_qblox(qp, qblox_buses=["drive"])
 
+    def test_range_bounds_are_ints_when_whole(self):
+        """A Range stores its bounds as floats: the compiler gets the whole ones back as ints, the user's program
+        is left as it is."""
+        qp = QProgram()
+        duration, gain = qp.variable("duration"), qp.variable("gain")
+        with qp.sweep(duration).from_range(0, 100, 20) | qp.sweep(gain).from_range(0, 0.5, 0.1):
+            qp.wait(bus="drive", duration=duration)
+            qp.set_gain(bus="drive", gain=gain)
+
+        result = prepare_qblox(qp)
+
+        (parallel,) = result.qprogram.body.elements
+        bounds = [(loop.source.start, loop.source.stop, loop.source.step) for loop in parallel.loops]
+        assert bounds == [(0, 100, 20), (0, 0.5, 0.1)]
+        assert [type(value) for value in bounds[0]] == [int, int, int]
+        assert [type(value) for value in bounds[1]] == [int, float, float]
+        assert type(qp.body.elements[0].loops[0].source.start) is float
+
+    def test_expressions_are_written_the_way_the_compiler_reads_them(self):
+        """A constant goes on the right and is never negative, and -x becomes 0 - x."""
+        qp = QProgram()
+        duration, gain = qp.variable("duration"), qp.variable("gain")
+        with qp.sweep(duration).from_range(100, 200, 50) | qp.sweep(gain).from_range(0.1, 0.3, 0.1):
+            qp.wait(bus="drive", duration=8 + duration)
+            qp.set_gain(bus="drive", gain=gain + -0.5)
+            qp.set_offset(bus="drive", offset_path0=-gain)
+
+        result = prepare_qblox(qp)
+
+        (parallel,) = result.qprogram.body.elements
+        wait, set_gain, set_offset = parallel.elements
+        assert str(wait.duration) == str(duration + 8)
+        assert str(set_gain.gain) == str(gain - 0.5)
+        assert str(set_offset.offset_path0) == "(Constant(0) - Variable('gain'))"
+
+    def test_range_stop_becomes_its_last_point(self):
+        """A Range whose step doesn't divide stop - start ends before stop: stop becomes that point. A stop off by
+        rounding only is kept as written. The points don't change."""
+        qp = QProgram()
+        short, exact = qp.variable("short"), qp.variable("exact")
+        with qp.sweep(short).from_range(0, 1, 0.3):
+            with qp.sweep(exact).from_range(0, 0.3, 0.1):
+                qp.set_gain(bus="drive", gain=short)
+                qp.set_offset(bus="drive", offset_path0=exact)
+
+        result = prepare_qblox(qp)
+
+        (short_loop,) = result.qprogram.body.elements
+        (exact_loop,) = short_loop.elements
+        assert short_loop.source.stop == pytest.approx(0.9)
+        assert exact_loop.source.stop == 0.3
+        np.testing.assert_allclose(short_loop.source.values(), [0.0, 0.3, 0.6, 0.9])
+        assert len(exact_loop.source.values()) == 4
+
+    def test_buses_exceeding_the_acquisition_depth(self):
+        """More acquisitions than a sequencer indexes are fine one per block at one depth: the compiler indexes them
+        per block."""
+        qp = QProgram()
+        for _ in range(33):
+            with qp.average(1):
+                qp.qblox.acquire(bus="readout", weights=WEIGHTS)
+
+        assert prepare_qblox(qp).exceeds_depth_buses == ["readout"]
+
     def test_qblox_buses_default_to_every_bus(self):
         qp = QProgram()
         qp.play(bus="drive", waveform=DRIVE_WF)
@@ -251,20 +315,15 @@ class TestPrepareQblox:
         with pytest.raises(ValueError, match="a QRM has one scope, so scope one bus per QRM"):
             prepare_qblox(qp, readout_modules={"readout_q0": "qrm", "readout_q1": "qrm"})
 
-    @pytest.mark.parametrize(
-        "trigger_level, message",
-        [
-            (None, "is triggered by the bus's acquisitions, but the bus has none."),
-            (0.25, "stores its trace into the bus's first acquisition, but the bus has none"),
-        ],
-    )
-    def test_scope_without_acquisition_raises_error(self, trigger_level: float | None, message: str):
+    @pytest.mark.parametrize("trigger_level", [None, 0.25])
+    def test_scope_without_acquisition_raises_error(self, trigger_level: float | None):
         """The trace is stored into the bus's first acquisition, so a scope needs one whatever triggers it."""
         qp = QProgram()
         qp.qblox.scope(bus="readout", trigger_level=trigger_level)
         qp.wait(bus="readout", duration=1000)
 
-        with pytest.raises(ValueError, match=re.escape(f"qp.qblox.scope() on bus 'readout' {message}")):
+        message = "qp.qblox.scope() on bus 'readout' stores its trace into the bus's first acquisition, but the bus has none"
+        with pytest.raises(ValueError, match=re.escape(message)):
             prepare_qblox(qp, readout_modules={"readout": "qrm"})
 
     @pytest.mark.parametrize("trigger_level, warns", [(None, True), (0.25, False)])

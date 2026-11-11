@@ -1534,15 +1534,15 @@ class TestQBloxCompiler:
                 total_duration += int(tokens[1])
         assert total_duration == 70000
 
-    def test_wait_trigger_var_duration_raises_error_mapping(self):
-
+    def test_operation_that_cannot_be_swept_raises_error(self):
+        """A loop variable can only drive a frequency, phase, gain, offset or wait."""
         qp = QProgram()
         duration = qp.variable("duration")
         with qp.sweep(duration).from_range(4, 100, 4):
-            qp.qblox.wait_trigger(bus="drive", duration=duration)
+            qp.qblox.set_trigger(bus="drive", duration=duration, outputs=1)
 
         compiler = QbloxCompiler()
-        with pytest.raises(ValueError, match="WaitTrigger does not support variable sweep in a loop."):
+        with pytest.raises(ValueError, match="SetTrigger does not support variable sweep in a loop."):
             compiler.compile(qprogram=qp)
 
     def test_wait_trigger_var_duration_raises_error_handler(self):

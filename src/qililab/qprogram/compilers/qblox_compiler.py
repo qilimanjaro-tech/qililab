@@ -22,7 +22,7 @@ import numpy as np
 import qpysequence as QPy
 import qpysequence.program as QPyProgram
 import qpysequence.program.instructions as QPyInstructions
-from qprogram import BinaryOp, Constant, Range, UnaryOp, Variable
+from qprogram import BinaryOp, Constant, Range, Variable
 from qprogram.blocks import Average, Block, Parallel, Sweep
 from qprogram.operations import (
     Measure,
@@ -47,6 +47,7 @@ from qililab.constants import QBLOXCONSTANTS
 from qililab.qprogram.blocks import IfTrigger, InfiniteLoop, for_loop_iterations
 from qililab.qprogram.calibration import Calibration
 from qililab.qprogram.compilers.prepass import prepare_qblox, prepare_shared
+from qililab.qprogram.compilers.prepass.qblox_prepass import MAX_ACQUISITION_INDEX
 from qililab.qprogram.crosstalk.crosstalk_matrix import CrosstalkMatrix
 from qililab.qprogram.operations import MeasureReset, QbloxPlay
 from qililab.qprogram.qprogram import QProgram
@@ -62,7 +63,6 @@ NEG_ONE_TO_THREE = (2**32) - 3
 
 # TODO: move to qpysequence.constants
 # 32 is the max number of acquisitions that can be stored
-MAX_ACQUISITION_INDEX = 31
 
 ENABLE_CONDITIONAL = 1
 DISABLE_CONDITIONAL = 0
@@ -76,25 +76,11 @@ def _trigger_address_mask(address: int) -> int:
     return 0 if address == 0 else 2 ** (address - 1)
 
 
-def _number(value: float) -> int | float:
-    """Return ``value`` as an ``int`` when it is integral, else unchanged.
-
-    qprogram stores numbers as floats (a ``Range`` and a ``Constant`` do), where Q1ASM registers take integers.
-
-    Args:
-        value (float): The number.
-
-    Returns:
-        int | float: ``int(value)`` if ``value`` is integral, else ``value``.
-    """
-    return int(value) if float(value).is_integer() else value
-
-
 class _VariableExpression:
     """A variable plus or minus a constant or another variable, read as ``left operator right``.
 
-    The form the compiler evaluates: a constant added to a variable is always on the right, and adding or subtracting a
-    negative constant is written with the opposite operator and its absolute value. Built by ``_compiled_value``.
+    The Qblox pre-pass writes every expression this way: a constant only on the right, and never negative. Built by
+    ``_compiled_value``.
     """
 
     def __init__(self, left: "Variable | int | float", operator: str, right: "Variable | int | float") -> None:
@@ -112,8 +98,8 @@ class _VariableExpression:
 def _compiled_value(value: object) -> object:
     """Return a numeric operation argument as the compiler reads it: a ``Variable``, a number or a ``_VariableExpression``.
 
-    Validation against qililab's profile guarantees an expression is at most one ``+`` or ``-`` between a variable and
-    a constant or another variable, or a negated variable.
+    The Qblox pre-pass leaves at most one ``+`` or ``-`` between a variable and a constant or another variable, a
+    constant only on the right and never negative, and ``-x`` written ``0 - x``.
 
     Args:
         value (object): The argument, a number or a qprogram expression.
@@ -122,16 +108,9 @@ def _compiled_value(value: object) -> object:
         object: The argument in the compiler's form.
     """
     if isinstance(value, Constant):
-        return _number(value.value)
-    if isinstance(value, UnaryOp):
-        return _VariableExpression(0, "-", value.operand)  # type: ignore[arg-type]
+        return value.value
     if isinstance(value, BinaryOp):
-        left, right, operator = _compiled_value(value.left), _compiled_value(value.right), value.op
-        if operator == "+" and not isinstance(left, Variable):
-            left, right = right, left
-        if isinstance(left, Variable) and not isinstance(right, Variable) and right < 0:  # type: ignore[operator]
-            operator, right = ("-" if operator == "+" else "+"), abs(right)  # type: ignore[arg-type]
-        return _VariableExpression(left, operator, right)  # type: ignore[arg-type]
+        return _VariableExpression(_compiled_value(value.left), value.op, _compiled_value(value.right))  # type: ignore[arg-type]
     return value
 
 
@@ -148,40 +127,6 @@ def _waveforms_of(element: "CorePlay | QbloxPlay") -> tuple[Waveform, Waveform |
     if isinstance(waveform, IQWaveform):
         return waveform.get_I(), waveform.get_Q()
     return waveform, None  # type: ignore[return-value]
-
-
-@dataclass
-class _LoopRange:
-    """The range a sweep runs over, as the compiler reads a for_loop: integral bounds as ints, and ``stop`` on the last
-    point, since a ``Range`` holds ``round((stop - start) / step) + 1`` points that may stop short of ``stop`` or step
-    past it."""
-
-    variable: Variable
-    start: int | float
-    stop: int | float
-    step: int | float
-
-    @classmethod
-    def of(cls, sweep: Sweep) -> "_LoopRange":
-        """Read the range of ``sweep``.
-
-        Args:
-            sweep (Sweep): The sweep.
-
-        Returns:
-            _LoopRange: Its variable and its range.
-
-        Raises:
-            NotImplementedError: If the sweep's source is not a ``Range``.
-        """
-        if not isinstance(sweep.source, Range):
-            raise NotImplementedError("Loops with arbitrary numpy arrays are not currently supported for QBlox.")
-        source = sweep.source
-        last = source.start + source.step * (source.length() - 1)
-        # A for_loop's range ends on its stop: keep it as written, so no rounding error reaches the Q1ASM.
-        if math.isclose(last, source.stop, rel_tol=1e-9, abs_tol=1e-12):
-            last = source.stop
-        return cls(sweep.variable, _number(source.start), _number(last), _number(source.step))
 
 
 @dataclass
@@ -452,10 +397,7 @@ class QbloxCompiler:
                     self._buses[element.bus].counter_acquire = self._acquisition_metadata[element.bus][id(block)][0]
                     self._buses[element.bus].first_acquire_of_block = False
 
-                handler = self._handlers.get(type(element))
-                if not handler:
-                    raise NotImplementedError(f"{element.__class__} is currently not supported in QBlox.")
-                appended = handler(element)
+                appended = self._handlers[type(element)](element)
                 if isinstance(element, Block):
                     if isinstance(element, IfTrigger):
                         self._handle_conditional_trigger_prologue()
@@ -484,6 +426,7 @@ class QbloxCompiler:
             bus_distortions=bus_distortions,
             qblox_buses=qblox_buses,
             readout_modules=readout_modules,
+            markers=markers,
         )
         self._qprogram = prepass.qprogram
         self._disable_autosync = prepass.disable_autosync
@@ -527,22 +470,8 @@ class QbloxCompiler:
                 )
             self._buses[bus].static_duration += 4
 
-        # Handle the cases where the number of acquisitions exceeds MAX_ACQUISITION_INDEX whilst having more than one depth.
-        for bus, block_data in self._acquisition_metadata.items():
-            total = sum(count for count, _ in block_data.values())
-            depths = {depth for _, depth in block_data.values()}
-            if len(block_data) > 1 and total > MAX_ACQUISITION_INDEX + 1:
-                if len(depths) > 1:
-                    raise NotImplementedError(
-                        f"Bus '{bus}' has {total} acquisitions at inconsistent nesting depths "
-                        f"{sorted(depths)}. For more than {MAX_ACQUISITION_INDEX + 1} acquisitions, they must be at the same nesting depth."
-                    )
-                if not all(count == 1 for count, _ in block_data.values()):
-                    raise NotImplementedError(
-                        f"Bus '{bus}' has {total} acquisitions across {len(block_data)} blocks, "
-                        f"but only 1 acquisition per block is supported when total acquisitions exceed {MAX_ACQUISITION_INDEX + 1}."
-                    )
-                self._buses[bus].exceeds_depth = True
+        for bus in prepass.exceeds_depth_buses:
+            self._buses[bus].exceeds_depth = True
 
         traverse(self._qprogram._body)
 
@@ -740,28 +669,26 @@ class QbloxCompiler:
         return index_I, index_Q, length_I
 
     def _handle_parallel(self, element: Parallel) -> bool:
-        if not element.loops:
-            raise NotImplementedError("Parallel block should contain loops.")
-
         loops = []
         iterations = []
         for sweep in element.loops:
-            loop = _LoopRange.of(sweep)
+            source = cast("Range", sweep.source)
+            loop_start, loop_stop = source.start, source.stop
             operation = QbloxCompiler._get_reference_operation_of_loop(loop=sweep, starting_block=element)
             qpysequence_operation = (
                 QbloxCompiler._get_qpysequence_conversion_instructions(operation) if operation is not None else None
             )
             if isinstance(operation, Wait):
-                if loop.start < INST_MIN_WAIT:
+                if loop_start < INST_MIN_WAIT:
                     logger.warning(
-                        f"Wait duration {loop.start} ns is below the Q1ASM minimum (4 ns), clamping to 4 ns."
+                        f"Wait duration {loop_start} ns is below the Q1ASM minimum (4 ns), clamping to 4 ns."
                     )
-                    loop.start = 4
-                if loop.stop < INST_MIN_WAIT:
-                    logger.warning(f"Wait duration {loop.stop} ns is below the Q1ASM minimum (4 ns), clamping to 4 ns.")
-                    loop.stop = 4
+                    loop_start = 4
+                if loop_stop < INST_MIN_WAIT:
+                    logger.warning(f"Wait duration {loop_stop} ns is below the Q1ASM minimum (4 ns), clamping to 4 ns.")
+                    loop_stop = 4
             scale_factor = qpysequence_operation.scale_factor if qpysequence_operation is not None else None
-            start, step, iters = QbloxCompiler._compute_loop_sweep(loop, scale_factor)  # type: ignore[arg-type]
+            start, step, iters = QbloxCompiler._compute_loop_sweep(loop_start, loop_stop, source.step, scale_factor)
             loops.append((start, step, qpysequence_operation))
             iterations.append(iters)
         min_iterations = min(iterations)
@@ -794,24 +721,25 @@ class QbloxCompiler:
         return True
 
     def _handle_sweep(self, sweep: Sweep) -> bool:
-        element = _LoopRange.of(sweep)
+        source = cast("Range", sweep.source)
+        loop_start, loop_stop = source.start, source.stop
         operation = QbloxCompiler._get_reference_operation_of_loop(sweep)
         qpysequence_operation = (
             QbloxCompiler._get_qpysequence_conversion_instructions(operation) if operation is not None else None
         )
         if isinstance(operation, Wait):
-            if element.start < INST_MIN_WAIT:
-                logger.warning(f"Wait duration {element.start} ns is below the Q1ASM minimum (4 ns), clamping to 4 ns.")
-                element.start = 4
-            if element.stop < INST_MIN_WAIT:
-                logger.warning(f"Wait duration {element.stop} ns is below the Q1ASM minimum (4 ns), clamping to 4 ns.")
-                element.stop = 4
+            if loop_start < INST_MIN_WAIT:
+                logger.warning(f"Wait duration {loop_start} ns is below the Q1ASM minimum (4 ns), clamping to 4 ns.")
+                loop_start = 4
+            if loop_stop < INST_MIN_WAIT:
+                logger.warning(f"Wait duration {loop_stop} ns is below the Q1ASM minimum (4 ns), clamping to 4 ns.")
+                loop_stop = 4
         scale_factor = qpysequence_operation.scale_factor if qpysequence_operation is not None else None
-        start, step, iterations = QbloxCompiler._compute_loop_sweep(element, scale_factor)
+        start, step, iterations = QbloxCompiler._compute_loop_sweep(loop_start, loop_stop, source.step, scale_factor)
 
-        if isinstance(operation, Wait) and element.stop > INST_MAX_WAIT:
+        if isinstance(operation, Wait) and loop_stop > INST_MAX_WAIT:
             self._long_wait_dynamic = True
-        self._max_wait_dynamic = int(element.stop)
+        self._max_wait_dynamic = int(loop_stop)
 
         for bus in self._buses:
             qpy_loop = QPyProgram.IterativeLoop(
@@ -821,12 +749,12 @@ class QbloxCompiler:
             )
             self._buses[bus].qpy_block_stack[-1].add(qpy_loop)
             self._buses[bus].qpy_block_stack.append(qpy_loop)
-            self._buses[bus].variable_to_register[element.variable] = qpy_loop.loop_registers[0]
+            self._buses[bus].variable_to_register[sweep.variable] = qpy_loop.loop_registers[0]
             self._buses[bus].loop_counter += 1
         return True
 
     def _handle_set_frequency(self, element: SetFrequency) -> None:
-        frequency = QbloxCompiler._without_expression(element.frequency, "frequency")
+        frequency = _compiled_value(element.frequency)
         if isinstance(frequency, Variable):
             freq = self._buses[element.bus].variable_to_register[frequency]
             instruction = QPyInstructions.SetFreq(value=freq)
@@ -838,7 +766,7 @@ class QbloxCompiler:
         self._buses[element.bus].upd_param_instruction_pending = True
 
     def _handle_set_phase(self, element: SetPhase) -> None:
-        phase = QbloxCompiler._without_expression(element.phase, "phase")
+        phase = _compiled_value(element.phase)
         if isinstance(phase, Variable):
             phase_register = self._buses[element.bus].variable_to_register[phase]
             instruction = QPyInstructions.SetPh(value=phase_register)
@@ -857,27 +785,6 @@ class QbloxCompiler:
         self._buses[bus].marked_for_sync = True
         self._buses[bus].duration_since_sync += duration
         self._buses[bus].static_duration += duration
-
-    @staticmethod
-    def _without_expression(value: object, name: str) -> object:
-        """Return ``value`` in the compiler's form, refusing an expression where the compiler only takes a variable.
-
-        Args:
-            value (object): The argument.
-            name (str): Its name, for the error message.
-
-        Returns:
-            object: The argument, a variable or a number.
-
-        Raises:
-            NotImplementedError: If ``value`` is an expression.
-        """
-        compiled = _compiled_value(value)
-        if isinstance(compiled, _VariableExpression):
-            raise NotImplementedError(
-                f"An expression cannot be used as the {name} in QBlox, only a variable: {compiled}."
-            )
-        return compiled
 
     def _resolve_binary_expression(
         self, bus: str, expression: _VariableExpression, convert: Callable
@@ -966,16 +873,7 @@ class QbloxCompiler:
     def _handle_set_offset(self, element: SetOffset) -> None:
         offset_path0 = _compiled_value(element.offset_path0)
         offset_path1 = _compiled_value(element.offset_path1)
-        if isinstance(offset_path1, _VariableExpression):
-            raise NotImplementedError(
-                "Having a different offset for I and Q whilst using VariableExpressions is not supported."
-            )
-
         if isinstance(offset_path0, _VariableExpression):
-            if offset_path1 is not None:
-                raise NotImplementedError(
-                    "Having a different offset for I and Q whilst using VariableExpressions is not supported."
-                )
             result = self._resolve_binary_expression(
                 element.bus, offset_path0, lambda x: int(x * QPyInstructions.SetNormalisedOffs.scale_factor)
             )
@@ -1054,18 +952,10 @@ class QbloxCompiler:
 
     def _handle_set_trigger(self, element: SetTrigger) -> None:
         mask = self._markers[element.bus] if self._markers is not None and element.bus in self._markers else "0000"
-        if not element.outputs:
-            raise ValueError("Missing qblox trigger outputs at qp.qblox.set_trigger.")
-        for output in element.outputs if isinstance(element.outputs, list) else [element.outputs]:
-            if int(mask, 2) > 0:
-                output_map = {1: 3, 2: 2}
-                if output not in output_map:
-                    raise ValueError("RF modules only have 2 trigger outputs, either 1 or 2")
-            else:
-                output_map = {1: 3, 2: 2, 3: 1, 4: 0}
-                if output not in output_map:
-                    raise ValueError("Low frequency modules only have 4 trigger outputs, out of range")
-
+        # The Qblox pre-pass checks the outputs against the module
+        output_map = {1: 3, 2: 2} if int(mask, 2) > 0 else {1: 3, 2: 2, 3: 1, 4: 0}
+        outputs = cast("list[int] | int", element.outputs)
+        for output in outputs if isinstance(outputs, list) else [outputs]:
             markers = list(mask)
             markers[output_map[output]] = "1"
 
@@ -1082,8 +972,6 @@ class QbloxCompiler:
 
     def _handle_wait(self, element: Wait, delay: bool = False) -> None:
         duration = _compiled_value(element.duration)
-        if isinstance(duration, _VariableExpression) and len(duration.variables) > 1:
-            raise NotImplementedError("A wait duration cannot combine several variables in one expression.")
         if isinstance(duration, (Variable, _VariableExpression)):
             if self._buses[element.bus].marked_for_dynamic_sync is True:
                 raise NotImplementedError(
@@ -1322,14 +1210,9 @@ class QbloxCompiler:
 
         Args:
             element (WaitTrigger): The wait_trigger element to compile.
-
-        Raises:
-            ValueError: If `element.duration` is a Variable.
         """
-        if not isinstance(element.duration, (int, float)):
-            raise ValueError("Wait trigger duration cannot be a Variable, it must be an int.")
-
-        duration = QbloxCompiler._clamp_duration(element.duration, label="wait_trigger")
+        # The Qblox pre-pass refuses a variable duration
+        duration = QbloxCompiler._clamp_duration(cast("int", element.duration), label="wait_trigger")
 
         # Flush any pending upd_param before the sync, so every bus reaches the trigger aligned and
         # waits on it with the same plain wait_trigger.
@@ -2152,23 +2035,25 @@ class QbloxCompiler:
         return instruction_map[type(operation)]
 
     @staticmethod
-    def _compute_loop_sweep(for_loop: _LoopRange, scale_factor: float | int | None = None) -> tuple[float, float, int]:
-        iterations = for_loop_iterations(for_loop.start, for_loop.stop, for_loop.step)
+    def _compute_loop_sweep(
+        start: int | float, stop: int | float, step: int | float, scale_factor: float | int | None = None
+    ) -> tuple[float, float, int]:
+        iterations = for_loop_iterations(start, stop, step)
         if iterations == 1:
             # Single point: the formulas below divide by iterations - 1, which is 0. The loop runs once, so use a
             # step of 0: the register stays at start and no add/sub is written.
-            return (for_loop.start, 0, iterations)
+            return (start, 0, iterations)
         if scale_factor is None:
-            qblox_step = (for_loop.stop - for_loop.start) / (iterations - 1)
-            return (for_loop.start, qblox_step, iterations)
+            qblox_step = (stop - start) / (iterations - 1)
+            return (start, qblox_step, iterations)
 
         # Reproduce the pre-0.11 qpysequence rounding:
-        start_int = int(for_loop.start * scale_factor)
-        stop_int = int(for_loop.stop * scale_factor)
+        start_int = int(start * scale_factor)
+        stop_int = int(stop * scale_factor)
         step_int = (stop_int - start_int) // (iterations - 1)
         nudge = 0.5 if step_int >= 0 else -0.5
         qblox_step = (step_int + nudge) / scale_factor
-        return (for_loop.start, qblox_step, iterations)
+        return (start, qblox_step, iterations)
 
     @staticmethod
     def _hash_waveform(waveform: Waveform) -> str:
