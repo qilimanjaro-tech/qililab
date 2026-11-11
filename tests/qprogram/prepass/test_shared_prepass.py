@@ -117,6 +117,31 @@ body:
         with pytest.raises(ValueError, match="qililab.disable_autosync applies to the whole program"):
             prepare_shared(QProgram.from_qp(text))
 
+    @pytest.mark.parametrize(
+        "expression, code",
+        [
+            (lambda g, h: g + h + h, "qililab.unsupported-arithmetic"),
+            (lambda g, h: g * 2, "qililab.unsupported-arithmetic"),
+            (lambda g, h: 2 / g, "qililab.unsupported-arithmetic"),
+            (lambda g, h: g * h, "qililab.unsupported-arithmetic"),
+            (lambda g, h: g > 0.5, "qililab.unsupported-arithmetic"),
+            (lambda g, h: abs(g), "qililab.unsupported-arithmetic"),
+        ],
+        ids=["two-additions", "multiplication", "division", "product-of-variables", "comparison", "abs"],
+    )
+    def test_unsupported_arithmetic_raises_validation_error(self, expression, code):
+        """An expression qililab can't compile is rejected: anything beyond one + or - between a variable and a
+        constant or another variable, or a negated variable."""
+        qp = QProgram()
+        g = qp.variable("g")
+        h = qp.variable("h")
+        with qp.sweep(g).from_range(0.0, 1.0, 0.5):
+            with qp.sweep(h).from_range(0.0, 1.0, 0.5):
+                qp.set_gain(bus="drive", gain=expression(g, h))
+
+        with pytest.raises(ValidationError, match=re.escape(code)):
+            prepare_shared(qp)
+
     def test_unsupported_feature_raises_validation_error(self):
         """Anything outside qililab's capability profile fails here, e.g. a sweep over explicit values."""
         qp = QProgram()

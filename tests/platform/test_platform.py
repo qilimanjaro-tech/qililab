@@ -2784,6 +2784,36 @@ class TestMethods:
             assert result.get(handle, field="state").values.tolist() == state
         setup_scope.assert_not_called()
 
+    def test_qblox_results_of_nested_sweeps(self, platform: Platform):
+        """A measurement inside two sweeps gets both as dimensions, the outer one first, for the IQ and the state."""
+        weights = IQPair(I=Square(amplitude=1.0, duration=120), Q=Square(amplitude=0.0, duration=120))
+        qprogram = QProgram()
+        outer = qprogram.variable("outer")
+        inner = qprogram.variable("inner")
+        with qprogram.average(10):
+            with qprogram.sweep(outer).from_range(0.0, 1.0, 1.0):
+                with qprogram.sweep(inner).from_range(0.0, 1.0, 0.5):
+                    qprogram.set_gain(bus="feedline_input_output_bus", gain=inner)
+                    m0 = qprogram.qblox.acquire(
+                        bus="feedline_input_output_bus",
+                        weights=weights,
+                        fields=[MeasurementField.IQ, MeasurementField.STATE],
+                    )
+        raw = _raw_acquisition(
+            path0=[1, 2, 3, 4, 5, 6], path1=[7, 8, 9, 10, 11, 12], threshold=[0.1, 0.2, 0.3, 0.4, 0.5, 0.6]
+        )
+
+        result, _, _ = self._execute_with_raw_acquisitions(platform, qprogram, [raw])
+
+        iq = result.get(m0)
+        assert iq.dims == ("outer", "inner", "IQ")
+        assert iq.values.tolist() == [[[1, 7], [2, 8], [3, 9]], [[4, 10], [5, 11], [6, 12]]]
+        assert iq.coords["outer"].values.tolist() == [0.0, 1.0]
+        assert iq.coords["inner"].values.tolist() == [0.0, 0.5, 1.0]
+        state = result.get(m0, field="state")
+        assert state.dims == ("outer", "inner")
+        assert state.values.tolist() == [[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]]
+
     def test_qblox_results_without_state_field_have_no_state(self, platform: Platform):
         """A measurement only returns the fields it asked for: the IQ ones by default."""
         weights = IQPair(I=Square(amplitude=1.0, duration=120), Q=Square(amplitude=0.0, duration=120))

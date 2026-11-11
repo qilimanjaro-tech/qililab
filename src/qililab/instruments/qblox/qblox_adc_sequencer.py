@@ -36,11 +36,12 @@ class QbloxADCSequencer(QbloxSequencer):
     threshold_rotation: float
     # nanoseconds
     time_of_flight: int
+    # Deprecated, ignored: derived from the QProgram's first weight duration (nanoseconds)
     integration_length: int | None = None
-    # minutes
+    # Deprecated, ignored: it has no effect on the instrument (minutes)
     sequence_timeout: int | None = None
     timeout_repetitions: int = 0
-    # Deprecated, ignored: see DEPRECATED_SCOPE_FIELDS
+    # Deprecated, ignored: the scope is set in the QProgram, with qp.qblox.scope (see DEPRECATED_SCOPE_FIELDS)
     scope_acquire_trigger_mode: AcquireTriggerMode | None = None
     scope_hardware_averaging: bool | None = None
     scope_store_enabled: bool | None = None

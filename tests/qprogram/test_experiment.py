@@ -146,6 +146,15 @@ class TestExperiment:
                 with instance.parallel(loops=loops):
                     pass
 
+    def test_set_parameter_with_unary_plus_stores_the_variable(self, instance: Experiment):
+        """``+x`` is ``x`` in an Experiment too."""
+        bias = instance.variable("bias")
+        with instance.for_loop(variable=bias, start=0.0, stop=1.0, step=0.5):
+            instance.set_parameter(alias="flux_q0", parameter=Parameter.VOLTAGE, value=+bias)
+
+        (set_parameter,) = instance.body.elements[0].elements
+        assert set_parameter.value is bias
+
     def test_set_parameter(self, instance: Experiment):
         """Test set_awg_gain method"""
         instance.set_parameter(alias="flux_bus", parameter=Parameter.VOLTAGE, value=0.5)

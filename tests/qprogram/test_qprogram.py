@@ -2399,6 +2399,46 @@ class TestQProgram:
         with pytest.raises(ValidationError, match=re.escape("qililab.variable-in-waveform")):
             QbloxCompiler().compile(qprogram=qp)
 
+    def test_variable_in_iq_drag_is_rejected_at_compile_time(self):
+        """A variable in any parameter of an IQ waveform, here the DRAG coefficient, is rejected too."""
+        qp = QProgram()
+        drag_coefficient = qp.variable("drag_coefficient")
+        with qp.sweep(drag_coefficient).from_range(0.0, 1.0, 0.5):
+            qp.play(
+                bus="drive",
+                waveform=IQDrag(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=drag_coefficient),
+            )
+        compiler = QbloxCompiler()
+
+        with pytest.raises(ValidationError, match=re.escape("qililab.variable-in-waveform")):
+            compiler.compile(qprogram=qp)
+
+    def test_unary_plus_is_the_variable_itself(self):
+        """``+x`` is ``x``, as with qililab's former variables: the program stores the variable, and compiles as if
+        the ``+`` weren't there."""
+
+        def program(plus: bool) -> QProgram:
+            qp = QProgram()
+            gain = qp.variable("gain")
+            wait = qp.variable("wait")
+            with qp.sweep(gain).from_range(0.0, 1.0, 0.5):
+                with qp.sweep(wait).from_range(100, 200, 100):
+                    qp.set_gain(bus="drive", gain=+gain if plus else gain)
+                    qp.wait(bus="drive", duration=(+wait if plus else wait) + 4)
+            return qp
+
+        with_plus, without_plus = program(plus=True), program(plus=False)
+        set_gain, wait = with_plus.body.elements[0].elements[0].elements
+        gain_variable, wait_variable = with_plus.variables
+
+        assert set_gain.gain is gain_variable
+        assert isinstance(wait.duration, BinaryOp)
+        assert (wait.duration.left, wait.duration.op) == (wait_variable, "+")
+        assert str(with_plus) == str(without_plus)
+        compiled = QbloxCompiler().compile(qprogram=with_plus).sequences["drive"]
+        expected = QbloxCompiler().compile(qprogram=without_plus).sequences["drive"]
+        assert str(compiled._program) == str(expected._program)
+
     def test_measure_reset_method(self):
         """Test measure_reset method"""
         one_wf = Square(amplitude=1.0, duration=40)
@@ -2629,6 +2669,20 @@ class TestQProgram:
         qp.set_gain(bus="drive", gain=np.float64(0.5))
         assert qp._body.elements[0].gain == pytest.approx(0.5)
         assert type(qp._body.elements[0].gain) is float
+
+    def test_for_loop_with_numpy_bounds_stores_python_scalars(self):
+        """The deprecated for_loop and its ForLoop description take numpy bounds and store Python numbers."""
+        qp = QProgram()
+        index = qp.variable("index")
+        with pytest.warns(FutureWarning, match="qp.for_loop is deprecated"):
+            loop_context = qp.for_loop(variable=index, start=np.int64(1), stop=np.int64(10), step=np.int64(1))
+        with loop_context as loop:
+            pass
+        description = ForLoop(index, np.int64(1), np.float64(10.0), np.int64(1))
+
+        assert [type(value) for value in (loop.source.start, loop.source.stop, loop.source.step)] == [float] * 3
+        assert loop.num_iterations() == 10
+        assert [type(value) for value in (description.start, description.stop, description.step)] == [int, float, int]
 
     def test_sweep_with_numpy_bounds_stores_python_scalars(self):
         qp = QProgram()

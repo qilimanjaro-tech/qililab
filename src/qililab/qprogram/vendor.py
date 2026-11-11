@@ -22,6 +22,7 @@ from typing import Protocol
 
 import qprogram_qblox  # noqa: F401  (registers the qblox vendor first)
 import qprogram_qdac  # noqa: F401  (registers the qdac vendor first)
+from qprogram import ParseError
 from qprogram.protocol import register_capability_tokens
 from qprogram.serialization._specs import make_measurement_op_parse, measurement_op_serialize
 from qprogram.serialization.registry import register_vendor_block, register_vendor_operation, register_vendor_version
@@ -60,7 +61,7 @@ _IF_TRIGGER_PARAMETERS = ("trigger_padding_ns", "expected_wait_time_ns")
 class _HeaderParser(Protocol):
     """What a block header parser needs from qprogram's ``.qp`` parser: building the error it raises."""
 
-    def parse_error(self, message: str) -> Exception:
+    def parse_error(self, message: str) -> ParseError:
         """Return the error to raise for ``message``, pointing at the line being parsed."""
 
 

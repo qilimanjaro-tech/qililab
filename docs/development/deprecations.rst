@@ -3,10 +3,6 @@ Deprecations
 
 Pending deprecations
 ---------------------
-- `IQPair.DRAG` is deprecated in favor of the dedicated `IQDrag` class.
-    - Deprecated in v0.32.0
-    - No removal version set yet
-
 - The runcard's `integration_length` field (on `QbloxADCSequencer`) is deprecated; the integration length is now derived from the QProgram's weight duration instead.
     - Deprecated in an upcoming release (`#1151 <https://github.com/qilimanjaro-tech/qililab/pull/1151>`_)
     - No removal version set yet
@@ -31,12 +27,16 @@ Pending deprecations
     - Deprecated in an upcoming release (`#1273 <https://github.com/qilimanjaro-tech/qililab/pull/1273>`_)
     - No removal version set yet
 
-- The runcard's `scope_acquire_trigger_mode`, `scope_hardware_averaging` and `scope_store_enabled` fields (on `QbloxADCSequencer`), and their `Parameter` members in `set_parameter` / `get_parameter`, are deprecated and ignored; the scope is now set from the QProgram with `qp.qblox.scope(bus, averaging, trigger_level)`.
+- The runcard's `scope_acquire_trigger_mode`, `scope_hardware_averaging` and `scope_store_enabled` fields (on `QbloxADCSequencer`) are deprecated and ignored; the scope is now set from the QProgram with `qp.qblox.scope(bus, averaging, trigger_level)`.
     - Deprecated in an upcoming release (`#1273 <https://github.com/qilimanjaro-tech/qililab/pull/1273>`_)
     - No removal version set yet
 
 Completed deprecation cycles
 -----------------------------
+- `IQPair.DRAG` was deprecated in favor of the dedicated `IQDrag` class.
+    - Deprecated in v0.32.0
+    - Removed in an upcoming release (`#1273 <https://github.com/qilimanjaro-tech/qililab/pull/1273>`_)
+
 - The `path` argument in `qililab.build_platform` was changed to `runcard`, since it not only accepts a path to the YAML file but also the dictionary directly.
     - Deprecated in v0.21
     - Removed in v0.22

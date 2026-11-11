@@ -46,6 +46,7 @@ from qililab.qprogram.namespace import QililabQbloxNamespace
 from qililab.qprogram.operations.disable_autosync import DisableAutosync
 from qililab.qprogram.operations.measure_reset import MeasureReset
 from qililab.qprogram.operations.play import QbloxPlay
+from qililab.qprogram.unary_plus import drop_unary_plus
 
 if TYPE_CHECKING:
     from qililab.pulse_distortion.pulse_distortion import PulseDistortion
@@ -142,6 +143,8 @@ class QProgram(QbloxMixin, QdacMixin, qp.QProgram):
     def _append_to_active(self, element: Any) -> None:
         """Append ``element`` to the active block, refusing a loop over a variable an enclosing loop already sweeps.
 
+        A unary ``+`` in the expressions of an operation is dropped, as qililab's former variables did: ``+x`` is ``x``.
+
         Args:
             element (Any): The operation or block to append.
 
@@ -149,6 +152,7 @@ class QProgram(QbloxMixin, QdacMixin, qp.QProgram):
             VariableAllocated: If ``element`` is a loop over a variable an enclosing loop already sweeps.
         """
         reject_variables_swept_by_enclosing_loops(element, self._block_stack)
+        drop_unary_plus(element)
         super()._append_to_active(element)
 
     def __str__(self) -> str:

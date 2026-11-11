@@ -14,14 +14,13 @@
 
 """Qblox pulsar QRM class"""
 
-import warnings
 from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import cast
 
 from qililab.config import logger
 from qililab.instruments.decorators import check_device_initialized
-from qililab.instruments.qblox.qblox_adc_sequencer import DEPRECATED_SCOPE_FIELDS, QbloxADCSequencer
+from qililab.instruments.qblox.qblox_adc_sequencer import QbloxADCSequencer
 from qililab.instruments.qblox.qblox_module import QbloxModule
 from qililab.instruments.utils import InstrumentFactory
 from qililab.qprogram.qblox_compiler import AcquisitionData
@@ -34,20 +33,6 @@ from qililab.typings import (
     Parameter,
     ParameterValue,
 )
-
-
-def _warn_deprecated_scope_parameter(parameter: Parameter) -> None:
-    """Warn that a scope parameter is deprecated and ignored.
-
-    Args:
-        parameter (Parameter): The parameter.
-    """
-    warnings.warn(
-        f"Parameter.{parameter.name} is deprecated and will be removed in a future release, and its value is ignored. "
-        "The scope is now set in the QProgram, with qp.qblox.scope(bus).",
-        FutureWarning,
-        stacklevel=3,
-    )
 
 
 @InstrumentFactory.register
@@ -233,8 +218,6 @@ class QbloxQRM(QbloxModule):
         Returns:
             ParameterValue: The parameter's value.
         """
-        if parameter.value in DEPRECATED_SCOPE_FIELDS:
-            _warn_deprecated_scope_parameter(parameter)
         return super().get_parameter(parameter=parameter, channel_id=channel_id, output_id=output_id)
 
     def set_parameter(
@@ -253,10 +236,6 @@ class QbloxQRM(QbloxModule):
             raise ValueError("channel not specified to update instrument")
 
         channel_id = int(channel_id)
-        if parameter.value in DEPRECATED_SCOPE_FIELDS:
-            _warn_deprecated_scope_parameter(parameter)
-            setattr(self.get_sequencer(channel_id), parameter.value, value)
-            return
         if parameter == Parameter.HARDWARE_DEMODULATION:
             self._set_hardware_demodulation(value=value, sequencer_id=channel_id)
             return

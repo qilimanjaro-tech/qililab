@@ -201,43 +201,6 @@ class TestQbloxQRM:
             output = int(parameter.value[-1])
             assert qrm.out_offsets[output] == value
 
-    @pytest.mark.parametrize(
-        "parameter, value",
-        [
-            (Parameter.SCOPE_ACQUIRE_TRIGGER_MODE, "level"),
-            (Parameter.SCOPE_HARDWARE_AVERAGING, False),
-            (Parameter.SCOPE_STORE_ENABLED, True),
-        ],
-    )
-    def test_set_deprecated_scope_parameter_warns_and_leaves_the_scope_untouched(
-        self, qrm: QbloxQRM, parameter, value
-    ):
-        """The scope parameters are deprecated: setting one warns, and its value is ignored (the scope is set by
-        ``qp.qblox.scope`` in the QProgram)."""
-        with pytest.warns(
-            FutureWarning,
-            match=re.escape(
-                f"Parameter.{parameter.name} is deprecated and will be removed in a future release, and its value is "
-                "ignored. The scope is now set in the QProgram, with qp.qblox.scope(bus)."
-            ),
-        ):
-            qrm.set_parameter(parameter, value, channel_id=0)
-
-        qrm.device.scope_acq_sequencer_select.assert_not_called()
-        qrm.device.scope_acq_trigger_mode_path0.assert_not_called()
-        qrm.device.scope_acq_trigger_mode_path1.assert_not_called()
-        qrm.device.scope_acq_avg_mode_en_path0.assert_not_called()
-        qrm.device.scope_acq_avg_mode_en_path1.assert_not_called()
-
-    @pytest.mark.parametrize(
-        "parameter",
-        [Parameter.SCOPE_ACQUIRE_TRIGGER_MODE, Parameter.SCOPE_HARDWARE_AVERAGING, Parameter.SCOPE_STORE_ENABLED],
-    )
-    def test_get_deprecated_scope_parameter_warns(self, qrm: QbloxQRM, parameter):
-        """Getting a deprecated scope parameter warns."""
-        with pytest.warns(FutureWarning, match=re.escape(f"Parameter.{parameter.name} is deprecated")):
-            qrm.get_parameter(parameter, channel_id=0)
-
     def test_set_parameter_raises_error(self, qrm: QbloxQRM):
         """Test setting parameters for QCM sequencers using parameterized values."""
         with pytest.raises(ParameterNotFound):
@@ -555,6 +518,11 @@ class TestQbloxQRM:
     def test_parameter_integration_length_not_in_enum(self):
         """Parameter.INTEGRATION_LENGTH must not exist — it was removed to prevent silent no-ops."""
         assert not hasattr(Parameter, "INTEGRATION_LENGTH")
+
+    @pytest.mark.parametrize("name", ["SCOPE_ACQUIRE_TRIGGER_MODE", "SCOPE_HARDWARE_AVERAGING", "SCOPE_STORE_ENABLED"])
+    def test_scope_parameters_not_in_enum(self, name: str):
+        """The scope Parameters must not exist: the scope is set in the QProgram, with qp.qblox.scope(bus)."""
+        assert not hasattr(Parameter, name)
 
     @pytest.mark.parametrize(
         "field", ["scope_acquire_trigger_mode", "scope_hardware_averaging", "scope_store_enabled"]

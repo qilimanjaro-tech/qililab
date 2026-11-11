@@ -17,11 +17,17 @@ from qprogram import Variable
 
 
 class VariableAllocated(Exception):
-    """Exception raised when a loop sweeps a variable an enclosing loop already sweeps.
+    """Exception raised when a loop sweeps a variable an enclosing loop, or another loop of the same parallel block,
+    already sweeps.
+
+    Its name comes from the former variables, which loops marked as allocated while they swept them.
 
     Args:
-        message (str): Optional message to be displayed
+        variable (Variable): The variable swept twice.
     """
 
     def __init__(self, variable: Variable) -> None:
-        super().__init__(f"Cannot allocate variable {variable}. Variable is already allocated.")
+        super().__init__(
+            f"Variable {variable.id!r} is already swept by an enclosing loop or by another loop of the same parallel "
+            "block: each loop needs its own variable."
+        )

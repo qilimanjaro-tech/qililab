@@ -31,7 +31,9 @@ from collections.abc import Iterable, Iterator
 from numbers import Real
 
 import qprogram_qblox  # noqa: F401  (registers the qblox tokens)
-import qprogram_qdac  # also registers the qdac tokens and profile
+
+# Importing qprogram_qdac also registers the qdac tokens and profile.
+import qprogram_qdac
 from qprogram import BinaryOp, Constant, Expression, UnaryOp, Variable
 from qprogram.protocol import (
     BusCapabilities,

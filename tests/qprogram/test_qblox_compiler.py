@@ -7815,6 +7815,31 @@ class TestQBloxCompiler:
         ):
             gain_sweep.from_range(0, 1, -2)
 
+    def test_wait_combining_two_variables_raises_error(self):
+        """A wait computed in registers can take one variable, not an expression of two."""
+        qp = QProgram()
+        first = qp.variable("first")
+        second = qp.variable("second")
+        with qp.sweep(first).from_range(100, 200, 100):
+            with qp.sweep(second).from_range(100, 200, 100):
+                qp.wait(bus="drive", duration=first + second)
+        compiler = QbloxCompiler()
+
+        with pytest.raises(NotImplementedError, match="A wait duration cannot combine several variables"):
+            compiler.compile(qprogram=qp)
+
+    @pytest.mark.parametrize("parameter", ["frequency", "phase"])
+    def test_expression_as_frequency_or_phase_raises_error(self, parameter: str):
+        """set_frequency and set_phase take a variable or a number, not an expression."""
+        qp = QProgram()
+        value = qp.variable("value")
+        with qp.sweep(value).from_range(0.0, 1.0, 0.5):
+            getattr(qp, f"set_{parameter}")("drive", value + 1)
+        compiler = QbloxCompiler()
+
+        with pytest.raises(NotImplementedError, match=f"An expression cannot be used as the {parameter} in QBlox"):
+            compiler.compile(qprogram=qp)
+
     def test_qdac_bus_operations_do_not_change_qblox_q1asm(self):
         """Operations of every kind on a bus left out of ``qblox_buses`` don't appear in the Qblox bus Q1ASM, and a
         wait_trigger on that bus doesn't require the external trigger."""
