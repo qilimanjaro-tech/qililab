@@ -50,10 +50,6 @@ from qililab.typings.enums import InstrumentName, Parameter
 from qililab import Arbitrary, Chained, IQDrag, IQPair, Ramp, Square
 from qililab.qprogram.namespace import QililabQbloxNamespace
 
-# xarray imports dask lazily, when it builds its first DataArray, and dask then reads its config with ``open``: build one
-# now, before the tests below patch ``builtins.open`` around the executions that build the results.
-xr.DataArray(np.zeros(1))
-
 
 def _raw_acquisition(
     path0: list[float],
@@ -1144,7 +1140,7 @@ class TestMethods:
         m1 = qprogram.qblox.acquire(bus="feedline_input_output_bus_1", weights=weights_wf)
 
         with (
-            patch("builtins.open") as patched_open,
+            patch("qililab.platform.platform.open", create=True) as patched_open,
             patch.object(Bus, "upload_qpysequence") as upload,
             patch.object(Bus, "run") as run,
             patch.object(Bus, "acquire_qprogram_results") as acquire_qprogram_results,
@@ -1197,7 +1193,7 @@ class TestMethods:
         measurement = qprogram.measure(bus="resonator", waveform=readout_wf, weights=weights_wf)
 
         with (
-            patch("builtins.open") as patched_open,
+            patch("qililab.platform.platform.open", create=True) as patched_open,
             patch.object(Bus, "upload_qpysequence") as upload,
             patch.object(Bus, "run") as run,
             patch.object(Bus, "acquire_qprogram_results") as acquire_qprogram_results,
@@ -1265,7 +1261,7 @@ class TestMethods:
         qdac_2_instrument._cache_dc = {"qdac_2_1": True}
 
         with (
-            patch("builtins.open") as patched_open,
+            patch("qililab.platform.platform.open", create=True) as patched_open,
             patch.object(Bus, "upload_qpysequence") as upload,
             patch.object(Bus, "run") as run,
             patch.object(Bus, "acquire_qprogram_results") as acquire_qprogram_results,
@@ -1344,7 +1340,7 @@ class TestMethods:
         measurement = qprogram.measure(bus="resonator", waveform=readout_wf, weights=weights_wf)
 
         with (
-            patch("builtins.open") as patched_open,
+            patch("qililab.platform.platform.open", create=True) as patched_open,
             patch.object(Bus, "upload_qpysequence") as upload,
             patch.object(Bus, "run") as run,
             patch.object(Bus, "acquire_qprogram_results") as acquire_qprogram_results,
@@ -1663,7 +1659,7 @@ class TestMethods:
         calibration.crosstalk_matrix = platform_qblox_qdac.crosstalk
 
         with (
-            patch("builtins.open") as patched_open,
+            patch("qililab.platform.platform.open", create=True) as patched_open,
             patch.object(Bus, "upload_qpysequence") as upload,
             patch.object(Bus, "run") as run,
             patch.object(Bus, "acquire_qprogram_results") as acquire_qprogram_results,
@@ -1802,7 +1798,7 @@ class TestMethods:
         qprogram.play(bus="drive_line_q0_bus_baseband", waveform=drive_wf)
 
         with (
-            patch("builtins.open") as patched_open,
+            patch("qililab.platform.platform.open", create=True) as patched_open,
             patch.object(Bus, "upload_qpysequence") as upload,
             patch.object(Bus, "run") as run,
             patch.object(Bus, "acquire_qprogram_results") as acquire_qprogram_results,
@@ -1969,7 +1965,7 @@ class TestMethods:
         test_waveforms_q0.add(array=[0.0, 0.0, 0.0, 0.0], index=1)
 
         with (
-            patch("builtins.open"),
+            patch("qililab.platform.platform.open", create=True),
             patch.object(Bus, "upload_qpysequence") as upload,
             patch.object(Bus, "run"),
             patch.object(Bus, "acquire_qprogram_results"),
@@ -1992,7 +1988,7 @@ class TestMethods:
         undistorted_waveforms.add(array=[1.0, 1.0, 1.0, 1.0], index=0)
 
         with (
-            patch("builtins.open"),
+            patch("qililab.platform.platform.open", create=True),
             patch.object(Bus, "upload_qpysequence") as upload,
             patch.object(Bus, "run"),
             patch.object(Bus, "acquire_qprogram_results"),
@@ -2101,7 +2097,7 @@ class TestMethods:
         qp3.play(bus="feedline_input_output_bus_1", waveform=Square(amplitude=0.5, duration=15))
 
         with (
-            patch("builtins.open") as patched_open,
+            patch("qililab.platform.platform.open", create=True) as patched_open,
             patch.object(Bus, "upload_qpysequence") as upload,
             patch.object(Bus, "run") as run,
             patch.object(Bus, "acquire_qprogram_results") as acquire_qprogram_results,
@@ -2389,7 +2385,7 @@ class TestMethods:
         qprogram2.qblox.acquire(bus="feedline_input_output_bus_2", weights=weights_wf2)
 
         with (
-            patch("builtins.open") as patched_open,
+            patch("qililab.platform.platform.open", create=True) as patched_open,
             patch.object(Bus, "upload_qpysequence") as upload,
             patch.object(Bus, "run") as run,
             patch.object(Bus, "acquire_qprogram_results") as acquire_qprogram_results,
@@ -2429,7 +2425,7 @@ class TestMethods:
         qprogram2.qblox.acquire(bus="feedline_input_output_bus_2", weights=weights_wf2)
 
         with (
-            patch("builtins.open"),
+            patch("qililab.platform.platform.open", create=True),
             patch.object(Bus, "upload_qpysequence"),
             patch.object(Bus, "run"),
             patch.object(Bus, "acquire_qprogram_results", return_value=[_raw_acquisition(path0=[1.0], path1=[2.0])]),
@@ -2460,7 +2456,7 @@ class TestMethods:
         qprogram2.qblox.acquire(bus="feedline_input_output_bus_2", weights=w1)
 
         with (
-            patch("builtins.open"),
+            patch("qililab.platform.platform.open", create=True),
             patch.object(Bus, "upload_qpysequence"),
             patch.object(Bus, "run"),
             patch.object(Bus, "acquire_qprogram_results", return_value=[]),
@@ -2736,7 +2732,7 @@ class TestMethods:
             tuple: The result, and the mocks of ``Bus.acquire_qprogram_results`` and ``QbloxQRM.setup_scope``.
         """
         with (
-            patch("builtins.open"),
+            patch("qililab.platform.platform.open", create=True),
             patch.object(Bus, "upload_qpysequence"),
             patch.object(Bus, "run"),
             patch.object(Bus, "acquire_qprogram_results", return_value=raw_acquisitions) as acquire,
@@ -2953,7 +2949,7 @@ class TestMethods:
         qprogram.qblox.acquire(bus="feedline_input_output_bus", weights=weights_wf)
 
         with (
-            patch("builtins.open"),
+            patch("qililab.platform.platform.open", create=True),
             patch.object(Bus, "upload_qpysequence"),
             patch.object(Bus, "run"),
             patch.object(Bus, "acquire_qprogram_results", return_value=[]),
@@ -2981,7 +2977,7 @@ class TestMethods:
         qprogram.qblox.acquire(bus="feedline_input_output_bus", weights=w2)
 
         with (
-            patch("builtins.open"),
+            patch("qililab.platform.platform.open", create=True),
             patch.object(Bus, "upload_qpysequence"),
             patch.object(Bus, "run"),
             patch.object(Bus, "acquire_qprogram_results", return_value=[]),
