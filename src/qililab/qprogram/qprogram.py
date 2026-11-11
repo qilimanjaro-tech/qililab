@@ -38,6 +38,7 @@ from qililab.qprogram.blocks import (
 )
 from qililab.qprogram.calibration import Calibration
 from qililab.qprogram.crosstalk.crosstalk_matrix import CrosstalkMatrix
+from qililab.qprogram.crosstalk.crosstalk_transform import apply_crosstalk_qblox, apply_crosstalk_qdac
 from qililab.qprogram.namespace import QililabQbloxNamespace
 from qililab.qprogram.operations.disable_autosync import DisableAutosync
 from qililab.qprogram.operations.measure_reset import MeasureReset
@@ -260,6 +261,10 @@ class QProgram(QbloxMixin, QdacMixin, qp.QProgram):
         )
         return self.sweep(variable, ForLoop(variable, start, stop, step).to_range())
 
+    # Values often come from numpy. qprogram refuses a numpy integer as a number of shots, and elsewhere stores numpy
+    # numbers as they are, so a program no longer compares equal once saved and reloaded. These methods convert
+    # numpy numbers to Python ones first. Remove them once qprogram does it itself (QHC-1873).
+
     def wait(self, bus: str, duration: int | qp.Expression) -> None:
         """Add a delay of ``duration`` ns on ``bus``.
 
@@ -268,9 +273,6 @@ class QProgram(QbloxMixin, QdacMixin, qp.QProgram):
             duration (int | Expression): Duration of the delay, in ns.
         """
         super().wait(bus, to_scalar(duration))  # type: ignore[arg-type]
-
-    # qprogram refuses numpy integers where it takes a number, and the values often come from numpy: these methods
-    # convert numpy numbers to Python ones, as qililab always did.
 
     def average(self, shots: int) -> Any:
         """Open a block that repeats its body ``shots`` times on the instruments and averages its measurements.
@@ -400,8 +402,6 @@ class QProgram(QbloxMixin, QdacMixin, qp.QProgram):
         Returns:
             QProgram: A new instance of QProgram with calibrated crosstalk.
         """
-        from qililab.qprogram.crosstalk.crosstalk_transform import apply_crosstalk_qblox
-
         return apply_crosstalk_qblox(self, crosstalk)
 
     def with_crosstalk_qdac(
@@ -422,8 +422,6 @@ class QProgram(QbloxMixin, QdacMixin, qp.QProgram):
         Returns:
             QProgram: A new instance of QProgram with calibrated crosstalk.
         """
-        from qililab.qprogram.crosstalk.crosstalk_transform import apply_crosstalk_qdac
-
         return apply_crosstalk_qdac(self, crosstalk, qdac_buses_offset, target_fluxes)
 
     def with_distortions(self, bus_distortions: dict[str, list["PulseDistortion"]]) -> "QProgram":

@@ -81,6 +81,10 @@ class QililabQbloxNamespace(QbloxNamespace):
             raise AttributeError("Marker should be a 4-bit binary string.")
         super().set_markers(bus, mask)
 
+    # qprogram-qblox stores numpy numbers as they are, so a program no longer compares equal once saved and
+    # reloaded: set_trigger and wait_trigger convert them to Python numbers first. Remove once qprogram does it
+    # itself (QHC-1873).
+
     def set_trigger(
         self, bus: str, duration: int, outputs: list[int] | int | None = None, position: str = "start"
     ) -> None:

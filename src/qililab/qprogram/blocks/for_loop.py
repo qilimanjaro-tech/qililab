@@ -22,7 +22,8 @@ from qprogram import Range, Variable
 def to_scalar(value: object) -> object:
     """Convert a number, numpy ones included, to a Python ``int`` or ``float``; return anything else unchanged.
 
-    qprogram refuses numpy integers where it takes a number, and loop bounds often come from numpy.
+    Values often come from numpy, and qprogram refuses a numpy integer as a number of shots and stores other numpy
+    numbers as they are (QHC-1873).
 
     Args:
         value (object): The value to convert.
