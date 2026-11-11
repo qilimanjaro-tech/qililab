@@ -16,10 +16,10 @@ from qprogram_qdac import SetTrigger as QdacSetTrigger
 from qprogram_qdac import WaitTrigger as QdacWaitTrigger
 
 import qililab as ql
-from qililab import Arbitrary, Gaussian, IQDrag, IQPair, QProgram, Square
+from qililab import Arbitrary, Experiment, Gaussian, IQDrag, IQPair, QProgram, Square
 from qililab.exceptions import VariableAllocated
 from qililab.pulse_distortion import ExponentialCorrection
-from qililab.qprogram.blocks import ForLoop, IfTrigger, InfiniteLoop, Loop, for_loop_iterations
+from qililab.qprogram.blocks import ForLoop, IfTrigger, InfiniteLoop, for_loop_iterations
 from qililab.qprogram.calibration import Calibration
 from qililab.qprogram.crosstalk.crosstalk_matrix import CrosstalkMatrix, NonLinearCrosstalkMatrix
 from qililab.qprogram.formats.legacy import qdac_operations
@@ -471,53 +471,10 @@ class TestQProgram:
         assert qp._body.elements[0] is loop
         assert qp._active_block is qp._body
 
-    def test_parallel_method_is_deprecated_alias(self):
-        """qp.parallel(loops=[...]) warns and opens the same Parallel block."""
-        qp = QProgram()
-        var1 = qp.variable("int_scalar")
-        var2 = qp.variable("float_scalar")
-        loops = [
-            ForLoop(variable=var1, start=0, stop=10, step=1),
-            ForLoop(variable=var2, start=0.0, stop=1.0, step=0.1),
-        ]
-        with pytest.warns(FutureWarning, match="qp.parallel is deprecated"):
-            context = qp.parallel(loops=loops)
-        with context as loop:
-            assert qp._active_block is loop
-        assert isinstance(loop, Parallel)
-        assert [sweep.variable for sweep in loop.loops] == [var1, var2]
-        assert [sweep.num_iterations() for sweep in loop.loops] == [11, 11]
-        assert qp._active_block is qp._body
-
-    def test_parallel_method_alias_with_loops_of_different_lengths_raises_error(self):
-        """qp.parallel builds the same Parallel block as sweeps combined with |, so its loops need as many points."""
-        qp = QProgram()
-        var1 = qp.variable("int_scalar")
-        var2 = qp.variable("float_scalar")
-        loops = [
-            ForLoop(variable=var1, start=0, stop=10, step=1),
-            ForLoop(variable=var2, start=0.0, stop=0.5, step=0.1),
-        ]
-        with pytest.warns(FutureWarning, match="qp.parallel is deprecated"):
-            context = qp.parallel(loops=loops)
-        with pytest.raises(ValidationError, match="parallel loops must have the same number of iterations"):
-            with context:
-                pass
-
-    def test_parallel_with_loop_over_values_is_rejected_at_compile_time(self):
-        """A Loop over explicit values becomes a sweep over Values, which qililab does not compile on Qblox."""
-        qp = QProgram()
-        variable = qp.variable("index")
-        loops = [Loop(variable=variable, values=np.arange(10))]
-        with pytest.warns(FutureWarning, match="qp.parallel is deprecated"):
-            context = qp.parallel(loops=loops)
-        with context as loop:
-            qp.wait(bus="drive", duration=100)
-
-        assert isinstance(loop, Sweep)
-        assert isinstance(loop.source, Values)
-        with pytest.raises(ValidationError, match=re.escape("sweep.values")):
-            QbloxCompiler().compile(qprogram=qp)
+    def test_parallel_alias_is_removed(self):
+        """qp.parallel(loops=[...]) is gone: sweeps combined with | run in lockstep instead."""
+        assert not hasattr(QProgram(), "parallel")
+        assert not hasattr(Experiment(label="experiment"), "parallel")
 
     def test_loop_over_a_variable_an_enclosing_loop_sweeps_raises_error(self):
         """Sweeping a variable an enclosing loop already sweeps raises VariableAllocated when the inner loop opens."""

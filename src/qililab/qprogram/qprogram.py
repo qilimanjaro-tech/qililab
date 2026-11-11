@@ -13,10 +13,7 @@
 # limitations under the License.
 """qililab's ``QProgram``: qprogram's, with the Qblox and QDAC namespaces and what qililab adds."""
 
-import functools
-import operator
 import warnings
-from collections.abc import Sequence
 from copy import deepcopy
 from typing import TYPE_CHECKING, Any
 
@@ -36,7 +33,6 @@ from qililab.qprogram.blocks import (
     ForLoop,
     IfTrigger,
     InfiniteLoop,
-    Loop,
     reject_variables_swept_by_enclosing_loops,
     to_scalar,
 )
@@ -90,7 +86,7 @@ class QProgram(QbloxMixin, QdacMixin, qp.QProgram):
     It is qprogram's ``QProgram`` with the ``qp.qblox`` and ``qp.qdac`` namespaces, plus what qililab adds: the
     ``infinite_loop`` and ``if_trigger`` blocks, ``qp.qblox.play`` with a ``wait_time`` and
     ``qp.qblox.measure_reset``, the ``with_*`` transforms the platform applies before compiling, ``draw``, and the
-    deprecated ``for_loop`` and ``parallel``.
+    deprecated ``for_loop``.
 
     Examples:
 
@@ -267,33 +263,6 @@ class QProgram(QbloxMixin, QdacMixin, qp.QProgram):
             stacklevel=2,
         )
         return self.sweep(variable, ForLoop(variable, start, stop, step).to_range())
-
-    def parallel(self, loops: Sequence[ForLoop | Loop]) -> Any:
-        """Run several loops in lockstep. Deprecated: combine sweeps with ``|``.
-
-        It builds the same ``Parallel`` block as sweeps combined with ``|``, so the loops must have the same number of
-        points.
-
-        Args:
-            loops (Sequence[ForLoop | Loop]): The loops to run in parallel.
-
-        Returns:
-            The context manager opening the ``Parallel`` block, or the ``Sweep`` block for a single loop.
-
-        Raises:
-            ValidationError: If the loops do not all have the same number of points.
-        """
-        warnings.warn(
-            "qp.parallel is deprecated and will be removed in a future release: combine sweeps with |, as in "
-            "qp.sweep(a).from_range(...) | qp.sweep(b).from_range(...).",
-            FutureWarning,
-            stacklevel=2,
-        )
-        contexts = [
-            self.sweep(loop.variable, loop.to_range() if isinstance(loop, ForLoop) else loop.to_values())
-            for loop in loops
-        ]
-        return functools.reduce(operator.or_, contexts)
 
     def wait(self, bus: str, duration: int | qp.Expression) -> None:
         """Add a delay of ``duration`` ns on ``bus``.

@@ -8,7 +8,6 @@ from qprogram.blocks import Block, Parallel, Sweep
 
 from qililab import IQPair, Square
 from qililab.exceptions import VariableAllocated
-from qililab.qprogram.blocks import ForLoop, Loop
 from qililab.qprogram.crosstalk.crosstalk_matrix import CrosstalkMatrix
 from qililab.qprogram.experiment.experiment import Experiment
 from qililab.qprogram.operations import ExecuteQProgram, SetParameter
@@ -51,15 +50,10 @@ class TestExperiment:
         assert instance._body.elements[0] is block
 
     def test_parallel_method(self, instance: Experiment):
-        """Test parallel method"""
+        """Sweeps combined with | run in lockstep, in a Parallel block."""
         var1 = instance.variable("int_scalar")
         var2 = instance.variable("float_scalar")
-        with instance.parallel(
-            loops=[
-                ForLoop(variable=var1, start=0, stop=10, step=1),
-                ForLoop(variable=var2, start=0.0, stop=1.0, step=0.1),
-            ]
-        ) as loop:
+        with instance.sweep(var1).from_range(0, 10, 1) | instance.sweep(var2).from_range(0.0, 1.0, 0.1) as loop:
             # __enter__
             assert isinstance(loop, Parallel)
             assert len(loop.loops) == 2
@@ -110,8 +104,12 @@ class TestExperiment:
     def test_loops_raise_error_if_variable_is_allocated(self, instance: Experiment):
         """Test loop methods raise an error when the loop variable is already swept by an enclosing loop"""
         variable = instance.variable("int_scalar")
+        other = instance.variable("other")
         values = np.arange(10)
-        loops = [Loop(variable=variable, values=values)]
+
+        def parallel():
+            return instance.sweep(variable).from_values(values) | instance.sweep(other).from_values(values)
+
         # test when ForLoop allocates variable
         with instance.for_loop(variable=variable, start=0, stop=10, step=1):
             with pytest.raises(VariableAllocated):
@@ -121,7 +119,7 @@ class TestExperiment:
                 with instance.loop(variable=variable, values=values):
                     pass
             with pytest.raises(VariableAllocated):
-                with instance.parallel(loops=loops):
+                with parallel():
                     pass
         # test when Loop allocates variable
         with instance.loop(variable=variable, values=values):
@@ -132,10 +130,10 @@ class TestExperiment:
                 with instance.loop(variable=variable, values=values):
                     pass
             with pytest.raises(VariableAllocated):
-                with instance.parallel(loops=loops):
+                with parallel():
                     pass
         # test when Parallel allocates variable
-        with instance.parallel(loops=loops):
+        with parallel():
             with pytest.raises(VariableAllocated):
                 with instance.for_loop(variable=variable, start=100, stop=110, step=1):
                     pass
@@ -143,7 +141,7 @@ class TestExperiment:
                 with instance.loop(variable=variable, values=values):
                     pass
             with pytest.raises(VariableAllocated):
-                with instance.parallel(loops=loops):
+                with parallel():
                     pass
 
     def test_set_parameter_with_unary_plus_stores_the_variable(self, instance: Experiment):

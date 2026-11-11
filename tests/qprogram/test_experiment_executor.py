@@ -11,7 +11,6 @@ from qprogram import QProgramResult, ValidationError
 from qililab import IQPair, Square
 from qililab.qililab_settings import get_settings
 from qililab.platform.platform import Platform
-from qililab.qprogram.blocks import ForLoop, Loop
 from qililab.qprogram.crosstalk.crosstalk_matrix import CrosstalkMatrix
 from qililab.qprogram.experiment.experiment import Experiment
 from qililab.qprogram.experiment.experiment_executor import ExperimentExecutor
@@ -125,11 +124,9 @@ def fixture_qprogram_uneven_parallel():
     qp = QProgram()
     frequency_1 = qp.variable("freq_1")
     frequency_2 = qp.variable("freq_2")
-    # The steps don't divide the ranges: the deprecated parallel keeps the for_loops' 10 points (rounded down).
-    loops = [ForLoop(frequency_1, 100e6, 200e6, 11e6), ForLoop(frequency_2, 200e6, 100e6, -11e6)]
-    with pytest.warns(FutureWarning, match="qp.parallel is deprecated"):
-        loop = qp.parallel(loops=loops)
-    with loop:
+    # 10 points over each range, the points for_loops with an 11 MHz step gave.
+    step = 100e6 / 9
+    with qp.sweep(frequency_1).from_range(100e6, 200e6, step) | qp.sweep(frequency_2).from_range(200e6, 100e6, -step):
         qp.set_frequency(bus="readout_bus", frequency=frequency_1)
         qp.set_frequency(bus="readout_bus", frequency=frequency_2)
         qp.measure(
@@ -195,7 +192,7 @@ def fixture_experiment(qprogram: QProgram, crosstalk: CrosstalkMatrix):
             experiment.set_parameter(alias="readout_bus", parameter=Parameter.LO_FREQUENCY, value=frequency)
             experiment.execute_qprogram(qprogram)
     # Test parallel loops
-    with experiment.parallel(loops=[ForLoop(bias, 0.0, 1.0, 0.5), Loop(frequency, values=np.array([2e9, 3e9, 4e9]))]):
+    with experiment.sweep(bias).from_range(0.0, 1.0, 0.5) | experiment.sweep(frequency).from_values(np.array([2e9, 3e9, 4e9])):
         experiment.set_parameter(alias="readout_bus", parameter=Parameter.VOLTAGE, value=bias)
         experiment.set_parameter(alias="readout_bus", parameter=Parameter.LO_FREQUENCY, value=frequency)
         experiment.execute_qprogram(qprogram)
@@ -204,7 +201,7 @@ def fixture_experiment(qprogram: QProgram, crosstalk: CrosstalkMatrix):
     # test_execute_qprogram_lambda_with_shots_from_loop.
 
     # Test qprogram lambda with two variables from loop
-    with experiment.parallel(loops=[ForLoop(bias, 0.0, 1.0, 0.5), Loop(frequency, values=np.array([2e9, 3e9, 4e9]))]):
+    with experiment.sweep(bias).from_range(0.0, 1.0, 0.5) | experiment.sweep(frequency).from_values(np.array([2e9, 3e9, 4e9])):
         experiment.execute_qprogram(
             lambda frequency=frequency, bias=bias: get_qprogram_frequency_and_bias_by_loop(
                 frequency=frequency, bias=bias, qprogram=qprogram

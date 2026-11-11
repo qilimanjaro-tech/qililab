@@ -1,11 +1,11 @@
 import numpy as np
 import pytest
-from qprogram import BinaryOp, Constant, Variable
+from qprogram import BinaryOp, Constant, Values, Variable
 from qprogram.blocks import Parallel, Sweep
 from qprogram.operations import SetGain, SetOffset
 
 from qililab import Arbitrary, Square
-from qililab.qprogram.blocks import ForLoop, Loop
+from qililab.qprogram.blocks import ForLoop
 from qililab.qprogram.crosstalk.crosstalk_matrix import CrosstalkMatrix, NonLinearCrosstalkMatrix
 from qililab.qprogram.crosstalk.flux_vector import FluxVector, NonLinearFluxVector
 
@@ -16,8 +16,8 @@ def for_loop(variable, start, stop, step):
 
 
 def values_loop(variable, values):
-    """The sweep over explicit values ``qp.parallel`` builds from a ``Loop``."""
-    return Sweep(variable, Loop(variable, values).to_values())
+    """A sweep over explicit values."""
+    return Sweep(variable, Values(values))
 
 
 @pytest.fixture(name="crosstalk_array_buses")

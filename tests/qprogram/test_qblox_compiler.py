@@ -1222,21 +1222,11 @@ def fixture_non_linear_crosstalk_qprogram_parallel() -> QProgram:
     gain_2 = qp.variable("gain_2")
     offset_1 = qp.variable("offset_1")
     offset_2 = qp.variable("offset_2")
-    with qp.parallel(
-        loops=[
-            ForLoop(variable=gain_1, start=0, stop=0.1, step=0.08),
-            ForLoop(variable=gain_2, start=0.1, stop=0, step=-0.08),
-        ]
-    ):
+    with qp.sweep(gain_1).from_range(0, 0.1, 0.1) | qp.sweep(gain_2).from_range(0.1, 0, -0.1):
         qp.set_gain(bus="flux1", gain=gain_1)
         qp.set_gain(bus="flux2", gain=gain_2)
         qp.play(bus="flux1", waveform=square_wf)
-    with qp.parallel(
-        loops=[
-            ForLoop(variable=offset_1, start=0, stop=0.1, step=0.08),
-            ForLoop(variable=offset_2, start=0.1, stop=0, step=-0.08),
-        ]
-    ):
+    with qp.sweep(offset_1).from_range(0, 0.1, 0.1) | qp.sweep(offset_2).from_range(0.1, 0, -0.1):
         qp.set_offset(bus="flux1", offset_path0=offset_1)
         qp.set_offset(bus="flux2", offset_path0=offset_2)
         qp.wait(bus="flux1", duration=10)
@@ -7621,17 +7611,11 @@ class TestQBloxCompiler:
         assert is_q1asm_equal(sequences["drive"], drive_str)
 
     def test_parallel_loops_with_single_point_loop(self):
-        """A parallel block of single-point loops runs one iteration, at the start of every loop, and steps no
-        register."""
+        """Single-point sweeps in parallel run one iteration, at the start of every sweep, and step no register."""
         qp = QProgram()
         frequency = qp.variable("frequency")
         gain = qp.variable("gain")
-        with qp.parallel(
-            loops=[
-                ForLoop(variable=frequency, start=10e6, stop=10e6, step=10e6),
-                ForLoop(variable=gain, start=0.5, stop=0.5, step=0.1),
-            ]
-        ):
+        with qp.sweep(frequency).from_range(10e6, 10e6, 10e6) | qp.sweep(gain).from_range(0.5, 0.5, 0.1):
             qp.set_frequency(bus="drive", frequency=frequency)
             qp.set_gain(bus="drive", gain=gain)
             qp.play(
@@ -7662,21 +7646,15 @@ class TestQBloxCompiler:
         """
         assert is_q1asm_equal(sequences["drive"], drive_str)
 
-    def test_parallel_loops_with_step_not_dividing_the_range(self):
-        """A parallel block inside an average, where the gain step doesn't divide the range: the gain loop keeps its 4
-        points, rounded down, spread from start to stop, as the frequency loop has."""
+    def test_parallel_sweeps_inside_an_average(self):
+        """Sweeps in parallel inside an average, the gain stepping by a third of its range."""
         drive_wf = IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
         readout_wf = IQPair(I=Square(amplitude=1.0, duration=100), Q=Square(amplitude=0.0, duration=100))
         qp = QProgram()
         frequency = qp.variable("frequency")
         gain = qp.variable("gain")
         with qp.average(shots=10):
-            with qp.parallel(
-                loops=[
-                    ForLoop(variable=frequency, start=10e6, stop=40e6, step=10e6),
-                    ForLoop(variable=gain, start=0.0, stop=1.0, step=0.3),
-                ]
-            ):
+            with qp.sweep(frequency).from_range(10e6, 40e6, 10e6) | qp.sweep(gain).from_range(0.0, 1.0, 1 / 3):
                 qp.set_frequency(bus="drive", frequency=frequency)
                 qp.set_gain(bus="drive", gain=gain)
                 qp.play(bus="drive", waveform=drive_wf)
@@ -7744,8 +7722,8 @@ class TestQBloxCompiler:
         assert acquisitions["readout"]["Acquisition 0"].shape == (4,)
 
     def test_parallel_sweeps_with_different_number_of_points_raise_error(self):
-        """Sweeps in parallel must have the same number of points: combining them with ``|``, or with the deprecated
-        ``qp.parallel``, raises when the program is built."""
+        """Sweeps in parallel must have the same number of points: combining them with ``|`` raises when the program
+        is built."""
         qp = QProgram()
         frequency = qp.variable("frequency")
         gain = qp.variable("gain")
@@ -7754,24 +7732,14 @@ class TestQBloxCompiler:
         with pytest.raises(qprogram.ValidationError, match=message):
             with combined:
                 pass
-        loops = [
-            ForLoop(variable=frequency, start=10e6, stop=50e6, step=10e6),
-            ForLoop(variable=gain, start=0.0, stop=1.0, step=0.5),
-        ]
-        with pytest.warns(FutureWarning, match="qp.parallel is deprecated"):
-            parallel = qp.parallel(loops=loops)
-        with pytest.raises(qprogram.ValidationError, match=message):
-            with parallel:
-                pass
 
-    def test_parallel_loop_and_its_descending_mirror_sweep_the_same_points(self):
-        """A loop and its descending mirror, with a step that doesn't divide the range, run in parallel for 2
-        points: gain_2 sweeps 0.1, 0.0 and reaches ``stop``."""
+    def test_parallel_sweep_and_its_descending_mirror_sweep_the_same_points(self):
+        """A sweep and its descending mirror run in parallel for 2 points: gain_2 sweeps 0.1, 0.0."""
         square_wf = Square(amplitude=0.1, duration=50)
         qp = QProgram()
         gain_1 = qp.variable("gain_1")
         gain_2 = qp.variable("gain_2")
-        with qp.parallel(loops=[ForLoop(gain_1, 0, 0.1, 0.08), ForLoop(gain_2, 0.1, 0, -0.08)]):
+        with qp.sweep(gain_1).from_range(0, 0.1, 0.1) | qp.sweep(gain_2).from_range(0.1, 0, -0.1):
             qp.set_gain(bus="flux_1", gain=gain_1)
             qp.set_gain(bus="flux_2", gain=gain_2)
             qp.play(bus="flux_1", waveform=square_wf)

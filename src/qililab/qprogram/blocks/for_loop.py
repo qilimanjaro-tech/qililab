@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""The ``for_loop`` point count, and the loop description ``qp.parallel`` takes."""
+"""The points of the deprecated ``for_loop``."""
 
 import math
 import numbers
@@ -50,9 +50,9 @@ def _number(value: int | float) -> int | float:
 
 
 class ForLoop:
-    """A loop from ``start`` to ``stop`` by ``step``, given to ``qp.parallel(loops=[...])``.
+    """A loop from ``start`` to ``stop`` by ``step``, as ``qp.for_loop`` and ``Experiment.for_loop`` take it.
 
-    Only an argument for the deprecated ``qp.parallel``: the program holds a qprogram ``Sweep`` over a ``Range``.
+    It only computes the ``Range`` of the qprogram ``Sweep`` the program holds, with the for_loop's points.
 
     Args:
         variable (Variable): The variable the loop sweeps.

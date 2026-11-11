@@ -13,17 +13,14 @@
 # limitations under the License.
 """Experiment: platform parameter changes and QProgram executions, looped over on the PC."""
 
-import functools
-import operator
 import re
-from collections.abc import Sequence
 from typing import Any, Callable
 
 import numpy as np
 import qprogram as qp
 from qprogram import Values, Variable
 
-from qililab.qprogram.blocks import ForLoop, Loop, reject_variables_swept_by_enclosing_loops
+from qililab.qprogram.blocks import ForLoop, reject_variables_swept_by_enclosing_loops
 from qililab.qprogram.calibration import Calibration
 from qililab.qprogram.crosstalk.crosstalk_matrix import CrosstalkMatrix
 from qililab.qprogram.operations import ExecuteQProgram, GetParameter, SetParameter
@@ -93,23 +90,6 @@ class Experiment(qp.QProgram):
             The context manager opening the ``Sweep`` block.
         """
         return self.sweep(variable, Values(values))
-
-    def parallel(self, loops: Sequence[ForLoop | Loop]) -> Any:
-        """Run several loops in lockstep.
-
-        Blocks need to open a scope.
-
-        Args:
-            loops (Sequence[ForLoop | Loop]): The loops to run in parallel.
-
-        Returns:
-            The context manager opening the ``Parallel`` block, or the ``Sweep`` block for a single loop.
-        """
-        contexts = [
-            self.sweep(loop.variable, loop.to_range() if isinstance(loop, ForLoop) else loop.to_values())
-            for loop in loops
-        ]
-        return functools.reduce(operator.or_, contexts)
 
     def get_parameter(  # type: ignore[override]
         self, alias: str, parameter: Parameter, channel_id: int | None = None, output_id: int | None = None

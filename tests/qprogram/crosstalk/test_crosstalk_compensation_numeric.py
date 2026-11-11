@@ -150,10 +150,7 @@ def inner_parallel_sweeps_the_same_bus_again_with_more_points():
     y = qp.variable("y")
     with qp.sweep(x).from_range(0, 0.2, 0.1):
         qp.set_offset("flux1", x)
-        loops = [ForLoop(y, 0, 0.5, 0.1)]
-        with pytest.warns(FutureWarning):
-            parallel = qp.parallel(loops)
-        with parallel:
+        with qp.sweep(y).from_range(0, 0.5, 0.1):
             qp.set_offset("flux1", y)
             qp.wait("flux1", 100)
     return qp
