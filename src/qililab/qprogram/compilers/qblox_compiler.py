@@ -46,14 +46,14 @@ from qililab.config import logger
 from qililab.constants import QBLOXCONSTANTS
 from qililab.qprogram.blocks import IfTrigger, InfiniteLoop, for_loop_iterations
 from qililab.qprogram.calibration import Calibration
-from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
+from qililab.qprogram.compilers.prepass import prepare_qblox, prepare_shared
+from qililab.qprogram.crosstalk.crosstalk_matrix import CrosstalkMatrix
 from qililab.qprogram.operations import DisableAutosync, MeasureReset, QbloxPlay
-from qililab.qprogram.prepass import prepare_qblox, prepare_shared
 from qililab.qprogram.qprogram import QProgram
 
 if TYPE_CHECKING:
     from qililab.pulse_distortion.pulse_distortion import PulseDistortion
-    from qililab.qprogram.prepass.qblox_prepass import AcquisitionMetadata, ConditionalTrigger
+    from qililab.qprogram.compilers.prepass.qblox_prepass import AcquisitionMetadata, ConditionalTrigger
 
 # 2147483648 -> values >= this are "negative" in 2's complement (MSB = 1)
 SIGN_BIT = 2**31

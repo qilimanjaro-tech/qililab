@@ -23,7 +23,7 @@ from qililab.instruments.decorators import check_device_initialized
 from qililab.instruments.qblox.qblox_adc_sequencer import QbloxADCSequencer
 from qililab.instruments.qblox.qblox_module import QbloxModule
 from qililab.instruments.utils import InstrumentFactory
-from qililab.qprogram.qblox_compiler import AcquisitionData
+from qililab.qprogram.compilers.qblox_compiler import AcquisitionData
 from qililab.typings import (
     AcquireTriggerMode,
     ChannelID,

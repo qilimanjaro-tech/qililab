@@ -10,8 +10,8 @@ from qprogram_qblox import Acquire
 
 from qililab import Calibration, IQPair, QProgram, Square
 from qililab.pulse_distortion import ExponentialCorrection
-from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
-from qililab.qprogram.prepass import ConditionalTrigger, prepare_qblox, prepare_shared
+from qililab.qprogram.crosstalk.crosstalk_matrix import CrosstalkMatrix
+from qililab.qprogram.compilers.prepass import ConditionalTrigger, prepare_qblox, prepare_shared
 
 DRIVE_WF = IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
 WEIGHTS = IQPair(I=Square(amplitude=1.0, duration=100), Q=Square(amplitude=0.0, duration=100))

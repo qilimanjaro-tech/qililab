@@ -8,8 +8,8 @@ from qprogram_qdac import SetTrigger as QdacSetTrigger
 
 from qililab import Arbitrary, Calibration, IQPair, QProgram, Square
 from qililab.qprogram.blocks import IfTrigger
-from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
-from qililab.qprogram.prepass import prepare_qdac
+from qililab.qprogram.crosstalk.crosstalk_matrix import CrosstalkMatrix
+from qililab.qprogram.compilers.prepass import prepare_qdac
 
 QDAC_BUSES_OFFSET = {"flux1": 0.0, "flux2": 0.0}
 

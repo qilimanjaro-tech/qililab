@@ -8,7 +8,7 @@ from qililab import IQPair, QProgram, Square
 from qililab.data_management import build_platform
 from qililab.instruments.qblox.qblox_draw import QbloxDraw
 from qililab.platform import Platform
-from qililab.qprogram.qblox_compiler import QbloxCompiler
+from qililab.qprogram.compilers.qblox_compiler import QbloxCompiler
 from tests.data import Galadriel
 
 

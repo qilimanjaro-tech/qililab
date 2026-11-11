@@ -19,7 +19,7 @@ from qprogram.blocks import Block
 from qprogram.waveforms import IQWaveform, Waveform
 
 from qililab.config import logger
-from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix, NonLinearCrosstalkMatrix
+from qililab.qprogram.crosstalk.crosstalk_matrix import CrosstalkMatrix, NonLinearCrosstalkMatrix
 from qililab.utils import sort_buses
 from qililab.yaml import yaml
 

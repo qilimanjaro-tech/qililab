@@ -3,7 +3,7 @@ import math
 import pytest
 from scipy.special import jv
 
-from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix, NonLinearCrosstalkMatrix
+from qililab.qprogram.crosstalk.crosstalk_matrix import CrosstalkMatrix, NonLinearCrosstalkMatrix
 
 
 @pytest.fixture(name="linear_crosstalk_matrix")

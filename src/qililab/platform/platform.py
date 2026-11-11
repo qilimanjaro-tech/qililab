@@ -54,9 +54,9 @@ from qililab.qprogram import (
     QProgram,
     QProgramCompilationOutput,
 )
-from qililab.qprogram.experiment_executor import ExperimentExecutor
-from qililab.qprogram.flux_vector import FluxVector
-from qililab.qprogram.qdac_compiler import QdacCompiler
+from qililab.qprogram.compilers.qdac_compiler import QdacCompiler
+from qililab.qprogram.crosstalk.flux_vector import FluxVector
+from qililab.qprogram.experiment.experiment_executor import ExperimentExecutor
 from qililab.result.database import get_db_manager
 from qililab.result.qblox_results import append_measurement, measurement_fields, ordered, scope_trace
 from qililab.result.stream_results import StreamArray
@@ -71,7 +71,7 @@ if TYPE_CHECKING:
     from qililab.instrument_controllers.instrument_controller import InstrumentController
     from qililab.instruments.instrument import Instrument
     from qililab.instruments.qblox.qblox_adc_sequencer import QbloxADCSequencer
-    from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
+    from qililab.qprogram.crosstalk.crosstalk_matrix import CrosstalkMatrix
     from qililab.result.database import DatabaseManager, DatabaseSchema
     from qililab.result.result_management import LoopData
     from qililab.settings import Runcard

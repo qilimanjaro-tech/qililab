@@ -30,7 +30,7 @@ from qprogram_qdac import Play as QdacPlay
 from qprogram_qdac import WaitTrigger as QdacWaitTrigger
 
 from qililab.qprogram.blocks import for_loop_iterations
-from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
+from qililab.qprogram.crosstalk.crosstalk_matrix import CrosstalkMatrix
 from qililab.qprogram.operations import MeasureReset, QbloxPlay
 from qililab.qprogram.qprogram import QProgram
 

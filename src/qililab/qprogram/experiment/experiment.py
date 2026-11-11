@@ -25,7 +25,7 @@ from qprogram import Values, Variable
 
 from qililab.qprogram.blocks import ForLoop, Loop, reject_variables_swept_by_enclosing_loops
 from qililab.qprogram.calibration import Calibration
-from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
+from qililab.qprogram.crosstalk.crosstalk_matrix import CrosstalkMatrix
 from qililab.qprogram.operations import ExecuteQProgram, GetParameter, SetParameter
 from qililab.qprogram.operations.set_crosstalk import SetCrosstalk
 from qililab.qprogram.qprogram import QProgram

@@ -5,7 +5,7 @@ from qprogram.blocks import Sweep
 
 from qililab.qprogram import QProgram
 from qililab.qprogram.blocks import ForLoop
-from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
+from qililab.qprogram.crosstalk.crosstalk_matrix import CrosstalkMatrix
 from tests.qprogram.crosstalk.crosstalk_simulation import (
     assert_compensated,
     compensation_mismatches,

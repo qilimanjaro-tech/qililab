@@ -10,8 +10,8 @@ from qprogram.waveforms import Square
 
 from qililab.qprogram import QProgram
 from qililab.qprogram.blocks import ForLoop, for_loop_iterations
-from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
-from qililab.qprogram.qblox_compiler import QbloxCompiler
+from qililab.qprogram.crosstalk.crosstalk_matrix import CrosstalkMatrix
+from qililab.qprogram.compilers.qblox_compiler import QbloxCompiler
 from tests.qprogram.crosstalk.crosstalk_simulation import assert_compensated
 
 BUSES = ["flux1", "flux2"]

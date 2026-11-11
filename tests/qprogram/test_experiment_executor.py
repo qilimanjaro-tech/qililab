@@ -12,9 +12,9 @@ from qililab import IQPair, Square
 from qililab.qililab_settings import get_settings
 from qililab.platform.platform import Platform
 from qililab.qprogram.blocks import ForLoop, Loop
-from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
-from qililab.qprogram.experiment import Experiment
-from qililab.qprogram.experiment_executor import ExperimentExecutor
+from qililab.qprogram.crosstalk.crosstalk_matrix import CrosstalkMatrix
+from qililab.qprogram.experiment.experiment import Experiment
+from qililab.qprogram.experiment.experiment_executor import ExperimentExecutor
 from qililab.qprogram.qprogram import QProgram
 from qililab.result.experiment_results import ExperimentResults
 from qililab.typings.enums import Parameter

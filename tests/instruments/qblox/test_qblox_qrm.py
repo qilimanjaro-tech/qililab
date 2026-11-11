@@ -13,7 +13,7 @@ from qililab.data_management import build_platform
 from qililab.instruments.instrument import ParameterNotFound
 from qililab.instruments.qblox import QbloxQRM
 from qililab.platform import Platform
-from qililab.qprogram.qblox_compiler import AcquisitionData
+from qililab.qprogram.compilers.qblox_compiler import AcquisitionData
 from qililab.typings import IntegrationMode, Parameter
 
 

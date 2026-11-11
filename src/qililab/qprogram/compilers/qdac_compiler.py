@@ -25,9 +25,9 @@ from qililab.constants import QDACCONSTANTS
 from qililab.instruments.qdevil import QDevilQDac2
 from qililab.qprogram.blocks import IfTrigger, InfiniteLoop
 from qililab.qprogram.calibration import Calibration
-from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
+from qililab.qprogram.compilers.prepass import prepare_qdac, prepare_shared
+from qililab.qprogram.crosstalk.crosstalk_matrix import CrosstalkMatrix
 from qililab.qprogram.operations import DisableAutosync
-from qililab.qprogram.prepass import prepare_qdac, prepare_shared
 from qililab.qprogram.qprogram import QProgram
 from qililab.typings.enums import Parameter
 

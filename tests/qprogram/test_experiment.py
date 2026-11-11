@@ -9,8 +9,8 @@ from qprogram.blocks import Block, Parallel, Sweep
 from qililab import IQPair, Square
 from qililab.exceptions import VariableAllocated
 from qililab.qprogram.blocks import ForLoop, Loop
-from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
-from qililab.qprogram.experiment import Experiment
+from qililab.qprogram.crosstalk.crosstalk_matrix import CrosstalkMatrix
+from qililab.qprogram.experiment.experiment import Experiment
 from qililab.qprogram.operations import ExecuteQProgram, SetParameter
 from qililab.qprogram.operations.set_crosstalk import SetCrosstalk
 from qililab.qprogram.qprogram import QProgram

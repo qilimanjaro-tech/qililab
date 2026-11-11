@@ -3,7 +3,7 @@ from qprogram.operations import Play, Sync, Wait
 from qprogram_qdac import SetOffset as QdacSetOffset
 
 from qililab import IQPair, QProgram, Square
-from qililab.qprogram.prepass.utils_prepass import keep_instrument_operations
+from qililab.qprogram.compilers.prepass.utils_prepass import keep_instrument_operations
 
 
 class TestKeepInstrumentOperations:

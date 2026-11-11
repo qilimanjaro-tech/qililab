@@ -25,7 +25,7 @@ from qililab.instruments import Instrument, Instruments, ParameterNotFound
 from qililab.instruments.qblox import QbloxQCM, QbloxQRM
 from qililab.instruments.qdevil import QDevilQDac2
 from qililab.pulse_distortion.pulse_distortion import PulseDistortion
-from qililab.qprogram.qblox_compiler import AcquisitionData
+from qililab.qprogram.compilers.qblox_compiler import AcquisitionData
 from qililab.settings import Settings
 from qililab.typings import FILTER_PARAMETERS, ChannelID, InstrumentName, OutputID, Parameter, ParameterValue
 

@@ -17,7 +17,7 @@ from typing import ClassVar
 
 from qprogram.operations import Operation
 
-from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
+from qililab.qprogram.crosstalk.crosstalk_matrix import CrosstalkMatrix
 from qililab.yaml import yaml
 
 

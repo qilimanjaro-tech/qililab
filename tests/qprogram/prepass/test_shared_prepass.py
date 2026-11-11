@@ -7,7 +7,7 @@ from qprogram.operations import Play
 
 from qililab import Calibration, IQDrag, IQPair, QProgram, Square
 from qililab.exceptions import VariableAllocated
-from qililab.qprogram.prepass.shared_prepass import prepare_shared
+from qililab.qprogram.compilers.prepass.shared_prepass import prepare_shared
 
 WEIGHTS = IQPair(I=Square(amplitude=1.0, duration=100), Q=Square(amplitude=0.0, duration=100))
 

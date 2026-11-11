@@ -6,8 +6,8 @@ from qprogram.operations import SetGain, SetOffset
 
 from qililab import Arbitrary, Square
 from qililab.qprogram.blocks import ForLoop, Loop
-from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix, NonLinearCrosstalkMatrix
-from qililab.qprogram.flux_vector import FluxVector, NonLinearFluxVector
+from qililab.qprogram.crosstalk.crosstalk_matrix import CrosstalkMatrix, NonLinearCrosstalkMatrix
+from qililab.qprogram.crosstalk.flux_vector import FluxVector, NonLinearFluxVector
 
 
 def for_loop(variable, start, stop, step):

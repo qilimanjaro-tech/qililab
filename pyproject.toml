@@ -53,7 +53,7 @@ dependencies = [
 
 [project.entry-points."qprogram.vendors"]
 # Lets qprogram import qililab when it reads a .qp file that requires the qililab vendor (measure_reset, ...).
-qililab = "qililab.qprogram.vendor"
+qililab = "qililab.qprogram.formats.vendor"
 
 [dependency-groups]
 dev = [

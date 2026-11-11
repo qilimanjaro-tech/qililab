@@ -29,11 +29,11 @@ from qprogram_qdac import Play as QdacPlay
 from qprogram_qdac import SetOffset as QdacSetOffset
 
 from qililab.qprogram.blocks import ForLoop, IfTrigger
-from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix, NonLinearCrosstalkMatrix
-from qililab.qprogram.flux_vector import FluxVector, NonLinearFluxVector, sweep_points
+from qililab.qprogram.crosstalk.crosstalk_matrix import CrosstalkMatrix, NonLinearCrosstalkMatrix
+from qililab.qprogram.crosstalk.flux_vector import FluxVector, NonLinearFluxVector, sweep_points
+from qililab.qprogram.crosstalk.utils_crosstalk import CrosstalkElements, NonLinearFlagState, operation_key
 from qililab.qprogram.operations.measure_reset import MeasureReset
 from qililab.qprogram.operations.play import QbloxPlay
-from qililab.qprogram.utils_crosstalk import CrosstalkElements, NonLinearFlagState, operation_key
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -1107,7 +1107,7 @@ class _QbloxCrosstalkCompensation:
         # Skipped when the tail ends in an IfTrigger (possibly wrapped in loops): a qp.if_trigger() block already
         # self-times its own exit (see QbloxCompiler._handle_conditional_trigger_epilogue), and appending a Sync right
         # after it would touch the conditional's gated bus outside the block, which the Qblox pre-pass
-        # (qililab.qprogram.prepass.qblox_prepass) forbids.
+        # (qililab.qprogram.compilers.prepass.qblox_prepass) forbids.
         if (
             corrected_elements
             and not isinstance(corrected_elements[-1], Sync)

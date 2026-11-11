@@ -7,7 +7,7 @@ from qililab.instruments.becker import RSWUSP16TR
 from qililab.instruments.qdevil import QDevilQDac2
 from qililab.instruments.rohde_schwarz import SGS100A
 from qililab.instruments.qblox import QbloxQCM, QbloxQRM
-from qililab.qprogram.qblox_compiler import AcquisitionData
+from qililab.qprogram.compilers.qblox_compiler import AcquisitionData
 from qililab.typings import Parameter, InstrumentName
 from qililab.platform import Bus
 from qililab.pulse_distortion.lfilter_correction import LFilterCorrection

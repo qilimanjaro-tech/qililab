@@ -2,7 +2,7 @@ import os
 
 import pytest
 
-from qililab.qprogram.qblox_compiler import QbloxCompiler
+from qililab.qprogram.compilers.qblox_compiler import QbloxCompiler
 from qililab import Gaussian
 from qililab.qprogram import Experiment
 from qililab.qprogram.operations import SetParameter

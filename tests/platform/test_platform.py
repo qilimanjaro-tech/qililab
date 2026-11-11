@@ -17,7 +17,7 @@ import xarray as xr
 from qprogram.operations.operation import MeasurementField
 from qililab.data_management import build_platform as platform_build_platform
 from qililab.qprogram import QbloxCompilationOutput
-from qililab.qprogram.qdac_compiler import QdacCompilationOutput
+from qililab.qprogram.compilers.qdac_compiler import QdacCompilationOutput
 from qililab.qprogram.qprogram import QProgramCompilationOutput
 from qpysequence import Sequence, Waveforms
 from ruamel.yaml import YAML
@@ -42,7 +42,7 @@ from qililab.instruments.qblox.qblox_qrm import QbloxQRM
 from qililab.instruments.qdevil import QDevilQDac2
 from qililab.platform import Bus, Buses, Platform, Session
 from qililab.qprogram import Calibration, Experiment, QProgram, QbloxCompilationOutput
-from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
+from qililab.qprogram.crosstalk.crosstalk_matrix import CrosstalkMatrix
 from qililab.result.database import get_db_manager
 from qililab.settings import AnalogCompilationSettings, DigitalCompilationSettings, Runcard
 from qililab.settings.digital.gate_event import GateEvent

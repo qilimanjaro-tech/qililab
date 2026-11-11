@@ -10,7 +10,7 @@ from qprogram.operations import Measure, Play
 from qililab import IQDrag, IQPair, Square
 from qililab.qprogram import QProgram
 from qililab.qprogram.calibration import Calibration
-from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix, NonLinearCrosstalkMatrix
+from qililab.qprogram.crosstalk.crosstalk_matrix import CrosstalkMatrix, NonLinearCrosstalkMatrix
 from qililab.utils.serialization import deserialize, deserialize_from, serialize_to
 
 # A calibration with a block, as qililab saved it before it moved to qprogram.

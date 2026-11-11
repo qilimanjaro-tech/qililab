@@ -24,7 +24,7 @@ from qprogram.blocks import Parallel, Sweep
 from qprogram.operations.operation import MeasurementField
 
 if TYPE_CHECKING:
-    from qililab.qprogram.qblox_compiler import AcquisitionData
+    from qililab.qprogram.compilers.qblox_compiler import AcquisitionData
 
 MeasurementFields = dict[str, xr.DataArray]
 """The arrays of one measurement, keyed by field name (``iq``, ``state``, ``raw``)."""

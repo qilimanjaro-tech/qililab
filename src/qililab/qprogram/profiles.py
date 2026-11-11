@@ -48,7 +48,7 @@ from qprogram.protocol import (
 )
 from qprogram.waveforms import IQWaveform, Waveform
 
-import qililab.qprogram.vendor  # noqa: F401  (registers the qililab tokens)
+import qililab.qprogram.formats.vendor  # noqa: F401  (registers the qililab tokens)
 
 _BLOCKS = frozenset(
     {

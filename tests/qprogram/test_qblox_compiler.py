@@ -2,7 +2,7 @@ import re
 from unittest.mock import MagicMock, patch
 
 import numpy as np
-from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix, NonLinearCrosstalkMatrix
+from qililab.qprogram.crosstalk.crosstalk_matrix import CrosstalkMatrix, NonLinearCrosstalkMatrix
 from qililab.pulse_distortion import ExponentialCorrection
 import pytest
 import qprogram

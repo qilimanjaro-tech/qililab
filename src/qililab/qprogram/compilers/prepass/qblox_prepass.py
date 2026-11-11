@@ -29,15 +29,15 @@ from qprogram_qdac import SetTrigger as QdacSetTrigger
 
 from qililab.config import logger
 from qililab.qprogram.blocks import IfTrigger
+from qililab.qprogram.compilers.prepass.utils_prepass import keep_instrument_operations
 from qililab.qprogram.operations.measure_reset import MeasureReset
-from qililab.qprogram.prepass.utils_prepass import keep_instrument_operations
 
 if TYPE_CHECKING:
     from qprogram.operations import Operation
 
     from qililab.pulse_distortion.pulse_distortion import PulseDistortion
     from qililab.qprogram.calibration import Calibration
-    from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
+    from qililab.qprogram.crosstalk.crosstalk_matrix import CrosstalkMatrix
     from qililab.qprogram.qprogram import QProgram
 
 # Default and minimum for qp.if_trigger()'s trigger_padding_ns.

@@ -15,8 +15,8 @@ from copy import deepcopy
 
 from qprogram.operations import Play, SetGain, SetOffset
 
-from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
-from qililab.qprogram.flux_vector import FluxVector
+from qililab.qprogram.crosstalk.crosstalk_matrix import CrosstalkMatrix
+from qililab.qprogram.crosstalk.flux_vector import FluxVector
 from qililab.qprogram.operations.play import QbloxPlay
 
 PLAY_KEY = str(Play)

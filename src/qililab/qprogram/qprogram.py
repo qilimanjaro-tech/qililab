@@ -31,7 +31,7 @@ from qprogram_qblox import QbloxMixin
 from qprogram_qdac import Play as QdacPlay
 from qprogram_qdac import QdacMixin
 
-import qililab.qprogram.vendor  # noqa: F401  (registers qililab's operations and blocks)
+import qililab.qprogram.formats.vendor  # noqa: F401  (registers qililab's operations and blocks)
 from qililab.qprogram.blocks import (
     ForLoop,
     IfTrigger,
@@ -41,7 +41,7 @@ from qililab.qprogram.blocks import (
     to_scalar,
 )
 from qililab.qprogram.calibration import Calibration
-from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
+from qililab.qprogram.crosstalk.crosstalk_matrix import CrosstalkMatrix
 from qililab.qprogram.namespace import QililabQbloxNamespace
 from qililab.qprogram.operations.disable_autosync import DisableAutosync
 from qililab.qprogram.operations.measure_reset import MeasureReset
@@ -50,8 +50,8 @@ from qililab.qprogram.unary_plus import drop_unary_plus
 
 if TYPE_CHECKING:
     from qililab.pulse_distortion.pulse_distortion import PulseDistortion
-    from qililab.qprogram.qblox_compiler import QbloxCompilationOutput
-    from qililab.qprogram.qdac_compiler import QdacCompilationOutput
+    from qililab.qprogram.compilers.qblox_compiler import QbloxCompilationOutput
+    from qililab.qprogram.compilers.qdac_compiler import QdacCompilationOutput
 
 _PLAY_OPERATIONS = (CorePlay, QbloxPlay, QdacPlay)
 
@@ -435,7 +435,7 @@ class QProgram(QbloxMixin, QdacMixin, qp.QProgram):
         Returns:
             QProgram: A new instance of QProgram with calibrated crosstalk.
         """
-        from qililab.qprogram.crosstalk_transform import apply_crosstalk_qblox
+        from qililab.qprogram.crosstalk.crosstalk_transform import apply_crosstalk_qblox
 
         return apply_crosstalk_qblox(self, crosstalk)
 
@@ -457,7 +457,7 @@ class QProgram(QbloxMixin, QdacMixin, qp.QProgram):
         Returns:
             QProgram: A new instance of QProgram with calibrated crosstalk.
         """
-        from qililab.qprogram.crosstalk_transform import apply_crosstalk_qdac
+        from qililab.qprogram.crosstalk.crosstalk_transform import apply_crosstalk_qdac
 
         return apply_crosstalk_qdac(self, crosstalk, qdac_buses_offset, target_fluxes)
 
@@ -535,7 +535,7 @@ class QProgram(QbloxMixin, QdacMixin, qp.QProgram):
             plotly object: plotly.graph_objs._figure.Figure
         """
         from qililab.instruments.qblox.qblox_draw import QbloxDraw
-        from qililab.qprogram.qblox_compiler import QbloxCompiler
+        from qililab.qprogram.compilers.qblox_compiler import QbloxCompiler
 
         qblox_draw = QbloxDraw()
         compiler = QbloxCompiler()

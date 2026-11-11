@@ -21,10 +21,10 @@ from qililab.exceptions import VariableAllocated
 from qililab.pulse_distortion import ExponentialCorrection
 from qililab.qprogram.blocks import ForLoop, IfTrigger, InfiniteLoop, Loop, for_loop_iterations
 from qililab.qprogram.calibration import Calibration
-from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix, NonLinearCrosstalkMatrix
-from qililab.qprogram.legacy import qdac_operations
+from qililab.qprogram.crosstalk.crosstalk_matrix import CrosstalkMatrix, NonLinearCrosstalkMatrix
+from qililab.qprogram.formats.legacy import qdac_operations
 from qililab.qprogram.operations import DisableAutosync, MeasureReset, QbloxPlay
-from qililab.qprogram.qblox_compiler import QbloxCompiler
+from qililab.qprogram.compilers.qblox_compiler import QbloxCompiler
 
 # The crosstalk tests below keep qp.for_loop where its step does not divide stop - start: they rely on its rounding.
 ignore_for_loop_deprecation = pytest.mark.filterwarnings("ignore:qp.for_loop is deprecated:FutureWarning")

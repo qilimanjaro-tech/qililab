@@ -28,7 +28,7 @@ from qililab.qprogram.blocks import for_loop_iterations
 from qililab.yaml import yaml
 
 if TYPE_CHECKING:
-    from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
+    from qililab.qprogram.crosstalk.crosstalk_matrix import CrosstalkMatrix
 
 
 def sweep_points(sweep: Sweep) -> np.ndarray:

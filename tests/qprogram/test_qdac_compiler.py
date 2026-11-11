@@ -13,8 +13,8 @@ from qililab.instruments import Instrument, Instruments
 from qililab.instruments.qdevil.qdevil_qdac2 import QDevilQDac2
 from qililab.platform import Bus
 from qililab.qprogram import Calibration, QdacCompiler, QProgram
-from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix, NonLinearCrosstalkMatrix
-from qililab.qprogram.qdac_compiler import QdacCompilationOutput
+from qililab.qprogram.crosstalk.crosstalk_matrix import CrosstalkMatrix, NonLinearCrosstalkMatrix
+from qililab.qprogram.compilers.qdac_compiler import QdacCompilationOutput
 from qililab.typings.enums import Parameter
 
 def _collect_plays(block: Block) -> dict:

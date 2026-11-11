@@ -18,13 +18,13 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from qililab.qprogram.prepass.utils_prepass import keep_instrument_operations
+from qililab.qprogram.compilers.prepass.utils_prepass import keep_instrument_operations
 
 if TYPE_CHECKING:
     import numpy as np
 
     from qililab.qprogram.calibration import Calibration
-    from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
+    from qililab.qprogram.crosstalk.crosstalk_matrix import CrosstalkMatrix
     from qililab.qprogram.qprogram import QProgram
 
 
