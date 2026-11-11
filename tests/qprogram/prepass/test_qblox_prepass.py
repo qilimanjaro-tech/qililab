@@ -45,6 +45,26 @@ class TestPrepareQblox:
         assert [type(element) for element in average.elements] == [Play, Sync, Acquire]
         assert qp.buses == {"drive", "readout", "qdac_flux"}
 
+    def test_disable_autosync_is_read_and_dropped(self):
+        """The compiler gets the setting from the result: the program it compiles no longer holds it."""
+        qp = QProgram()
+        qp.qblox.disable_autosync = True
+        qp.play(bus="drive", waveform=DRIVE_WF)
+
+        result = prepare_qblox(qp)
+
+        assert result.disable_autosync is True
+        assert [type(element) for element in result.qprogram.body.elements] == [Play]
+        assert prepare_qblox(QProgram()).disable_autosync is False
+
+    def test_sync_on_a_bus_that_isnt_a_qblox_bus_raises_error(self):
+        qp = QProgram()
+        qp.play(bus="drive", waveform=DRIVE_WF)
+        qp.sync(buses=["drive", "qdac_flux"])
+
+        with pytest.raises(ValueError, match="Non QBLOX buses not allowed inside sync function"):
+            prepare_qblox(qp, qblox_buses=["drive"])
+
     def test_qblox_buses_default_to_every_bus(self):
         qp = QProgram()
         qp.play(bus="drive", waveform=DRIVE_WF)

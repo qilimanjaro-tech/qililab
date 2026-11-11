@@ -1,3 +1,5 @@
+import re
+
 import numpy as np
 import pytest
 from qprogram.blocks import Average
@@ -24,7 +26,9 @@ def fixture_flux_qprogram() -> QProgram:
 
 class TestPrepareQdac:
     def test_keeps_only_operations_on_qdac_buses(self):
+        """Syncs and qililab.disable_autosync go too: they only concern the Qblox compiler."""
         qp = QProgram()
+        qp.qblox.disable_autosync = True
         qp.qdac.play(bus="flux1", waveform=Square(amplitude=0.5, duration=10), dwell=2)
         qp.qdac.set_trigger(bus="flux1", duration=10e-6, position="step", outputs=[1])
         with qp.if_trigger(expected_wait_time_ns=2252):
@@ -41,12 +45,65 @@ class TestPrepareQdac:
             QdacSetTrigger,
             IfTrigger,
             QdacSetOffset,
-            Sync,
         ]
         conditional = result.body.elements[2]
         assert isinstance(conditional.elements[0], Average)
         assert conditional.elements[0].elements == []
         assert "readout" in qp.buses
+
+    @pytest.mark.parametrize(
+        "add_operation, message",
+        [
+            (
+                lambda qp: qp.wait(bus="flux1", duration=100),
+                "<class 'qprogram.operations.wait.Wait'> is not supported in QDACII.",
+            ),
+            (
+                lambda qp: qp.play(bus="flux1", waveform=Square(1.0, 100)),
+                "<class 'qprogram.operations.play.Play'> is not supported in QDACII. Use qp.qdac.play() on a QDAC bus.",
+            ),
+            (
+                lambda qp: qp.set_offset(bus="flux1", offset_path0=0.1),
+                "<class 'qprogram.operations.set_offset.SetOffset'> is not supported in QDACII. Use qp.qdac.set_offset() "
+                "on a QDAC bus.",
+            ),
+            (
+                lambda qp: qp.sync(buses=["flux1", "flux2"]),
+                "<class 'qprogram.operations.sync.Sync'> is not supported in QDACII.",
+            ),
+        ],
+        ids=["wait", "play", "set-offset", "sync"],
+    )
+    @pytest.mark.parametrize("with_crosstalk", [False, True])
+    def test_operation_the_qdac_cannot_run_raises_error(self, add_operation, message: str, with_crosstalk: bool):
+        """A non-QDAC operation on a QDAC bus raises, with or without crosstalk compensation."""
+        qp = QProgram()
+        qp.qdac.play(bus="flux1", waveform=Square(1.0, 100), dwell=2)
+        qp.qdac.play(bus="flux2", waveform=Square(1.0, 100), dwell=2)
+        add_operation(qp)
+        crosstalk = (
+            CrosstalkMatrix.from_buses(
+                buses={"flux1": {"flux1": 1.0, "flux2": 0.5}, "flux2": {"flux1": 0.1, "flux2": 1.0}}
+            )
+            if with_crosstalk
+            else None
+        )
+
+        with pytest.raises(NotImplementedError, match=re.escape(message)):
+            prepare_qdac(qp, qdac_buses=["flux1", "flux2"], qdac_buses_offset=QDAC_BUSES_OFFSET, crosstalk=crosstalk)
+
+    def test_operation_on_a_qdac_bus_inside_if_trigger_raises_error(self):
+        """The QDAC generates the external trigger, so it can't skip an operation depending on it."""
+        qp = QProgram()
+        with qp.if_trigger(expected_wait_time_ns=1000):
+            qp.qblox.acquire(bus="readout", weights=IQPair(I=Square(1.0, 100), Q=Square(0.0, 100)))
+            qp.sync(buses=["readout", "flux1"])
+
+        with pytest.raises(
+            NotImplementedError,
+            match=re.escape("Sync on QDAC bus 'flux1' cannot be used inside qp.if_trigger()"),
+        ):
+            prepare_qdac(qp, qdac_buses=["flux1"], qdac_buses_offset=QDAC_BUSES_OFFSET)
 
     def test_crosstalk_uses_explicit_matrix(self, flux_qprogram: QProgram):
         crosstalk = CrosstalkMatrix.from_buses(

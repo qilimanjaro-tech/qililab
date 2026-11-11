@@ -25,17 +25,19 @@ if TYPE_CHECKING:
     from qililab.qprogram.qprogram import QProgram
 
 
-def keep_instrument_operations(qprogram: QProgram, instrument_buses: set[str]) -> QProgram:
+def keep_instrument_operations(qprogram: QProgram, instrument_buses: set[str], drop: tuple[type, ...] = ()) -> QProgram:
     """Return a copy of the QProgram with only the operations of one instrument: those on ``instrument_buses``.
 
     Every block is kept, even when it ends up empty, because the compilers rely on them as they relied on them when
     they walked the whole QProgram: the QDAC-II compiler multiplies the repetitions of a play by every loop it walks
     through, and the Qblox compiler emits a loop even with nothing inside. Operations without a bus (``qp.sync()``)
-    are kept too: each compiler checks the buses they name.
+    are kept too, unless their type is in ``drop``: each instrument pre-pass checks the buses they name.
 
     Args:
         qprogram (QProgram): The QProgram to filter. It is not modified.
         instrument_buses (set[str]): All the buses of the instrument.
+        drop (tuple[type, ...], optional): Operation types to remove whatever their bus, because the instrument's
+            compiler has nothing to do with them. Defaults to ().
 
     Returns:
         QProgram: The filtered copy. It shares the waveforms of ``qprogram``: the compilers never modify a waveform
@@ -54,7 +56,8 @@ def keep_instrument_operations(qprogram: QProgram, instrument_buses: set[str]) -
         block.elements[:] = [
             element
             for element in block.elements
-            if isinstance(element, Block) or not hasattr(element, "bus") or element.bus in instrument_buses
+            if not isinstance(element, drop)
+            and (isinstance(element, Block) or not hasattr(element, "bus") or element.bus in instrument_buses)
         ]
         for element in block.elements:
             if isinstance(element, Block):

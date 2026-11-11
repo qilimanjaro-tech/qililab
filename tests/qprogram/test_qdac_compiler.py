@@ -587,17 +587,6 @@ class TestQdacCompiler:
 
         assert qdac_bus.upload_voltage_list.call_count == 1
 
-    def test_disable_autosync_is_ignored(self, qdac: QDevilQDac2, flux1: Bus):
-        """qp.qblox.disable_autosync only concerns the Qblox compiler."""
-        qdac_bus = flux1.instruments[0]
-        qp = QProgram()
-        qp.qblox.disable_autosync = True
-        qp.qdac.play(bus="flux1", waveform=Square(1.0, 100), dwell=2)
-
-        QdacCompiler().compile(qprogram=qp, qdacs=[qdac], qdac_buses=[flux1], qdac_offsets=[0])
-
-        assert qdac_bus.upload_voltage_list.call_count == 1
-
     def test_play_named_operation_in_calibration(self, calibration: Calibration, qdac: QDevilQDac2, flux1: Bus):
         qdac_bus = flux1.instruments[0]
 
@@ -797,45 +786,6 @@ class TestQdacCompiler:
         compiler.compile(qprogram=qp, qdacs=[qdac], qdac_buses=[flux1], qdac_offsets=[0])
 
         assert qdac_bus.upload_voltage_list.call_count == 1
-
-    def test_sync_raises_error(self, qdac: QDevilQDac2, flux1: Bus, flux2: Bus):
-        """Test all possible combinations of play + set_trigger on the QDACII."""
-        pulse_wf = Square(1.0, 100)
-        dwell_us = 2
-
-        # Setting external trigger at the beginning of the iteration
-        qp = QProgram()
-        qp.qdac.play(bus="flux1", waveform=pulse_wf, dwell=dwell_us)
-        qp.qdac.play(bus="flux2", waveform=pulse_wf, dwell=dwell_us)
-        qp.sync(buses=["flux1", "flux2"])
-
-        compiler = QdacCompiler()
-        with pytest.raises(
-            NotImplementedError, match=re.escape("<class 'qprogram.operations.sync.Sync'> is not supported in QDACII.")
-        ):
-            compiler.compile(qprogram=qp, qdacs=[qdac], qdac_buses=[flux1, flux2], qdac_offsets=[0, 0])
-
-    def test_handle_unknown_crosstalk(self, qdac: QDevilQDac2, flux1: Bus, flux2: Bus):
-        """Test all possible combinations of play + set_trigger on the QDACII."""
-        pulse_wf = Square(1.0, 100)
-        dwell_us = 2
-        crosstalk = CrosstalkMatrix.from_buses(
-            buses={"flux1": {"flux1": 1.0, "flux2": 0.5}, "flux2": {"flux1": 0.1, "flux2": 1.0}}
-        )
-
-        # Setting external trigger at the beginning of the iteration
-        qp = QProgram()
-        qp.qdac.play(bus="flux1", waveform=pulse_wf, dwell=dwell_us)
-        qp.qdac.play(bus="flux2", waveform=pulse_wf, dwell=dwell_us)
-        qp.sync(buses=["flux1", "flux2"])
-
-        compiler = QdacCompiler()
-        with pytest.raises(
-            NotImplementedError, match=re.escape("<class 'qprogram.operations.sync.Sync'> is not supported in QDACII.")
-        ):
-            compiler.compile(
-                qprogram=qp, qdacs=[qdac], qdac_buses=[flux1, flux2], qdac_offsets=[0, 0], crosstalk=crosstalk
-            )
 
     @pytest.mark.parametrize(
         "position, outputs, method, kwargs, trigger_position",
@@ -1078,43 +1028,6 @@ class TestQdacCompiler:
         qdac_bus.upload_voltage_list.assert_called_once_with(
             waveform=ramp_wf, channel_id=1, dwell_us=3, sync_delay_s=0, repetitions=1, stepped=False
         )
-
-    def test_qblox_operation_on_qdac_bus_raises_error(self, qdac: QDevilQDac2, flux1: Bus):
-        """A Qblox-only operation such as qp.wait() on a QDAC bus raises an error."""
-        qp = QProgram()
-        qp.qdac.play(bus="flux1", waveform=Square(1.0, 100), dwell=2)
-        qp.wait(bus="flux1", duration=100)
-
-        compiler = QdacCompiler()
-        with pytest.raises(
-            NotImplementedError, match=re.escape("<class 'qprogram.operations.wait.Wait'> is not supported in QDACII.")
-        ):
-            compiler.compile(qprogram=qp, qdacs=[qdac], qdac_buses=[flux1], qdac_offsets=[0])
-
-    @pytest.mark.parametrize(
-        "add_operation, message",
-        [
-            (
-                lambda qp: qp.play(bus="flux1", waveform=Square(1.0, 100)),
-                "<class 'qprogram.operations.play.Play'> is not supported in QDACII. Use qp.qdac.play() on a QDAC bus.",
-            ),
-            (
-                lambda qp: qp.set_offset(bus="flux1", offset_path0=0.1),
-                "<class 'qprogram.operations.set_offset.SetOffset'> is not supported in QDACII. Use qp.qdac.set_offset() "
-                "on a QDAC bus.",
-            ),
-        ],
-    )
-    def test_core_play_or_set_offset_on_qdac_bus_raises_error(
-        self, qdac: QDevilQDac2, flux1: Bus, add_operation, message: str
-    ):
-        """qp.play and qp.set_offset are Qblox operations: on a QDAC bus they raise, pointing to the QDAC ones."""
-        qp = QProgram()
-        add_operation(qp)
-
-        compiler = QdacCompiler()
-        with pytest.raises(NotImplementedError, match=re.escape(message)):
-            compiler.compile(qprogram=qp, qdacs=[qdac], qdac_buses=[flux1], qdac_offsets=[0])
 
     def test_unmapped_named_operation_with_crosstalk_raises_error(self, qdac: QDevilQDac2, flux1: Bus, flux2: Bus):
         """With a crosstalk matrix, a named waveform missing from the calibration still raises the unmapped

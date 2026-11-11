@@ -66,17 +66,6 @@ def fixture_run_qdac_buses() -> QProgram:
     return qp
 
 
-@pytest.fixture(name="run_qdac_sync")
-def fixture_run_qdac_sync() -> QProgram:
-    wf = IQPair(I=Square(amplitude=1.0, duration=1000), Q=Square(amplitude=0.0, duration=1000))
-    qp = QProgram()
-    qp.play(bus="drive", waveform=wf)
-
-    qp.sync(buses=["qdac_flux"])
-
-    return qp
-
-
 @pytest.fixture(name="measurement_blocked_operation")
 def fixture_measurement_blocked_operation() -> QProgram:
     drag_wf = IQDrag(amplitude=1.0, duration=100, num_sigmas=5, drag_coefficient=1.5)
@@ -1335,13 +1324,6 @@ class TestQBloxCompiler:
         assert len(output.sequences) == 1
         assert "drive_q0" in output.sequences
         assert isinstance(output.sequences["drive_q0"], QPy.Sequence)
-
-    def test_qdac_sync_raises_error(self, run_qdac_sync: QProgram):
-
-        compiler = QbloxCompiler()
-
-        with pytest.raises(ValueError, match="Non QBLOX buses not allowed inside sync function"):
-            compiler.compile(qprogram=run_qdac_sync, bus_mapping={"drive": "drive_q0"}, qblox_buses=["drive_q0"])
 
     def test_set_trigger(self, set_trigger: QProgram):
 

@@ -30,6 +30,7 @@ from qprogram_qdac import SetTrigger as QdacSetTrigger
 from qililab.config import logger
 from qililab.qprogram.blocks import IfTrigger
 from qililab.qprogram.compilers.prepass.utils_prepass import keep_instrument_operations
+from qililab.qprogram.operations.disable_autosync import DisableAutosync
 from qililab.qprogram.operations.measure_reset import MeasureReset
 
 if TYPE_CHECKING:
@@ -90,6 +91,10 @@ class QbloxPrepassResult:
     latch_buses: list[str]
     """Qblox buses that need the trigger latch: the control buses of ``measure_reset``."""
 
+    disable_autosync: bool
+    """Whether ``qp.qblox.disable_autosync`` is set: no sync after each loop or average. ``qprogram`` no longer holds
+    the setting."""
+
     trigger_network_addresses: dict[str, int]
     """Qblox buses that send on the trigger network, with their trigger address: the measurement buses of
     ``measure_reset``."""
@@ -129,6 +134,7 @@ def prepare_qblox(
             ``qp.qdac.set_trigger(position='step')`` + ``qp.qdac.play(dwell=...)``, or a ``trigger_padding_ns`` below the trigger
             network's propagation delay.
         NotImplementedError: If ``qp.if_trigger()`` is used in a way that isn't supported.
+        ValueError: If a ``qp.sync()`` names a bus that isn't a Qblox bus.
     """
     if calibration is not None:
         if calibration.crosstalk_matrix_ac is not None:
@@ -163,7 +169,10 @@ def prepare_qblox(
 
     _validate_scopes(qprogram.body, readout_modules)
 
-    qblox_qprogram = keep_instrument_operations(qprogram, qblox_bus_set)
+    if any(isinstance(leaf, Sync) and any(bus not in qblox_bus_set for bus in leaf.targets or []) for leaf in leaves):
+        raise ValueError("Non QBLOX buses not allowed inside sync function")
+
+    qblox_qprogram = keep_instrument_operations(qprogram, qblox_bus_set, drop=(DisableAutosync,))
     return QbloxPrepassResult(
         qprogram=qblox_qprogram,
         qblox_buses=qblox_buses,
@@ -172,6 +181,7 @@ def prepare_qblox(
         requires_external_trigger=conditional is not None
         or any(isinstance(leaf, QbloxWaitTrigger) and leaf.bus in qblox_buses for leaf in leaves),
         latch_buses=list(dict.fromkeys(measure_reset.control_bus for measure_reset in measure_resets)),
+        disable_autosync=qprogram.qblox.disable_autosync,
         trigger_network_addresses={
             measure_reset.bus: measure_reset.trigger_address for measure_reset in measure_resets
         },

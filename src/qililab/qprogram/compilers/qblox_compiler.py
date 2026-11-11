@@ -48,7 +48,7 @@ from qililab.qprogram.blocks import IfTrigger, InfiniteLoop, for_loop_iterations
 from qililab.qprogram.calibration import Calibration
 from qililab.qprogram.compilers.prepass import prepare_qblox, prepare_shared
 from qililab.qprogram.crosstalk.crosstalk_matrix import CrosstalkMatrix
-from qililab.qprogram.operations import DisableAutosync, MeasureReset, QbloxPlay
+from qililab.qprogram.operations import MeasureReset, QbloxPlay
 from qililab.qprogram.qprogram import QProgram
 
 if TYPE_CHECKING:
@@ -379,7 +379,6 @@ class QbloxCompiler:
             Scope: self._handle_scope,
             CorePlay: self._handle_play,
             QbloxPlay: self._handle_play,
-            DisableAutosync: self._handle_disable_autosync,
             IfTrigger: self._handle_block,
             Block: self._handle_block,
         }
@@ -392,7 +391,7 @@ class QbloxCompiler:
         self._long_wait_dynamic_idx: int = 0
         self._max_wait_dynamic: int = 0
         self._markers: dict[str, str] | None
-        self._qblox_buses: list[str]
+        self._disable_autosync: bool
         self._acquisition_metadata: AcquisitionMetadata = {}
         self._conditional: ConditionalTrigger | None = None
         self._single_channel: list[str] = []
@@ -469,9 +468,7 @@ class QbloxCompiler:
                         # the Qblox pre-pass guarantees no other instruction touches that bus
                         # outside the block -- an autosync here would stretch it to match unrelated buses and
                         # drift it out of phase with the QDAC's fixed trigger cadence on every iteration.
-                        if not self._qprogram.qblox.disable_autosync and isinstance(
-                            element, (Sweep, Parallel, Average)
-                        ):
+                        if not self._disable_autosync and isinstance(element, (Sweep, Parallel, Average)):
                             self._handle_sync(element=Sync(targets=None), delay=True)
                         if appended:
                             for bus in self._buses:
@@ -489,8 +486,7 @@ class QbloxCompiler:
             readout_modules=readout_modules,
         )
         self._qprogram = prepass.qprogram
-        # Every Qblox bus, not only those of the QProgram: a sync naming any other bus is rejected
-        self._qblox_buses = prepass.qblox_buses
+        self._disable_autosync = prepass.disable_autosync
 
         self._sync_counter = 0
         self._scopes = {}
@@ -1381,13 +1377,7 @@ class QbloxCompiler:
         self._buses[bus].duration_since_sync += duration
         self._buses[bus].marked_for_sync = True
 
-    def _handle_disable_autosync(self, element: DisableAutosync) -> None:
-        """Nothing to emit: ``qp.qblox.disable_autosync`` is read before the program is walked."""
-
     def _handle_sync(self, element: Sync, delay: bool = False) -> None:
-        if element.targets and any(bus not in self._qblox_buses for bus in element.targets):
-            raise ValueError("Non QBLOX buses not allowed inside sync function")
-
         # Get the buses involved in the sync operation.
         buses = set(element.targets or self._buses)
 

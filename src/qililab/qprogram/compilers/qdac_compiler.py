@@ -17,7 +17,6 @@ from typing import TYPE_CHECKING, Any, Callable
 
 import numpy as np
 from qprogram.blocks import Average, Block, Parallel, Sweep
-from qprogram.operations import Sync
 from qprogram.waveforms import Arbitrary
 from qprogram_qdac import Play, SetOffset, SetTrigger, WaitTrigger
 
@@ -27,7 +26,6 @@ from qililab.qprogram.blocks import IfTrigger, InfiniteLoop
 from qililab.qprogram.calibration import Calibration
 from qililab.qprogram.compilers.prepass import prepare_qdac, prepare_shared
 from qililab.qprogram.crosstalk.crosstalk_matrix import CrosstalkMatrix
-from qililab.qprogram.operations import DisableAutosync
 from qililab.qprogram.qprogram import QProgram
 from qililab.typings.enums import Parameter
 
@@ -83,7 +81,6 @@ class QdacCompiler:
             SetTrigger: self._handle_set_trigger,
             IfTrigger: self._handle_block,
             Block: self._handle_block,
-            DisableAutosync: self._handle_disable_autosync,
         }
 
         self._qprogram: QProgram
@@ -135,31 +132,16 @@ class QdacCompiler:
                 operating point, used to seed crosstalk compensation. Defaults to None.
         """
 
-        def traverse(block: Block, inside_conditional: bool = False) -> None:
+        def traverse(block: Block) -> None:
             for bus in self._buses and self._qdac_buses_alias:
                 self._buses[bus].qprogram_block_stack.append(block)
             for element in block.elements:
-                currently_conditional = inside_conditional or isinstance(element, IfTrigger)
-                if currently_conditional:
-                    # QDAC generates the external trigger; it has no way to conditionally skip an operation
-                    # based on whether that same trigger was received in time on the Qblox side, so a
-                    # QDAC-bus operation placed inside qp.if_trigger() would compile and execute
-                    # unconditionally, silently ignoring the "only if trigger received" semantics.
-                    buses = (element.targets or []) if isinstance(element, Sync) else [getattr(element, "bus", None)]
-                    offending_bus = next((bus for bus in buses if bus in self._qdac_buses_alias), None)
-                    if offending_bus is not None:
-                        raise NotImplementedError(
-                            f"{type(element).__name__} on QDAC bus '{offending_bus}' cannot be used inside "
-                            "qp.if_trigger(): QDAC has no way to conditionally gate on the external trigger "
-                            "it generates."
-                        )
+                # The QDAC pre-pass leaves only QDAC operations and blocks
                 handler = self._handlers.get(type(element))
-                if not handler:
-                    self._handle_unknown(element)
-                else:
+                if handler:
                     handler(element)
                 if isinstance(element, Block):
-                    traverse(element, inside_conditional=currently_conditional)
+                    traverse(element)
             for bus in self._buses and self._qdac_buses_alias:
                 self._buses[bus].qprogram_block_stack.pop()
 
@@ -383,21 +365,6 @@ class QdacCompiler:
 
     def _handle_block(self, element: Block):
         pass
-
-    def _handle_disable_autosync(self, element: DisableAutosync) -> None:
-        """Nothing to do: disabling autosync only concerns the Qblox compiler."""
-
-    def _handle_unknown(self, element: Any):
-        if type(element) is Sync:
-            if element.targets and any(bus in self._qdac_buses_alias for bus in element.targets):
-                raise NotImplementedError(f"{element.__class__} is not supported in QDACII.")
-            return
-        if not isinstance(element, Block):
-            hint = {
-                "Play": " Use qp.qdac.play() on a QDAC bus.",
-                "SetOffset": " Use qp.qdac.set_offset() on a QDAC bus.",
-            }.get(type(element).__name__, "")
-            raise NotImplementedError(f"{element.__class__} is not supported in QDACII.{hint}")
 
     @staticmethod
     def _hash_trigger(element: SetTrigger, output: int) -> str:
