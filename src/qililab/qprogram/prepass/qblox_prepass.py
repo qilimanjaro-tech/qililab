@@ -406,15 +406,16 @@ def _validate_conditional_bus_isolation(
 def _validate_scopes(body: Block, readout_modules: dict[str, str] | None) -> None:
     """Check the ``qp.qblox.scope`` of a QProgram against what a QRM's scope can record.
 
-    A QRM has one scope, recording its inputs, triggered by one sequencer's acquisitions or by an input level.
+    A QRM has one scope, recording its inputs, triggered by one sequencer's acquisitions or by an input level. Its
+    trace is read by storing it into the first acquisition of the scoped bus, so that bus needs one either way.
 
     Args:
         body (Block): The body of the QProgram, after the bus mapping.
         readout_modules (dict[str, str] | None): The QRM of each bus that has one, or None to skip the checks needing it.
 
     Raises:
-        ValueError: If a scoped bus is not on a QRM, two scoped buses are on the same QRM, or a scope triggered by its
-            bus's acquisitions has no acquisition on that bus.
+        ValueError: If a scoped bus is not on a QRM, two scoped buses are on the same QRM, or a scoped bus has no
+            acquisition.
     """
     scopes = [node for node in body.walk() if isinstance(node, Scope)]
     if not scopes:
@@ -442,11 +443,17 @@ def _validate_scopes(body: Block, readout_modules: dict[str, str] | None) -> Non
                 )
             scoped_modules[module] = scope.bus
         acquisitions = acquisitions_per_bus.get(scope.bus, [])
-        if scope.trigger_level is None and not acquisitions:
+        if not acquisitions:
+            if scope.trigger_level is None:
+                raise ValueError(
+                    f"qp.qblox.scope() on bus '{scope.bus}' is triggered by the bus's acquisitions, but the bus has "
+                    "none."
+                )
             raise ValueError(
-                f"qp.qblox.scope() on bus '{scope.bus}' is triggered by the bus's acquisitions, but the bus has none."
+                f"qp.qblox.scope() on bus '{scope.bus}' stores its trace into the bus's first acquisition, but the "
+                "bus has none: add a qp.qblox.acquire() on it."
             )
-        if len(acquisitions) > 1 or any(acquisitions):
+        if scope.trigger_level is None and (len(acquisitions) > 1 or any(acquisitions)):
             logger.warning(
                 f"The scope of bus '{scope.bus}' is triggered by several acquisitions (more than one, or one in a sweep): "
                 "its trace averages over all of them."

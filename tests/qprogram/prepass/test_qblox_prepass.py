@@ -212,6 +212,55 @@ class TestPrepareQblox:
         assert "Define `crosstalk_matrix_ac`" in caplog.text
         assert str(result.qprogram) == str(flux_qprogram.with_crosstalk_qblox(crosstalk=dc_crosstalk))
 
+    def test_scope_on_a_bus_without_qrm_raises_error(self):
+        """Only a QRM has a scope."""
+        qp = QProgram()
+        qp.qblox.scope(bus="drive")
+        qp.qblox.acquire(bus="drive", weights=WEIGHTS)
+
+        with pytest.raises(ValueError, match=re.escape("qp.qblox.scope() scopes bus 'drive', which is not on a QRM.")):
+            prepare_qblox(qp, readout_modules={"readout": "qrm"})
+
+    def test_two_scopes_on_one_qrm_raise_error(self):
+        """A QRM has one scope, so one scoped bus per QRM."""
+        qp = QProgram()
+        for bus in ("readout_q0", "readout_q1"):
+            qp.qblox.scope(bus=bus)
+            qp.qblox.acquire(bus=bus, weights=WEIGHTS)
+
+        with pytest.raises(ValueError, match="a QRM has one scope, so scope one bus per QRM"):
+            prepare_qblox(qp, readout_modules={"readout_q0": "qrm", "readout_q1": "qrm"})
+
+    @pytest.mark.parametrize(
+        "trigger_level, message",
+        [
+            (None, "is triggered by the bus's acquisitions, but the bus has none."),
+            (0.25, "stores its trace into the bus's first acquisition, but the bus has none"),
+        ],
+    )
+    def test_scope_without_acquisition_raises_error(self, trigger_level: float | None, message: str):
+        """The trace is stored into the bus's first acquisition, so a scope needs one whatever triggers it."""
+        qp = QProgram()
+        qp.qblox.scope(bus="readout", trigger_level=trigger_level)
+        qp.wait(bus="readout", duration=1000)
+
+        with pytest.raises(ValueError, match=re.escape(f"qp.qblox.scope() on bus 'readout' {message}")):
+            prepare_qblox(qp, readout_modules={"readout": "qrm"})
+
+    @pytest.mark.parametrize("trigger_level, warns", [(None, True), (0.25, False)])
+    def test_scope_triggered_by_several_acquisitions_warns(self, caplog, trigger_level: float | None, warns: bool):
+        """A scope triggered by the bus's acquisitions averages over all of them when there are several; one
+        triggered by an input level does not depend on them."""
+        qp = QProgram()
+        qp.qblox.scope(bus="readout", trigger_level=trigger_level)
+        qp.qblox.acquire(bus="readout", weights=WEIGHTS)
+        qp.qblox.acquire(bus="readout", weights=WEIGHTS)
+
+        with caplog.at_level(logging.WARNING):
+            prepare_qblox(qp, readout_modules={"readout": "qrm"})
+
+        assert ("its trace averages over all of them" in caplog.text) is warns
+
     def test_distortions_are_applied(self, flux_qprogram: QProgram):
         distortions = {"flux1": [ExponentialCorrection(tau_exponential=100.0, amp=0.5)]}
 

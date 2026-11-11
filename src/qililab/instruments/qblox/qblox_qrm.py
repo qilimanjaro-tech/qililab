@@ -154,6 +154,7 @@ class QbloxQRM(QbloxModule):
                     sequencer=sequencer.identifier,
                     timeout=cast("QbloxADCSequencer", sequencer).acquisition_timeout,
                 )
+                # The module has one scope buffer: copy it into the bus's first acquisition, where the platform reads it
                 if scope and index == 0:
                     self.device.store_scope_acquisition(sequencer=sequencer.identifier, name=acquisition)
                 results.append(self.device.get_acquisitions(sequencer=sequencer.identifier)[acquisition]["acquisition"])
@@ -204,21 +205,6 @@ class QbloxQRM(QbloxModule):
             self._set_hardware_demodulation(
                 value=self.get_sequencer(sequencer_id).hardware_modulation, sequencer_id=sequencer_id
             )
-
-    def get_parameter(
-        self, parameter: Parameter, channel_id: ChannelID | None = None, output_id: OutputID | None = None
-    ) -> ParameterValue:
-        """Get instrument parameter.
-
-        Args:
-            parameter (Parameter): Name of the parameter to get.
-            channel_id (int | None): Channel identifier of the parameter to update.
-            output_id (int): module id
-
-        Returns:
-            ParameterValue: The parameter's value.
-        """
-        return super().get_parameter(parameter=parameter, channel_id=channel_id, output_id=output_id)
 
     def set_parameter(
         self,
