@@ -146,7 +146,6 @@ class InstrumentName(str, Enum):
         * qblox_S4g
         * keysight_e5080b
         * yokogawa_gs200
-        * OPX -> Exactly as Quantum Machines InstrumentType
         * RSWU-SP16TR
     """
 
@@ -291,7 +290,6 @@ class InstrumentControllerName(str, Enum):
         * keysight_e5080b
         * rswu_sp16tr
         * yokogawa
-        * qmm
     """
 
     QBLOX_CLUSTER = "qblox_cluster"

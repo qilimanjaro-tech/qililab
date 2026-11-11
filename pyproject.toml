@@ -226,9 +226,9 @@ docstring-code-format = true
 docstring-code-line-length = "dynamic"
 
 [tool.deptry]
-# qm-qua imports as `qm`; ruamel-yaml imports as `ruamel`; ipython imports as `IPython`
-# (deptry can't guess any of these from the package name).
-package_module_name_map = { "qm-qua" = "qm", "ruamel-yaml" = "ruamel", "ipython" = "IPython" }
+# ruamel-yaml imports as `ruamel`; ipython imports as `IPython`
+# (deptry can't guess either from the package name).
+package_module_name_map = { "ruamel-yaml" = "ruamel", "ipython" = "IPython" }
 
 [tool.deptry.per_rule_ignores]
 # Never imported directly: SQLAlchemy loads it internally for the `postgresql://` dialect

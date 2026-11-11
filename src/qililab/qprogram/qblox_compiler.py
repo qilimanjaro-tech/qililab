@@ -1634,8 +1634,7 @@ class QbloxCompiler:
             self._buses[bus].dynamic_sync_counter += 1
 
     def _handle_measure(self, element: Measure) -> None:
-        """Wrapper for qblox play and acquire methods to be called in a single operation for consistency with QuantumMachines
-        measure operation
+        """Compile a ``measure``: the play of its readout waveform and its acquisition, as one operation.
 
         Args:
             element (Measure): measure operation
