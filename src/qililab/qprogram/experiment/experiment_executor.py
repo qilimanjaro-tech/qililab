@@ -15,7 +15,6 @@
 # mypy: disable-error-code="union-attr, arg-type"
 import inspect
 import os
-from collections import defaultdict
 from dataclasses import dataclass
 from datetime import datetime
 from time import perf_counter
@@ -125,9 +124,6 @@ class ExperimentExecutor:
         self.job_id = job_id
         self.sample = sample
         self.cooldown = cooldown
-
-        # Registry of all variables used in the experiment with their labels and values
-        self._all_variables: dict = defaultdict(lambda: {"label": None, "values": {}})
 
         # Mapping from each Block to the list of variables associated with that block
         # By block id: qprogram blocks compare by structure, so two identical loops would share an entry
@@ -274,7 +270,6 @@ class ExperimentExecutor:
                 sample_name=self.sample,
             )
         traverse_experiment(self.experiment.body)
-        self._all_variables = dict(self._all_variables)
 
     def _prepare_operations(self, block: Block, progress: Progress):
         """Traverse blocks, store generated Python functions, and return the stored operations."""
@@ -552,12 +547,6 @@ class ExperimentExecutor:
             variables[id(loop.variable)] = variable
 
         self._variables_per_block[id(block)] = list(variables.values())
-
-        # Update all_variables registry
-        for variable in variables.values():
-            if self._all_variables[variable.key]["label"] is None:
-                self._all_variables[variable.key]["label"] = variable.label
-            self._all_variables[variable.key]["values"][id(block)] = variable.values
 
         return list(variables.values())
 

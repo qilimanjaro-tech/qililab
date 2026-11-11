@@ -80,23 +80,6 @@ def _is_qblox_play(element: Block | Operation) -> TypeGuard[Play | QbloxPlay]:
     return isinstance(element, _QBLOX_PLAYS) and not _has_named_waveform(element)
 
 
-def _passes_time(element: Block | Operation) -> bool:
-    """Whether ``element`` lets time pass on the flux buses, so the operations before and after it are not simultaneous.
-
-    That is a ``wait``, an acquisition or measurement, or a play on a bus outside the crosstalk matrix (checked by the
-    caller).
-
-    Args:
-        element (Block | Operation): The node.
-
-    Returns:
-        bool: True for a wait, a concrete acquisition or a concrete measurement.
-    """
-    if isinstance(element, Wait):
-        return True
-    return isinstance(element, (Acquire, Measure)) and not _has_named_waveform(element)
-
-
 def _is_range_sweep(block: object) -> bool:
     """Whether ``block`` is a sweep over a ``Range``, the loop ``qp.for_loop`` and ``from_range`` build.
 
@@ -109,23 +92,7 @@ def _is_range_sweep(block: object) -> bool:
     return isinstance(block, Sweep) and isinstance(block.source, Range)
 
 
-def _header_loops(block: Block) -> list[Sweep]:
-    """The loops a block advances: a ``Parallel``'s loops, a ``Sweep`` itself, none for any other block.
-
-    Args:
-        block (Block): The block.
-
-    Returns:
-        list[Sweep]: Its loops.
-    """
-    if isinstance(block, Parallel):
-        return list(block.loops)
-    if isinstance(block, Sweep):
-        return [block]
-    return []
-
-
-def _flux_offset_value(operation: SetOffset | SetGain) -> float | Expression:
+def _flux_value(operation: SetOffset | SetGain) -> float | Expression:
     """The value carried by a ``SetOffset`` (path 0) or a ``SetGain``.
 
     Args:
@@ -135,19 +102,6 @@ def _flux_offset_value(operation: SetOffset | SetGain) -> float | Expression:
         float | Expression: Its offset or gain.
     """
     return operation.offset_path0 if isinstance(operation, SetOffset) else operation.gain
-
-
-def _set_flux_offset_value(operation: SetOffset | SetGain, value: float | Expression) -> None:
-    """Set the value carried by a ``SetOffset`` (path 0) or a ``SetGain``.
-
-    Args:
-        operation (SetOffset | SetGain): The operation.
-        value (float | Expression): Its new offset or gain.
-    """
-    if isinstance(operation, SetOffset):
-        operation.offset_path0 = value
-    else:
-        operation.gain = value
 
 
 def _element_variable(element: QbloxFluxOperation) -> Variable | None:
@@ -180,19 +134,6 @@ def _ends_in_if_trigger(element: Block | Operation) -> bool:
     if isinstance(element, Block) and element.elements:
         return _ends_in_if_trigger(element.elements[-1])
     return False
-
-
-def _shift_suffix(constant: float) -> str:
-    """The id suffix of a loop shifted by ``constant``: ``_plus_0p1`` for ``+0.1``, ``_minus_2em05`` for ``-2e-05``.
-
-    Args:
-        constant (float): The shift.
-
-    Returns:
-        str: The suffix.
-    """
-    text = f"{constant:+g}".replace("+", "_plus_").replace("-", "_minus_").replace(".", "p")
-    return text.replace("e_minus_", "em").replace("e_plus_", "ep")
 
 
 class _QbloxCrosstalkCompensation:
@@ -241,7 +182,7 @@ class _QbloxCrosstalkCompensation:
         self.non_lin_play_waveforms: list[dict[str, np.ndarray]] = []
         self.non_lin_offsets: list[dict[str, np.ndarray]] = []
 
-    def run(self) -> None:
+    def compensate(self) -> None:
         """Rewrite the program."""
         self.traverse(self.program.body)
         if self.non_lin_flux_vector is not None:
@@ -315,7 +256,7 @@ class _QbloxCrosstalkCompensation:
                             non_lin_offset_list = []
                         elif isinstance(element, SetOffset):
                             non_lin_offset_list.append(element.bus)
-                        value = _flux_offset_value(element)
+                        value = _flux_value(element)
                         if isinstance(value, Variable) and value.id not in non_lin_flux_vector.variables:
                             new_loop = next(
                                 loop
@@ -348,10 +289,16 @@ class _QbloxCrosstalkCompensation:
                         element=element,  # type: ignore[arg-type]
                     )
                     crosstalk_elements.add_element(element, i)  # type: ignore[arg-type]
-            if _passes_time(element) or (
-                isinstance(element, _PLAYS)
-                and not _has_named_waveform(element)
-                and element.bus not in self.crosstalk.matrix
+            # Time passes on a wait, a measurement or a play on a bus outside the matrix: the operations after it
+            # are not simultaneous with those before, so they are compensated apart
+            if (
+                isinstance(element, Wait)
+                or (isinstance(element, (Acquire, Measure)) and not _has_named_waveform(element))
+                or (
+                    isinstance(element, _PLAYS)
+                    and not _has_named_waveform(element)
+                    and element.bus not in self.crosstalk.matrix
+                )
             ):
                 crosstalk_elements.restart_flux_vector()
 
@@ -389,7 +336,12 @@ class _QbloxCrosstalkCompensation:
                         for new_variable in self.block_variables[variable]:
                             self.declare(new_variable)
                         self.block_variables[variable] = []
-                    block.elements[i] = self.compensated_loop_block(loop_list, element)
+                    # The compensated loops run the user's loop body in lockstep. A Parallel needs two loops, so a
+                    # single compensated loop replaces the user's loop alone.
+                    if loop_list:
+                        new_block: Block = loop_list[0] if len(loop_list) == 1 else Parallel(loop_list)
+                        new_block.elements[:] = element.elements
+                        block.elements[i] = new_block
                     self.active_loops = self.active_loops[:-1]
                     self.loop_depths = self.loop_depths[:-1]
 
@@ -411,26 +363,6 @@ class _QbloxCrosstalkCompensation:
                 or (isinstance(block, Parallel) and all(_is_range_sweep(loop) for loop in block.loops))
             ) and non_lin_flux_vector.has_loop(block):  # type: ignore[arg-type]
                 non_lin_flux_vector.exit_loop(block)  # type: ignore[arg-type]
-
-    @staticmethod
-    def compensated_loop_block(loops: list[Sweep], block: Block) -> Block:
-        """The block replacing the user's loop ``block``: its body, run by the compensated ``loops`` in lockstep.
-
-        Args:
-            loops (list[Sweep]): The compensated loops.
-            block (Block): The user's loop.
-
-        Returns:
-            Block: A ``Parallel`` of the loops, the only loop if there is one, or ``block`` itself if there is none.
-        """
-        if not loops:
-            return block
-        if len(loops) == 1:
-            new_block: Block = loops[0]
-        else:
-            new_block = Parallel(loops)
-        new_block.elements[:] = block.elements
-        return new_block
 
     def handle_flux_vector(self, flux_vector: FluxVector, element: QbloxFluxOperation) -> FluxVector:
         """Set the flux of the element's bus in the flux vector, from its parameters, variables and loops.
@@ -596,15 +528,15 @@ class _QbloxCrosstalkCompensation:
         """
         terms: list[Variable] = []
         if isinstance(bias_vector, np.ndarray):
-            value = _flux_offset_value(element)
+            value = _flux_value(element)
             variable = (
                 value
                 if isinstance(value, Variable)
                 else next(
                     (
-                        _flux_offset_value(elements[element_id])
+                        _flux_value(elements[element_id])
                         for element_id in element_group
-                        if isinstance(_flux_offset_value(elements[element_id]), Variable)
+                        if isinstance(_flux_value(elements[element_id]), Variable)
                     ),
                     None,
                 )
@@ -903,7 +835,11 @@ class _QbloxCrosstalkCompensation:
                 if (operation_class, self.bus_variable_origin[term]) not in replaced and term not in own_terms
             ]
             terms = own_terms + inherited
-            _set_flux_offset_value(element, self.combine_terms(terms, constant, ancestors, shifted_loops))
+            value = self.combine_terms(terms, constant, ancestors, shifted_loops)
+            if isinstance(element, SetOffset):
+                element.offset_path0 = value
+            else:
+                element.gain = value
             current[key] = terms
 
     def combine_terms(
@@ -943,14 +879,21 @@ class _QbloxCrosstalkCompensation:
         if not constant:
             return terms[0] + terms[1]
 
+        # The innermost enclosing loop sweeping one of the terms: a loop of a Parallel, or a Sweep on its own
         parallel, loop = next(
-            (block, loop) for block in reversed(ancestors) for loop in _header_loops(block) if loop.variable in terms
+            (block, loop)
+            for block in reversed(ancestors)
+            for loop in (block.loops if isinstance(block, Parallel) else [block])
+            if isinstance(loop, Sweep) and loop.variable in terms
         )
         other = next(term for term in terms if term != loop.variable)
         key = (loop.variable, round(constant, 12))
         if key not in shifted_loops:
             source = loop.source
-            shifted = self.new_variable(f"{loop.variable.id}{_shift_suffix(constant)}")
+            # The id says the shift: "x_plus_0p1" for +0.1, "x_minus_2em05" for -2e-05
+            shift = f"{constant:+g}".replace("+", "_plus_").replace("-", "_minus_").replace(".", "p")
+            shift = shift.replace("e_minus_", "em").replace("e_plus_", "ep")
+            shifted = self.new_variable(f"{loop.variable.id}{shift}")
             shifted_loop = Sweep(
                 shifted,
                 ForLoop(shifted, source.start + constant, source.stop + constant, source.step).to_range(),  # type: ignore[attr-defined]
@@ -1122,7 +1065,7 @@ def apply_crosstalk_qblox(qprogram: QProgram, crosstalk: CrosstalkMatrix) -> QPr
         ValueError: If the plays compensated together have different ``wait_time`` or FlatTop parameters.
     """
     copied_qprogram = deepcopy(qprogram)
-    _QbloxCrosstalkCompensation(copied_qprogram, crosstalk).run()
+    _QbloxCrosstalkCompensation(copied_qprogram, crosstalk).compensate()
     return copied_qprogram
 
 
