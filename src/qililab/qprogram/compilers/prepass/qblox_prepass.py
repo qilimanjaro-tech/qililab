@@ -213,8 +213,9 @@ def _prepare_operations(body: Block, markers: dict[str, str] | None) -> None:
     """Check the operations against what the Qblox compiler compiles, and write each expression the way it reads it.
 
     The compiler reads an expression as ``left operator right`` with a constant only on the right and never negative:
-    ``5 + x`` becomes ``x + 5``, ``x + (-3)`` becomes ``x - 3``, and ``-x`` becomes ``0 - x``. Validation leaves no
-    other expression than a variable, a constant, ``-x``, or one ``+`` or ``-`` between two of those.
+    ``5 + x`` becomes ``x + 5``, ``x + (-3)`` becomes ``x - 3``, ``-x`` becomes ``0 - x``, and a bare constant becomes
+    its number. Validation leaves no other expression than a variable, a constant, ``-x``, or one ``+`` or ``-``
+    between two of those.
 
     Args:
         body (Block): The body of the QProgram the compiler walks. It is modified.
@@ -232,7 +233,9 @@ def _prepare_operations(body: Block, markers: dict[str, str] | None) -> None:
         for name, value in list(vars(node).items()):
             if name.startswith("_") or not isinstance(value, Expression):
                 continue
-            if isinstance(value, UnaryOp):
+            if isinstance(value, Constant):
+                value = value.value
+            elif isinstance(value, UnaryOp):
                 value = BinaryOp("-", Constant(0), value.operand)
             elif isinstance(value, BinaryOp):
                 left, op, right = value.left, value.op, value.right

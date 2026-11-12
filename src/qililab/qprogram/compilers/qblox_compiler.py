@@ -76,44 +76,6 @@ def _trigger_address_mask(address: int) -> int:
     return 0 if address == 0 else 2 ** (address - 1)
 
 
-class _VariableExpression:
-    """A variable plus or minus a constant or another variable, read as ``left operator right``.
-
-    The Qblox pre-pass writes every expression this way: a constant only on the right, and never negative. Built by
-    ``_compiled_value``.
-    """
-
-    def __init__(self, left: "Variable | int | float", operator: str, right: "Variable | int | float") -> None:
-        self.left = left
-        self.operator = operator
-        self.right = right
-        self.components = [left, right]
-        self.variables = [component for component in self.components if isinstance(component, Variable)]
-        self.constant = next((component for component in self.components if not isinstance(component, Variable)), None)
-
-    def __repr__(self) -> str:
-        return f"({self.left} {self.operator} {self.right})"
-
-
-def _compiled_value(value: object) -> object:
-    """Return a numeric operation argument as the compiler reads it: a ``Variable``, a number or a ``_VariableExpression``.
-
-    The Qblox pre-pass leaves at most one ``+`` or ``-`` between a variable and a constant or another variable, a
-    constant only on the right and never negative, and ``-x`` written ``0 - x``.
-
-    Args:
-        value (object): The argument, a number or a qprogram expression.
-
-    Returns:
-        object: The argument in the compiler's form.
-    """
-    if isinstance(value, Constant):
-        return value.value
-    if isinstance(value, BinaryOp):
-        return _VariableExpression(_compiled_value(value.left), value.op, _compiled_value(value.right))  # type: ignore[arg-type]
-    return value
-
-
 def _waveforms_of(element: "CorePlay | QbloxPlay") -> tuple[Waveform, Waveform | None]:
     """Return the I and Q waveforms a play plays; Q is None for a single waveform.
 
@@ -754,7 +716,7 @@ class QbloxCompiler:
         return True
 
     def _handle_set_frequency(self, element: SetFrequency) -> None:
-        frequency = _compiled_value(element.frequency)
+        frequency = element.frequency
         if isinstance(frequency, Variable):
             freq = self._buses[element.bus].variable_to_register[frequency]
             instruction = QPyInstructions.SetFreq(value=freq)
@@ -766,7 +728,7 @@ class QbloxCompiler:
         self._buses[element.bus].upd_param_instruction_pending = True
 
     def _handle_set_phase(self, element: SetPhase) -> None:
-        phase = _compiled_value(element.phase)
+        phase = element.phase
         if isinstance(phase, Variable):
             phase_register = self._buses[element.bus].variable_to_register[phase]
             instruction = QPyInstructions.SetPh(value=phase_register)
@@ -786,9 +748,7 @@ class QbloxCompiler:
         self._buses[bus].duration_since_sync += duration
         self._buses[bus].static_duration += duration
 
-    def _resolve_binary_expression(
-        self, bus: str, expression: _VariableExpression, convert: Callable
-    ) -> QPyProgram.Register:
+    def _resolve_binary_expression(self, bus: str, expression: BinaryOp, convert: Callable) -> QPyProgram.Register:
         """Emit Q1ASM instructions that evaluate a binary expression and return the result register.
 
         Emits: a leading Nop, then Add or Sub, then a trailing Nop to guard
@@ -796,30 +756,28 @@ class QbloxCompiler:
         responsible for emitting only the final parameter instruction
         (SetAwgGain, SetAwgOffs).
 
-        Q1ASM forbids an immediate as the first operand of Add and Sub. For
-        "+", ``_compiled_value`` guarantees the constant
-        is always on the right, so Add(register, immediate, result) is always
-        valid here. For "-", the left operand may be an immediate (e.g.
-        ``cst - variable``), which is handled explicitly below.
+        Q1ASM forbids an immediate as the first operand of Add and Sub. The Qblox
+        pre-pass leaves a constant only on the right, never negative, so
+        Add(register, immediate, result) is always valid here. For "-", the left
+        operand may be an immediate (``cst - variable``), handled explicitly below.
         """
         # TODO: the flattening of all variable expressions will be moved to qpysequence
 
-        left_component, right_component = expression.components
         left = (
-            self._buses[bus].variable_to_register[left_component]
-            if isinstance(left_component, Variable)
-            else convert(left_component)
+            self._buses[bus].variable_to_register[expression.left]
+            if isinstance(expression.left, Variable)
+            else convert(cast("Constant", expression.left).value)
         )
         right = (
-            self._buses[bus].variable_to_register[right_component]
-            if isinstance(right_component, Variable)
-            else convert(right_component)
+            self._buses[bus].variable_to_register[expression.right]
+            if isinstance(expression.right, Variable)
+            else convert(cast("Constant", expression.right).value)
         )
         result = QPyProgram.Register()
 
-        if expression.operator == "+":
+        if expression.op == "+":
             self._buses[bus].qpy_block_stack[-1].add(component=QPyInstructions.Add(left, right, result))
-        elif expression.operator == "-":
+        elif expression.op == "-":
             if isinstance(left, QPyProgram.Register):
                 self._buses[bus].qpy_block_stack[-1].add(component=QPyInstructions.Sub(left, right, result))
             # Q1ASM forbids the first element of sub to be an immediate
@@ -851,8 +809,8 @@ class QbloxCompiler:
         return result
 
     def _handle_set_gain(self, element: SetGain) -> None:
-        gain = _compiled_value(element.gain)
-        if isinstance(gain, _VariableExpression):
+        gain = element.gain
+        if isinstance(gain, BinaryOp):
             result = self._resolve_binary_expression(
                 element.bus, gain, lambda x: int(x * QPyInstructions.SetNormalisedGain.scale_factor)
             )
@@ -871,9 +829,9 @@ class QbloxCompiler:
         self._buses[element.bus].upd_param_instruction_pending = True
 
     def _handle_set_offset(self, element: SetOffset) -> None:
-        offset_path0 = _compiled_value(element.offset_path0)
-        offset_path1 = _compiled_value(element.offset_path1)
-        if isinstance(offset_path0, _VariableExpression):
+        offset_path0 = element.offset_path0
+        offset_path1 = element.offset_path1
+        if isinstance(offset_path0, BinaryOp):
             result = self._resolve_binary_expression(
                 element.bus, offset_path0, lambda x: int(x * QPyInstructions.SetNormalisedOffs.scale_factor)
             )
@@ -971,14 +929,14 @@ class QbloxCompiler:
         self._buses[element.bus].upd_param_instruction_pending = True
 
     def _handle_wait(self, element: Wait, delay: bool = False) -> None:
-        duration = _compiled_value(element.duration)
-        if isinstance(duration, (Variable, _VariableExpression)):
+        duration = element.duration
+        if isinstance(duration, (Variable, BinaryOp)):
             if self._buses[element.bus].marked_for_dynamic_sync is True:
                 raise NotImplementedError(
                     "It is not currently not possible to have two dynamic wait without a sync in between them."
                 )
             buses = set(self._buses)
-            if not isinstance(duration, _VariableExpression):
+            if not isinstance(duration, BinaryOp):
                 for bus in buses:
                     if self._buses[bus].dynamic_duration_register is None:
                         self._buses[bus].dynamic_duration_register = self._buses[bus].variable_to_register[duration]
@@ -1021,14 +979,20 @@ class QbloxCompiler:
             else:
                 self._buses[element.bus].dynamic_expression_register = QPyProgram.Register()
 
-                # Retrieve the variable instead of the whole expression
-                variable_duration = duration.variables[0]
+                # The Qblox pre-pass leaves one variable and one constant: the constant on the right, unless the
+                # duration is ``constant - variable``
+                variable_side, constant_side = (
+                    (duration.left, duration.right)
+                    if isinstance(duration.left, Variable)
+                    else (duration.right, duration.left)
+                )
+                variable_duration = cast("Variable", variable_side)
                 variable_duration_register = self._buses[element.bus].variable_to_register[variable_duration]
-                constant_duration = cast("int", duration.constant)
+                constant_duration = cast("int", cast("Constant", constant_side).value)
                 if variable_duration not in self._buses[element.bus].dynamic_durations:
                     self._buses[element.bus].dynamic_durations.append(variable_duration)
 
-                if duration.operator == "+":
+                if duration.op == "+":
                     self._buses[element.bus].qpy_block_stack[-1].add(
                         component=QPyInstructions.Add(
                             variable_duration_register,
@@ -1046,7 +1010,7 @@ class QbloxCompiler:
                             component=QPyInstructions.Wait(self._buses[element.bus].dynamic_expression_register)
                         )
 
-                elif duration.operator == "-":
+                elif duration.op == "-":
                     # CST - Time
                     if isinstance(duration.right, Variable):
                         constant_duration_register = QPyProgram.Register()
@@ -1109,7 +1073,7 @@ class QbloxCompiler:
 
                         variable_duration_register = self._buses[bus].variable_to_register[variable_duration]
 
-                        if duration.operator == "+":
+                        if duration.op == "+":
                             self._buses[bus].qpy_block_stack[-1].add(
                                 component=QPyInstructions.Add(
                                     variable_duration_register,
@@ -1118,7 +1082,7 @@ class QbloxCompiler:
                                 )
                             )
 
-                        elif duration.operator == "-":
+                        elif duration.op == "-":
                             # CST - Time
                             if isinstance(duration.right, Variable):
                                 constant_duration_register = QPyProgram.Register()
@@ -1517,6 +1481,9 @@ class QbloxCompiler:
         self._handle_play(play)
         self._handle_acquire(element)
 
+    # A scope is a setting of the run, but qprogram-qblox makes it a measurement: its trace is a result, placed by the
+    # scope's position in the program. So the node stays in the program, which keeps the results in program order,
+    # and the compiler records it here instead of the pre-pass.
     def _handle_scope(self, element: Scope) -> None:
         """Record the bus's ``qp.qblox.scope``: it configures the QRM's scope, and adds no instruction.
 
