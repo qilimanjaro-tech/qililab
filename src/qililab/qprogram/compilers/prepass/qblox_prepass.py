@@ -28,6 +28,7 @@ from qprogram_qblox import SetTrigger as QbloxSetTrigger
 from qprogram_qblox import WaitTrigger as QbloxWaitTrigger
 from qprogram_qdac import Play as QdacPlay
 from qprogram_qdac import SetTrigger as QdacSetTrigger
+from qpysequence.constants import MAX_ACQ_INDICES
 
 from qililab.config import logger
 from qililab.qprogram.blocks import IfTrigger
@@ -43,14 +44,20 @@ if TYPE_CHECKING:
     from qililab.qprogram.crosstalk.crosstalk_matrix import CrosstalkMatrix
     from qililab.qprogram.qprogram import QProgram
 
-# Highest acquisition index of a Qblox sequencer.
-MAX_ACQUISITION_INDEX = 31
-
 # Default and minimum for qp.if_trigger()'s trigger_padding_ns.
 WAIT_TRIGGER_NETWORK_EXT_TRIGGER = 252
 
 # Operations carrying no duration
 NON_REALTIME_OPERATIONS = (SetFrequency, SetPhase, ResetPhase, SetGain, SetOffset, SetMarkers)
+
+# The fields of each operation the Qblox compiler reads a variable or an expression from
+EXPRESSION_FIELDS: dict[type, tuple[str, ...]] = {
+    SetFrequency: ("frequency",),
+    SetPhase: ("phase",),
+    SetGain: ("gain",),
+    SetOffset: ("offset_path0", "offset_path1"),
+    Wait: ("duration",),
+}
 
 # Per Qblox bus and per block id: (acquisitions directly in the block, block nesting depth). qprogram blocks compare
 # by structure, so two identical blocks are told apart by identity: the ids are those of the blocks of
@@ -228,10 +235,9 @@ def _prepare_operations(body: Block, markers: dict[str, str] | None) -> None:
             ``qp.qblox.wait_trigger`` duration is a variable.
     """
     for node in body.walk():
-        if isinstance(node, Block):
-            continue
-        for name, value in list(vars(node).items()):
-            if name.startswith("_") or not isinstance(value, Expression):
+        for name in EXPRESSION_FIELDS.get(type(node), ()):
+            value = getattr(node, name)
+            if not isinstance(value, Expression):
                 continue
             if isinstance(value, Constant):
                 value = value.value
@@ -310,7 +316,7 @@ def _buses_exceeding_acquisition_depth(acquisition_metadata: AcquisitionMetadata
         acquisition_metadata (AcquisitionMetadata): The acquisitions of each Qblox bus, per block.
 
     Returns:
-        list[str]: The buses with more than ``MAX_ACQUISITION_INDEX + 1`` acquisitions across several blocks.
+        list[str]: The buses with more than ``MAX_ACQ_INDICES`` acquisitions across several blocks.
 
     Raises:
         NotImplementedError: If such a bus has acquisitions at different nesting depths, or several in a block.
@@ -319,16 +325,16 @@ def _buses_exceeding_acquisition_depth(acquisition_metadata: AcquisitionMetadata
     for bus, block_data in acquisition_metadata.items():
         total = sum(count for count, _ in block_data.values())
         depths = {depth for _, depth in block_data.values()}
-        if len(block_data) > 1 and total > MAX_ACQUISITION_INDEX + 1:
+        if len(block_data) > 1 and total > MAX_ACQ_INDICES:
             if len(depths) > 1:
                 raise NotImplementedError(
                     f"Bus '{bus}' has {total} acquisitions at inconsistent nesting depths "
-                    f"{sorted(depths)}. For more than {MAX_ACQUISITION_INDEX + 1} acquisitions, they must be at the same nesting depth."
+                    f"{sorted(depths)}. For more than {MAX_ACQ_INDICES} acquisitions, they must be at the same nesting depth."
                 )
             if not all(count == 1 for count, _ in block_data.values()):
                 raise NotImplementedError(
                     f"Bus '{bus}' has {total} acquisitions across {len(block_data)} blocks, "
-                    f"but only 1 acquisition per block is supported when total acquisitions exceed {MAX_ACQUISITION_INDEX + 1}."
+                    f"but only 1 acquisition per block is supported when total acquisitions exceed {MAX_ACQ_INDICES}."
                 )
             buses.append(bus)
     return buses

@@ -39,7 +39,7 @@ from qprogram.operations import Play as CorePlay
 from qprogram.waveforms import Arbitrary, FlatTop, IQWaveform, Square, Waveform
 from qprogram_qblox import Acquire, Scope, SetMarkers, SetTrigger, WaitTrigger
 from qpysequence.compiler import Compiler as QPyCompiler
-from qpysequence.constants import INST_MAX_WAIT, INST_MIN_WAIT
+from qpysequence.constants import INST_MAX_WAIT, INST_MIN_WAIT, MAX_ACQ_INDICES
 from qpysequence.enums import TriggerCondition as QPyTriggerCondition
 
 from qililab.config import logger
@@ -47,7 +47,6 @@ from qililab.constants import QBLOXCONSTANTS
 from qililab.qprogram.blocks import IfTrigger, InfiniteLoop, for_loop_iterations
 from qililab.qprogram.calibration import Calibration
 from qililab.qprogram.compilers.prepass import prepare_qblox, prepare_shared
-from qililab.qprogram.compilers.prepass.qblox_prepass import MAX_ACQUISITION_INDEX
 from qililab.qprogram.crosstalk.crosstalk_matrix import CrosstalkMatrix
 from qililab.qprogram.operations import MeasureReset, QbloxPlay
 from qililab.qprogram.qprogram import QProgram
@@ -60,9 +59,6 @@ if TYPE_CHECKING:
 SIGN_BIT = 2**31
 # 4294967293 == -3 in 2's complement
 NEG_ONE_TO_THREE = (2**32) - 3
-
-# TODO: move to qpysequence.constants
-# 32 is the max number of acquisitions that can be stored
 
 ENABLE_CONDITIONAL = 1
 DISABLE_CONDITIONAL = 0
@@ -254,14 +250,14 @@ class BusCompilationInfo:
         # Bin index used in the move instruction
         self.start_bin_idx: int = 0
 
-        # Flag used in _handle_acquire if acquisitions have more than 1 depth and the number of acquisitions exceeds MAX_ACQUISITION_INDEX
+        # Flag used in _handle_acquire if acquisitions have more than 1 depth and the number of acquisitions exceeds MAX_ACQ_INDICES
         self.exceeds_depth: bool = False
 
 
 class QbloxCompiler:
     """A class for compiling QProgram to QBlox hardware."""
 
-    minimum_wait_duration: int = 4
+    minimum_wait_duration: int = INST_MIN_WAIT
 
     def __init__(self) -> None:
         # Handlers to map each operation to a corresponding handler function
@@ -416,11 +412,13 @@ class QbloxCompiler:
         for bus in self._buses:
             mask = self._markers[bus] if self._markers is not None and bus in self._markers else "0000"
             # if qprogram.measure_reset is used, the bus using the conditional enables latching at the very top of the q1asm
-            self._buses[bus].qpy_sequence._program.blocks[0].add(QPyInstructions.WaitSync(4))
+            self._buses[bus].qpy_sequence._program.blocks[0].add(QPyInstructions.WaitSync(INST_MIN_WAIT))
             if bus in prepass.latch_buses or bus == conditional_bus:
-                self._buses[bus].qpy_sequence._program.blocks[0].add(QPyInstructions.SetLatchEn(1, 4), insert_idx=0)
+                self._buses[bus].qpy_sequence._program.blocks[0].add(
+                    QPyInstructions.SetLatchEn(1, INST_MIN_WAIT), insert_idx=0
+                )
             self._buses[bus].qpy_sequence._program.blocks[0].add(QPyInstructions.SetMrk(int(mask, 2)))
-            self._buses[bus].qpy_sequence._program.blocks[0].add(QPyInstructions.UpdParam(4))
+            self._buses[bus].qpy_sequence._program.blocks[0].add(QPyInstructions.UpdParam(INST_MIN_WAIT))
             if bus == conditional_bus:
                 # Block once, here at the very end of setup (never inside main's loop), for the first
                 # trigger pulse -- this is what phase-locks the sequencer to the QDAC's periodic cadence.
@@ -430,7 +428,7 @@ class QbloxCompiler:
                 self._buses[bus].qpy_sequence._program.blocks[0].add(
                     QPyInstructions.WaitTrigger(QBLOXCONSTANTS.EXT_TRIGGER_ADDRESS, INST_MIN_WAIT)
                 )
-            self._buses[bus].static_duration += 4
+            self._buses[bus].static_duration += INST_MIN_WAIT
 
         for bus in prepass.exceeds_depth_buses:
             self._buses[bus].exceeds_depth = True
@@ -440,7 +438,7 @@ class QbloxCompiler:
         # Post-processing: Set all markers OFF, add stop instructions and compile
         for bus in self._buses:
             self._buses[bus].qpy_block_stack[0].add(component=QPyInstructions.SetMrk(0))
-            self._buses[bus].qpy_block_stack[0].add(component=QPyInstructions.UpdParam(4))
+            self._buses[bus].qpy_block_stack[0].add(component=QPyInstructions.UpdParam(INST_MIN_WAIT))
             self._buses[bus].qpy_block_stack[0].add(component=QPyInstructions.Stop())
 
             if self._long_wait_dynamic:
@@ -513,7 +511,7 @@ class QbloxCompiler:
 
                     #  Block to handle the case where the bus difference is -1, -2 or -3 - need to add + 4 ns (the other buses will add 4 ns plus the integer)
                     self._buses[bus].qpy_block_stack[0].add(QPyProgram.Block(name=f"negative_one_two_three_{idx}"))
-                    self._buses[bus].qpy_block_stack[0].add(component=QPyInstructions.Wait(4))
+                    self._buses[bus].qpy_block_stack[0].add(component=QPyInstructions.Wait(INST_MIN_WAIT))
                     self._buses[bus].qpy_block_stack[0].add(component=QPyInstructions.Jmp(f"after_dynamic_sync_{idx}"))
 
                     # Block to handle wait above qblox limit
@@ -546,7 +544,7 @@ class QbloxCompiler:
                             component=QPyInstructions.Jmp(f"after_other_max_duration_{idx}")
                         )
 
-            self._buses[bus].static_duration += 4
+            self._buses[bus].static_duration += INST_MIN_WAIT
             compiler_qpysequence = QPyCompiler()
             self._buses[bus].qpy_sequence._program = compiler_qpysequence.compile(
                 self._buses[bus].qpy_sequence._program, wait_sync=False
@@ -643,12 +641,14 @@ class QbloxCompiler:
             if isinstance(operation, Wait):
                 if loop_start < INST_MIN_WAIT:
                     logger.warning(
-                        f"Wait duration {loop_start} ns is below the Q1ASM minimum (4 ns), clamping to 4 ns."
+                        f"Wait duration {loop_start} ns is below the Q1ASM minimum ({INST_MIN_WAIT} ns), clamping to {INST_MIN_WAIT} ns."
                     )
-                    loop_start = 4
+                    loop_start = INST_MIN_WAIT
                 if loop_stop < INST_MIN_WAIT:
-                    logger.warning(f"Wait duration {loop_stop} ns is below the Q1ASM minimum (4 ns), clamping to 4 ns.")
-                    loop_stop = 4
+                    logger.warning(
+                        f"Wait duration {loop_stop} ns is below the Q1ASM minimum ({INST_MIN_WAIT} ns), clamping to {INST_MIN_WAIT} ns."
+                    )
+                    loop_stop = INST_MIN_WAIT
             scale_factor = qpysequence_operation.scale_factor if qpysequence_operation is not None else None
             start, step, iters = QbloxCompiler._compute_loop_sweep(loop_start, loop_stop, source.step, scale_factor)
             loops.append((start, step, qpysequence_operation))
@@ -691,11 +691,15 @@ class QbloxCompiler:
         )
         if isinstance(operation, Wait):
             if loop_start < INST_MIN_WAIT:
-                logger.warning(f"Wait duration {loop_start} ns is below the Q1ASM minimum (4 ns), clamping to 4 ns.")
-                loop_start = 4
+                logger.warning(
+                    f"Wait duration {loop_start} ns is below the Q1ASM minimum ({INST_MIN_WAIT} ns), clamping to {INST_MIN_WAIT} ns."
+                )
+                loop_start = INST_MIN_WAIT
             if loop_stop < INST_MIN_WAIT:
-                logger.warning(f"Wait duration {loop_stop} ns is below the Q1ASM minimum (4 ns), clamping to 4 ns.")
-                loop_stop = 4
+                logger.warning(
+                    f"Wait duration {loop_stop} ns is below the Q1ASM minimum ({INST_MIN_WAIT} ns), clamping to {INST_MIN_WAIT} ns."
+                )
+                loop_stop = INST_MIN_WAIT
         scale_factor = qpysequence_operation.scale_factor if qpysequence_operation is not None else None
         start, step, iterations = QbloxCompiler._compute_loop_sweep(loop_start, loop_stop, source.step, scale_factor)
 
@@ -1304,9 +1308,7 @@ class QbloxCompiler:
                 dynamic_bus = bus
                 count_dynamic_bus += 1
                 if count_dynamic_bus >= 2:
-                    raise NotImplementedError(
-                        "More than 2 buses have a dynamic duration, which is not yet implemented."
-                    )
+                    raise NotImplementedError("More than one bus has a dynamic duration, which is not yet implemented.")
 
         for bus in buses:
             if self._buses[bus].dynamic_sync_counter == 0:
@@ -1539,7 +1541,7 @@ class QbloxCompiler:
         """
         if any(isinstance(loop, QPyProgram.IterativeLoop) for loop in self._buses[element.bus].qpy_block_stack):
             raise NotImplementedError(
-                f"Bus '{element.bus}' has more than {MAX_ACQUISITION_INDEX + 1} acquisitions across separate blocks "
+                f"Bus '{element.bus}' has more than {MAX_ACQ_INDICES} acquisitions across separate blocks "
                 f"and contains a 'for_loop'. Only 'average' blocks are supported in this case."
             )
 
