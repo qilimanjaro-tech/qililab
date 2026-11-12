@@ -269,7 +269,7 @@ body:
   var index label="index"
 
   qililab.disable_autosync
-  qdac.play "flux" Arbitrary(samples=[0.0, 0.1, 0.2]) dwell=2 repetitions=3
+  qdac.play "flux" Arbitrary(samples=[0.0, 0.1, 0.2]) repetitions=3
   qdac.set_trigger "flux" 1e-05 position="step" outputs=[1]
   set_offset "drive" 0.1 offset_path1=0.2
   average 100:

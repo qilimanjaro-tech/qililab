@@ -1050,7 +1050,8 @@ class TestQdacCompiler:
         qdac_bus = flux1.instruments[0]
         wf = Square(1.0, 100)
         qp = QProgram()
-        qp.qdac.play(bus="flux1", waveform=wf, dwell=2, repetitions=4)
+        # An int delay: the compiler replaces a zero delay with 0.0, so the type shows whether it wrote into this play
+        qp.qdac.play(bus="flux1", waveform=wf, dwell=2, delay=0, repetitions=4)
         play = qp.body.elements[0]
 
         compiler = QdacCompiler()
