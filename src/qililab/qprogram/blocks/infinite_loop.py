@@ -11,12 +11,26 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""The block ``qp.infinite_loop()`` opens."""
 
-from qililab.qprogram.blocks.block import Block
-from qililab.yaml import yaml
+from typing import ClassVar
+
+from qprogram.blocks import Block
 
 
-@yaml.register_class
 class InfiniteLoop(Block):
-    def __init__(self) -> None:
-        super().__init__()
+    """A body repeated until the instruments are stopped, from ``qp.infinite_loop()``.
+
+    It re-runs its body, so it counts as a repetition level like a sweep (``REPEATS``). qililab owns
+    it: in a ``.qp`` file it reads ``qililab.infinite_loop:``.
+    """
+
+    REPEATS: ClassVar[bool] = True
+
+    def required_capabilities(self) -> set[str]:
+        """Return the capability token of the block.
+
+        Returns:
+            set[str]: ``{"vendor.qililab.infinite_loop"}``.
+        """
+        return {"vendor.qililab.infinite_loop"}

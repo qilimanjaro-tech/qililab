@@ -39,6 +39,9 @@ dependencies = [
     "qblox-instruments==1.0.3",
     "qcodes==0.54.3",
     "qcodes-contrib-drivers>=0.23.0",
+    "qprogram>=0.3.0",
+    "qprogram-qblox",
+    "qprogram-qdac",
     "qpysequence>=0.12.0",
     "rich>=14.0.0",
     "ruamel-yaml>=0.18.10",
@@ -48,10 +51,9 @@ dependencies = [
     "xarray>=2025.11.0",
 ]
 
-[project.optional-dependencies]
-quantum-machines = [
-    "qm-qua==1.2.4",
-]
+[project.entry-points."qprogram.vendors"]
+# Lets qprogram import qililab when it reads a .qp file that requires the qililab vendor (measure_reset, ...).
+qililab = "qililab.qprogram.formats.vendor"
 
 [dependency-groups]
 dev = [
@@ -96,11 +98,8 @@ describe_command = [
 
 [tool.uv]
 prerelease = "if-necessary-or-explicit"
-# qm-qua==1.2.4 depends on marshmallow>=3,<3.24; override until upstream loosens.
 override-dependencies = [
-    "marshmallow==3.26.2",
     "spirack==0.2.12",
-    "betterproto==2.0.0b7",
 ]
 # Floor recurring transitive CVE offenders so a generic re-resolve cannot regress them.
 constraint-dependencies = [
@@ -124,6 +123,11 @@ explicit = true
 
 [tool.uv.sources]
 qpysequence = { index = "qilimanjaro" }
+# Pinned to commits until their releases are out: qprogram-qblox's PR #9 (qp.qblox.scope and the IQDrag
+# check for qprogram 0.3, QHC-1847) and qprogram-qdac main (qililab's QDAC units, QHC-1845). The git
+# sources are replaced by version pins once those are released.
+qprogram-qblox = { git = "https://github.com/qilimanjaro-tech/qprogram-qblox", rev = "d7cdd96e54ebfdb0f19ea98a6dca6cdff29d6a26" }
+qprogram-qdac = { git = "https://github.com/qilimanjaro-tech/qprogram-qdac", rev = "0cf4dbe7f83a96486e599470c1450f4e454588a9" }
 
 [tool.ruff]
 line-length = 120
@@ -221,9 +225,9 @@ docstring-code-format = true
 docstring-code-line-length = "dynamic"
 
 [tool.deptry]
-# qm-qua imports as `qm`; ruamel-yaml imports as `ruamel`; ipython imports as `IPython`
-# (deptry can't guess any of these from the package name).
-package_module_name_map = { "qm-qua" = "qm", "ruamel-yaml" = "ruamel", "ipython" = "IPython" }
+# ruamel-yaml imports as `ruamel`; ipython imports as `IPython`
+# (deptry can't guess either from the package name).
+package_module_name_map = { "ruamel-yaml" = "ruamel", "ipython" = "IPython" }
 
 [tool.deptry.per_rule_ignores]
 # Never imported directly: SQLAlchemy loads it internally for the `postgresql://` dialect
@@ -281,9 +285,6 @@ mdformat = true
 filterwarnings = [
     "ignore::DeprecationWarning",
     "ignore::PendingDeprecationWarning"
-]
-markers = [
-    "qm: tests that require Quantum Machines",
 ]
 
 [tool.towncrier]

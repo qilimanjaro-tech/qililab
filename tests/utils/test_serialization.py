@@ -2,8 +2,10 @@ import os
 
 import pytest
 
-from qililab.qprogram.qblox_compiler import QbloxCompiler
+from qililab.qprogram.compilers.qblox_compiler import QbloxCompiler
+from qililab import Gaussian
 from qililab.qprogram import Experiment
+from qililab.qprogram.experiment.operations import SetParameter
 from qililab.utils.serialization import (
     DeserializationError,
     SerializationError,
@@ -12,7 +14,6 @@ from qililab.utils.serialization import (
     serialize,
     serialize_to,
 )
-from qililab.waveforms import Gaussian
 from qililab.typings.enums import Parameter
 
 
@@ -60,3 +61,18 @@ class TestSerialization:
         assert "!SetParameter" in serialized
 
         deserialize(serialized, Experiment)
+
+    def test_experiment_with_set_parameter_round_trip(self):
+        experiment = Experiment(label="spectroscopy", description="Amplitude scan")
+        experiment.set_parameter(alias="drive_line_q0_bus", parameter=Parameter.AMPLITUDE, value=0.42)
+
+        deserialized = deserialize(serialize(experiment), Experiment)
+
+        assert (deserialized.label, deserialized.description) == ("spectroscopy", "Amplitude scan")
+        (set_parameter,) = deserialized.body.elements
+        assert isinstance(set_parameter, SetParameter)
+        assert (set_parameter.alias, set_parameter.parameter, set_parameter.value) == (
+            "drive_line_q0_bus",
+            Parameter.AMPLITUDE,
+            0.42,
+        )

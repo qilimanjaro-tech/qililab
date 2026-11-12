@@ -11,51 +11,67 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""The operation ``qp.qblox.measure_reset()`` appends."""
 
-from qililab.qprogram.operations.operation import Operation
-from qililab.waveforms import IQWaveform
-from qililab.yaml import yaml
+from collections.abc import Iterable
+from typing import ClassVar
+
+from qprogram import MeasurementHandle
+from qprogram.operations.operation import MeasurementField, MeasurementOperation, normalize_fields
+from qprogram.protocol import waveform_token
+from qprogram.waveforms import IQWaveform
 
 
-@yaml.register_class
-class MeasureReset(Operation):
+class MeasureReset(MeasurementOperation):
+    """A measurement followed by a reset pulse on ``control_bus`` when the thresholded result is 1 (active reset).
+
+    A measurement like ``acquire``, so it takes a name from the program's measurement counter and its results come
+    back under its handle. qililab owns it: in a ``.qp`` file it reads ``qililab.measure_reset``.
+
+    Args:
+        bus (str): Identifier of the measurement bus.
+        waveform (IQWaveform | str): Waveform played during measurement, or the name of a calibrated one.
+        weights (IQWaveform | str): Weights used for integration, or the name of calibrated ones.
+        control_bus (str): Identifier of the control bus the reset pulse is played on.
+        reset_pulse (IQWaveform | str): Pulse used for active reset, or the name of a calibrated one.
+        handle (MeasurementHandle): The handle the results are stored under.
+        trigger_address (int, optional): Trigger network address the result is sent on. Defaults to 1.
+        fields (Iterable[MeasurementField], optional): The measurement fields to return. Defaults to ``(IQ,)``.
+    """
+
+    BUS_ATTRS: ClassVar[tuple[str, ...]] = ("bus", "control_bus")
+    WAVEFORM_ATTRS: ClassVar[tuple[str, ...]] = ("waveform", "weights", "reset_pulse")
+
     def __init__(
         self,
         bus: str,
-        waveform: IQWaveform,
-        weights: IQWaveform,
+        waveform: IQWaveform | str,
+        weights: IQWaveform | str,
         control_bus: str,
-        reset_pulse: IQWaveform,
+        reset_pulse: IQWaveform | str,
+        handle: MeasurementHandle,
         trigger_address: int = 1,
-        save_adc: bool = False,
+        fields: Iterable[MeasurementField] = (MeasurementField.IQ,),
     ) -> None:
-        super().__init__()
-        self.bus: str = bus
-        self.waveform: IQWaveform = waveform
-        self.weights: IQWaveform = weights
-        self.control_bus: str = control_bus
-        self.reset_pulse: IQWaveform = reset_pulse
-        self.trigger_address: int = trigger_address
-        self.save_adc: bool = save_adc
+        self.bus = bus
+        self.waveform = waveform
+        self.weights = weights
+        self.control_bus = control_bus
+        self.reset_pulse = reset_pulse
+        self.handle = handle
+        self.trigger_address = trigger_address
+        self.fields: tuple[str, ...] = normalize_fields(fields)
 
+    def required_capabilities(self) -> set[str]:
+        """Return ``vendor.qililab.measure_reset`` plus the waveform and requested-field tokens.
 
-@yaml.register_class
-class MeasureResetCalibrated(Operation):
-    def __init__(
-        self,
-        bus: str,
-        waveform: str,
-        weights: str,
-        control_bus: str,
-        reset_pulse: str,
-        trigger_address: int = 1,
-        save_adc: bool = False,
-    ) -> None:
-        super().__init__()
-        self.bus: str = bus
-        self.waveform: str = waveform
-        self.weights: str = weights
-        self.control_bus: str = control_bus
-        self.reset_pulse: str = reset_pulse
-        self.trigger_address: int = trigger_address
-        self.save_adc: bool = save_adc
+        Returns:
+            set[str]: The capability tokens the operation needs.
+        """
+        caps = super().required_capabilities() | {"vendor.qililab.measure_reset", "waveform.iq"}
+        for waveform in (self.waveform, self.weights, self.reset_pulse):
+            if isinstance(waveform, str):
+                caps.add("waveform.alias")
+            elif (token := waveform_token(waveform)) is not None:
+                caps.add(token)
+        return caps

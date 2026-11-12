@@ -1,0 +1,349 @@
+import logging
+import re
+
+import numpy as np
+import pytest
+
+from qprogram.blocks import Average
+from qprogram.operations import Play, Sync
+from qprogram_qblox import Acquire
+
+from qililab import Calibration, IQPair, QProgram, Square
+from qililab.pulse_distortion import ExponentialCorrection
+from qililab.qprogram.crosstalk.crosstalk_matrix import CrosstalkMatrix
+from qililab.qprogram.compilers.prepass import ConditionalTrigger, prepare_qblox, prepare_shared
+
+DRIVE_WF = IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
+WEIGHTS = IQPair(I=Square(amplitude=1.0, duration=100), Q=Square(amplitude=0.0, duration=100))
+
+
+@pytest.fixture(name="flux_qprogram")
+def fixture_flux_qprogram() -> QProgram:
+    qp = QProgram()
+    qp.set_offset(bus="flux1", offset_path0=0.1)
+    with qp.average(2):
+        qp.play(bus="flux1", waveform=Square(amplitude=0.5, duration=40))
+    return qp
+
+
+class TestPrepareQblox:
+    def test_keeps_only_operations_on_qblox_buses(self):
+        qp = QProgram()
+        qp.qdac.play(bus="qdac_flux", waveform=Square(amplitude=0.5, duration=10), dwell=2)
+        with qp.average(10):
+            qp.play(bus="drive", waveform=DRIVE_WF)
+            qp.qdac.set_offset(bus="qdac_flux", offset=0.2)
+            qp.sync()
+            qp.qblox.acquire(bus="readout", weights=WEIGHTS)
+
+        result = prepare_qblox(qp, qblox_buses=["drive", "readout"])
+
+        assert result.qblox_buses == ["drive", "readout"]
+        assert result.qprogram.buses == {"drive", "readout"}
+        (average,) = result.qprogram.body.elements
+        assert isinstance(average, Average)
+        assert [type(element) for element in average.elements] == [Play, Sync, Acquire]
+        assert qp.buses == {"drive", "readout", "qdac_flux"}
+
+    def test_disable_autosync_is_read_and_dropped(self):
+        """The compiler gets the setting from the result: the program it compiles no longer holds it."""
+        qp = QProgram()
+        qp.qblox.disable_autosync = True
+        qp.play(bus="drive", waveform=DRIVE_WF)
+
+        result = prepare_qblox(qp)
+
+        assert result.disable_autosync is True
+        assert [type(element) for element in result.qprogram.body.elements] == [Play]
+        assert prepare_qblox(QProgram()).disable_autosync is False
+
+    def test_sync_on_a_bus_that_isnt_a_qblox_bus_raises_error(self):
+        qp = QProgram()
+        qp.play(bus="drive", waveform=DRIVE_WF)
+        qp.sync(buses=["drive", "qdac_flux"])
+
+        with pytest.raises(ValueError, match="Non QBLOX buses not allowed inside sync function"):
+            prepare_qblox(qp, qblox_buses=["drive"])
+
+    def test_range_bounds_are_ints_when_whole(self):
+        """A Range stores its bounds as floats: the compiler gets the whole ones back as ints, the user's program
+        is left as it is."""
+        qp = QProgram()
+        duration, gain = qp.variable("duration"), qp.variable("gain")
+        with qp.sweep(duration).from_range(0, 100, 20) | qp.sweep(gain).from_range(0, 0.5, 0.1):
+            qp.wait(bus="drive", duration=duration)
+            qp.set_gain(bus="drive", gain=gain)
+
+        result = prepare_qblox(qp)
+
+        (parallel,) = result.qprogram.body.elements
+        bounds = [(loop.source.start, loop.source.stop, loop.source.step) for loop in parallel.loops]
+        assert bounds == [(0, 100, 20), (0, 0.5, 0.1)]
+        assert [type(value) for value in bounds[0]] == [int, int, int]
+        assert [type(value) for value in bounds[1]] == [int, float, float]
+        assert type(qp.body.elements[0].loops[0].source.start) is float
+
+    def test_expressions_are_written_the_way_the_compiler_reads_them(self):
+        """A constant goes on the right and is never negative, and -x becomes 0 - x."""
+        qp = QProgram()
+        duration, gain = qp.variable("duration"), qp.variable("gain")
+        with qp.sweep(duration).from_range(100, 200, 50) | qp.sweep(gain).from_range(0.1, 0.3, 0.1):
+            qp.wait(bus="drive", duration=8 + duration)
+            qp.set_gain(bus="drive", gain=gain + -0.5)
+            qp.set_offset(bus="drive", offset_path0=-gain)
+
+        result = prepare_qblox(qp)
+
+        (parallel,) = result.qprogram.body.elements
+        wait, set_gain, set_offset = parallel.elements
+        assert str(wait.duration) == str(duration + 8)
+        assert str(set_gain.gain) == str(gain - 0.5)
+        assert str(set_offset.offset_path0) == "(Constant(0) - Variable('gain'))"
+
+    def test_range_stop_becomes_its_last_point(self):
+        """A Range whose step doesn't divide stop - start ends before stop: stop becomes that point. A stop off by
+        rounding only is kept as written. The points don't change."""
+        qp = QProgram()
+        short, exact = qp.variable("short"), qp.variable("exact")
+        with qp.sweep(short).from_range(0, 1, 0.3):
+            with qp.sweep(exact).from_range(0, 0.3, 0.1):
+                qp.set_gain(bus="drive", gain=short)
+                qp.set_offset(bus="drive", offset_path0=exact)
+
+        result = prepare_qblox(qp)
+
+        (short_loop,) = result.qprogram.body.elements
+        (exact_loop,) = short_loop.elements
+        assert short_loop.source.stop == pytest.approx(0.9)
+        assert exact_loop.source.stop == 0.3
+        np.testing.assert_allclose(short_loop.source.values(), [0.0, 0.3, 0.6, 0.9])
+        assert len(exact_loop.source.values()) == 4
+
+    def test_buses_exceeding_the_acquisition_depth(self):
+        """More acquisitions than a sequencer indexes are fine one per block at one depth: the compiler indexes them
+        per block."""
+        qp = QProgram()
+        for _ in range(33):
+            with qp.average(1):
+                qp.qblox.acquire(bus="readout", weights=WEIGHTS)
+
+        assert prepare_qblox(qp).exceeds_depth_buses == ["readout"]
+
+    def test_qblox_buses_default_to_every_bus(self):
+        qp = QProgram()
+        qp.play(bus="drive", waveform=DRIVE_WF)
+        qp.wait(bus="flux", duration=100)
+
+        result = prepare_qblox(qp)
+
+        assert sorted(result.qblox_buses) == ["drive", "flux"]
+        assert result.qprogram.buses == {"drive", "flux"}
+        assert len(result.qprogram.body.elements) == 2
+
+    def test_acquisition_metadata(self):
+        """Per Qblox bus and block: the acquisitions directly in the block and the block's depth."""
+        qp = QProgram()
+        with qp.average(10):
+            qp.qblox.acquire(bus="readout", weights=WEIGHTS)
+            qp.measure(bus="readout", waveform=WEIGHTS, weights=WEIGHTS)
+            qp.qblox.acquire(bus="qdac_flux", weights=WEIGHTS)
+        qp.qblox.acquire(bus="readout", weights=WEIGHTS)
+
+        result = prepare_qblox(qp, qblox_buses=["readout"])
+
+        # Keyed by the id of the blocks of the QProgram handed to the compiler
+        body = result.qprogram.body
+        assert result.acquisition_metadata == {"readout": {id(body.elements[0]): (2, 1), id(body): (1, 0)}}
+
+    @pytest.mark.parametrize(
+        "wait_trigger, expected",
+        [
+            (None, False),
+            (lambda qp: qp.qblox.wait_trigger(bus="drive", duration=100), True),
+            (lambda qp: qp.qblox.wait_trigger(bus="qdac_flux", duration=100), False),
+            (lambda qp: qp.qdac.wait_trigger(bus="qdac_flux", port=1), False),
+        ],
+    )
+    def test_requires_external_trigger_with_wait_trigger(self, wait_trigger, expected):
+        qp = QProgram()
+        qp.play(bus="drive", waveform=DRIVE_WF)
+        if wait_trigger is not None:
+            wait_trigger(qp)
+
+        assert prepare_qblox(qp, qblox_buses=["drive"]).requires_external_trigger is expected
+
+    def test_if_trigger_wait_time_derived_from_qdac_dwell(self):
+        qp = QProgram()
+        qp.qdac.play(bus="qdac_flux", waveform=Square(amplitude=1.0, duration=100), dwell=3)
+        qp.qdac.set_trigger(bus="qdac_flux", duration=100e-6, position="step", outputs=[1])
+        with qp.if_trigger():
+            with qp.average(shots=10):
+                qp.qblox.acquire(bus="readout", weights=WEIGHTS)
+
+        result = prepare_qblox(qp, qblox_buses=["readout"])
+
+        assert result.conditional == ConditionalTrigger(bus="readout", expected_wait_time_ns=3000, trigger_padding_ns=252)
+        assert result.requires_external_trigger is True
+
+    def test_if_trigger_explicit_wait_time_and_padding(self):
+        qp = QProgram()
+        with qp.if_trigger(trigger_padding_ns=300, expected_wait_time_ns=2252):
+            with qp.average(shots=10):
+                qp.qblox.acquire(bus="readout", weights=WEIGHTS)
+
+        result = prepare_qblox(qp, qblox_buses=["readout"])
+
+        assert result.conditional == ConditionalTrigger(bus="readout", expected_wait_time_ns=2252, trigger_padding_ns=300)
+
+    def test_if_trigger_nested_block_raises_error(self):
+        qp = QProgram()
+        with qp.if_trigger(expected_wait_time_ns=2252):
+            with qp.block():
+                qp.qblox.acquire(bus="readout", weights=WEIGHTS)
+
+        with pytest.raises(
+            NotImplementedError,
+            match=re.escape(
+                "Block block cannot be nested inside qp.if_trigger() (only qp.average(...) and sweeps can be)."
+            ),
+        ):
+            prepare_qblox(qp, qblox_buses=["readout"])
+
+    def test_if_trigger_instruction_outside_block_raises_error(self):
+        qp = QProgram()
+        with qp.if_trigger(expected_wait_time_ns=2252):
+            with qp.average(shots=10):
+                qp.qblox.acquire(bus="readout", weights=WEIGHTS)
+        qp.sync()
+
+        with pytest.raises(
+            NotImplementedError,
+            match=re.escape(
+                "Bus 'readout' cannot have instructions outside its qp.if_trigger() block: found Sync outside the "
+                "conditional, which would break the synchronisation."
+            ),
+        ):
+            prepare_qblox(qp, qblox_buses=["readout"])
+
+    def test_no_if_trigger(self):
+        qp = QProgram()
+        qp.play(bus="drive", waveform=DRIVE_WF)
+
+        assert prepare_qblox(qp).conditional is None
+
+    def test_measure_reset_trigger_requirements(self):
+        """The latch is enabled on the control bus, and the trigger network on the measurement bus, after mapping."""
+        qp = QProgram()
+        with qp.average(10):
+            qp.qblox.measure_reset(
+                bus="readout", waveform=WEIGHTS, weights=WEIGHTS, control_bus="drive", reset_pulse=DRIVE_WF, trigger_address=3
+            )
+            qp.qblox.measure_reset(
+                bus="readout", waveform=WEIGHTS, weights=WEIGHTS, control_bus="drive", reset_pulse=DRIVE_WF, trigger_address=3
+            )
+        qp = prepare_shared(qp, bus_mapping={"readout": "readout_q0", "drive": "drive_q0"})
+
+        result = prepare_qblox(qp, qblox_buses=["readout_q0", "drive_q0"])
+
+        assert result.latch_buses == ["drive_q0"]
+        assert result.trigger_network_addresses == {"readout_q0": 3}
+        assert result.requires_external_trigger is False
+
+    @pytest.mark.parametrize("qblox_buses", [["drive"], ["readout"]])
+    def test_measure_reset_outside_qblox_buses_raises_error(self, qblox_buses):
+        qp = QProgram()
+        qp.qblox.measure_reset(bus="readout", waveform=WEIGHTS, weights=WEIGHTS, control_bus="drive", reset_pulse=DRIVE_WF)
+
+        with pytest.raises(
+            ValueError,
+            match=re.escape(
+                "qp.qblox.measure_reset() measures on bus 'readout' and resets on bus 'drive', but both must be Qblox "
+                f"buses; the Qblox buses are {qblox_buses}."
+            ),
+        ):
+            prepare_qblox(qp, qblox_buses=qblox_buses)
+
+    def test_crosstalk_uses_calibration_ac_matrix_over_explicit_one(self, flux_qprogram: QProgram):
+        ac_crosstalk = CrosstalkMatrix().from_array(["flux1", "flux2"], np.linalg.inv([[1, 0.3], [0.3, 1]]))
+        explicit_crosstalk = CrosstalkMatrix().from_array(["flux1", "flux2"], np.linalg.inv([[1, 0.5], [0.5, 1]]))
+        calibration = Calibration()
+        calibration.crosstalk_matrix = explicit_crosstalk
+        calibration.crosstalk_matrix_ac = ac_crosstalk
+
+        result = prepare_qblox(flux_qprogram, calibration=calibration, crosstalk=explicit_crosstalk)
+
+        assert str(result.qprogram) == str(flux_qprogram.with_crosstalk_qblox(crosstalk=ac_crosstalk))
+        assert str(result.qprogram) != str(flux_qprogram.with_crosstalk_qblox(crosstalk=explicit_crosstalk))
+
+    def test_crosstalk_explicit_matrix_over_calibration_dc_matrix(self, flux_qprogram: QProgram):
+        dc_crosstalk = CrosstalkMatrix().from_array(["flux1", "flux2"], np.linalg.inv([[1, 0.3], [0.3, 1]]))
+        explicit_crosstalk = CrosstalkMatrix().from_array(["flux1", "flux2"], np.linalg.inv([[1, 0.5], [0.5, 1]]))
+        calibration = Calibration()
+        calibration.crosstalk_matrix = dc_crosstalk
+
+        result = prepare_qblox(flux_qprogram, calibration=calibration, crosstalk=explicit_crosstalk)
+
+        assert str(result.qprogram) == str(flux_qprogram.with_crosstalk_qblox(crosstalk=explicit_crosstalk))
+
+    def test_crosstalk_falls_back_to_calibration_dc_matrix_with_warning(self, caplog, flux_qprogram: QProgram):
+        dc_crosstalk = CrosstalkMatrix().from_array(["flux1", "flux2"], np.linalg.inv([[1, 0.3], [0.3, 1]]))
+        calibration = Calibration()
+        calibration.crosstalk_matrix = dc_crosstalk
+
+        with caplog.at_level(logging.WARNING):
+            result = prepare_qblox(flux_qprogram, calibration=calibration)
+
+        assert "Define `crosstalk_matrix_ac`" in caplog.text
+        assert str(result.qprogram) == str(flux_qprogram.with_crosstalk_qblox(crosstalk=dc_crosstalk))
+
+    def test_scope_on_a_bus_without_qrm_raises_error(self):
+        """Only a QRM has a scope."""
+        qp = QProgram()
+        qp.qblox.scope(bus="drive")
+        qp.qblox.acquire(bus="drive", weights=WEIGHTS)
+
+        with pytest.raises(ValueError, match=re.escape("qp.qblox.scope() scopes bus 'drive', which is not on a QRM.")):
+            prepare_qblox(qp, readout_modules={"readout": "qrm"})
+
+    def test_two_scopes_on_one_qrm_raise_error(self):
+        """A QRM has one scope, so one scoped bus per QRM."""
+        qp = QProgram()
+        for bus in ("readout_q0", "readout_q1"):
+            qp.qblox.scope(bus=bus)
+            qp.qblox.acquire(bus=bus, weights=WEIGHTS)
+
+        with pytest.raises(ValueError, match="a QRM has one scope, so scope one bus per QRM"):
+            prepare_qblox(qp, readout_modules={"readout_q0": "qrm", "readout_q1": "qrm"})
+
+    @pytest.mark.parametrize("trigger_level", [None, 0.25])
+    def test_scope_without_acquisition_raises_error(self, trigger_level: float | None):
+        """The trace is stored into the bus's first acquisition, so a scope needs one whatever triggers it."""
+        qp = QProgram()
+        qp.qblox.scope(bus="readout", trigger_level=trigger_level)
+        qp.wait(bus="readout", duration=1000)
+
+        message = "qp.qblox.scope() on bus 'readout' stores its trace into the bus's first acquisition, but the bus has none"
+        with pytest.raises(ValueError, match=re.escape(message)):
+            prepare_qblox(qp, readout_modules={"readout": "qrm"})
+
+    @pytest.mark.parametrize("trigger_level, warns", [(None, True), (0.25, False)])
+    def test_scope_triggered_by_several_acquisitions_warns(self, caplog, trigger_level: float | None, warns: bool):
+        """A scope triggered by the bus's acquisitions averages over all of them when there are several; one
+        triggered by an input level does not depend on them."""
+        qp = QProgram()
+        qp.qblox.scope(bus="readout", trigger_level=trigger_level)
+        qp.qblox.acquire(bus="readout", weights=WEIGHTS)
+        qp.qblox.acquire(bus="readout", weights=WEIGHTS)
+
+        with caplog.at_level(logging.WARNING):
+            prepare_qblox(qp, readout_modules={"readout": "qrm"})
+
+        assert ("its trace averages over all of them" in caplog.text) is warns
+
+    def test_distortions_are_applied(self, flux_qprogram: QProgram):
+        distortions = {"flux1": [ExponentialCorrection(tau_exponential=100.0, amp=0.5)]}
+
+        result = prepare_qblox(flux_qprogram, bus_distortions=distortions)
+
+        assert str(result.qprogram) == str(flux_qprogram.with_distortions(bus_distortions=distortions))
+        assert str(result.qprogram) != str(flux_qprogram)

@@ -18,6 +18,7 @@ from uuid import UUID
 
 import numpy as np
 from dill import dumps, loads
+from qprogram import waveforms
 from ruamel.yaml import YAML
 
 
@@ -89,3 +90,19 @@ yaml.constructor.add_constructor("!lambda", lambda_constructor)
 yaml.constructor.add_constructor("!tuple", legacy_tuple_constructor)
 yaml.representer.add_multi_representer(np.generic, legacy_np_scalar_representer)
 yaml.constructor.add_constructor("!np_scalar", legacy_np_scalar_constructor)
+
+# qprogram's waveforms under the tags of qililab's former ones (``!IQDrag``, ``!Square``, ...), with the same attributes,
+# so calibrations and runcard gate settings written with either load into qprogram waveforms.
+for _waveform in (
+    waveforms.Arbitrary,
+    waveforms.Chained,
+    waveforms.FlatTop,
+    waveforms.Gaussian,
+    waveforms.GaussianDragCorrection,
+    waveforms.IQDrag,
+    waveforms.IQPair,
+    waveforms.Ramp,
+    waveforms.Square,
+    waveforms.SuddenNetZero,
+):
+    yaml.register_class(_waveform)

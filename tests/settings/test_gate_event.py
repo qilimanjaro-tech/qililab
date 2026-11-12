@@ -11,8 +11,7 @@ from qililab.settings.digital.gate_event import (
     _to_external,
     _wf_to_mapping,
 )
-from qililab.waveforms import IQDrag, IQPair, Square
-from qililab.waveforms.waveform import Waveform
+from qililab import IQDrag, IQPair, Square, Waveform
 
 
 @pytest.fixture
@@ -241,6 +240,9 @@ def test_from_external_requires_type_discriminator():
 class DummyWaveform(Waveform):
     def envelope(self, resolution: int = 1):
         return np.ones(2)
+
+    def get_duration(self) -> int:
+        return 2
 
 
 def test_wf_to_mapping_normalizes_kind(monkeypatch):

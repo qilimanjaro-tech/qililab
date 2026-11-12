@@ -11,22 +11,82 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""The points of the deprecated ``for_loop``."""
 
 import math
+import numbers
 
-from qililab.core.variables import Variable
-from qililab.qprogram.blocks.block import Block
-from qililab.yaml import yaml
+from qprogram import Range, Variable
 
 
-@yaml.register_class
-class ForLoop(Block):
+def to_scalar(value: object) -> object:
+    """Convert a number, numpy ones included, to a Python ``int`` or ``float``; return anything else unchanged.
+
+    Values often come from numpy, and qprogram refuses a numpy integer as a number of shots and stores other numpy
+    numbers as they are (QHC-1873).
+
+    Args:
+        value (object): The value to convert.
+
+    Returns:
+        object: ``int(value)`` for an integral number, ``float(value)`` for a real one, else ``value``.
+    """
+    if isinstance(value, bool) or not isinstance(value, numbers.Real):
+        return value
+    if isinstance(value, numbers.Integral):
+        return int(value)
+    return float(value)
+
+
+def _number(value: int | float) -> int | float:
+    """Return ``value`` as a Python ``int`` or ``float``, numpy numbers included.
+
+    Args:
+        value (int | float): The number.
+
+    Returns:
+        int | float: ``int(value)`` for an integral number, else ``float(value)``.
+    """
+    return int(value) if isinstance(value, numbers.Integral) else float(value)
+
+
+class ForLoop:
+    """A loop from ``start`` to ``stop`` by ``step``, as ``qp.for_loop`` and ``Experiment.for_loop`` take it.
+
+    It only computes the ``Range`` of the qprogram ``Sweep`` the program holds, with the for_loop's points.
+
+    Args:
+        variable (Variable): The variable the loop sweeps.
+        start (int | float): First value of the loop.
+        stop (int | float): Last value of the loop.
+        step (int | float): Increment between consecutive values.
+    """
+
     def __init__(self, variable: Variable, start: int | float, stop: int | float, step: int | float) -> None:
-        super().__init__()
         self.variable: Variable = variable
-        self.start: int | float = start
-        self.stop: int | float = stop
-        self.step: int | float = step
+        self.start: int | float = _number(start)
+        self.stop: int | float = _number(stop)
+        self.step: int | float = _number(step)
+
+    def to_range(self) -> Range:
+        """Return the ``Range`` that sweeps the same points as the loop.
+
+        The range is first checked with the values the user wrote, so a step pointing away from ``stop`` raises
+        ``ValidationError`` naming that step. A for_loop sweeps ``for_loop_iterations`` points (rounded down, where
+        ``Range`` rounds to the nearest) spread evenly from ``start`` to ``stop``, so the step is then adjusted to
+        ``(stop - start) / (points - 1)``: the step the user wrote when it divides ``stop - start``.
+
+        Returns:
+            Range: The range with the loop's start, stop and point count.
+
+        Raises:
+            ValidationError: If ``step`` is zero or points away from ``stop``.
+        """
+        Range(self.start, self.stop, self.step)
+        points = for_loop_iterations(self.start, self.stop, self.step)
+        if points == 1:
+            return Range(self.start, self.start, self.step)
+        return Range(self.start, self.stop, (self.stop - self.start) / (points - 1))
 
 
 def for_loop_iterations(start: int | float, stop: int | float, step: int | float) -> int:

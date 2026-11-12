@@ -1,13 +1,23 @@
 import numpy as np
 import pytest
+from qprogram import BinaryOp, Constant, Values, Variable
+from qprogram.blocks import Parallel, Sweep
+from qprogram.operations import SetGain, SetOffset
 
-from qililab import Square, Arbitrary
-from qililab.core.variables import Domain, Variable, VariableExpression
-from qililab.qprogram.blocks import ForLoop, Loop, Parallel
-from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix, NonLinearCrosstalkMatrix
-from qililab.qprogram.flux_vector import FluxVector, NonLinearFluxVector
-from qililab.qprogram.operations import SetGain, SetOffset
+from qililab import Arbitrary, Square
+from qililab.qprogram.blocks import ForLoop
+from qililab.qprogram.crosstalk.crosstalk_matrix import CrosstalkMatrix, NonLinearCrosstalkMatrix
+from qililab.qprogram.crosstalk.flux_vector import FluxVector, NonLinearFluxVector
 
+
+def for_loop(variable, start, stop, step):
+    """The sweep ``qp.for_loop`` builds."""
+    return Sweep(variable, ForLoop(variable, start, stop, step).to_range())
+
+
+def values_loop(variable, values):
+    """A sweep over explicit values."""
+    return Sweep(variable, Values(values))
 
 
 @pytest.fixture(name="crosstalk_array_buses")
@@ -38,6 +48,7 @@ def get_xtalk_matrix(crosstalk_array_buses):
     flux_2  0       1       0
     """
     return CrosstalkMatrix.from_array(buses=crosstalk_array_buses[1], matrix_array=crosstalk_array_buses[0])
+
 
 @pytest.fixture(name="non_linear_crosstalk_matrix")
 def get_nl_xtalk_matrix(crosstalk_matrix):
@@ -76,16 +87,12 @@ class TestNonLinearFluxVector:
         assert nlfv.offset["flux_1"] == pytest.approx(0.3)
 
     def test_set_element_stores_variables(self, nlfv):
-        var_1 = Variable("var_1", Domain.Voltage)
-        nlfv.variables[var_1.label] = NonLinearFluxVector.VariableContext(
-                var_1.label,
-                np.array([0.0,]),
-                1,
-            )
+        var_1 = Variable("var_1")
+        nlfv.variables[var_1.id] = NonLinearFluxVector.VariableContext(var_1.id, np.array([0.0]), 1)
         nlfv.set_element(SetOffset(bus="flux_1", offset_path0=var_1 + 2.0))
         var_exp = var_1 + 2.0
         assert nlfv.offset["flux_1"].right == var_exp.right
-        assert nlfv.offset["flux_1"].operator == var_exp.operator
+        assert nlfv.offset["flux_1"].op == var_exp.op
         assert nlfv.offset["flux_1"].left == var_exp.left
 
     def test_set_element_raises_when_buses_empty(self, nlfv_no_crosstalk):
@@ -99,12 +106,12 @@ class TestNonLinearFluxVector:
             nlfv.set_element(SetGain(bus="unknown_bus", gain=0.5))
 
     def test_set_element_raises_when_variable_not_contextualized(self, nlfv):
-        var_1 = Variable("var_1", Domain.Voltage)
+        var_1 = Variable("var_1")
         with pytest.raises(ValueError):
             nlfv.set_element(SetGain(bus="flux_0", gain=var_1))
         with pytest.raises(ValueError):
-            # If I don't set it this way, the variable is automaticaly on the left
-            nlfv.set_element(SetGain(bus="flux_0", gain=VariableExpression(2.0, "+", var_1)))
+            # The constant on the left
+            nlfv.set_element(SetGain(bus="flux_0", gain=BinaryOp("+", Constant(2.0), var_1)))
         with pytest.raises(ValueError):
             nlfv.set_element(SetOffset(bus="flux_0", offset_path0=var_1 + 2.0))
 
@@ -126,51 +133,60 @@ class TestNonLinearFluxVector:
         }
         result = nlfv_no_crosstalk.set_crosstalk_from_bias(crosstalk_matrix, {k: v.copy() for k, v in bias.items()})
         buses = ["flux_0", "flux_1", "flux_2"]
-        expected = crosstalk_matrix.to_array() @ np.array([bias[b] for b in buses]) + np.array(
-            [crosstalk_matrix.flux_offsets[b] for b in buses]
-        )[:, np.newaxis]
+        expected = (
+            crosstalk_matrix.to_array() @ np.array([bias[b] for b in buses])
+            + np.array([crosstalk_matrix.flux_offsets[b] for b in buses])[:, np.newaxis]
+        )
         for i, bus in enumerate(buses):
             assert np.allclose(result[bus], expected[i])
 
     def test_set_loop_for_loop(self, nlfv_no_crosstalk):
         phi = Variable("phi")
-        nlfv_no_crosstalk.set_loop(ForLoop(variable=phi, start=0.0, stop=1.0, step=0.1))
+        nlfv_no_crosstalk.set_loop(for_loop(phi, start=0.0, stop=1.0, step=0.1))
 
     def test_set_loop_parallel(self, nlfv_no_crosstalk):
         phi = Variable("phi")
         theta = Variable("theta")
-        nlfv_no_crosstalk.set_loop(Parallel(loops=[
-            ForLoop(variable=phi, start=0, stop=0.1, step=0.08),
-            ForLoop(variable=theta, start=0.1, stop=0, step=-0.08),
-        ]))
+        nlfv_no_crosstalk.set_loop(
+            Parallel(
+                loops=[
+                    for_loop(phi, start=0, stop=0.1, step=0.08),
+                    for_loop(theta, start=0.1, stop=0, step=-0.08),
+                ]
+            )
+        )
         np.testing.assert_allclose(nlfv_no_crosstalk.variables["phi"].arr, [0.0, 0.1])
         np.testing.assert_allclose(nlfv_no_crosstalk.variables["theta"].arr, [0.1, 0.0])
 
     def test_set_loop_parallel_raises_different_loop_lengths(self, nlfv_no_crosstalk):
         phi = Variable("phi")
         theta = Variable("theta")
-        parallel = Parallel(loops=[
-            ForLoop(variable=phi, start=0.0, stop=1.0, step=0.1),
-            Loop(variable=theta, values=np.arange(0.0, 2.0, 0.2)),
-        ])
+        parallel = Parallel(
+            loops=[
+                for_loop(phi, start=0.0, stop=1.0, step=0.1),
+                values_loop(theta, np.linspace(0.0, 2.0, 11)),
+            ]
+        )
+        # A Parallel refuses loops of different lengths when built, so give it one afterwards.
+        parallel.loops[1] = values_loop(theta, np.arange(0.0, 2.0, 0.2))
         with pytest.raises(ValueError):
             nlfv_no_crosstalk.set_loop(parallel)
 
     def test_set_loop_raises_on_duplicate_variable(self, nlfv_no_crosstalk):
         phi = Variable("phi")
-        nlfv_no_crosstalk.set_loop(ForLoop(variable=phi, start=0.0, stop=1.0, step=0.1))
+        nlfv_no_crosstalk.set_loop(for_loop(phi, start=0.0, stop=1.0, step=0.1))
         with pytest.raises(ValueError):
-            nlfv_no_crosstalk.set_loop(ForLoop(variable=phi, start=0.0, stop=2.0, step=0.2))
+            nlfv_no_crosstalk.set_loop(for_loop(phi, start=0.0, stop=2.0, step=0.2))
 
     def test_exit_loop_ignores_unset_loops(self, nlfv_no_crosstalk):
-        phi = Variable("phi", Domain.Voltage)
-        loop = ForLoop(variable=phi, start=0.0, stop=1.5, step=0.5)
+        phi = Variable("phi")
+        loop = for_loop(phi, start=0.0, stop=1.5, step=0.5)
         nlfv_no_crosstalk.exit_loop(loop)
         assert nlfv_no_crosstalk.loops == {}
 
     def test_exit_loop_resolves_variable_to_last_value(self, nlfv_no_crosstalk):
-        phi = Variable("phi", Domain.Voltage)
-        loop = ForLoop(variable=phi, start=0.0, stop=1.5, step=0.5)
+        phi = Variable("phi")
+        loop = for_loop(phi, start=0.0, stop=1.5, step=0.5)
         nlfv_no_crosstalk.set_loop(loop)
         nlfv_no_crosstalk.offset["flux_0"] = phi
         nlfv_no_crosstalk.gain["flux_1"] = phi + 0.1
@@ -179,14 +195,16 @@ class TestNonLinearFluxVector:
         assert nlfv_no_crosstalk.gain["flux_1"] == pytest.approx(1.6)
 
     def test_exit_loop_parallel_resolves_all_variables(self, nlfv_no_crosstalk):
-        phi = Variable("phi", Domain.Voltage)
-        theta = Variable("theta", Domain.Voltage)
-        mu = Variable("mu", Domain.Voltage)
-        parallel = Parallel(loops=[
-            ForLoop(variable=phi, start=0.0, stop=1.0, step=0.5),
-            Loop(variable=theta, values=np.arange(0.0, 3.0, 1.0)),
-        ])
-        ex_loop = ForLoop(variable=mu, start=0.0, stop=1.0, step=0.2)
+        phi = Variable("phi")
+        theta = Variable("theta")
+        mu = Variable("mu")
+        parallel = Parallel(
+            loops=[
+                for_loop(phi, start=0.0, stop=1.0, step=0.5),
+                values_loop(theta, np.arange(0.0, 3.0, 1.0)),
+            ]
+        )
+        ex_loop = for_loop(mu, start=0.0, stop=1.0, step=0.2)
         nlfv_no_crosstalk.set_loop(parallel)
         nlfv_no_crosstalk.set_loop(ex_loop)
         nlfv_no_crosstalk.offset["flux_0"] = phi
@@ -194,15 +212,14 @@ class TestNonLinearFluxVector:
         nlfv_no_crosstalk.offset["flux_2"] = theta - mu
         nlfv_no_crosstalk.gain["flux_2"] = 0.4
         nlfv_no_crosstalk.exit_loop(parallel)
-        var_exp = (2.0 - mu)
+        var_exp = 2.0 - mu
 
         assert nlfv_no_crosstalk.offset["flux_0"] == pytest.approx(1.0)
         assert nlfv_no_crosstalk.offset["flux_1"] == pytest.approx(2.5)
         assert nlfv_no_crosstalk.offset["flux_2"].right == var_exp.right
-        assert nlfv_no_crosstalk.offset["flux_2"].operator == var_exp.operator
+        assert nlfv_no_crosstalk.offset["flux_2"].op == var_exp.op
         assert nlfv_no_crosstalk.offset["flux_2"].left == var_exp.left
         assert nlfv_no_crosstalk.gain["flux_2"] == pytest.approx(0.4)
-
 
     def test_get_corrected_offsets_raises_without_crosstalk(self, nlfv_no_crosstalk):
         with pytest.raises(AttributeError):
@@ -216,21 +233,21 @@ class TestNonLinearFluxVector:
             assert result[bus][0] == pytest.approx(0.0)
 
     def test_get_corrected_offsets_single_loop(self, nlfv):
-        phi = Variable("phi", Domain.Voltage)
+        phi = Variable("phi")
         nlfv.offset["flux_0"] = phi
-        loop = ForLoop(variable=phi, start=0.0, stop=1.0, step=0.5)
+        loop = for_loop(phi, start=0.0, stop=1.0, step=0.5)
         nlfv.set_loop(loop)
         result = nlfv.get_corrected_offsets()
         for bus in nlfv.crosstalk.matrix:
             assert result[bus].ndim == 1
 
     def test_get_corrected_offsets_two_loops(self, nlfv):
-        phi = Variable("phi", Domain.Voltage)
-        theta = Variable("theta", Domain.Voltage)
+        phi = Variable("phi")
+        theta = Variable("theta")
         nlfv.offset["flux_0"] = phi
         nlfv.offset["flux_1"] = theta
-        loop1 = ForLoop(variable=phi, start=0.0, stop=1.0, step=0.5)
-        loop2 = ForLoop(variable=theta, start=0.0, stop=1.0, step=0.5)
+        loop1 = for_loop(phi, start=0.0, stop=1.0, step=0.5)
+        loop2 = for_loop(theta, start=0.0, stop=1.0, step=0.5)
         nlfv.set_loop(loop1)
         nlfv.set_loop(loop2)
         result = nlfv.get_corrected_offsets()
@@ -238,20 +255,22 @@ class TestNonLinearFluxVector:
             assert result[bus].ndim == 2
 
     def test_get_corrected_offsets_shape_parallel_and_different_lengths(self, nlfv):
-        phi = Variable("phi", Domain.Voltage)
-        gamma = Variable("gamma", Domain.Voltage)
-        theta = Variable("theta", Domain.Voltage)
+        phi = Variable("phi")
+        gamma = Variable("gamma")
+        theta = Variable("theta")
         nlfv.offset["flux_0"] = phi
         nlfv.offset["flux_1"] = gamma
         nlfv.offset["flux_2"] = theta
-        parallel = Parallel(loops=[
-            # 2 steps
-            ForLoop(variable=phi, start=0.0, stop=2.0, step=1.0),
-            # 2 steps
-            ForLoop(variable=gamma, start=0.0, stop=2.0, step=1.0),
-        ])
+        parallel = Parallel(
+            loops=[
+                # 2 steps
+                for_loop(phi, start=0.0, stop=2.0, step=1.0),
+                # 2 steps
+                for_loop(gamma, start=0.0, stop=2.0, step=1.0),
+            ]
+        )
         # 4 steps
-        outer = ForLoop(variable=theta, start=0.0, stop=4.0, step=1.0)
+        outer = for_loop(theta, start=0.0, stop=4.0, step=1.0)
         # loop_1: 2 steps
         nlfv.set_loop(parallel)
         # loop_2: 4 steps
@@ -278,54 +297,62 @@ class TestNonLinearFluxVector:
         assert isinstance(result["flux_2"][0], Square)
 
     def test_get_corrected_play_constant_input_returns_square(self, nlfv):
-        result = nlfv.get_corrected_play({
-            "flux_0": Square(0.5, 100),
-            "flux_1": Square(0.3, 100),
-            "flux_2": Square(0.1, 100),
-        })
+        result = nlfv.get_corrected_play(
+            {
+                "flux_0": Square(0.5, 100),
+                "flux_1": Square(0.3, 100),
+                "flux_2": Square(0.1, 100),
+            }
+        )
         for bus in nlfv.crosstalk.matrix:
             assert isinstance(result[bus][0], Square)
 
     def test_get_corrected_play_arbitrary_input_returns_arbitrary(self, nlfv):
-        result = nlfv.get_corrected_play({
-            "flux_2": Arbitrary(np.sin(np.linspace(0, 2 * np.pi, 20))),
-        })
+        result = nlfv.get_corrected_play(
+            {
+                "flux_2": Arbitrary(np.sin(np.linspace(0, 2 * np.pi, 20))),
+            }
+        )
         for bus in nlfv.crosstalk.matrix:
             assert isinstance(result[bus][0], Arbitrary)
 
     def test_get_corrected_play_shape_parallel_and_different_lengths(self, nlfv):
-        phi = Variable("phi", Domain.Voltage)
-        gamma = Variable("gamma", Domain.Voltage)
-        theta = Variable("theta", Domain.Voltage)
+        phi = Variable("phi")
+        gamma = Variable("gamma")
+        theta = Variable("theta")
         nlfv.offset["flux_0"] = phi
         nlfv.offset["flux_1"] = 2 - gamma
         nlfv.offset["flux_2"] = theta + 3
-        parallel = Parallel(loops=[
-            # 2 steps
-            ForLoop(variable=phi, start=0.0, stop=2.0, step=1.0),
-            # 2 steps
-            ForLoop(variable=gamma, start=0.0, stop=2.0, step=1.0),
-        ])
+        parallel = Parallel(
+            loops=[
+                # 2 steps
+                for_loop(phi, start=0.0, stop=2.0, step=1.0),
+                # 2 steps
+                for_loop(gamma, start=0.0, stop=2.0, step=1.0),
+            ]
+        )
         # 4 steps
-        outer = ForLoop(variable=theta, start=0.0, stop=4.0, step=1.0)
+        outer = for_loop(theta, start=0.0, stop=4.0, step=1.0)
         # loop_1: 2 steps
         nlfv.set_loop(parallel)
         # loop_2: 4 steps
         nlfv.set_loop(outer)
-        result = nlfv.get_corrected_play({
-            "flux_0": Square(0.1, 100),
-            "flux_1": Square(0.1, 100),
-            "flux_2": Square(0.1, 100),
-        })
+        result = nlfv.get_corrected_play(
+            {
+                "flux_0": Square(0.1, 100),
+                "flux_1": Square(0.1, 100),
+                "flux_2": Square(0.1, 100),
+            }
+        )
         for bus in nlfv.crosstalk.matrix:
             assert result[bus].shape == (5, 3)
 
     def test_raise_error_invalid_expresion_operator(self, nlfv):
-        phi = Variable("phi", Domain.Voltage)
-        loop = ForLoop(variable=phi, start=0.0, stop=2.0, step=1.0)
+        phi = Variable("phi")
+        loop = for_loop(phi, start=0.0, stop=2.0, step=1.0)
         nlfv.set_loop(loop)
         var_exp = phi + 2
-        var_exp.operator = "invalid_operator"
+        var_exp.op = "invalid_operator"
         nlfv.offset["flux_0"] = var_exp
         with pytest.raises(ValueError):
             nlfv.get_corrected_offsets()
@@ -368,7 +395,8 @@ class TestFluxVector:
         assert flux_vector["flux_0"] == pytest.approx(0.1)
 
     def test_update_bias_vector(self, flux_vector, crosstalk_matrix, crosstalk_array_buses):
-        pytest.raises(AttributeError, flux_vector.update_bias_vector)
+        with pytest.raises(AttributeError):
+            flux_vector.update_bias_vector()
 
         bias = flux_vector.set_crosstalk(crosstalk_matrix)
         bias_arr = np.array(list(bias.values()))
@@ -413,9 +441,10 @@ class TestFluxVector:
             crosstalk_matrix, bias_vector={k: v.copy() for k, v in bias.items()}
         )
         buses = ["flux_0", "flux_1", "flux_2"]
-        expected = crosstalk_matrix.to_array() @ np.array([bias[b] for b in buses]) + np.array(
-            [crosstalk_matrix.flux_offsets[b] for b in buses]
-        )[:, np.newaxis]
+        expected = (
+            crosstalk_matrix.to_array() @ np.array([bias[b] for b in buses])
+            + np.array([crosstalk_matrix.flux_offsets[b] for b in buses])[:, np.newaxis]
+        )
         for i, bus in enumerate(buses):
             assert np.allclose(result[bus], expected[i])
 
@@ -518,10 +547,7 @@ class TestFluxVector:
         fv_nonlinear.set_crosstalk(nonlinear)
 
         # nonlinear corrections must differ from linear for at least one bus and one point
-        assert any(
-            not np.allclose(fv_nonlinear.bias_vector[bus], fv_linear.bias_vector[bus])
-            for bus in flux_dict
-        )
+        assert any(not np.allclose(fv_nonlinear.bias_vector[bus], fv_linear.bias_vector[bus]) for bus in flux_dict)
 
     def test_crosstalk_inverse_none_without_crosstalk(self):
         """crosstalk_inverse is None until a crosstalk matrix is attached."""
@@ -561,9 +587,7 @@ class TestFluxVector:
 
     def test_get_decomposed_vector_shares_crosstalk_reference(self, flux_vector, crosstalk_matrix):
         """The rewrite shares the (read-only) crosstalk instead of deep-copying it per bus."""
-        flux_vector.set_crosstalk_from_bias(
-            crosstalk_matrix, bias_vector={"flux_0": 0.1, "flux_1": 0.2, "flux_2": 0.3}
-        )
+        flux_vector.set_crosstalk_from_bias(crosstalk_matrix, bias_vector={"flux_0": 0.1, "flux_1": 0.2, "flux_2": 0.3})
         decomposed = flux_vector.get_decomposed_vector()
         assert set(decomposed) == set(crosstalk_matrix.matrix)
         for sub_vector in decomposed.values():
@@ -583,9 +607,7 @@ class TestFluxVector:
 
     def test_get_decomposed_vector_respects_bus_list(self, flux_vector, crosstalk_matrix):
         """With a bus_list, only listed buses are decomposed and only they are zeroed."""
-        flux_vector.set_crosstalk_from_bias(
-            crosstalk_matrix, bias_vector={"flux_0": 0.1, "flux_1": 0.2, "flux_2": 0.3}
-        )
+        flux_vector.set_crosstalk_from_bias(crosstalk_matrix, bias_vector={"flux_0": 0.1, "flux_1": 0.2, "flux_2": 0.3})
         decomposed = flux_vector.get_decomposed_vector(bus_list=["flux_0", "flux_1"])
         assert set(decomposed) == {"flux_0", "flux_1"}
         # flux_2 is outside the bus_list, so it keeps its value in every decomposed vector

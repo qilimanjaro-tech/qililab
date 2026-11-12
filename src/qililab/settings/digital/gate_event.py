@@ -17,10 +17,9 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any, cast
 
 from pydantic import BaseModel, ConfigDict, field_serializer, field_validator
+from qprogram.waveforms import IQWaveform, Waveform
 
 from qililab.utils.serialization import DeserializationError, deserialize, serialize
-from qililab.waveforms.iq_waveform import IQWaveform
-from qililab.waveforms.waveform import Waveform
 
 if TYPE_CHECKING:
     from qililab.typings.enums import Parameter

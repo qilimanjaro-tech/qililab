@@ -146,7 +146,6 @@ class InstrumentName(str, Enum):
         * qblox_S4g
         * keysight_e5080b
         * yokogawa_gs200
-        * OPX -> Exactly as Quantum Machines InstrumentType
         * RSWU-SP16TR
     """
 
@@ -162,7 +161,6 @@ class InstrumentName(str, Enum):
     KEYSIGHT_E5080B = "keysight_e5080b"
     YOKOGAWA_GS200 = "yokogawa_gs200"
     QCMRF = "QCM-RF"
-    QUANTUM_MACHINES_CLUSTER = "quantum_machines_cluster"
     QDEVIL_QDAC2 = "qdevil_qdac2"
     RSWU_SP16TR = "rswu_sp16tr"
 
@@ -292,7 +290,6 @@ class InstrumentControllerName(str, Enum):
         * keysight_e5080b
         * rswu_sp16tr
         * yokogawa
-        * qmm
     """
 
     QBLOX_CLUSTER = "qblox_cluster"
@@ -303,7 +300,6 @@ class InstrumentControllerName(str, Enum):
     QBLOX_SPIRACK = "qblox_spi_rack"
     KEYSIGHT_E5080B = "keysight_e5080b"
     YOKOGAWA_GS200 = "yokogawa_gs200_controller"
-    QUANTUM_MACHINES_CLUSTER = "quantum_machines_cluster_controller"
     QDEVIL_QDAC2 = "qdevil_qdac2"
     RSWU_SP16TR = "rswu_sp16tr"
 
@@ -343,8 +339,6 @@ class Parameter(str, Enum):
     HARDWARE_MODULATION = "hardware_modulation"
     HARDWARE_DEMODULATION = "hardware_demodulation"
     HARDWARE_INTEGRATION = "hardware_integration"
-    SCOPE_ACQUIRE_TRIGGER_MODE = "scope_acquire_trigger_mode"
-    SCOPE_HARDWARE_AVERAGING = "scope_hardware_averaging"
     IF = "intermediate_frequency"
     SOURCE_MODE = "source_mode"
     VOLTAGE = "voltage"
@@ -368,7 +362,6 @@ class Parameter(str, Enum):
     TIMEOUT_REPETITIONS = "timeout_repetitions"
     MAX_CURRENT = "max_current"
     MAX_VOLTAGE = "max_voltage"
-    SCOPE_STORE_ENABLED = "scope_store_enabled"
     TIME_OF_FLIGHT = "time_of_flight"
     SMEARING = "smearing"
     GAIN_I = "gain_i"
@@ -485,8 +478,6 @@ class ResultName(str, Enum):
     QBLOX = "qblox"
     QBLOX_QPROGRAM_MEASUREMENT = "qblox_qprogram_measurement"
     VECTOR_NETWORK_ANALYZER = "vector_network_analyzer"
-    QUANTUM_MACHINES = "quantum_machines"
-    QUANTUM_MACHINES_MEASUREMENT = "quantum_machines_measurement"
 
 
 class DistortionState(str, Enum):

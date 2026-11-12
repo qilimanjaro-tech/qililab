@@ -86,8 +86,7 @@ QProgram, for example, a pi pulse on the drive bus of qubit ``0`` followed by a 
 
 .. code-block:: python3
 
-    from qililab import QProgram
-    from qililab.waveforms import IQDrag, Square, IQPair
+    from qililab import QProgram, IQDrag, Square, IQPair
 
     pi_pulse = IQDrag(amplitude=1.0, duration=100, num_sigmas=4.5, drag_coefficient=-2.0)
     readout_pulse = IQPair(I=Square(amplitude=1.0, duration=2000), Q=Square(amplitude=0.0, duration=2000))
@@ -95,24 +94,21 @@ QProgram, for example, a pi pulse on the drive bus of qubit ``0`` followed by a 
 
     qp = QProgram()
     qp.play(bus="drive_line_q0_bus", waveform=pi_pulse)
-    qp.measure(bus="feedline_bus", waveform=readout_pulse, weights=weights)
+    measurement = qp.measure(bus="feedline_bus", waveform=readout_pulse, weights=weights)
 
 And you are ready to execute it with the platform:
 
 >>> result = platform.execute_qprogram(qprogram=qp)
->>> result.results["feedline_bus"][0].array
-array([[5.],
-        [5.]])
+>>> result.get(measurement).values
+array([5., 5.])
 
 getting the integrated values of the I/Q signals received by the digitizer!
 
 .. note::
 
-    ``result.results`` maps each measured bus alias to the list of :class:`.MeasurementResult` produced on that bus, one per ``measure()``/``acquire()`` call, in the order they were issued.
-
-.. note::
-
-    You can find more information about the results, in the ``QProgramResults`` class documentation.
+    ``result`` is a ``qprogram.QProgramResult``. ``result.get(handle)`` returns the data of a measurement, by the handle
+    ``measure()`` or ``qp.qblox.acquire()`` returned or by its name, as an ``xarray.DataArray``: one dimension per sweep
+    around the measurement, named after its variable, and an ``"IQ"`` dimension.
 
 |
 
@@ -128,27 +124,25 @@ each amplitude, sweep the drive gain directly inside the QProgram, so the whole 
 
 .. code-block:: python3
 
-    from qililab import QProgram, Domain
-    from qililab.waveforms import IQDrag, Square, IQPair
+    from qililab import QProgram, IQDrag, Square, IQPair
 
     pi_pulse = IQDrag(amplitude=1.0, duration=100, num_sigmas=4.5, drag_coefficient=-2.0)
     readout_pulse = IQPair(I=Square(amplitude=1.0, duration=2000), Q=Square(amplitude=0.0, duration=2000))
     weights = IQPair(I=Square(amplitude=1.0, duration=2000), Q=Square(amplitude=0.0, duration=2000))
 
     qp = QProgram()
-    gain = qp.variable(label="gain", domain=Domain.Voltage)
-    with qp.for_loop(variable=gain, start=0.0, stop=1.0, step=0.1):
+    gain = qp.variable("gain")
+    with qp.sweep(gain).from_range(0.0, 1.0, 0.1):
         qp.set_gain(bus="drive_line_q0_bus", gain=gain)
         qp.play(bus="drive_line_q0_bus", waveform=pi_pulse)
-        qp.measure(bus="feedline_bus", waveform=readout_pulse, weights=weights)
+        measurement = qp.measure(bus="feedline_bus", waveform=readout_pulse, weights=weights)
 
     result = platform.execute_qprogram(qprogram=qp)
 
-The single measurement now holds one value per point of the sweep, with shape `(2, #bins)`:
+The single measurement now holds one value per point of the sweep, with dims ``("gain", "IQ")``:
 
->>> result.results["feedline_bus"][0].array
-array([[5, 4, 3, 2, 1, 2, 3, 4, 5, 4],
-        [5, 4, 3, 2, 1, 2, 3, 4, 5, 4]])
+>>> result.get(measurement).sel(IQ="I").values
+array([5., 4., 3., 2., 1., 2., 3., 4., 5., 4., 3.])
 
 You can see how the integrated I/Q values oscillate, indicating that qubit 0 oscillates between ground and
 excited state!
@@ -165,29 +159,27 @@ separated by a variable delay:
   :width: 500
   :align: center
 
-To sweep the delay, declare a variable of ``Domain.Time`` and use it with the ``wait()`` method, in a hardware-timed loop just like the Rabi sweep above:
+To sweep the delay, declare a variable and use it with the ``wait()`` method, in a hardware-timed loop just like the Rabi sweep above:
 
 .. code-block:: python3
 
-    from qililab import QProgram, Domain
-    from qililab.waveforms import IQDrag, Square, IQPair
+    from qililab import QProgram, IQDrag, Square, IQPair
 
     half_pi_pulse = IQDrag(amplitude=0.5, duration=100, num_sigmas=4.5, drag_coefficient=-2.0)
     readout_pulse = IQPair(I=Square(amplitude=1.0, duration=2000), Q=Square(amplitude=0.0, duration=2000))
     weights = IQPair(I=Square(amplitude=1.0, duration=2000), Q=Square(amplitude=0.0, duration=2000))
 
     qp = QProgram()
-    wait_time = qp.variable(label="wait_time", domain=Domain.Time)
-    with qp.for_loop(variable=wait_time, start=0, stop=10000, step=1000):
+    wait_time = qp.variable("wait_time", units="ns")
+    with qp.sweep(wait_time).from_range(0, 10000, 1000):
         qp.play(bus="drive_line_q0_bus", waveform=half_pi_pulse)
         qp.wait(bus="drive_line_q0_bus", duration=wait_time)
         qp.play(bus="drive_line_q0_bus", waveform=half_pi_pulse)
-        qp.measure(bus="feedline_bus", waveform=readout_pulse, weights=weights)
+        measurement = qp.measure(bus="feedline_bus", waveform=readout_pulse, weights=weights)
 
     result = platform.execute_qprogram(qprogram=qp)
 
 Looping over ``wait_time`` produces a different `Z` axis height projection for each delay, resulting in a sinusoidal pattern:
 
->>> result.results["feedline_bus"][0].array
-array([[5, 4, 3, 2, 1, 2, 3, 4, 5, 4, 3],
-        [5, 4, 3, 2, 1, 2, 3, 4, 5, 4, 3]])
+>>> result.get(measurement).sel(IQ="I").values
+array([5., 4., 3., 2., 1., 2., 3., 4., 5., 4., 3.])

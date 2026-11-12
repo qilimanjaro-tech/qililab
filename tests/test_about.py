@@ -1,6 +1,5 @@
 """Unit tests for the `about` function."""
 
-import importlib
 import platform
 import sys
 
@@ -8,13 +7,14 @@ import pyvisa_py
 import qblox_instruments
 import qcodes
 import qcodes_contrib_drivers
+import qprogram
+import qprogram_qblox
+import qprogram_qdac
 import qpysequence
 import qililab as ql
 
-about_module = importlib.import_module("qililab.about")
 
-
-def _expected_base_output() -> str:
+def _expected_output() -> str:
     return (
         f"Platform info:             {platform.platform(aliased=True)}\n"
         f"Python version:            {sys.version_info[0]}.{sys.version_info[1]}.{sys.version_info[2]}\n"
@@ -23,25 +23,15 @@ def _expected_base_output() -> str:
         f"QCodes Contrib version:    {qcodes_contrib_drivers.__version__}\n"
         f"Qblox Instrument version:  {qblox_instruments.__version__}\n"
         f"Qpysequence version:       {qpysequence.__version__}\n"
+        f"QProgram version:          {qprogram.__version__}\n"
+        f"QProgram Qblox version:    {qprogram_qblox.__version__}\n"
+        f"QProgram QDAC version:     {qprogram_qdac.__version__}\n"
     )
 
 
-def test_about_without_quantum_machines(monkeypatch, capsys):
-    def _qm_stub(*_args, **_kwargs):
-        raise AssertionError("Quantum Machines functions should not be invoked in this scenario")
-
-    monkeypatch.setattr(about_module, "qm_version", _qm_stub)
-
+def test_about(capsys):
     ql.about()
 
     captured = capsys.readouterr().out
-    assert captured == _expected_base_output()
-
-
-def test_about_with_quantum_machines(monkeypatch, capsys):
-    monkeypatch.setattr(about_module, "qm_version", "1.2.3")
-
-    ql.about()
-
-    captured = capsys.readouterr().out
-    assert captured == _expected_base_output() + "Quantum Machines version:  1.2.3\n"
+    assert captured == _expected_output()
+    assert "Quantum Machines" not in captured

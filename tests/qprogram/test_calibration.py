@@ -4,12 +4,54 @@ import os
 import numpy as np
 import pytest
 
+from qprogram.blocks import Block
+from qprogram.operations import Measure, Play
+
+from qililab import IQDrag, IQPair, Square
 from qililab.qprogram import QProgram
-from qililab.qprogram.blocks import Block
 from qililab.qprogram.calibration import Calibration
-from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix, NonLinearCrosstalkMatrix
-from qililab.utils.serialization import deserialize_from, serialize_to
-from qililab.waveforms import IQPair, Square
+from qililab.qprogram.crosstalk.crosstalk_matrix import CrosstalkMatrix, NonLinearCrosstalkMatrix
+from qililab.utils.serialization import deserialize, deserialize_from, serialize_to
+
+# A calibration with a block, as qililab saved it before it moved to qprogram.
+OLD_CALIBRATION_YAML = """!Calibration
+blocks:
+  measure: !Block
+    _uuid: !UUID {int: 265981568310034474503696302391359908558}
+    elements:
+    - !PlayWithCalibratedWaveform
+      _uuid: !UUID {int: 34713420467203583849171411753172202696}
+      bus: drive
+      delay: null
+      dwell: null
+      repetitions: null
+      stepped: null
+      wait_time: null
+      waveform: pi
+    - !Measure
+      _uuid: !UUID {int: 19256743561957106308455633534479010745}
+      bus: readout
+      demodulation: true
+      rotation: null
+      save_adc: false
+      waveform: !IQPair
+        I: !Square {amplitude: 1.0, duration: 40}
+        Q: !Square {amplitude: 0.0, duration: 40}
+      weights: &id001 !IQPair
+        I: !Square {amplitude: 1.0, duration: 400}
+        Q: !Square {amplitude: 1.0, duration: 400}
+crosstalk_history: []
+crosstalk_matrix: null
+crosstalk_matrix_ac: null
+parameters: {}
+waveforms:
+  drive:
+    pi: !IQDrag {amplitude: 1.0, drag_coefficient: 0.5, duration: 40, num_sigmas:
+        4}
+weights:
+  readout:
+    weights_name: *id001
+"""
 
 
 class TestCalibration:
@@ -285,8 +327,8 @@ class TestCalibration:
         xpi = loaded_calibration.get_waveform(bus="drive_bus", name="Xpi")
         xpi2 = loaded_calibration.get_waveform(bus="drive_bus", name="Xpi2")
         readout = loaded_calibration.get_waveform(bus="readout_bus", name="readout")
-        weights = calibration.get_weights(bus="readout_bus", name="optimal_weights")
-        block = calibration.get_block(name="flux_block")
+        weights = loaded_calibration.get_weights(bus="readout_bus", name="optimal_weights")
+        block = loaded_calibration.get_block(name="flux_block")
 
         assert isinstance(xpi, Square)
         assert xpi.amplitude == 1.0
@@ -310,16 +352,48 @@ class TestCalibration:
 
         assert isinstance(block, Block)
         assert len(block.elements) == 2
+        assert all(isinstance(element, Play) for element in block.elements)
+        assert [element.bus for element in block.elements] == ["flux_x", "flux_y"]
 
-        assert calibration.crosstalk_matrix["flux_0"]["flux_0"] == crosstalk_matrix["flux_0"]["flux_0"]
-        assert calibration.crosstalk_matrix["flux_0"]["flux_1"] == crosstalk_matrix["flux_0"]["flux_1"]
-        assert calibration.crosstalk_matrix["flux_1"]["flux_0"] == crosstalk_matrix["flux_1"]["flux_0"]
-        assert calibration.crosstalk_matrix["flux_1"]["flux_1"] == crosstalk_matrix["flux_1"]["flux_1"]
+        assert loaded_calibration.crosstalk_matrix["flux_0"]["flux_0"] == crosstalk_matrix["flux_0"]["flux_0"]
+        assert loaded_calibration.crosstalk_matrix["flux_0"]["flux_1"] == crosstalk_matrix["flux_0"]["flux_1"]
+        assert loaded_calibration.crosstalk_matrix["flux_1"]["flux_0"] == crosstalk_matrix["flux_1"]["flux_0"]
+        assert loaded_calibration.crosstalk_matrix["flux_1"]["flux_1"] == crosstalk_matrix["flux_1"]["flux_1"]
 
         assert loaded_calibration.crosstalk_matrix_ac["flux_0"]["flux_1"] == ac_crosstalk_matrix["flux_0"]["flux_1"]
         assert loaded_calibration.crosstalk_matrix_ac["flux_1"]["flux_0"] == ac_crosstalk_matrix["flux_1"]["flux_0"]
 
         os.remove(path="calibration.yml")
+
+    def test_load_old_format_calibration_with_blocks(self):
+        """A calibration saved as YAML before qililab moved to qprogram loads with ``deserialize``: its blocks hold the
+        qprogram operations doing the same thing, and they resolve against the calibration's waveforms and weights."""
+        calibration = deserialize(OLD_CALIBRATION_YAML)
+
+        assert isinstance(calibration, Calibration)
+        block = calibration.get_block(name="measure")
+        assert isinstance(block, Block)
+        play, measure = block.elements
+        assert isinstance(play, Play)
+        assert play.bus == "drive"
+        assert play.waveform == "pi"
+        assert isinstance(measure, Measure)
+        assert measure.bus == "readout"
+        assert isinstance(measure.waveform, IQPair)
+        assert measure.waveform.I.duration == 40
+        assert measure.weights is calibration.get_weights(bus="readout", name="weights_name")
+        assert isinstance(calibration.get_waveform(bus="drive", name="pi"), IQDrag)
+        assert calibration.crosstalk_matrix is None
+        assert calibration.crosstalk_matrix_ac is None
+
+        qp = QProgram()
+        qp.insert_block(block)
+        calibrated = qp.with_calibration(calibration)
+
+        assert qp.has_calibrated_waveforms_or_weights() is True
+        assert calibrated.has_calibrated_waveforms_or_weights() is False
+        assert isinstance(calibrated.body.elements[0].waveform, IQDrag)
+        assert calibrated.body.elements[1].handle.name == "m0"
 
     def test_set_non_linear_crosstalk_toggles_matrix(self):
         """set_non_linear_crosstalk flips the flag on the DC and AC NonLinearCrosstalkMatrix."""

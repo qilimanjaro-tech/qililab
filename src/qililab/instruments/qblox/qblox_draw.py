@@ -17,8 +17,8 @@ import re
 import numpy as np
 import plotly.colors as pc
 import plotly.graph_objects as go
-
-from qililab.core.variables import Domain
+from qprogram import Expression
+from qprogram.operations import Wait
 
 
 class QbloxDraw:
@@ -492,7 +492,9 @@ class QbloxDraw:
 
         """
 
-        if any(variable.domain == Domain.Time for variable in sequencer.qprogram._variables):
+        if any(
+            isinstance(node, Wait) and isinstance(node.duration, Expression) for node in sequencer.qprogram.body.walk()
+        ):
             raise NotImplementedError("QbloxDraw does not support hardware time-domain loops at the moment.")
 
         self.acquisition_showing = acquisition_showing

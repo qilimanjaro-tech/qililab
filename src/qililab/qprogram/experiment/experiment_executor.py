@@ -1,0 +1,623 @@
+# Copyright 2023 Qilimanjaro Quantum Tech
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# mypy: disable-error-code="union-attr, arg-type"
+import inspect
+import os
+from dataclasses import dataclass
+from datetime import datetime
+from time import perf_counter
+from types import LambdaType
+from typing import TYPE_CHECKING, Callable, cast
+
+import numpy as np
+from qprogram import QProgramResult, Range, Variable
+from qprogram.blocks import Average, Block, Parallel, Sweep
+from qprogram.operations import Operation
+from qprogram.operations.operation import MeasurementField, MeasurementOperation
+from qprogram_qblox import Scope
+from rich.progress import BarColumn, Progress, TaskID, TextColumn, TimeElapsedColumn
+
+from qililab.qililab_settings import get_settings
+from qililab.qprogram.blocks import to_scalar
+from qililab.qprogram.experiment.experiment import Experiment
+from qililab.qprogram.experiment.operations import ExecuteQProgram, GetParameter, SetCrosstalk, SetParameter
+from qililab.result.experiment_results_writer import (
+    ExperimentDataBaseMetadata,
+    ExperimentMetadata,
+    ExperimentResultsWriter,
+    MeasurementMetadata,
+    QProgramMetadata,
+    VariableMetadata,
+)
+from qililab.utils.serialization import serialize
+
+if TYPE_CHECKING:
+    from qililab.platform.platform import Platform
+
+
+@dataclass
+class VariableInfo:
+    """Dataclass to store information of a Variable"""
+
+    key: int
+    """The ``id`` of the variable: qprogram variables compare by name, and an experiment's and a QProgram's may share
+    one."""
+    label: str
+    values: np.ndarray
+
+
+class ExperimentExecutor:
+    """Manages the execution of a quantum experiment.
+
+    The `ExperimentExecutor` class is responsible for orchestrating the execution of a quantum experiment on a given platform. It traverses the experiment's structure, handles loops and operations, and stores the results in real-time to ensure data integrity even in case of interruptions.
+
+    Key responsibilities include:
+
+    - Preparing metadata and loop structures before execution.
+    - Managing variables and their scopes within loops and blocks.
+    - Executing operations in the correct sequence with proper parameter settings.
+    - Streaming results to an HDF5 file using `ExperimentResultsWriter`.
+
+    This class provides a high-level interface to execute complex experiments involving nested loops, parameter sweeps, and qprogram executions, while efficiently managing resources and progress tracking.
+
+    Args:
+        platform (Platform): The platform on which the experiment is to be executed.
+        experiment (Experiment): The experiment object defining the sequence of operations and loops.
+
+    Example:
+        .. code-block::
+
+            from qililab.data_management import build_platform
+            from qililab.qprogram import Experiment
+            from qililab.executor import ExperimentExecutor
+            from qililab.qililab_settings import get_settings
+
+            # Initialize the platform
+            platform = build_platform(runcard="path/to/runcard.yml")
+
+            # (Optional) Configure global experiment settings
+            settings = get_settings()
+            settings.experiment_results_base_path = "/data/experiments"
+            settings.experiment_live_plot_enabled = True
+
+            # Define your experiment
+            experiment = Experiment(label="my_experiment")
+            # Add blocks, loops, operations to the experiment
+            # ...
+
+            # Create the ExperimentExecutor
+            executor = ExperimentExecutor(platform=platform, experiment=experiment)
+
+            # Execute the experiment
+            results_path = executor.execute()
+            print(f"Results saved to {results_path}")
+
+    Note:
+        - Ensure that the platform and experiment are properly configured before execution.
+        - Result paths, live plotting and database persistence are configured via :func:`qililab.qililab_settings.get_settings`.
+    """
+
+    def __init__(
+        self,
+        platform: "Platform",
+        experiment: Experiment,
+        job_id: int | None = None,
+        sample: str | None = None,
+        cooldown: str | None = None,
+    ):
+        self.platform = platform
+        self.experiment = experiment
+
+        # In case the results are saved in a database, load the correct sample and cooldown.
+        self.job_id = job_id
+        self.sample = sample
+        self.cooldown = cooldown
+
+        # Mapping from each Block to the list of variables associated with that block
+        # By block id: qprogram blocks compare by structure, so two identical loops would share an entry
+        self._variables_per_block: dict[int, list[VariableInfo]] = {}
+
+        # Mapping from each ExecuteQProgram operation to its execution index (order of execution)
+        # By operation id, for the same reason: the same QProgram executed twice has two indices
+        self._qprogram_execution_indices: dict[int, int] = {}
+
+        # Variables that uses flux for further processing and saving the right bias
+        # TODO: implement a way to save the bias based on the same principle as HW loops Xtalk
+        self._flux_variables: dict[str, np.ndarray] = {}
+
+        # Stack to keep track of variables in the experiment context (outside QPrograms)
+        self._experiment_variables_stack: list[list[VariableInfo]] = []
+
+        # Stack to keep track of variables within QPrograms
+        self._qprogram_variables_stack: list[list[VariableInfo]] = []
+
+        # Counter for the number of QPrograms encountered.
+        self._qprogram_index = 0
+
+        # Counter for the number of measurements within a QProgram.
+        self._measurement_index = 0
+
+        # Number of shots for averaging measurements. It is updated when an Average block is encountered.
+        self._shots = 1
+
+        # Metadata dictionary containing information about the experiment structure and variables.
+        self._metadata: ExperimentMetadata
+
+        # DatabaseMetadata dictionary containing information about the experiment structure and variables.
+        self._db_metadata: ExperimentDataBaseMetadata | None = None
+
+        # ExperimentResultsWriter object responsible for saving experiment results to file in real-time.
+        self._results_writer: ExperimentResultsWriter
+
+    def _prepare_metadata(self, executed_at: datetime):
+        """Prepares the loop values and result shape before execution."""
+
+        def traverse_experiment(block: Block):
+            """Traverses the blocks to gather loop information and determine result shape."""
+            if isinstance(block, (Sweep, Parallel)):
+                variables = self._get_variables_of_loop(block)
+
+                self._experiment_variables_stack.append(variables)
+
+            # Recursively traverse nested blocks or loops
+            for element in block.elements:
+                if isinstance(element, Block):
+                    traverse_experiment(element)
+                # Handle ExecuteQProgram operations and traverse their loops
+                if isinstance(element, ExecuteQProgram):
+                    if isinstance(element.qprogram, LambdaType):
+                        signature = inspect.signature(element.qprogram)
+                        # Only the structure is read here: 1 is a value every operation accepts, shots included
+                        call_parameters = {param.name: 1 for param in signature.parameters.values()}
+                        qprogram = element.qprogram(**call_parameters)
+                        traverse_qprogram(qprogram.body)
+                    else:
+                        traverse_qprogram(element.qprogram.body)
+                    self._qprogram_execution_indices[id(element)] = self._qprogram_index
+                    self._measurement_index = 0
+                    self._qprogram_index += 1
+
+            if isinstance(block, (Sweep, Parallel)):
+                del self._experiment_variables_stack[-1]
+
+        def traverse_qprogram(block: Block):
+            """Traverses a QProgram to gather loop information."""
+            if isinstance(block, (Sweep, Parallel)):
+                variables = self._get_variables_of_loop(block, qprogram=True)
+
+                self._qprogram_variables_stack.append(variables)
+            if isinstance(block, Average):
+                self._shots = block.shots
+
+            # Recursively handle nested blocks within the QProgram
+            for element in block.elements:
+                if isinstance(element, Block):
+                    traverse_qprogram(element)
+                # Every measurement but a scope (acquire, measure, measure_reset) produces a measurement result
+                # with an IQ field, so each must get its own entry in the results structure.
+                if isinstance(element, MeasurementOperation) and not isinstance(element, Scope):
+                    finalize_measurement_structure()
+
+            if isinstance(block, (Sweep, Parallel)):
+                del self._qprogram_variables_stack[-1]
+            if isinstance(block, Average):
+                self._shots = 1
+
+        def finalize_measurement_structure():
+            """Finalize the structure of a measurement when an Acquire, Measure or MeasureReset operation is encountered."""
+            qprogram_name = f"QProgram_{self._qprogram_index}"
+            measurement_name = f"Measurement_{self._measurement_index}"
+
+            # Ensure QProgram exists in the structure
+            if qprogram_name not in self._metadata["qprograms"]:
+                self._metadata["qprograms"][qprogram_name] = QProgramMetadata(
+                    variables=[
+                        VariableMetadata(label=variable.label, values=variable.values)
+                        for sublist in self._experiment_variables_stack
+                        for variable in sublist
+                    ],
+                    dims=[[variable.label for variable in sublist] for sublist in self._experiment_variables_stack],
+                    measurements={},
+                )
+
+            # Add QProgram loops and the measurement
+            self._metadata["qprograms"][qprogram_name]["measurements"][measurement_name] = MeasurementMetadata(
+                variables=[
+                    VariableMetadata(label=variable.label, values=variable.values)
+                    for sublist in self._qprogram_variables_stack
+                    for variable in sublist
+                ],
+                dims=[[variable.label for variable in sublist] for sublist in self._qprogram_variables_stack],
+                shape=(
+                    *tuple(
+                        len(sublist[0].values)
+                        for sublist in self._experiment_variables_stack + self._qprogram_variables_stack
+                    ),
+                    2,
+                ),
+                shots=self._shots,
+            )
+
+            # Increase index of measurements
+            self._measurement_index += 1
+
+        self._metadata = ExperimentMetadata(
+            platform=serialize(self.platform.to_dict()),
+            experiment=serialize(self.experiment),
+            executed_at=executed_at,
+            execution_time=0.0,
+            qprograms={},
+        )
+        if get_settings().experiment_results_save_in_database:
+            if self.job_id is None:
+                raise ValueError("Job id has not been defined.")
+            self._db_metadata = ExperimentDataBaseMetadata(
+                job_id=self.job_id,
+                experiment_name=self.experiment.label,
+                cooldown=self.cooldown,
+                sample_name=self.sample,
+            )
+        traverse_experiment(self.experiment.body)
+
+    def _prepare_operations(self, block: Block, progress: Progress):
+        """Traverse blocks, store generated Python functions, and return the stored operations."""
+
+        # A mapping from block id to the associated Progress TaskID
+        task_ids: dict[int, TaskID] = {}
+
+        # A list of operations to execute
+        operations: list[Callable] = []
+
+        # A mapping from block id to the index of the current value of its variable
+        self.loop_indices: dict[int, int] = {}
+
+        # A mapping from variable id to current value of the variable
+        current_value_of_variable: dict[int, int | float] = {}
+
+        def handle_loop(block: Sweep | Parallel) -> list[Callable]:
+            """Common logic for handling Sweep and Parallel blocks."""
+            loop_operations: list[Callable] = []
+
+            # Determine loop parameters based on the type of block
+            label = ",".join([variable.label for variable in self._variables_per_block[id(block)]])
+            shape = self._variables_per_block[id(block)][0].values.shape[-1]
+
+            # Create the progress bar for the loop
+            def create_progress_bar():
+                total_iterations = shape
+                loop_task_id = progress.add_task(f"Looping over {label}", total=total_iterations)
+                # Store the task ID associated with this loop block
+                task_ids[id(block)] = loop_task_id
+
+                # Track the index for this loop
+                self.loop_indices[id(block)] = 0
+
+                return loop_task_id
+
+            loop_operations.append(create_progress_bar)
+
+            def advance_progress_bar(variable_value: tuple[int | float, ...]) -> None:
+                loop_task_id = task_ids[id(block)]
+                progress.update(
+                    loop_task_id,
+                    description=f"Looping over {label}: {variable_value[0] if len(variable_value) == 1 else variable_value}",
+                )
+                progress.advance(loop_task_id)
+
+            def advance_loop_index() -> None:
+                # Update the loop index
+                self.loop_indices[id(block)] += 1
+
+            keys = [variable.key for variable in self._variables_per_block[id(block)]]
+            values = [variable.values for variable in self._variables_per_block[id(block)]]
+
+            for current_values in zip(*values):
+                for key, value in zip(keys, current_values):
+                    current_value_of_variable[key] = cast("int | float", to_scalar(value))
+
+                loop_operations.append(lambda value=current_values: advance_progress_bar(value))  # type: ignore
+
+                # Process elements within the loop
+                loop_operations.extend(process_elements(block.elements))
+
+                loop_operations.append(advance_loop_index)
+
+            def remove_progress_bar():
+                progress.remove_task(task_ids[id(block)])
+                del self.loop_indices[id(block)]
+
+            loop_operations.append(remove_progress_bar)
+
+            return loop_operations
+
+        def process_elements(elements: list[Block | Operation]) -> list[Callable]:
+            """Process the elements in a block and store the corresponding operations."""
+            elements_operations: list[Callable] = []
+
+            for element in elements:
+                if isinstance(element, GetParameter):
+                    # Set current value of the variable to None
+                    current_value_of_variable[id(element.variable)] = None  # type: ignore[assignment]
+                    # Append a lambda that will call the `platform.get_parameter` method and assign the returned value to the variable
+                    elements_operations.append(
+                        lambda operation=element: current_value_of_variable.update(
+                            {
+                                id(operation.variable): self.platform.get_parameter(
+                                    alias=operation.alias,
+                                    parameter=operation.parameter,
+                                    channel_id=operation.channel_id,
+                                    output_id=operation.output_id,
+                                )
+                            }
+                        )
+                    )
+                if isinstance(element, SetCrosstalk):
+                    elements_operations.append(
+                        lambda operation=element: self.platform.set_crosstalk(crosstalk=operation.crosstalk)
+                    )
+                if isinstance(element, SetParameter):
+                    # Append a lambda that will call the `platform.set_parameter` method
+                    if isinstance(element.value, Variable):
+                        if current_value_of_variable[id(element.value)] is None:
+                            # Variable has no value and it will get it from a `GetOperation` in the future. Thus, don't bind `value` in lambda.
+                            elements_operations.append(
+                                lambda operation=element: self.platform.set_parameter(
+                                    alias=operation.alias,
+                                    parameter=operation.parameter,
+                                    value=current_value_of_variable[id(operation.value)],
+                                    channel_id=operation.channel_id,
+                                    output_id=operation.output_id,
+                                )
+                            )
+                        else:
+                            # Variable has a value that was set from a loop. Thus, bind `value` in lambda with the current value of the variable.
+                            elements_operations.append(
+                                lambda operation=element, value=current_value_of_variable[id(element.value)]: (
+                                    self.platform.set_parameter(
+                                        alias=operation.alias,
+                                        parameter=operation.parameter,
+                                        value=value,
+                                        channel_id=operation.channel_id,
+                                        output_id=operation.output_id,
+                                    )
+                                )
+                            )
+                    else:
+                        # Value is not a variable. Treat it as a normal Python type.
+                        elements_operations.append(
+                            lambda operation=element: self.platform.set_parameter(
+                                alias=operation.alias,
+                                parameter=operation.parameter,
+                                value=operation.value,
+                                channel_id=operation.channel_id,
+                                output_id=operation.output_id,
+                            )
+                        )
+
+                if isinstance(element, ExecuteQProgram):
+                    qprogram_index = self._qprogram_execution_indices[id(element)]
+                    if isinstance(element.qprogram, LambdaType):
+                        signature = inspect.signature(element.qprogram)
+                        call_parameters: dict[str, int | float] = {}
+                        deferred_parameters: dict[str, int] = {}
+
+                        # Iterate through parameters and separate the ones that have values and the ones that don't
+                        for param in signature.parameters.values():
+                            if isinstance(param.default, Variable):
+                                variable_value = current_value_of_variable.get(id(param.default), None)
+                                if variable_value is None:
+                                    # The variable doesn't have a value yet; defer binding
+                                    deferred_parameters[param.name] = id(param.default)
+                                    # Make sure key exists
+                                    current_value_of_variable[id(param.default)] = None  # type: ignore[assignment]
+                                else:
+                                    # The variable has a current value; bind it immediately
+                                    call_parameters[param.name] = variable_value
+
+                        # Bind the values for known variables, and retrieve deferred ones when the lambda is executed
+                        elements_operations.append(
+                            lambda operation=element, call_parameters=call_parameters, qprogram_index=qprogram_index: (
+                                store_results(
+                                    self.platform.execute_qprogram(
+                                        qprogram=operation.qprogram(
+                                            **{
+                                                # Bind the values that are known
+                                                **call_parameters,
+                                                **{
+                                                    param_name: current_value_of_variable[key]
+                                                    for param_name, key in deferred_parameters.items()
+                                                    # Defer retrieving missing values
+                                                },
+                                            }
+                                        ),  # type: ignore
+                                        bus_mapping=operation.bus_mapping,
+                                        calibration=operation.calibration,
+                                        debug=operation.debug,
+                                    ),
+                                    qprogram_index,
+                                )
+                            )
+                        )
+                    else:
+                        # Append a lambda that will call the `platform.execute_qprogram` method
+                        elements_operations.append(
+                            lambda operation=element, qprogram_index=qprogram_index: store_results(
+                                self.platform.execute_qprogram(
+                                    qprogram=operation.qprogram,
+                                    bus_mapping=operation.bus_mapping,
+                                    calibration=operation.calibration,
+                                    debug=operation.debug,
+                                ),
+                                qprogram_index,
+                            )
+                        )
+                elif isinstance(element, Block):
+                    # Recursively handle elements of the block
+                    nested_operations = self._prepare_operations(element, progress)
+                    elements_operations.extend(nested_operations)
+
+            return elements_operations
+
+        def store_results(qprogram_result: QProgramResult, qprogram_index: int):
+            """Store the result in the correct location within the ExperimentResultsWriter."""
+            # Determine the index based on current loop indices and store the results in the ExperimentResultsWriter
+            measurements = [
+                record for record in qprogram_result.measurements if MeasurementField.RAW not in record.fields
+            ]
+            for measurement_index, measurement_result in enumerate(measurements):
+                if MeasurementField.IQ not in measurement_result.fields:
+                    raise ValueError(
+                        f"The ExperimentExecutor stores the IQ field of each measurement, but measurement "
+                        f"{measurement_result.name!r} did not request it."
+                    )
+                indices = (qprogram_index, measurement_index, *tuple(index for _, index in self.loop_indices.items()))
+                self._results_writer[indices] = measurement_result.fields[MeasurementField.IQ].values
+
+        if isinstance(block, (Sweep, Parallel)):
+            # Handle loops
+            operations.extend(handle_loop(block))
+        else:
+            # Handle generic blocks
+            operations.extend(process_elements(block.elements))
+
+        return operations
+
+    def _execute_operations(self, operations: list[Callable], progress: Progress):
+        """Run the stored operations in sequence, updating the progress bar."""
+        main_task_id = progress.add_task("Executing experiment", total=len(operations))
+
+        for operation in operations:
+            # Execute the stored operation and update the main progress bar
+            operation()
+            progress.advance(main_task_id)
+
+        progress.update(main_task_id, description="Executing experiment (done)")
+        # Ensure the final state of the progress bar is rendered
+        progress.refresh()
+
+    def _inclusive_range(self, start: int | float, stop: int | float, step: int | float) -> np.ndarray:
+        # Define the number of decimal places based on the precision of the step
+        decimal_places = -int(np.floor(np.log10(step))) if step < 1 else 0
+
+        # Calculate the number of steps
+        num_steps = round((stop - start) / step) + 1
+
+        # Use linspace and then round to avoid floating-point inaccuracies
+        result = np.linspace(start, stop, num_steps)
+
+        # Check if all inputs are integers
+        if all(isinstance(x, int) for x in [start, stop, step]):
+            return np.around(result, decimals=0).astype(int)
+        return np.around(result, decimals=decimal_places)
+
+    def _get_loop_values(self, loop: Sweep, qprogram: bool = False) -> np.ndarray:
+        """Compute the values for a single loop.
+
+        A QProgram loop takes its source's values. An experiment's ``for_loop`` keeps the values the experiment always
+        swept: integers when its bounds and step are, else rounded to the step's precision.
+        """
+        source = loop.source
+        if qprogram or not isinstance(source, Range):
+            return source.values()
+        start, stop, step = source.start, source.values()[-1], source.step
+        if all(float(value).is_integer() for value in (start, stop, step)):
+            return self._inclusive_range(int(start), int(stop), int(step))
+        return self._inclusive_range(start, stop, step)
+
+    def _get_variables_of_loop(self, block: Sweep | Parallel, qprogram: bool = False) -> list[VariableInfo]:
+        variables: dict[int, VariableInfo] = {}
+
+        loops = block.loops if isinstance(block, Parallel) else [block]
+        for loop in loops:
+            values = self._get_loop_values(loop, qprogram)
+            label = loop.variable.label or loop.variable.id
+            variable = VariableInfo(key=id(loop.variable), label=label, values=values)
+            variables[id(loop.variable)] = variable
+
+        self._variables_per_block[id(block)] = list(variables.values())
+
+        return list(variables.values())
+
+    def _create_results_path(self, executed_at: datetime):
+        # Get base path and path format from platform
+
+        base_path = get_settings().experiment_results_base_path
+        path_format = get_settings().experiment_results_path_format
+
+        # Format date and time for directory names
+        date = executed_at.strftime("%Y%m%d")
+        timestamp = executed_at.strftime("%H%M%S")
+        label = self.experiment.label
+
+        # Format the path based on the path's format
+        path = path_format.format(date=date, time=timestamp, label=label)
+
+        # Construct the full path
+        path = os.path.join(base_path, path)
+
+        # Ensure it is an absolute path
+        path = os.path.abspath(path)
+
+        # Create the directories if they don't exist
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+
+        return path
+
+    def execute(self) -> str:
+        """
+        Executes the experiment and streams the results in real-time.
+
+        This method prepares the experiment by calculating the shape and values of the loops,
+        creates callable operations, initializes an ExperimentResultsWriter for real-time result storage,
+        and then runs the operations while updating a progress bar.
+
+        Returns:
+            str: The path to the file where the results are stored.
+        """
+        executed_at = datetime.now()
+
+        # Create file path to store results
+        results_path = self._create_results_path(executed_at=executed_at)
+
+        # Prepare the results metadata
+        self._prepare_metadata(executed_at=executed_at)
+
+        # Create the ExperimentResultsWriter for storing results
+        self._results_writer = ExperimentResultsWriter(
+            path=results_path,
+            metadata=self._metadata,
+            db_metadata=self._db_metadata,
+            db_manager=self.platform.db_manager,
+        )
+
+        with self._results_writer:
+            start_time = perf_counter()
+            try:
+                with Progress(
+                    TextColumn("[progress.description]{task.description}"),
+                    BarColumn(bar_width=None),
+                    "[progress.percentage]{task.percentage:>3.1f}%",
+                    TimeElapsedColumn(),
+                ) as progress:
+                    # every self._prepare_operations updates the h5 though ExperimentResultsWriter
+                    operations = self._prepare_operations(self.experiment.body, progress)
+                    self._execute_operations(operations, progress)
+            finally:
+                # Write the execution time to the results writer
+                self._results_writer.execution_time = perf_counter() - start_time
+
+        del self.loop_indices
+
+        return self._results_writer.results_path

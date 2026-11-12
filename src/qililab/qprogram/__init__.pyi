@@ -15,13 +15,13 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from .calibration import Calibration
-    from .crosstalk_matrix import CrosstalkMatrix, NonLinearCrosstalkMatrix
-    from .experiment import Experiment
-    from .flux_vector import FluxVector, NonLinearFluxVector
-    from .qblox_compiler import QbloxCompilationOutput, QbloxCompiler
-    from .qdac_compiler import QdacCompilationOutput, QdacCompiler
+    from .compilers.qblox_compiler import QbloxCompilationOutput, QbloxCompiler
+    from .compilers.qdac_compiler import QdacCompilationOutput, QdacCompiler
+    from .crosstalk.crosstalk_matrix import CrosstalkMatrix, NonLinearCrosstalkMatrix
+    from .crosstalk.flux_vector import FluxVector, NonLinearFluxVector
+    from .crosstalk.utils_crosstalk import CrosstalkElements, NonLinearFlagState
+    from .experiment.experiment import Experiment
     from .qprogram import QProgram, QProgramCompilationOutput
-    from .utils_crosstalk import CrosstalkElements, NonLinearFlagState
 
 __all__ = [
     "Calibration",

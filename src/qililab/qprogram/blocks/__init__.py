@@ -11,13 +11,19 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""The blocks qililab adds to qprogram's, and the point count of the deprecated ``qp.for_loop``."""
 
-from .average import Average
-from .block import Block
-from .conditional import Conditional
-from .for_loop import ForLoop, for_loop_iterations
+from .for_loop import ForLoop, for_loop_iterations, to_scalar
+from .if_trigger import IfTrigger
 from .infinite_loop import InfiniteLoop
-from .loop import Loop
-from .parallel import Parallel
+from .loop_variables import reject_variables_swept_by_enclosing_loops, swept_variables
 
-__all__ = ["Average", "Block", "Conditional", "ForLoop", "InfiniteLoop", "Loop", "Parallel", "for_loop_iterations"]
+__all__ = [
+    "ForLoop",
+    "IfTrigger",
+    "InfiniteLoop",
+    "for_loop_iterations",
+    "reject_variables_swept_by_enclosing_loops",
+    "swept_variables",
+    "to_scalar",
+]

@@ -11,17 +11,23 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from qililab.core.variables import Variable
-
 """VariableAllocated Exception class"""
+
+from qprogram import Variable
 
 
 class VariableAllocated(Exception):
-    """Exception raised when trying to allocate a variable in a loop that is already been allocated by another loop.
+    """Exception raised when a loop sweeps a variable an enclosing loop, or another loop of the same parallel block,
+    already sweeps.
+
+    Its name comes from the former variables, which loops marked as allocated while they swept them.
 
     Args:
-        message (str): Optional message to be displayed
+        variable (Variable): The variable swept twice.
     """
 
-    def __init__(self, variable: Variable):
-        super().__init__(f"Cannot allocate variable {variable}. Variable is already allocated.")
+    def __init__(self, variable: Variable) -> None:
+        super().__init__(
+            f"Variable {variable.id!r} is already swept by an enclosing loop or by another loop of the same parallel "
+            "block: each loop needs its own variable."
+        )

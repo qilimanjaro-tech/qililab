@@ -16,6 +16,7 @@ import numpy as np
 import pytest
 from tests.data import Galadriel
 
+from qililab import Square
 from qililab.data_management import build_platform
 from qililab.qprogram import Calibration, QProgram
 from qililab.result import AutocalMeasurement
@@ -30,7 +31,6 @@ from qililab.result.database.database_manager import (
 )
 from qililab.result.database.database_measurements import Measurement, SequenceRun
 from qililab.result.stream_results import StreamArray
-from qililab.waveforms import Square
 
 # Use non-interactive backend for testing
 mpl.use("Agg")

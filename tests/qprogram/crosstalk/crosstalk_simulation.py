@@ -16,72 +16,62 @@ Limitations:
       compiler runs it.
 """
 
+import math
 from collections.abc import Iterator
 from typing import Literal
 
 import numpy as np
+from qprogram import BinaryOp, Constant, Expression, Range, UnaryOp, Variable
+from qprogram.blocks import Block, Parallel, Sweep
+from qprogram.operations import Measure, Play, SetGain, SetOffset, Wait
+from qprogram_qblox import Acquire
+from qprogram_qblox import WaitTrigger as QbloxWaitTrigger
+from qprogram_qdac import Play as QdacPlay
+from qprogram_qdac import WaitTrigger as QdacWaitTrigger
 
-from qililab.core.variables import Variable, VariableExpression
-from qililab.qprogram.blocks import Block, ForLoop, Loop, Parallel, for_loop_iterations
-from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
-from qililab.qprogram.operations import (
-    Acquire,
-    AcquireWithCalibratedWeights,
-    Measure,
-    MeasureReset,
-    MeasureResetCalibrated,
-    MeasureWithCalibratedWaveform,
-    MeasureWithCalibratedWaveformWeights,
-    MeasureWithCalibratedWeights,
-    Play,
-    PlayWithCalibratedWaveform,
-    SetGain,
-    SetOffset,
-    Wait,
-    WaitTrigger,
-)
+from qililab.qprogram.blocks import for_loop_iterations
+from qililab.qprogram.crosstalk.crosstalk_matrix import CrosstalkMatrix
+from qililab.qprogram.operations import MeasureReset, QbloxPlay
 from qililab.qprogram.qprogram import QProgram
 
 Quantity = Literal["offset", "gain"]
 Snapshot = dict[Quantity, dict[str, float | None]]
 
-_TIME_OPERATIONS = (
-    Wait,
-    WaitTrigger,
-    Acquire,
-    AcquireWithCalibratedWeights,
-    Measure,
-    MeasureWithCalibratedWaveform,
-    MeasureWithCalibratedWaveformWeights,
-    MeasureWithCalibratedWeights,
-    MeasureReset,
-    MeasureResetCalibrated,
-)
-_PLAY_OPERATIONS = (Play, PlayWithCalibratedWaveform)
+_TIME_OPERATIONS = (Wait, QbloxWaitTrigger, QdacWaitTrigger, Acquire, Measure, MeasureReset)
+_PLAY_OPERATIONS = (Play, QbloxPlay, QdacPlay)
 
 
-def loop_values(loop: ForLoop | Loop) -> np.ndarray:
+def loop_values(loop: Sweep) -> np.ndarray:
     """Values a loop takes on the hardware, using the compilers' iteration count."""
-    if isinstance(loop, Loop):
-        return np.asarray(loop.values, dtype=float)
-    iterations = for_loop_iterations(loop.start, loop.stop, loop.step)
+    source = loop.source
+    if not isinstance(source, Range):
+        return np.asarray(source.values(), dtype=float)
+    last = source.start + source.step * (source.length() - 1)
+    if math.isclose(last, source.stop, rel_tol=1e-9, abs_tol=1e-12):
+        last = source.stop
+    iterations = for_loop_iterations(source.start, last, source.step)
     if iterations <= 1:
-        return np.array([loop.start], dtype=float)[: max(iterations, 0)]
-    return np.linspace(loop.start, loop.stop, iterations)
+        return np.array([source.start], dtype=float)[: max(iterations, 0)]
+    return np.linspace(source.start, last, iterations)
 
 
-def evaluate(value: float | Variable | VariableExpression | None, env: dict[Variable, float]) -> float | None:
+def evaluate(value: float | Expression | None, env: dict[Variable, float]) -> float | None:
     """Numeric value of an operation argument, given the current loop values."""
     if value is None:
         return None
-    if isinstance(value, VariableExpression):
+    if isinstance(value, BinaryOp):
         left = evaluate(value.left, env)
         right = evaluate(value.right, env)
-        return left + right if value.operator == "+" else left - right  # type: ignore[operator]
+        return left + right if value.op == "+" else left - right  # type: ignore[operator]
+    if isinstance(value, UnaryOp):
+        operand = evaluate(value.operand, env)
+        return -operand if value.op == "-" else operand  # type: ignore[operator]
     if isinstance(value, Variable):
         if value not in env:
-            raise KeyError(f"Variable {value.label!r} is used outside a loop that defines it.")
+            raise KeyError(f"Variable {value.id!r} is used outside a loop that defines it.")
         return env[value]
+    if isinstance(value, Constant):
+        return float(value.value)
     return float(value)
 
 
@@ -112,7 +102,7 @@ def simulate(qprogram: QProgram, buses: list[str]) -> list[Snapshot]:
 
 
 def _iterations(block: Block, env: dict[Variable, float]) -> Iterator[dict[Variable, float]]:
-    if isinstance(block, (ForLoop, Loop)):
+    if isinstance(block, Sweep):
         for value in loop_values(block):
             yield {**env, block.variable: float(value)}
     elif isinstance(block, Parallel):

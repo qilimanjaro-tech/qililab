@@ -13,8 +13,8 @@ from qililab.data_management import build_platform
 from qililab.instruments.instrument import ParameterNotFound
 from qililab.instruments.qblox import QbloxQRM
 from qililab.platform import Platform
-from qililab.qprogram.qblox_compiler import AcquisitionData
-from qililab.typings import AcquireTriggerMode, IntegrationMode, Parameter
+from qililab.qprogram.compilers.qblox_compiler import AcquisitionData
+from qililab.typings import IntegrationMode, Parameter
 
 
 @pytest.fixture(name="platform")
@@ -70,6 +70,8 @@ def fixture_qrm(platform: Platform) -> QbloxQRM:
         "scope_acq_avg_mode_en_path1",
         "scope_acq_trigger_mode_path0",
         "scope_acq_trigger_mode_path1",
+        "scope_acq_trigger_level_path0",
+        "scope_acq_trigger_level_path1",
         "sequencers",
         "scope_acq_sequencer_select",
         "get_acquisitions",
@@ -144,10 +146,6 @@ class TestQbloxQRM:
             (Parameter.OFFSET_OUT1, 0.15),
             (Parameter.OFFSET_OUT2, 0.2),
             (Parameter.OFFSET_OUT3, 0.25),
-            (Parameter.SCOPE_ACQUIRE_TRIGGER_MODE, "sequencer"),
-            (Parameter.SCOPE_ACQUIRE_TRIGGER_MODE, "level"),
-            (Parameter.SCOPE_HARDWARE_AVERAGING, True),
-            (Parameter.SCOPE_HARDWARE_AVERAGING, False),
             (Parameter.SAMPLING_RATE, 0.09),
             (Parameter.HARDWARE_DEMODULATION, True),
             (Parameter.HARDWARE_DEMODULATION, False),
@@ -156,7 +154,6 @@ class TestQbloxQRM:
             (Parameter.ACQUISITION_TIMEOUT, 2),
             (Parameter.TIMEOUT_REPETITIONS, 2),
             (Parameter.TIME_OF_FLIGHT, 80),
-            (Parameter.SCOPE_STORE_ENABLED, True),
             (Parameter.THRESHOLD, 0.5),
             (Parameter.THRESHOLD_ROTATION, 0.5),
         ],
@@ -186,9 +183,6 @@ class TestQbloxQRM:
             assert sequencer.gain_imbalance == value
         elif parameter == Parameter.PHASE_IMBALANCE:
             assert sequencer.phase_imbalance == value
-        elif parameter == Parameter.SCOPE_ACQUIRE_TRIGGER_MODE:
-            assert sequencer.scope_acquire_trigger_mode == AcquireTriggerMode(value)  # type: ignore[attr-defined]
-
         elif parameter == Parameter.SAMPLING_RATE:
             assert sequencer.sampling_rate == value  # type: ignore[attr-defined]
         elif parameter == Parameter.INTEGRATION_MODE:
@@ -207,20 +201,6 @@ class TestQbloxQRM:
             output = int(parameter.value[-1])
             assert qrm.out_offsets[output] == value
 
-    def test_set_parameter_scope_store_enabled(self, qrm: QbloxQRM):
-        """Test setting parameters for SCOPE_STORE_ENABLED that require the same instance of QRM."""
-        sequencer = qrm.get_sequencer(0)
-
-        qrm.set_parameter(Parameter.SCOPE_STORE_ENABLED, True, channel_id=0)
-        assert sequencer.scope_store_enabled == bool(True)
-        qrm._scoping_sequencer = 0
-        qrm.set_parameter(Parameter.SCOPE_STORE_ENABLED, True, channel_id=0)
-        assert sequencer.scope_store_enabled == bool(True)
-        qrm.awg_sequencers[0].scope_store_enabled = False
-        qrm._scoping_sequencer = 0
-        qrm.set_parameter(Parameter.SCOPE_STORE_ENABLED, False, channel_id=0)
-        assert sequencer.scope_store_enabled == bool(False)
-
     def test_set_parameter_raises_error(self, qrm: QbloxQRM):
         """Test setting parameters for QCM sequencers using parameterized values."""
         with pytest.raises(ParameterNotFound):
@@ -231,12 +211,6 @@ class TestQbloxQRM:
 
         with pytest.raises(Exception):
             qrm.set_parameter(Parameter.PHASE_IMBALANCE, value=0.5, channel_id=None)
-
-        with pytest.raises(ValueError):
-            qrm.awg_sequencers[0].scope_store_enabled = True
-            qrm.awg_sequencers[0].identifier = 0
-            qrm._scoping_sequencer = 1
-            qrm.set_parameter(Parameter.SCOPE_STORE_ENABLED, value=True, channel_id=1)
 
     @pytest.mark.parametrize(
         "parameter, expected_value",
@@ -260,8 +234,6 @@ class TestQbloxQRM:
             (Parameter.OFFSET_OUT1, 0.1),
             (Parameter.OFFSET_OUT2, 0.2),
             (Parameter.OFFSET_OUT3, 0.3),
-            (Parameter.SCOPE_ACQUIRE_TRIGGER_MODE, "sequencer"),
-            (Parameter.SCOPE_HARDWARE_AVERAGING, True),
             (Parameter.SAMPLING_RATE, 1.0e9),
             (Parameter.HARDWARE_DEMODULATION, True),
 
@@ -269,7 +241,6 @@ class TestQbloxQRM:
             (Parameter.ACQUISITION_TIMEOUT, 1.0),
             (Parameter.TIMEOUT_REPETITIONS, 3),
             (Parameter.TIME_OF_FLIGHT, 120),
-            (Parameter.SCOPE_STORE_ENABLED, False),
             (Parameter.THRESHOLD, 1.0),
             (Parameter.THRESHOLD_ROTATION, 0.0),
         ],
@@ -318,6 +289,34 @@ class TestQbloxQRM:
         qrm.device.disconnect_outputs.assert_called_once()
         for sequencer in qrm.awg_sequencers:
             qrm.device.sequencers[sequencer.identifier].sync_en.assert_called_with(False)
+        # The scope is no longer set from the runcard: only a qp.qblox.scope in the QProgram sets it up.
+        qrm.device.scope_acq_sequencer_select.assert_not_called()
+        qrm.device.scope_acq_trigger_mode_path0.assert_not_called()
+        qrm.device.scope_acq_avg_mode_en_path0.assert_not_called()
+
+    def test_setup_scope_on_the_sequencer_acquisitions(self, qrm: QbloxQRM):
+        """Without a trigger level, the scope triggers on the sequencer's acquisitions."""
+        qrm.setup_scope(sequencer_id=1, averaging=True, trigger_level=None)
+
+        qrm.device.scope_acq_sequencer_select.assert_called_once_with(1)
+        qrm.device.scope_acq_trigger_mode_path0.assert_called_once_with("sequencer")
+        qrm.device.scope_acq_trigger_mode_path1.assert_called_once_with("sequencer")
+        qrm.device.scope_acq_avg_mode_en_path0.assert_called_once_with(True)
+        qrm.device.scope_acq_avg_mode_en_path1.assert_called_once_with(True)
+        qrm.device.scope_acq_trigger_level_path0.assert_not_called()
+        qrm.device.scope_acq_trigger_level_path1.assert_not_called()
+
+    def test_setup_scope_on_a_trigger_level(self, qrm: QbloxQRM):
+        """With a trigger level, the scope triggers when the input crosses it."""
+        qrm.setup_scope(sequencer_id=0, averaging=False, trigger_level=0.25)
+
+        qrm.device.scope_acq_sequencer_select.assert_called_once_with(0)
+        qrm.device.scope_acq_trigger_mode_path0.assert_called_once_with("level")
+        qrm.device.scope_acq_trigger_mode_path1.assert_called_once_with("level")
+        qrm.device.scope_acq_avg_mode_en_path0.assert_called_once_with(False)
+        qrm.device.scope_acq_avg_mode_en_path1.assert_called_once_with(False)
+        qrm.device.scope_acq_trigger_level_path0.assert_called_once_with(0.25)
+        qrm.device.scope_acq_trigger_level_path1.assert_called_once_with(0.25)
 
     def test_run(self, qrm: QbloxQRM):
         """Test running the QCM module."""
@@ -348,18 +347,46 @@ class TestQbloxQRM:
         assert qrm.device.sequencers[0].sequence.call_count == 1
 
         qp_acqusitions = {
-            "acquisition_0": AcquisitionData(bus="readout_q0", save_adc=False, shape=(-1,), intertwined=1),
-            "acquisition_1": AcquisitionData(bus="readout_q0", save_adc=True, shape=(-1,), intertwined=1),
+            "acquisition_0": AcquisitionData(bus="readout_q0", shape=(-1,), intertwined=1),
+            "acquisition_1": AcquisitionData(bus="readout_q0", shape=(-1,), intertwined=1),
+        }
+        raw_0 = {"bins": {"integration": {"path0": [1.0], "path1": [2.0]}, "threshold": [0], "avg_cnt": [1]}}
+        raw_1 = {"bins": {"integration": {"path0": [3.0], "path1": [4.0]}, "threshold": [1], "avg_cnt": [1]}}
+        qrm.device.get_acquisitions.return_value = {
+            "acquisition_0": {"index": 0, "acquisition": raw_0},
+            "acquisition_1": {"index": 1, "acquisition": raw_1},
         }
 
-        qrm.acquire_qprogram_results(acquisitions=qp_acqusitions, channel_id=0)
+        results = qrm.acquire_qprogram_results(acquisitions=qp_acqusitions, channel_id=0)
 
+        # The raw acquisitions, as the instrument returns them, in order
+        assert results == [raw_0, raw_1]
         assert qrm.device.get_acquisition_status.call_count == 2
-        assert qrm.device.store_scope_acquisition.call_count == 1
+        qrm.device.store_scope_acquisition.assert_not_called()
         assert qrm.device.get_acquisitions.call_count == 2
         assert qrm.device.delete_acquisition_data.call_count == 2
         # after uploading the empty sequence
         assert qrm.device.sequencers[0].sequence.call_count == 2
+
+    def test_acquire_qprogram_results_with_scope_stores_it_into_the_first_acquisition(self, qrm: QbloxQRM):
+        acquisitions = Acquisitions()
+        acquisitions.add(name="acquisition_0")
+        acquisitions.add(name="acquisition_1")
+        sequence = Sequence(program=Program(), waveforms=Waveforms(), acquisitions=acquisitions, weights=Weights())
+        qrm.upload_qpysequence(qpysequence=sequence, channel_id=0)
+
+        qp_acqusitions = {
+            "acquisition_0": AcquisitionData(bus="readout_q0", shape=(-1,), intertwined=1),
+            "acquisition_1": AcquisitionData(bus="readout_q0", shape=(-1,), intertwined=1),
+        }
+        qrm.device.get_acquisitions.return_value = {
+            "acquisition_0": {"acquisition": MagicMock()},
+            "acquisition_1": {"acquisition": MagicMock()},
+        }
+
+        qrm.acquire_qprogram_results(acquisitions=qp_acqusitions, channel_id=0, scope=True)
+
+        qrm.device.store_scope_acquisition.assert_called_once_with(sequencer=0, name="acquisition_0")
 
 
     def test_acquire_qprogram_results_multiple_acquisitions_does_not_wipe_sequence_mid_loop(self, qrm: QbloxQRM):
@@ -371,8 +398,8 @@ class TestQbloxQRM:
         qrm.upload_qpysequence(qpysequence=sequence, channel_id=0)
 
         qp_acquisitions = {
-            "Acquisition 0": AcquisitionData(bus="readout", save_adc=False, shape=(-1,), intertwined=1),
-            "Acquisition 1": AcquisitionData(bus="readout", save_adc=False, shape=(-1,), intertwined=1),
+            "Acquisition 0": AcquisitionData(bus="readout", shape=(-1,), intertwined=1),
+            "Acquisition 1": AcquisitionData(bus="readout", shape=(-1,), intertwined=1),
         }
 
         qrm.device.get_acquisitions.return_value = {
@@ -405,7 +432,7 @@ class TestQbloxQRM:
         qrm.upload_qpysequence(qpysequence=sequence, channel_id=0)
 
         qp_acquisitions = {
-            f"Acquisition {i}": AcquisitionData(bus="readout", save_adc=False, shape=(-1,), intertwined=1)
+            f"Acquisition {i}": AcquisitionData(bus="readout", shape=(-1,), intertwined=1)
             for i in range(n)
         }
         qrm.device.get_acquisitions.return_value = {
@@ -491,6 +518,26 @@ class TestQbloxQRM:
     def test_parameter_integration_length_not_in_enum(self):
         """Parameter.INTEGRATION_LENGTH must not exist — it was removed to prevent silent no-ops."""
         assert not hasattr(Parameter, "INTEGRATION_LENGTH")
+
+    @pytest.mark.parametrize("name", ["SCOPE_ACQUIRE_TRIGGER_MODE", "SCOPE_HARDWARE_AVERAGING", "SCOPE_STORE_ENABLED"])
+    def test_scope_parameters_not_in_enum(self, name: str):
+        """The scope Parameters must not exist: the scope is set in the QProgram, with qp.qblox.scope(bus)."""
+        assert not hasattr(Parameter, name)
+
+    @pytest.mark.parametrize(
+        "field", ["scope_acquire_trigger_mode", "scope_hardware_averaging", "scope_store_enabled"]
+    )
+    def test_platform_load_warns_on_scope_fields_in_runcard(self, field):
+        """Loading a runcard that contains the scope fields must emit a FutureWarning: the value is ignored, the
+        scope is set in the QProgram."""
+        with pytest.warns(
+            FutureWarning,
+            match=re.escape(
+                f"{field} in the runcard is deprecated and will be removed in a future release, and its value is "
+                "ignored. The scope is now set in the QProgram, with qp.qblox.scope(bus)."
+            ),
+        ):
+            build_platform(runcard="tests/instruments/qblox/qblox_runcard.yaml")
 
     def test_platform_load_warns_on_sequence_timeout_in_runcard(self):
         """Loading a runcard that contains sequence_timeout must emit a FutureWarning."""
