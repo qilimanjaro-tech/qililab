@@ -29,6 +29,7 @@ something wrong.
 
 from collections.abc import Iterable, Iterator
 from numbers import Real
+from weakref import WeakKeyDictionary
 
 import qprogram_qblox  # noqa: F401  (registers the qblox tokens)
 
@@ -126,6 +127,12 @@ def _waveform_expressions(waveform: object) -> Iterator[Expression]:
                 yield from _waveform_expressions(item)
 
 
+# Per validate() run, whether each waveform already checked uses a variable, by id. A program plays the same waveform
+# object many times, and each play is checked against both halves of its bus: each waveform is only looked through
+# once. The run's waveforms stay alive while it lasts, so their ids don't change.
+_WAVEFORMS_WITH_VARIABLES: WeakKeyDictionary[ValidationContext, dict[int, bool]] = WeakKeyDictionary()
+
+
 def _reject_variable_in_waveform(node: object, ctx: ValidationContext) -> Iterable[Diagnostic | DomainConstraint]:
     """Reject a waveform or weights whose parameters use a variable (e.g. a swept amplitude).
 
@@ -133,13 +140,20 @@ def _reject_variable_in_waveform(node: object, ctx: ValidationContext) -> Iterab
 
     Args:
         node (object): The AST node being validated.
-        ctx (ValidationContext): Program-wide facts, unused.
+        ctx (ValidationContext): Program-wide facts, used only to keep the waveforms checked during this run.
 
     Yields:
         Diagnostic: A ``qililab.variable-in-waveform`` error when a waveform of ``node`` uses a variable.
     """
-    for attribute in getattr(node, "WAVEFORM_ATTRS", ()):
-        if any(True for _ in _waveform_expressions(getattr(node, attribute, None))):
+    attributes = getattr(node, "WAVEFORM_ATTRS", ())
+    if not attributes:
+        return
+    checked = _WAVEFORMS_WITH_VARIABLES.setdefault(ctx, {})
+    for attribute in attributes:
+        waveform = getattr(node, attribute, None)
+        if id(waveform) not in checked:
+            checked[id(waveform)] = any(True for _ in _waveform_expressions(waveform))
+        if checked[id(waveform)]:
             yield Diagnostic(
                 severity="error",
                 code="qililab.variable-in-waveform",
@@ -220,7 +234,9 @@ def _reject_qdac_time_out_of_range(node: object, ctx: ValidationContext) -> Iter
         Diagnostic: A ``qililab.qdac-out-of-range`` error when the value is outside the QDAC-II's range.
     """
     for operation, call, attribute, minimum, maximum in _QDAC_TIME_RANGES:
-        value = getattr(node, attribute, None) if isinstance(node, operation) else None
+        if not isinstance(node, operation):
+            continue
+        value = getattr(node, attribute, None)
         if isinstance(value, Real) and not minimum <= float(value) <= maximum:
             yield Diagnostic(
                 severity="error",
