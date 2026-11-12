@@ -15,6 +15,7 @@
 
 import warnings
 from copy import deepcopy
+from functools import cached_property
 from typing import TYPE_CHECKING, Any
 
 import numpy as np
@@ -125,16 +126,10 @@ class QProgram(QbloxMixin, QdacMixin, qp.QProgram):
                 qp.measure(bus="readout_bus", waveform=readout_wf, weights=weights)
     """
 
-    @property
+    @cached_property
     def qblox(self) -> QililabQbloxNamespace:  # type: ignore[override]
         """This program's ``qp.qblox`` namespace, with qililab's Qblox operations and options."""
-        try:
-            return object.__getattribute__(self, "_qblox_ns")
-        except AttributeError:
-            pass
-        namespace = QililabQbloxNamespace(self)
-        object.__setattr__(self, "_qblox_ns", namespace)
-        return namespace
+        return QililabQbloxNamespace(self)
 
     def _append_to_active(self, element: Any) -> None:
         """Append ``element`` to the active block, refusing a loop over a variable an enclosing loop already sweeps.

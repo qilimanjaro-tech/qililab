@@ -125,11 +125,13 @@ class QbloxQRM(QbloxModule):
         """
         self.device.scope_acq_sequencer_select(sequencer_id)
         mode = AcquireTriggerMode.SEQUENCER if trigger_level is None else AcquireTriggerMode.LEVEL
-        for path in (0, 1):
-            getattr(self.device, f"scope_acq_trigger_mode_path{path}")(mode.value)
-            getattr(self.device, f"scope_acq_avg_mode_en_path{path}")(averaging)
-            if trigger_level is not None:
-                getattr(self.device, f"scope_acq_trigger_level_path{path}")(trigger_level)
+        self.device.scope_acq_trigger_mode_path0(mode.value)
+        self.device.scope_acq_trigger_mode_path1(mode.value)
+        self.device.scope_acq_avg_mode_en_path0(averaging)
+        self.device.scope_acq_avg_mode_en_path1(averaging)
+        if trigger_level is not None:
+            self.device.scope_acq_trigger_level_path0(trigger_level)
+            self.device.scope_acq_trigger_level_path1(trigger_level)
 
     @check_device_initialized
     def acquire_qprogram_results(

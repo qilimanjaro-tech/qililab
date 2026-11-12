@@ -433,7 +433,7 @@ class QbloxCompiler:
         for bus in prepass.exceeds_depth_buses:
             self._buses[bus].exceeds_depth = True
 
-        traverse(self._qprogram._body)
+        traverse(self._qprogram.body)
 
         # Post-processing: Set all markers OFF, add stop instructions and compile
         for bus in self._buses:

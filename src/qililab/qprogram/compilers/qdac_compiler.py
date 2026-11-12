@@ -162,7 +162,7 @@ class QdacCompiler:
         )
 
         self._populate_qdac_buses()
-        traverse(self._qprogram._body)
+        traverse(self._qprogram.body)
 
         if len(self._qdacs) > 1:
             self._handle_simultaneous_qdacs()
