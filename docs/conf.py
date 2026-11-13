@@ -35,7 +35,8 @@ extensions = [
 ]
 
 templates_path = ["_templates"]
-exclude_patterns = ["_build", "Thumbs.db", ".DS_Store", "releases/*"]
+# agents/ and adr/ hold the AI-agent docs (see AGENTS.md), not user documentation.
+exclude_patterns = ["_build", "Thumbs.db", ".DS_Store", "releases/*", "agents/*", "adr/*"]
 source_suffix = [".rst", ".md"]
 pygments_style = "default"
 language = "en"

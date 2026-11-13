@@ -137,3 +137,6 @@ slurm_job_data*
 .tmp/*
 tmp.*
 .tmp/*
+
+# Agent scratch output (research, specs, evidence)
+.agents/artifacts/
