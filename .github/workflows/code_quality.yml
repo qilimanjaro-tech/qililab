@@ -112,3 +112,11 @@ jobs:
       # step just created it.
       - name: Mdformat
         run: mdformat --check --exclude 'CHANGELOG.md' --exclude '.venv/**' .
+
+      # Advisory only: a CVE published mid-run must not fail unrelated PRs. The real
+      # tracking is the CVE floors in [tool.uv].constraint-dependencies in pyproject.toml.
+      # The private builds of qililab and qpysequence are not on PyPI, so pip-audit lists
+      # them as skipped instead of failing.
+      - name: Dependency audit (pip-audit)
+        continue-on-error: true
+        run: uv run --with pip-audit==2.10.1 --no-build-package pip-audit pip-audit
