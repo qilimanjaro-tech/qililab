@@ -558,7 +558,7 @@ class DatabaseManager:
             Measurement.platform.isnot
             if light_read:
                 # Note that some columns are missing that currently are not being used
-                query = query.with_entities(
+                light_query = query.with_entities(
                     Measurement.measurement_id,
                     Measurement.sequence_id,
                     Measurement.experiment_name,
@@ -581,6 +581,9 @@ class DatabaseManager:
                     (Measurement.dc_offsets != "null").label("has_dc_offsets"),
                     (Measurement.flux_offsets != "null").label("has_flux_offsets"),
                 )
+                if pandas_output:
+                    return read_sql(light_query.statement, con=con)
+                return light_query.all()
 
             if pandas_output:
                 return read_sql(query.statement, con=con)
@@ -625,7 +628,7 @@ class DatabaseManager:
 
             if light_read:
                 # Note that some columns are missing that currently are not being used
-                query = query.with_entities(
+                light_query = query.with_entities(
                     Measurement.measurement_id,
                     Measurement.sequence_id,
                     Measurement.experiment_name,
@@ -648,6 +651,9 @@ class DatabaseManager:
                     (Measurement.dc_offsets != "null").label("has_dc_offsets"),
                     (Measurement.flux_offsets != "null").label("has_flux_offsets"),
                 )
+                if pandas_output:
+                    return read_sql(light_query.statement, con=con)
+                return light_query.all()
 
             if pandas_output:
                 return read_sql(query.statement, con=con)
@@ -1079,7 +1085,7 @@ def get_engine(user: str, passwd: str, host: str, port: str, database: str):
         port (str): Host port
         database (str): Database name
     """
-    url = f"postgresql://{user}:{passwd}@{host}:{port}/{database}"
+    url = f"postgresql+psycopg2://{user}:{passwd}@{host}:{port}/{database}"
     return create_engine(url)
 
 
