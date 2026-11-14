@@ -106,6 +106,13 @@ jobs:
           echo "VIRTUAL_ENV=$PWD/.venv" >> "$GITHUB_ENV"
           echo "$PWD/.venv/bin" >> "$GITHUB_PATH"
 
+      # This integration resolves the reviewed build wheels, unlike the offline
+      # source-fixture regressions in the ordinary suite below.
+      - name: Check constrained build versions
+        env:
+          CI_BUILD_VERSION_INTEGRATION: "1"
+        run: pytest --confcutdir=tests/ci tests/ci/test_ci_build_policy.py -k constrained_hatch_vcs -q -p no:cacheprovider
+
       - name: Run tests
         if: matrix.python-version != env.COVERAGE_PYTHON
         run: pytest -n auto --dist loadfile tests

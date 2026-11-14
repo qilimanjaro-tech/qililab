@@ -17,6 +17,8 @@ Isolated first-party and approved third-party builds use the exact build-tool ve
 
 The Tests workflow checks Python 3.11, 3.12 and 3.13 on pull requests as well as main. Its local source-fixture regressions prove that an unapproved source package is rejected, named exceptions can build, first-party editable builds still work, and an unreviewed build dependency is rejected. They use no instrument, database, scheduler or upload service.
 
+The ordinary source-fixture tests run offline. A separate build-version integration step resolves the reviewed public build wheels and checks hatch-vcs release/dev-tag behavior in temporary Git repositories. Run that check locally with `CI_BUILD_INTEGRATION=1 CI_BUILD_VERSION_INTEGRATION=1` and uv 0.13.8 on PATH.
+
 To recheck compatibility, start with an empty environment and no uv cache, then run the exact workflow sync commands on Linux for all three supported Python versions, plus the docs group on Python 3.13. Temporarily remove each named exception to confirm it is still needed. Verify import smoke tests, the repository checks and strict docs. A local source-first QPySequence substitute can support development, but final CI must also prove the approved private wheel is available.
 
 This policy covers GitHub Code Quality, Tests and Documentation. The release-tool environment has its own policy. Read the Docs uses its separate installation configuration. Do not add a source exception merely to make a dependency upgrade pass.

@@ -154,6 +154,9 @@ def test_exception_review_matches_locked_artifacts_and_every_ci_sync():
         assert allowed == names
 
 
+@pytest.mark.skipif(
+    os.environ.get("CI_BUILD_VERSION_INTEGRATION") != "1", reason="Explicit networked build-version CI step"
+)
 def test_constrained_hatch_vcs_preserves_release_and_development_versions(tmp_path, uv):
     project = tmp_path / "version-fixture"
     (project / "src/qililab").mkdir(parents=True)
