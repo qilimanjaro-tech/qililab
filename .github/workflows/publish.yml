@@ -154,10 +154,21 @@ jobs:
       CA_DOMAIN: qilimanjaro
       CA_DOMAIN_OWNER: "723412851021"
       CA_REPOSITORY: ${{ inputs.repository || 'qilimanjaro' }}
+      RELEASE_TOOLS_DIR: ${{ github.workspace }}/release-tools-source/.github/release-tools
     permissions:
       contents: read
       id-token: write  # required to request the OIDC token for AWS
     steps:
+      # Tool policy follows the immutable workflow revision, not the requested build ref.
+      # In particular, workflow_dispatch can still publish a tag predating the tool lock.
+      # dev-build.yml calls this workflow locally, at the caller's workflow revision.
+      - name: Check out release tools
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          ref: ${{ github.workflow_sha }}
+          path: release-tools-source
+          sparse-checkout: .github/release-tools
+          persist-credentials: false
       - name: Configure AWS Credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd  # v6.3.0
         with:
@@ -188,26 +199,31 @@ jobs:
         with:
           enable-cache: false
           python-version: "3.13"
+          version: "0.13.8"
+      - name: Install release tools
+        run: uv sync --project "$RELEASE_TOOLS_DIR" --locked --no-build --no-default-groups
       - name: List & validate distributions
         run: |
           ls -lh dist
-          uvx twine check dist/*
+          "$RELEASE_TOOLS_DIR/.venv/bin/python" -m twine check dist/*
       # Gets a temporary CodeArtifact token + repository endpoint with the AWS CLI and
       # uploads with twine. Skipped entirely on dry runs.
       - name: Publish to CodeArtifact
         if: ${{ !inputs.dry_run }}
         run: |
           export TWINE_USERNAME=aws
-          export TWINE_PASSWORD=$(aws codeartifact get-authorization-token \
+          TWINE_PASSWORD=$(aws codeartifact get-authorization-token \
             --domain "$CA_DOMAIN" \
             --domain-owner "$CA_DOMAIN_OWNER" \
             --query authorizationToken \
             --output text)
-          export TWINE_REPOSITORY_URL=$(aws codeartifact get-repository-endpoint \
+          export TWINE_PASSWORD
+          TWINE_REPOSITORY_URL=$(aws codeartifact get-repository-endpoint \
             --domain "$CA_DOMAIN" \
             --domain-owner "$CA_DOMAIN_OWNER" \
             --repository "$CA_REPOSITORY" \
             --format pypi \
             --query repositoryEndpoint \
             --output text)
-          uvx twine upload dist/*
+          export TWINE_REPOSITORY_URL
+          "$RELEASE_TOOLS_DIR/.venv/bin/python" -m twine upload dist/*
