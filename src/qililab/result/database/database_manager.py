@@ -24,7 +24,7 @@ import h5py
 import numpy as np
 from pandas import read_sql
 from sqlalchemy import create_engine, exists
-from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.orm import Query, Session, sessionmaker
 
 from qililab.result.database.database_autocal import AutocalMeasurement, CalibrationRun
 from qililab.result.database.database_measurements import Cooldown, Measurement, Sample, SequenceRun
@@ -540,7 +540,7 @@ class DatabaseManager:
             since_id (int | None, optional): If provided, only load measurements with measurement_id greater than since_id. Defaults to None.
         """
         with self.engine.connect() as con:
-            query = self.session().query(Measurement)
+            query: Query[Any] = self.session().query(Measurement)
 
             if current_sample and self.current_sample:
                 query = query.filter(Measurement.sample_name == self.current_sample)
@@ -607,7 +607,7 @@ class DatabaseManager:
             before_id (int | None, optional): If provided, only load measurements with measurement_id lower than since_id. Defaults to None.
         """
         with self.engine.connect() as con:
-            query = self.session().query(Measurement)
+            query: Query[Any] = self.session().query(Measurement)
 
             if current_sample and self.current_sample:
                 query = query.filter(Measurement.sample_name == self.current_sample)
@@ -1079,7 +1079,7 @@ def get_engine(user: str, passwd: str, host: str, port: str, database: str):
         port (str): Host port
         database (str): Database name
     """
-    url = f"postgresql://{user}:{passwd}@{host}:{port}/{database}"
+    url = f"postgresql+psycopg2://{user}:{passwd}@{host}:{port}/{database}"
     return create_engine(url)
 
 

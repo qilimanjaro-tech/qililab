@@ -60,8 +60,6 @@ updates:
       - dependency-name: "qm-qua"
       # 0.58 changes GS200 ramping; needs instrument testing first.
       - dependency-name: "qcodes"
-      # 2.1 defaults postgresql:// to psycopg 3; we ship psycopg2.
-      - dependency-name: "sqlalchemy"
     commit-message:
       prefix: "deps"
       prefix-development: "deps-dev"
