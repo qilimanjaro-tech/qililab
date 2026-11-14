@@ -247,6 +247,46 @@ def fixture_experiment_uneven_loop(qprogram_uneven_loop: QProgram, qprogram_unev
 class TestExperimentExecutor:
     """Test ExperimentExecutor class"""
 
+    @pytest.mark.parametrize("trailing_static_lambda", [False, True])
+    def test_execute_keeps_deferred_parameters_per_operation(
+        self, platform, qprogram, override_settings, tmp_path, trailing_static_lambda
+    ):
+        experiment = Experiment(label="deferred_parameters")
+        iteration = experiment.variable(label="iteration", domain=Domain.Scalar, type=int)
+        calls = []
+
+        def build_program(name, value):
+            calls.append((name, value))
+            return qprogram
+
+        with experiment.for_loop(iteration, 0, 1):
+            first = experiment.get_parameter(alias="first", parameter=Parameter.GAIN)
+            second = experiment.get_parameter(alias="second", parameter=Parameter.GAIN)
+            experiment.execute_qprogram(lambda first=first: build_program("first", first))
+            experiment.execute_qprogram(lambda second=second: build_program("second", second))
+            if trailing_static_lambda:
+                experiment.execute_qprogram(lambda: build_program("static", 99))
+
+        platform.get_parameter.side_effect = [11, 22, 33, 44]
+        with override_settings(
+            experiment_results_base_path=str(tmp_path),
+            experiment_results_save_in_database=False,
+            experiment_live_plot_enabled=False,
+            experiment_live_plot_on_slurm=False,
+        ):
+            result_path = ExperimentExecutor(platform=platform, experiment=experiment).execute()
+
+        expected = [("first", 0), ("second", 0)]
+        if trailing_static_lambda:
+            expected.append(("static", 99))
+        for first_value, second_value in [(11, 22), (33, 44)]:
+            expected.extend([("first", first_value), ("second", second_value)])
+            if trailing_static_lambda:
+                expected.append(("static", 99))
+        assert calls == expected
+        assert platform.execute_qprogram.call_count == (6 if trailing_static_lambda else 4)
+        assert os.path.isfile(result_path)
+
     def test_execute(self, platform, experiment, qprogram, crosstalk, override_settings):
         """Test the execute method to ensure the experiment is executed correctly and results are stored."""
         platform.save_experiment_results_in_database = False
