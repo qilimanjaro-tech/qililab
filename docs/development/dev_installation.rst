@@ -1,7 +1,9 @@
 Development Installation
 ========================
 
-Qililab uses `uv <https://docs.astral.sh/uv/>`_ for dependency management and packaging. To install Qililab in development mode, please run:
+Qililab uses `uv <https://docs.astral.sh/uv/>`_ 0.13.8 or newer for dependency management and packaging.
+This minimum version supports the hashed constraints on isolated build dependencies.
+To install Qililab in development mode, please run:
 
 .. code-block:: console
 

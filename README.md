@@ -19,7 +19,7 @@ We use a number of tools to maintain code quality and consistency:
 
 ### Setup & Dependency Management
 
-Clone the repository and sync the dev environment with [uv](https://docs.astral.sh/uv/):
+Clone the repository and sync the dev environment with [uv](https://docs.astral.sh/uv/) 0.13.8 or newer. This version is required to read the hashed build constraints. See [CI dependency builds](.github/CI_DEPENDENCIES.md) for the reviewed source-build exceptions:
 
 ```bash
 git clone https://github.com/qilimanjaro-tech/qililab.git

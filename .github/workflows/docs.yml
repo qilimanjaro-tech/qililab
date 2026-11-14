@@ -38,10 +38,11 @@ jobs:
       uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2  # v10.3.3
       with:
         python-version: "3.13"
+        version: "0.13.8"
         cache-dependency-glob: |
           **/pyproject.toml
           **/uv.lock
-        enable-cache: true
+        enable-cache: false
 
     - name: Configure AWS Credentials (OIDC)
       uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd  # v6.3.0
@@ -84,7 +85,11 @@ jobs:
         printf 'UV_INDEX_QILIMANJARO_PASSWORD=%s\n' "$token" >> "$GITHUB_ENV"
 
     - name: Install dependencies
-      run: uv sync --locked --group docs --all-extras
+      run: >-
+        uv sync --locked --group docs --all-extras --no-build --no-cache
+        --no-binary-package qblox-instruments
+        --no-binary-package marshmallow-polyfield
+        --require-build-hashes
 
     - name: Put the synced environment on PATH
       run: |
