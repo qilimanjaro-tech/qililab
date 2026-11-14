@@ -9,6 +9,7 @@ from typing import cast
 from unittest.mock import MagicMock
 
 import pytest
+from qblox_instruments import SequencerStates
 from qblox_instruments.qcodes_drivers.module import Module as QcmQrm
 from qblox_instruments.qcodes_drivers.sequencer import Sequencer
 from qpysequence import Acquisitions, Program, Sequence, Waveforms, Weights
@@ -95,6 +96,7 @@ def fixture_qrm(platform: Platform):
         "disconnect_inputs",
         "arm_sequencer",
         "start_sequencer",
+        "get_sequencer_status",
         "reset",
         "set",
         "out0_lo_freq_cal_type_default",
@@ -327,11 +329,16 @@ class TestQbloxQCMRF:
         qcm_rf.sequences[0] = Sequence(
             program=Program(), waveforms=Waveforms(), acquisitions=Acquisitions(), weights=Weights()
         )
+        qcm_rf.device.get_sequencer_status.return_value.state = SequencerStates.RUNNING
         qcm_rf.run(channel_id=0)
 
         sequencer = qcm_rf.get_sequencer(0)
         qcm_rf.device.arm_sequencer.assert_called_with(sequencer=sequencer.identifier)
         qcm_rf.device.start_sequencer.assert_called_with(sequencer=sequencer.identifier)
+        qcm_rf.device.get_sequencer_status.assert_called_once_with(sequencer=sequencer.identifier)
+        # The status query must come after start_sequencer: that order is what makes run() wait for the module
+        run_calls = [c[0] for c in qcm_rf.device.method_calls if c[0] in ("start_sequencer", "get_sequencer_status")]
+        assert run_calls[-2:] == ["start_sequencer", "get_sequencer_status"]
 
     def test_upload_qpysequence(self, qcm_rf: QbloxQCMRF):
         """Test uploading a QpySequence to the QCM module."""
