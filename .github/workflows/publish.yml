@@ -201,7 +201,10 @@ jobs:
           python-version: "3.13"
           version: "0.13.8"
       - name: Install release tools
-        run: uv sync --project "$RELEASE_TOOLS_DIR" --locked --no-build --no-default-groups
+        run: |
+          test -f "$RELEASE_TOOLS_DIR/pyproject.toml"
+          test -f "$RELEASE_TOOLS_DIR/uv.lock"
+          uv sync --project "$RELEASE_TOOLS_DIR" --locked --no-build --no-default-groups
       - name: List & validate distributions
         run: |
           ls -lh dist
