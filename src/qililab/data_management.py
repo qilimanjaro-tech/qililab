@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
+import tempfile
 from pathlib import Path
 
 from ruamel.yaml import YAML
@@ -52,8 +54,25 @@ def save_platform(path: str, platform: Platform) -> str:
     else:
         new_path = Path(path)
 
-    with open(file=new_path, mode="w", encoding="utf-8") as file:
-        YAML().dump(data=platform.to_dict(), stream=file)
+    # Serialise atomically: dump to a temporary file in the same directory and only then
+    # replace the target with os.replace. If the dump raises (e.g. an un-serialisable value),
+    # the temporary file is removed and any existing runcard at `new_path` is left untouched,
+    # instead of being truncated to 0 bytes by opening the target in write mode.
+    data = platform.to_dict()
+    fd, tmp_name = tempfile.mkstemp(dir=new_path.parent, prefix=f".{new_path.name}.", suffix=".tmp")
+    try:
+        with os.fdopen(fd, mode="w", encoding="utf-8") as file:
+            YAML().dump(data=data, stream=file)
+        # mkstemp creates the file with restrictive 0o600 permissions; relax them to the
+        # permissions a normal file creation would get, so saved runcards stay readable as before.
+        umask = os.umask(0)
+        os.umask(umask)
+        os.chmod(tmp_name, 0o666 & ~umask)
+        os.replace(tmp_name, new_path)
+    except BaseException:
+        if os.path.exists(tmp_name):
+            os.unlink(tmp_name)
+        raise
 
     return str(new_path)
 

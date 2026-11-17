@@ -10,7 +10,7 @@ from qililab.instrument_controllers.rohde_schwarz import SGS100AController
 from qililab.platform import Platform
 from qililab.typings.enums import ConnectionName, InstrumentControllerName, Parameter
 from tests.data import Galadriel, SauronQDevil
-from qililab.data_management import build_platform
+from qililab.data_management import build_platform, save_platform
 # from tests.test_utils import build_platform
 
 
@@ -113,3 +113,29 @@ class TestConnection:
         assert qdac_platform.get_parameter(alias="qdac_controller_external_clock", parameter=Parameter.REFERENCE_CLOCK) == "external"
         qdac_platform.set_parameter(alias="qdac_controller_external_clock", parameter=Parameter.REFERENCE_CLOCK, value="internal")
         assert qdac_platform.get_parameter(alias="qdac_controller_external_clock", parameter=Parameter.REFERENCE_CLOCK) == "internal"
+
+    def test_set_reference_clock_save_platform_round_trips(self, platform: Platform, tmp_path):
+        """After set_parameter(REFERENCE_CLOCK) the platform must still be serialisable, and the
+        value must survive a save/load round-trip (regression test for QHC-1777).
+
+        Before the fix, set_parameter stored a ``ReferenceClock`` Enum that ruamel.yaml could not
+        represent, so save_platform raised a RepresenterError.
+        """
+        platform.set_parameter(
+            alias="rohde_schwarz_controller_0", parameter=Parameter.REFERENCE_CLOCK, value="external"
+        )
+        # The value stored in the settings must be a plain string, not an Enum member.
+        stored = platform.get_parameter(
+            alias="rohde_schwarz_controller_0", parameter=Parameter.REFERENCE_CLOCK
+        )
+        assert type(stored) is str
+        assert stored == "external"
+
+        path = save_platform(path=str(tmp_path / "runcard.yml"), platform=platform)
+        reloaded = build_platform(path)
+        assert (
+            reloaded.get_parameter(
+                alias="rohde_schwarz_controller_0", parameter=Parameter.REFERENCE_CLOCK
+            )
+            == "external"
+        )

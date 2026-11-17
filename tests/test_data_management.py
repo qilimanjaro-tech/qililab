@@ -39,6 +39,28 @@ class TestPlatformData:
         assert Path(path) == Path("tests/test.yml")
         Path(path).unlink(missing_ok=True)
 
+    def test_save_platform_preserves_existing_file_on_dump_error(self, tmp_path):
+        """If serialisation fails, `save_platform` must leave an existing runcard untouched (QHC-1777).
+
+        Before the fix the target was opened in write mode up-front, truncating it to 0 bytes
+        before the (failing) dump, which destroyed the previous runcard.
+        """
+        target = tmp_path / "runcard.yml"
+        original_content = "name: existing_runcard\n"
+        target.write_text(original_content, encoding="utf-8")
+
+        platform = build_platform(Galadriel.runcard)
+
+        with patch("qililab.data_management.YAML") as mock_yaml:
+            mock_yaml.return_value.dump.side_effect = RuntimeError("cannot represent an object")
+            with pytest.raises(RuntimeError, match="cannot represent an object"):
+                save_platform(path=str(target), platform=platform)
+
+        # The existing file keeps its content instead of being truncated.
+        assert target.read_text(encoding="utf-8") == original_content
+        # The failed save leaves no leftover temporary files behind.
+        assert [p.name for p in tmp_path.iterdir()] == ["runcard.yml"]
+
 
 class TestBuildPlatformCornerCases:
     """Unit tests for the corner cases of the `build_platform` function.."""
