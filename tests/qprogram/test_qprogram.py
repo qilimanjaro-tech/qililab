@@ -714,8 +714,9 @@ class TestQProgram:
 
     def test_deserialize_legacy_yaml_qprogram_with_two_variables_sharing_a_label(self):
         """Former variables were told apart by UUID, so two could share a label: the second one gets ``_2``."""
+        text = LEGACY_QPROGRAM_YAML.replace("_label: index", "_label: wait")
         with pytest.warns(UserWarning, match="had save_adc=True, which no longer exists"):
-            qp = ql.deserialize(LEGACY_QPROGRAM_YAML.replace("_label: index", "_label: wait"))
+            qp = ql.deserialize(text)
 
         assert [(variable.id, variable.label) for variable in qp.variables] == [
             ("gain", "gain"),
@@ -728,13 +729,15 @@ class TestQProgram:
     def test_deserialize_legacy_yaml_qprogram_with_parallel_loops_of_different_lengths_raises_error(self):
         """The former compiler ran a parallel loop for the points of its shortest loop: loops in lockstep must now have
         the same number of points."""
+        text = LEGACY_QPROGRAM_YAML.replace("stop: 300\n", "stop: 500\n")
         with pytest.raises(DeserializationError, match="parallel loops must have the same number of iterations"):
-            ql.deserialize(LEGACY_QPROGRAM_YAML.replace("stop: 300\n", "stop: 500\n"))
+            ql.deserialize(text)
 
     def test_deserialize_legacy_yaml_qprogram_twice_keeps_the_variables_of_each_file(self):
         """Two files sharing variable UUIDs, such as two saves of one program, each get the variables they hold."""
+        text = LEGACY_QPROGRAM_YAML.replace("_label: index", "_label: wait")
         with pytest.warns(UserWarning, match="had save_adc=True, which no longer exists"):
-            relabelled = ql.deserialize(LEGACY_QPROGRAM_YAML.replace("_label: index", "_label: wait"))
+            relabelled = ql.deserialize(text)
         original = load_legacy_qprogram()
 
         assert [variable.id for variable in relabelled.variables] == ["gain", "frequency_of_drive", "wait", "wait_2"]

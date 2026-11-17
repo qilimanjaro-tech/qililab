@@ -17,7 +17,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 from qprogram import BinaryOp, Constant, Expression, Linspace, UnaryOp, Variable
 from qprogram.blocks import Average, Block, Parallel, Sweep
@@ -248,55 +248,68 @@ def _prepare_operations(body: Block, markers: dict[str, str] | None) -> None:
     for node in body.walk():
         for name in EXPRESSION_FIELDS.get(type(node), ()):
             value = getattr(node, name)
-            if not isinstance(value, Expression):
-                continue
-            if isinstance(value, Constant):
-                value = value.value
-            elif isinstance(value, UnaryOp):
-                value = BinaryOp("-", Constant(0), value.operand)
-            elif isinstance(value, BinaryOp):
-                left, op, right = value.left, value.op, value.right
-                if op == "+" and isinstance(left, Constant):
-                    left, right = right, left
-                if isinstance(left, Variable) and isinstance(right, Constant) and right.value < 0:
-                    op, right = ("-" if op == "+" else "+"), Constant(-right.value)
-                value = BinaryOp(op, left, right)
-            setattr(node, name, value)
+            if isinstance(value, Expression):
+                setattr(node, name, _expression_for_the_compiler(value))
+        _check_operation(node, markers)
 
-        if isinstance(node, (QdacPlay, QdacSetOffset, QdacSetTrigger, QdacWaitTrigger)):
-            raise NotImplementedError(f"{node.__class__} is not supported in QBlox, on bus '{node.bus}'.")
-        if isinstance(node, (SetFrequency, SetPhase)):
-            name = "frequency" if isinstance(node, SetFrequency) else "phase"
-            if isinstance(getattr(node, name), BinaryOp):
-                raise NotImplementedError(
-                    f"An expression cannot be used as the {name} in QBlox, only a variable: {getattr(node, name)}."
-                )
-        elif isinstance(node, Wait):
-            duration = node.duration
-            if (
-                isinstance(duration, BinaryOp)
-                and isinstance(duration.left, Variable)
-                and isinstance(duration.right, Variable)
-            ):
-                raise NotImplementedError("A wait duration cannot combine several variables in one expression.")
-        elif isinstance(node, SetOffset):
-            if isinstance(node.offset_path1, BinaryOp) or (
-                isinstance(node.offset_path0, BinaryOp) and node.offset_path1 is not None
-            ):
-                raise NotImplementedError(
-                    "Having a different offset for I and Q whilst using VariableExpressions is not supported."
-                )
-        elif isinstance(node, QbloxSetTrigger):
-            if not node.outputs:
-                raise ValueError("Missing qblox trigger outputs at qp.qblox.set_trigger.")
-            rf_module = markers is not None and int(markers.get(node.bus, "0000"), 2) > 0
-            for output in node.outputs if isinstance(node.outputs, list) else [node.outputs]:
-                if rf_module and output not in (1, 2):
-                    raise ValueError("RF modules only have 2 trigger outputs, either 1 or 2")
-                if not rf_module and output not in (1, 2, 3, 4):
-                    raise ValueError("Low frequency modules only have 4 trigger outputs, out of range")
-        elif isinstance(node, QbloxWaitTrigger) and not isinstance(node.duration, (int, float)):
-            raise ValueError("Wait trigger duration cannot be a Variable, it must be an int.")
+
+def _expression_for_the_compiler(value: Expression) -> Expression | int | float:
+    """Return ``value`` written the way the Qblox compiler reads it (see `_prepare_operations`)."""
+    if isinstance(value, Constant):
+        return value.value
+    if isinstance(value, UnaryOp):
+        return BinaryOp("-", Constant(0), value.operand)
+    if isinstance(value, BinaryOp):
+        left, op, right = value.left, value.op, value.right
+        if op == "+" and isinstance(left, Constant):
+            left, right = right, left
+        if isinstance(left, Variable) and isinstance(right, Constant) and right.value < 0:
+            op, right = ("-" if op == "+" else "+"), Constant(-right.value)
+        return BinaryOp(op, left, right)
+    return value
+
+
+def _check_operation(node: object, markers: dict[str, str] | None) -> None:
+    """Raise if the Qblox compiler can't compile ``node`` (see `_prepare_operations`)."""
+    if isinstance(node, (QdacPlay, QdacSetOffset, QdacSetTrigger, QdacWaitTrigger)):
+        raise NotImplementedError(f"{node.__class__} is not supported in QBlox, on bus '{node.bus}'.")
+    if isinstance(node, (SetFrequency, SetPhase)):
+        name = "frequency" if isinstance(node, SetFrequency) else "phase"
+        if isinstance(getattr(node, name), BinaryOp):
+            raise NotImplementedError(
+                f"An expression cannot be used as the {name} in QBlox, only a variable: {getattr(node, name)}."
+            )
+    elif isinstance(node, Wait):
+        duration = node.duration
+        if (
+            isinstance(duration, BinaryOp)
+            and isinstance(duration.left, Variable)
+            and isinstance(duration.right, Variable)
+        ):
+            raise NotImplementedError("A wait duration cannot combine several variables in one expression.")
+    elif isinstance(node, SetOffset):
+        if isinstance(node.offset_path1, BinaryOp) or (
+            isinstance(node.offset_path0, BinaryOp) and node.offset_path1 is not None
+        ):
+            raise NotImplementedError(
+                "Having a different offset for I and Q whilst using VariableExpressions is not supported."
+            )
+    elif isinstance(node, QbloxSetTrigger):
+        _check_trigger_outputs(node, markers)
+    elif isinstance(node, QbloxWaitTrigger) and not isinstance(node.duration, (int, float)):
+        raise ValueError("Wait trigger duration cannot be a Variable, it must be an int.")
+
+
+def _check_trigger_outputs(node: QbloxSetTrigger, markers: dict[str, str] | None) -> None:
+    """Raise if a ``qp.qblox.set_trigger`` has no outputs, or one its module doesn't have."""
+    if not node.outputs:
+        raise ValueError("Missing qblox trigger outputs at qp.qblox.set_trigger.")
+    rf_module = markers is not None and int(markers.get(node.bus, "0000"), 2) > 0
+    for output in node.outputs if isinstance(node.outputs, list) else [node.outputs]:
+        if rf_module and output not in (1, 2):
+            raise ValueError("RF modules only have 2 trigger outputs, either 1 or 2")
+        if not rf_module and output not in (1, 2, 3, 4):
+            raise ValueError("Low frequency modules only have 4 trigger outputs, out of range")
 
 
 def _prepare_loops(body: Block) -> None:
@@ -318,23 +331,29 @@ def _prepare_loops(body: Block) -> None:
             source.start, source.stop = (
                 int(value) if float(value).is_integer() else value for value in (source.start, source.stop)
             )
-            for wait in node.walk():
-                if not (isinstance(wait, Wait) and isinstance(wait.duration, Expression)):
-                    continue
-                if loop.variable not in wait.duration.variables():
-                    continue
-                # The wait is linear in the variable: its shortest duration is at one end of the loop
-                durations = []
-                for value in (source.start, source.stop):
-                    loop.variable.set_value(value)
-                    durations.append(wait.duration.evaluate_or_raise())
-                loop.variable.reset()
-                if min(durations) < INST_MIN_WAIT:
-                    raise ValueError(
-                        f"The loop over {loop.variable.id!r} makes the wait on bus {wait.bus!r} last {min(durations):g} "
-                        f"ns, below the Q1ASM minimum of {INST_MIN_WAIT} ns: every wait must last at least {INST_MIN_WAIT} ns, "
-                        f"for example by starting the loop at {INST_MIN_WAIT} ns."
-                    )
+            _check_waits_of_loop(loop, node if isinstance(node, Parallel) else loop)
+
+
+def _check_waits_of_loop(loop: Sweep, block: Block) -> None:
+    """Raise if ``loop`` makes a wait inside ``block``, the loop or its Parallel, last under 4 ns."""
+    source = cast("Linspace", loop.source)
+    for wait in block.walk():
+        if not (isinstance(wait, Wait) and isinstance(wait.duration, Expression)):
+            continue
+        if loop.variable not in wait.duration.variables():
+            continue
+        # The wait is linear in the variable: its shortest duration is at one end of the loop
+        durations = []
+        for value in (source.start, source.stop):
+            loop.variable.set_value(value)
+            durations.append(wait.duration.evaluate_or_raise())
+        loop.variable.reset()
+        if min(durations) < INST_MIN_WAIT:
+            raise ValueError(
+                f"The loop over {loop.variable.id!r} makes the wait on bus {wait.bus!r} last {min(durations):g} ns, "
+                f"below the Q1ASM minimum of {INST_MIN_WAIT} ns: every wait must last at least {INST_MIN_WAIT} ns, "
+                f"for example by starting the loop at {INST_MIN_WAIT} ns."
+            )
 
 
 def _buses_exceeding_acquisition_depth(acquisition_metadata: AcquisitionMetadata) -> list[str]:

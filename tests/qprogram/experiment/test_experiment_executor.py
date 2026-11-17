@@ -619,8 +619,9 @@ class TestExperimentExecutor:
         with experiment.sweep(flux).from_range(0.0, 1.0, 0.5):
             experiment.set_parameter(alias="flux_bus", parameter=Parameter.VOLTAGE, value=flux)
 
+        executor = ExperimentExecutor(platform=make_platform_returning(make_qprogram_result()), experiment=experiment)
         with pytest.raises(ValidationError, match="The Experiment uses features qililab does not support"):
-            ExperimentExecutor(platform=make_platform_returning(make_qprogram_result()), experiment=experiment).execute()
+            executor.execute()
 
     def test_experiment_for_loop_with_a_step_pointing_away_from_stop_raises(self):
         experiment = Experiment(label="loops")
