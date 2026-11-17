@@ -11,6 +11,14 @@ uv 0.13.8 treats explicit `--no-binary-package` names as exceptions to `--no-bui
 | qblox-instruments | 1.0.3 | The firmware-compatible hardware pin has no wheel in the committed lock. Removing its exception makes a clean install fail. |
 | marshmallow-polyfield | 5.11 | Source-only dependency of the pinned qm-qua 1.2.4 extra, which all-extras CI installs. Removing its exception makes a clean install fail. |
 
+### Retiring the exceptions
+
+qblox-instruments 1.4.2 publishes wheels on PyPI. When a separately reviewed hardware and firmware compatibility upgrade adopts a version with wheels for every supported CI environment, remove the qblox-instruments source-build exception from each workflow and `ci-build-exceptions.toml`, and update the policy regressions. Keep the current 1.0.3 hardware pin until that upgrade is validated.
+
+marshmallow-polyfield is needed only by the Quantum Machines extra through qm-qua. When removing that extra, also remove its source-build exception from each workflow and `ci-build-exceptions.toml`, and the qm-qua-specific `marshmallow` override in `pyproject.toml`. Regenerate the lock with uv and update the policy regressions together.
+
+### Reviewing the build policy
+
 The exact reviewed sdist hashes and reasons are recorded in [ci-build-exceptions.toml](ci-build-exceptions.toml). Regression checks match them against uv.lock and each workflow's allowlist. A version, artifact or exception change requires a fresh compatibility review. Hardware pins, runtime overrides, CVE floors and the explicit QPySequence index mapping must be preserved.
 
 Isolated first-party and approved third-party builds use the exact build-tool versions and wheel hashes in `tool.uv.build-constraint-dependencies`. This includes Hatchling, hatch-vcs and their transitive requirements, including the editable-build hook, plus setuptools and wheel for the two legacy source distributions. `--require-build-hashes` rejects an unreviewed backend dependency before the source backend runs. Build isolation stays enabled.

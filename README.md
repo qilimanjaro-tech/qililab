@@ -19,6 +19,15 @@ We use a number of tools to maintain code quality and consistency:
 
 ### Setup & Dependency Management
 
+Before syncing an existing checkout, check `uv --version`. Development requires **uv 0.13.8 or newer**, including local installs. Pulling the repository or running `uv sync` does not update uv. If you installed uv with its standalone installer, run:
+
+```bash
+uv self update
+uv --version
+```
+
+If you installed uv through a package manager, update it with that same package manager, then check `uv --version` before syncing. For example, use `brew upgrade uv` for Homebrew or `pipx upgrade uv` for pipx.
+
 Clone the repository and sync the dev environment with [uv](https://docs.astral.sh/uv/) 0.13.8 or newer. This version is required to read the hashed build constraints. See [CI dependency builds](.github/CI_DEPENDENCIES.md) for the reviewed source-build exceptions:
 
 ```bash
