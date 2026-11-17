@@ -19,7 +19,7 @@ from copy import deepcopy
 from typing import TYPE_CHECKING, TypeGuard
 
 import numpy as np
-from qprogram import Expression, Range, Variable
+from qprogram import Expression, Linspace, Range, Variable
 from qprogram.blocks import Block, Parallel, Sweep
 from qprogram.operations import Measure, Play, SetGain, SetOffset, Sync, Wait
 from qprogram.waveforms import Arbitrary, FlatTop, IQWaveform, Square, Waveform
@@ -27,7 +27,7 @@ from qprogram_qblox import Acquire
 from qprogram_qdac import Play as QdacPlay
 from qprogram_qdac import SetOffset as QdacSetOffset
 
-from qililab.qprogram.blocks import ForLoop, IfTrigger
+from qililab.qprogram.blocks import IfTrigger
 from qililab.qprogram.crosstalk.crosstalk_matrix import CrosstalkMatrix, NonLinearCrosstalkMatrix
 from qililab.qprogram.crosstalk.flux_vector import FluxVector, NonLinearFluxVector, sweep_points
 from qililab.qprogram.crosstalk.utils_crosstalk import CrosstalkElements, NonLinearFlagState, operation_key
@@ -80,16 +80,17 @@ def _is_qblox_play(element: Block | Operation) -> TypeGuard[Play | QbloxPlay]:
     return isinstance(element, _QBLOX_PLAYS) and not _has_named_waveform(element)
 
 
-def _is_range_sweep(block: object) -> bool:
-    """Whether ``block`` is a sweep over a ``Range``, the loop ``qp.for_loop`` and ``from_range`` build.
+def _is_linear_sweep(block: object) -> bool:
+    """Whether ``block`` is a sweep over a ``Range`` or a ``Linspace``, the loops ``from_range``, ``from_linspace`` and
+    ``qp.for_loop`` build.
 
     Args:
         block (object): The node.
 
     Returns:
-        bool: True for a ``Sweep`` whose source is a ``Range``.
+        bool: True for a ``Sweep`` whose source is a ``Range`` or a ``Linspace``.
     """
-    return isinstance(block, Sweep) and isinstance(block.source, Range)
+    return isinstance(block, Sweep) and isinstance(block.source, (Range, Linspace))
 
 
 def _flux_value(operation: SetOffset | SetGain) -> float | Expression:
@@ -174,6 +175,8 @@ class _QbloxCrosstalkCompensation:
         self.taken_ids: set[str] = {variable.id for variable in program.variables} | {
             variable.id for variable in program.body.variables()
         }
+        # Each variable swept in place of the user's (by id) -> the user's loop it replaces, to label the results with
+        self.loop_origins: dict[str, Sweep | Parallel] = {}
 
         self.non_lin_flux_vector: NonLinearFluxVector | None = None
         if isinstance(crosstalk, NonLinearCrosstalkMatrix):
@@ -261,7 +264,7 @@ class _QbloxCrosstalkCompensation:
                             new_loop = next(
                                 loop
                                 for loop in self.active_loops
-                                if (_is_range_sweep(loop) and loop.variable == value)  # type: ignore[union-attr]
+                                if (_is_linear_sweep(loop) and loop.variable == value)  # type: ignore[union-attr]
                                 or (
                                     isinstance(loop, Parallel)
                                     and any(for_loop.variable == value for for_loop in loop.loops)
@@ -304,11 +307,11 @@ class _QbloxCrosstalkCompensation:
 
             if isinstance(element, Block):
                 variable_list = None
-                if _is_range_sweep(element):
+                if _is_linear_sweep(element):
                     variable_list = [element.variable]  # type: ignore[attr-defined]
                     self.active_loops.append(element)  # type: ignore[arg-type]
                     self.loop_depths.append(loop_idx)
-                if isinstance(element, Parallel) and all(_is_range_sweep(loop) for loop in element.loops):
+                if isinstance(element, Parallel) and all(_is_linear_sweep(loop) for loop in element.loops):
                     variable_list = [loop.variable for loop in element.loops]
                     if non_lin_flux_vector is not None:
                         self.active_loops.append(element)
@@ -342,6 +345,8 @@ class _QbloxCrosstalkCompensation:
                         new_block: Block = loop_list[0] if len(loop_list) == 1 else Parallel(loop_list)
                         new_block.elements[:] = element.elements
                         block.elements[i] = new_block
+                        for loop in loop_list:
+                            self.loop_origins[loop.variable.id] = element  # type: ignore[assignment]
                     self.active_loops = self.active_loops[:-1]
                     self.loop_depths = self.loop_depths[:-1]
 
@@ -359,8 +364,8 @@ class _QbloxCrosstalkCompensation:
                 non_lin_offset_list = []
 
             if (
-                _is_range_sweep(block)
-                or (isinstance(block, Parallel) and all(_is_range_sweep(loop) for loop in block.loops))
+                _is_linear_sweep(block)
+                or (isinstance(block, Parallel) and all(_is_linear_sweep(loop) for loop in block.loops))
             ) and non_lin_flux_vector.has_loop(block):  # type: ignore[arg-type]
                 non_lin_flux_vector.exit_loop(block)  # type: ignore[arg-type]
 
@@ -404,7 +409,7 @@ class _QbloxCrosstalkCompensation:
                 envelope = sweep_points(variable_loop)  # type: ignore[arg-type]
                 if not envelope.tolist():
                     raise ValueError(
-                        "Parameters of the ForLoop not assigned correctly. Please check start, stop and step values."
+                        "Parameters of the loop not assigned correctly. Please check start, stop and step values."
                     )
         envelope_is_array = isinstance(envelope, np.ndarray) and envelope.ndim > 0
         # The bus being set is replaced, so its previous value doesn't count.
@@ -768,7 +773,7 @@ class _QbloxCrosstalkCompensation:
             self.constant_bus_variables.add(bus_variable)
             return None
 
-        return Sweep(bus_variable, ForLoop(bus_variable, start, stop, step).to_range())
+        return Sweep(bus_variable, Linspace(start, stop, len(bias_vector)))
 
     def assemble_flux_operations(
         self,
@@ -896,13 +901,17 @@ class _QbloxCrosstalkCompensation:
             shifted = self.new_variable(f"{loop.variable.id}{shift}")
             shifted_loop = Sweep(
                 shifted,
-                ForLoop(shifted, source.start + constant, source.stop + constant, source.step).to_range(),  # type: ignore[attr-defined]
+                Linspace(source.start + constant, source.stop + constant, source.num)  # type: ignore[attr-defined]
+                if isinstance(source, Linspace)
+                else Range(source.start + constant, source.stop + constant, source.step),  # type: ignore[attr-defined]
             )
             if isinstance(parallel, Parallel):
                 parallel.loops = [*parallel.loops, shifted_loop]
             else:
                 # A compensated loop alone in its block: it becomes a Parallel once every operation is assembled.
                 self.extra_loops.setdefault(id(parallel), (parallel, []))[1].append(shifted_loop)  # type: ignore[arg-type]
+            if loop.variable.id in self.loop_origins:
+                self.loop_origins[shifted.id] = self.loop_origins[loop.variable.id]
             self.declare(shifted)
             shifted_loops[key] = shifted
         return other + shifted_loops[key]
@@ -1044,7 +1053,9 @@ class _QbloxCrosstalkCompensation:
         return corrected_elements, state
 
 
-def apply_crosstalk_qblox(qprogram: QProgram, crosstalk: CrosstalkMatrix) -> QProgram:
+def apply_crosstalk_qblox(
+    qprogram: QProgram, crosstalk: CrosstalkMatrix
+) -> tuple[QProgram, dict[str, Sweep | Parallel]]:
     """Apply crosstalk compensation to the Qblox flux operations of a QProgram.
 
     Traverses the elements of the QProgram, replacing every ``play`` (``qp.play`` or ``qp.qblox.play``),
@@ -1056,7 +1067,8 @@ def apply_crosstalk_qblox(qprogram: QProgram, crosstalk: CrosstalkMatrix) -> QPr
         crosstalk (CrosstalkMatrix): Crosstalk matrix class.
 
     Returns:
-        QProgram: A new instance of QProgram with calibrated crosstalk.
+        tuple[QProgram, dict[str, Sweep | Parallel]]: A new instance of QProgram with calibrated crosstalk, and each
+            variable swept in place of the user's, by id, with the user's loop it replaces.
 
     Raises:
         TypeError: If the QProgram uses ``qp.qblox.measure_reset()``.
@@ -1065,8 +1077,9 @@ def apply_crosstalk_qblox(qprogram: QProgram, crosstalk: CrosstalkMatrix) -> QPr
         ValueError: If the plays compensated together have different ``wait_time`` or FlatTop parameters.
     """
     copied_qprogram = deepcopy(qprogram)
-    _QbloxCrosstalkCompensation(copied_qprogram, crosstalk).compensate()
-    return copied_qprogram
+    compensation = _QbloxCrosstalkCompensation(copied_qprogram, crosstalk)
+    compensation.compensate()
+    return copied_qprogram, compensation.loop_origins
 
 
 def apply_crosstalk_qdac(

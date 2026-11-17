@@ -4,7 +4,7 @@ from qprogram import Range
 from qprogram.blocks import Sweep
 
 from qililab.qprogram import QProgram
-from qililab.qprogram.blocks import ForLoop
+from qililab.qprogram.blocks import for_loop_linspace
 from qililab.qprogram.crosstalk.crosstalk_matrix import CrosstalkMatrix
 from tests.qprogram.crosstalk.crosstalk_simulation import (
     assert_compensated,
@@ -35,8 +35,8 @@ def single_sweep() -> QProgram:
 
 def test_loop_values_match_compiler_count():
     x = QProgram().variable("x")
-    assert np.allclose(loop_values(Sweep(x, ForLoop(x, 0, 0.25, 0.1).to_range())), [0.0, 0.125, 0.25])
-    assert np.allclose(loop_values(Sweep(x, ForLoop(x, 0.2, 0.2, 0.1).to_range())), [0.2])
+    assert np.allclose(loop_values(Sweep(x, for_loop_linspace(0, 0.25, 0.1))), [0.0, 0.125, 0.25])
+    assert np.allclose(loop_values(Sweep(x, for_loop_linspace(0.2, 0.2, 0.1))), [0.2])
 
 
 def test_simulate_records_state_at_each_wait_and_later_offsets_replace_earlier_ones():

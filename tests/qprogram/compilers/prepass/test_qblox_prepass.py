@@ -65,12 +65,28 @@ class TestPrepareQblox:
         with pytest.raises(ValueError, match="Non QBLOX buses not allowed inside sync function"):
             prepare_qblox(qp, qblox_buses=["drive"])
 
+    @pytest.mark.parametrize(
+        "add_operation, name",
+        [
+            (lambda qp: qp.qdac.play(bus="drive", waveform=DRIVE_WF), "Play"),
+            (lambda qp: qp.qdac.set_offset(bus="drive", offset=0.1), "SetOffset"),
+            (lambda qp: qp.qdac.set_trigger(bus="drive", duration=1e-5, outputs=[1]), "SetTrigger"),
+            (lambda qp: qp.qdac.wait_trigger(bus="drive", port=1), "WaitTrigger"),
+        ],
+    )
+    def test_qdac_operation_on_a_qblox_bus_raises_error(self, add_operation, name):
+        qp = QProgram()
+        add_operation(qp)
+
+        with pytest.raises(NotImplementedError, match=rf"qprogram_qdac\.operations\.{name}'> is not supported in QBlox, on bus 'drive'\."):
+            prepare_qblox(qp, qblox_buses=["drive"])
+
     def test_range_bounds_are_ints_when_whole(self):
         """A Range stores its bounds as floats: the compiler gets the whole ones back as ints, the user's program
         is left as it is."""
         qp = QProgram()
         duration, gain = qp.variable("duration"), qp.variable("gain")
-        with qp.sweep(duration).from_range(0, 100, 20) | qp.sweep(gain).from_range(0, 0.5, 0.1):
+        with qp.sweep(duration).from_range(20, 120, 20) | qp.sweep(gain).from_range(0, 0.5, 0.1):
             qp.wait(bus="drive", duration=duration)
             qp.set_gain(bus="drive", gain=gain)
 
@@ -78,27 +94,71 @@ class TestPrepareQblox:
 
         (parallel,) = result.qprogram.body.elements
         bounds = [(loop.source.start, loop.source.stop, loop.source.step) for loop in parallel.loops]
-        assert bounds == [(0, 100, 20), (0, 0.5, 0.1)]
+        assert bounds == [(20, 120, 20), (0, 0.5, 0.1)]
         assert [type(value) for value in bounds[0]] == [int, int, int]
         assert [type(value) for value in bounds[1]] == [int, float, float]
         assert type(qp.body.elements[0].loops[0].source.start) is float
 
+    @pytest.mark.parametrize(
+        "start, stop, step, duration, shortest",
+        [
+            (0, 100, 20, lambda time: time, "0"),
+            (2, 100, 2, lambda time: time, "2"),
+            (100, 0, -25, lambda time: time, "0"),
+            (100, 200, 10, lambda time: 102 - time, "-98"),
+        ],
+    )
+    def test_loop_making_a_wait_shorter_than_4_ns_raises_error(self, start, stop, step, duration, shortest):
+        """Q1ASM can't wait less than 4 ns: a loop that would is refused before it runs."""
+        qp = QProgram()
+        time = qp.variable("time")
+        with qp.sweep(time).from_range(start, stop, step):
+            qp.wait(bus="drive", duration=duration(time))
+
+        with pytest.raises(ValueError, match=f"The loop over 'time' makes the wait on bus 'drive' last {shortest} ns"):
+            prepare_qblox(qp)
+
+    def test_parallel_loop_making_a_wait_shorter_than_4_ns_raises_error(self):
+        qp = QProgram()
+        time, gain = qp.variable("time"), qp.variable("gain")
+        with qp.sweep(time).from_range(0, 100, 20) | qp.sweep(gain).from_range(0, 0.5, 0.1):
+            qp.set_gain(bus="drive", gain=gain)
+            qp.wait(bus="drive", duration=time)
+
+        with pytest.raises(ValueError, match="The loop over 'time' makes the wait on bus 'drive' last 0 ns"):
+            prepare_qblox(qp)
+
+    def test_loop_from_0_keeping_every_wait_at_4_ns_or_more_is_kept(self):
+        """Only the waits count: a loop from 0 that never waits less than 4 ns runs as written."""
+        qp = QProgram()
+        time = qp.variable("time")
+        with qp.sweep(time).from_range(0, 100, 20):
+            qp.wait(bus="drive", duration=time + 8)
+
+        result = prepare_qblox(qp)
+
+        (loop,) = result.qprogram.body.elements
+        assert (loop.source.start, loop.source.stop, loop.source.step) == (0, 100, 20)
+
     def test_expressions_are_written_the_way_the_compiler_reads_them(self):
-        """A constant goes on the right and is never negative, and -x becomes 0 - x."""
+        """The constant of a + goes on the right, a constant after a variable is never negative, c - x is kept,
+        and -x becomes 0 - x."""
         qp = QProgram()
         duration, gain = qp.variable("duration"), qp.variable("gain")
         with qp.sweep(duration).from_range(100, 200, 50) | qp.sweep(gain).from_range(0.1, 0.3, 0.1):
             qp.wait(bus="drive", duration=8 + duration)
             qp.set_gain(bus="drive", gain=gain + -0.5)
             qp.set_offset(bus="drive", offset_path0=-gain)
+            qp.wait(bus="drive", duration=300 - duration)
 
         result = prepare_qblox(qp)
 
         (parallel,) = result.qprogram.body.elements
-        wait, set_gain, set_offset = parallel.elements
+        wait, set_gain, set_offset, wait_left = parallel.elements
         assert str(wait.duration) == str(duration + 8)
         assert str(set_gain.gain) == str(gain - 0.5)
         assert str(set_offset.offset_path0) == "(Constant(0) - Variable('gain'))"
+        assert str(wait_left.duration) == str(300 - duration)
 
     def test_range_stop_becomes_its_last_point(self):
         """A Range whose step doesn't divide stop - start ends before stop: stop becomes that point. A stop off by

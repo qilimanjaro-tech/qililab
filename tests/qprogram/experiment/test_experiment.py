@@ -74,10 +74,8 @@ class TestExperiment:
             # __enter__
             assert isinstance(loop, Sweep)
             assert loop.variable == variable
-            assert isinstance(loop.source, Range)
-            assert loop.source.start == start
-            assert loop.source.stop == stop
-            assert loop.source.step == step
+            np.testing.assert_array_equal(loop.source.values(), np.arange(start, stop + step, step))
+            assert loop.source.values().dtype.kind == "i"
             assert instance._active_block is loop
         # __exit__
         assert len(instance._body.elements) == 1
@@ -207,7 +205,7 @@ class TestExperiment:
         assert deserialized_experiment.label == "experiment"
         (loop,) = deserialized_experiment.body.elements
         assert isinstance(loop, Sweep)
-        assert loop.source == Range(0.0, 1.0, 0.1)
+        np.testing.assert_allclose(loop.source.values(), np.linspace(0.0, 1.0, 11))
         set_parameter, execute_qprogram = loop.elements
         assert isinstance(set_parameter, SetParameter)
         assert set_parameter.value == loop.variable

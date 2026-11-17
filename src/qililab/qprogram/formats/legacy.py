@@ -54,7 +54,7 @@ from qprogram_qdac import SetOffset as QdacSetOffset
 from qprogram_qdac import SetTrigger as QdacSetTrigger
 from qprogram_qdac import WaitTrigger as QdacWaitTrigger
 
-from qililab.qprogram.blocks import ForLoop, IfTrigger, InfiniteLoop
+from qililab.qprogram.blocks import IfTrigger, InfiniteLoop, for_loop_linspace
 from qililab.qprogram.operations import MeasureReset, QbloxPlay
 from qililab.qprogram.variable_ids import unique_variable_id
 from qililab.yaml import yaml
@@ -513,8 +513,7 @@ def _register() -> None:
         "!ForLoop",
         _block(
             lambda mapping: Sweep(
-                mapping["variable"],
-                ForLoop(mapping["variable"], mapping["start"], mapping["stop"], mapping["step"]).to_range(),
+                mapping["variable"], for_loop_linspace(mapping["start"], mapping["stop"], mapping["step"])
             )
         ),
     )

@@ -19,7 +19,7 @@ Pending deprecations
     - Deprecated in an upcoming release (`#1112 <https://github.com/qilimanjaro-tech/qililab/pull/1112>`_)
     - No removal version set yet
 
-- `QProgram.for_loop` is deprecated in favor of `qp.sweep(variable).from_range(start, stop, step)`. When `step` does not divide `stop - start`, `from_range` rounds the number of points to the nearest and steps by `step`, where `for_loop` rounds it down and spreads the points from `start` to `stop`.
+- `QProgram.for_loop` is deprecated in favor of `qp.sweep(variable).from_linspace(start, stop, num)`, which sweeps the same points: `num` is the number of points `for_loop` sweeps, rounded down when `step` does not divide `stop - start`. `qp.sweep(variable).from_range(start, stop, step)` keeps the step instead and rounds the number of points to the nearest.
     - Deprecated in an upcoming release (`#1273 <https://github.com/qilimanjaro-tech/qililab/pull/1273>`_)
     - No removal version set yet
 

@@ -10,7 +10,6 @@ import qpysequence as QPy
 import qpysequence.program.instructions as QPyInstructions
 from qprogram.operations import SetFrequency, SetPhase, SetGain, SetOffset, Wait, ResetPhase
 from qililab import Arbitrary, Calibration, FlatTop, Gaussian, IQPair, IQDrag, QProgram, Square, SuddenNetZero
-from qililab.qprogram.blocks import ForLoop
 from qililab.qprogram import QbloxCompiler
 from tests.test_utils import is_q1asm_equal
 import logging
@@ -685,7 +684,7 @@ def fixture_dynamic_sync_long_wait() -> QProgram:
     weights_pair = IQPair(I=Square(amplitude=1.0, duration=1000), Q=Square(amplitude=0.0, duration=1000))
     qp = QProgram()
     duration = qp.variable("time")
-    with qp.sweep(duration).from_range(0, 200_000, 10):
+    with qp.sweep(duration).from_range(10, 200_000, 10):
         qp.play(bus="drive", waveform=drag_pair)
         qp.wait(bus="drive", duration=duration)
         qp.sync()
@@ -705,7 +704,7 @@ def fixture_dynamic_sync_variable_expression_difference() -> QProgram:
         qp.play(bus="drive", waveform=drag_pair)
         qp.wait(bus="drive", duration=duration - 50)
         qp.sync()
-        qp.wait(bus="drive", duration=50 - duration)
+        qp.wait(bus="drive", duration=250 - duration)
         qp.sync()
         qp.measure(bus="readout", waveform=readout_pair, weights=weights_pair)
         qp.sync()
@@ -3636,7 +3635,7 @@ class TestQBloxCompiler:
                             set_mrk          0              
                             upd_param        4              
             main:
-                            move             4, R0      
+                            move             10, R0      
                             move             20000, R1          
             loop_0:
                             play             0, 1, 40                                   
@@ -3698,7 +3697,7 @@ class TestQBloxCompiler:
                                         
             main:
                             move             0, R2 
-                            move             4, R3      
+                            move             10, R3      
                             move             20000, R4          
             loop_0:
                             move             40, R5         
@@ -3793,7 +3792,7 @@ class TestQBloxCompiler:
                             jlt              R5, 2147483648, @dynamic_sync_0
                             jge              R5, 4294967293, @negative_one_two_three_0
             after_dynamic_sync_0:
-                            move             50, R6         
+                            move             250, R6        
                             nop                             
                             sub              R6, R0, R7     
                             nop                             
@@ -3883,7 +3882,7 @@ class TestQBloxCompiler:
                             jlt              R10, 2147483648, @dynamic_sync_0
                             jge              R10, 4294967293, @negative_one_two_three_0
             after_dynamic_sync_0:
-                            move             50, R11        
+                            move             250, R11       
                             nop                             
                             sub              R11, R3, R5                                 
                             move             0, R6          
@@ -5183,127 +5182,6 @@ class TestQBloxCompiler:
     def test_clamp_duration_above_minimum_returns_unchanged(self):
         result = QbloxCompiler._clamp_duration(100, label="wait")
         assert result == 100
-
-    def test_parallel_loop_wait_start_below_minimum_is_clamped(self, caplog):
-        drag_pair = IQDrag(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=1.2)
-        qp = QProgram()
-        duration = qp.variable("time")
-        gain = qp.variable("gain")
-        with qp.sweep(duration).from_range(0, 100, 10) | qp.sweep(gain).from_range(0, 1, 0.1) as parallel:
-            qp.set_gain(bus="drive", gain=gain)
-            qp.play(bus="drive", waveform=drag_pair)
-            qp.wait(bus="drive", duration=duration)
-
-        compiler = QbloxCompiler()
-        with caplog.at_level(logging.WARNING):
-            sequences, _ = compiler.compile(qprogram=qp)
-
-        assert "Wait duration 0 ns is below the Q1ASM minimum (4 ns), clamping to 4 ns." in caplog.text
-        # The compiler clamps its own copy: the caller's loops are unchanged
-        duration_loop, gain_loop = parallel.loops
-        assert duration_loop.source.start == 0
-        assert gain_loop.source.start == 0
-
-        expected = """
-            setup:
-                wait_sync        4
-                set_mrk          0
-                upd_param        4
-
-            main:
-                move             4, R0
-                move             0, R1
-                move             10, R2
-            loop_0:
-                set_awg_gain     R1, R1
-                play             0, 1, 40
-                wait             R0
-                add              R0, 10, R0
-                add              R1, 3276, R1
-                loop             R2, @loop_0
-                set_mrk          0
-                upd_param        4
-                stop
-        """
-        assert is_q1asm_equal(sequences["drive"], expected)
-
-    def test_parallel_loop_wait_stop_below_minimum_is_clamped(self, caplog):
-        drag_pair = IQDrag(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=1.2)
-        qp = QProgram()
-        duration = qp.variable("time")
-        gain = qp.variable("gain")
-        # Parallel loops must have the same number of points: 5 each
-        with qp.sweep(duration).from_range(100, 0, -25) | qp.sweep(gain).from_range(0, 0.4, 0.1) as parallel:
-            qp.set_gain(bus="drive", gain=gain)
-            qp.play(bus="drive", waveform=drag_pair)
-            qp.wait(bus="drive", duration=duration)
-
-        compiler = QbloxCompiler()
-        with caplog.at_level(logging.WARNING):
-            sequences, _ = compiler.compile(qprogram=qp)
-
-        assert "Wait duration 0 ns is below the Q1ASM minimum (4 ns), clamping to 4 ns." in caplog.text
-        # The compiler clamps its own copy: the caller's loop is unchanged
-        duration_loop = parallel.loops[0]
-        assert duration_loop.source.start == 100
-        assert duration_loop.source.stop == 0
-
-        expected = """
-            setup:
-                wait_sync        4
-                set_mrk          0
-                upd_param        4
-
-            main:
-                move             100, R0
-                move             0, R1
-                move             4, R2
-            loop_0:
-                set_awg_gain     R1, R1
-                play             0, 1, 40
-                wait             R0
-                sub              R0, 32, R0
-                add              R1, 3276, R1
-                loop             R2, @loop_0
-                set_mrk          0
-                upd_param        4
-                stop
-        """
-        assert is_q1asm_equal(sequences["drive"], expected)
-
-    def test_for_loop_wait_stop_below_minimum_is_clamped(self, caplog):
-        qp = QProgram()
-        duration = qp.variable("time")
-        with qp.sweep(duration).from_range(100, 0, -25) as loop:
-            qp.wait(bus="drive", duration=duration)
-
-        compiler = QbloxCompiler()
-        with caplog.at_level(logging.WARNING):
-            sequences, _ = compiler.compile(qprogram=qp)
-
-        assert "Wait duration 0 ns is below the Q1ASM minimum (4 ns), clamping to 4 ns." in caplog.text
-        # The compiler clamps its own copy: the caller's loop is unchanged
-        assert loop.source.start == 100
-        assert loop.source.stop == 0
-
-        expected = """
-            setup:
-                wait_sync        4
-                set_mrk          0
-                upd_param        4
-
-            main:
-                move             100, R0
-                move             4, R1
-            loop_0:
-                wait             R0
-                sub              R0, 32, R0
-                loop             R1, @loop_0
-                set_mrk          0
-                upd_param        4
-                stop
-        """
-        assert is_q1asm_equal(sequences["drive"], expected)
 
     def test_set_phase_with_variable_uses_register(self):
         qp = QProgram()

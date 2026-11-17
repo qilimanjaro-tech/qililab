@@ -4,7 +4,17 @@ from collections import deque
 
 import numpy as np
 import pytest
-from qprogram import BinaryOp, InvalidVariableIdError, MeasurementHandle, Range, ValidationError, Values, Variable
+from qprogram import (
+    BinaryOp,
+    InvalidVariableIdError,
+    Linspace,
+    MeasurementHandle,
+    ParseError,
+    Range,
+    ValidationError,
+    Values,
+    Variable,
+)
 from qprogram.blocks import Average, Block, Parallel, Sweep
 from qprogram.operations import Measure, Play, ResetPhase, SetFrequency, SetGain, SetOffset, SetPhase, Sync, Wait
 from qprogram_qblox import Acquire, Scope, SetMarkers
@@ -19,13 +29,14 @@ import qililab as ql
 from qililab import Arbitrary, Experiment, Gaussian, IQDrag, IQPair, QProgram, Square
 from qililab.exceptions import VariableAllocated
 from qililab.pulse_distortion import ExponentialCorrection
-from qililab.qprogram.blocks import ForLoop, IfTrigger, InfiniteLoop, for_loop_iterations
+from qililab.qprogram.blocks import IfTrigger, InfiniteLoop, for_loop_iterations
 from qililab.qprogram.calibration import Calibration
 from qililab.qprogram.compilers.qblox_compiler import QbloxCompiler
 from qililab.qprogram.crosstalk.crosstalk_matrix import CrosstalkMatrix, NonLinearCrosstalkMatrix
 from qililab.qprogram.formats.legacy import qdac_operations
 from qililab.qprogram.operations import DisableAutosync, MeasureReset, QbloxPlay
 from qililab.qprogram.variable_ids import unique_variable_id
+from qililab.utils.serialization import DeserializationError
 
 # The crosstalk tests below keep qp.for_loop where its step does not divide stop - start: they rely on its rounding.
 ignore_for_loop_deprecation = pytest.mark.filterwarnings("ignore:qp.for_loop is deprecated:FutureWarning")
@@ -273,8 +284,8 @@ body:
   qdac.set_trigger "flux" 1e-05 position="step" outputs=[1]
   set_offset "drive" 0.1 offset_path1=0.2
   average 100:
-    for gain in Range(start=0.0, stop=1.0, step=0.5):
-      for frequency_of_drive in Range(start=1000000.0, stop=3000000.0, step=1000000.0) | for wait in Range(start=100.0, stop=300.0, step=100.0):
+    for gain in Linspace(start=0.0, stop=1.0, num=3):
+      for frequency_of_drive in Linspace(start=1000000.0, stop=3000000.0, num=3) | for wait in Linspace(start=100.0, stop=300.0, num=3):
         qblox.wait_trigger "readout" 4
         set_gain "drive" gain
         set_frequency "drive" frequency_of_drive
@@ -449,7 +460,7 @@ class TestQProgram:
             assert isinstance(loop, Sweep)
             assert qp._active_block is loop
         assert loop.variable == variable
-        assert (loop.source.start, loop.source.stop, loop.source.step) == (0, 100, 5)
+        assert loop.source == Linspace(0, 100, 21)
         np.testing.assert_allclose(loop.source.values(), np.arange(0, 101, 5))
         assert qp._body.elements[0] is loop
         assert qp._active_block is qp._body
@@ -621,6 +632,28 @@ class TestQProgram:
         assert if_trigger.trigger_padding_ns == 300
         assert if_trigger.expected_wait_time_ns == 2252
 
+    def test_if_trigger_float_parameters_become_ints(self):
+        """A float parameter loses its fraction, as in the Q1ASM waits, so the .qp text reads back."""
+        qp = QProgram()
+        with qp.if_trigger(trigger_padding_ns=300.5, expected_wait_time_ns=4e3):
+            qp.wait(bus="readout", duration=100)
+
+        loaded = QProgram.from_qp(str(qp))
+
+        if_trigger = loaded.body.elements[0]
+        assert (if_trigger.trigger_padding_ns, if_trigger.expected_wait_time_ns) == (300, 4000)
+        assert type(if_trigger.trigger_padding_ns) is int
+        assert type(if_trigger.expected_wait_time_ns) is int
+
+    def test_from_qp_refuses_a_non_integer_if_trigger_parameter(self):
+        qp = QProgram()
+        with qp.if_trigger(expected_wait_time_ns=2252):
+            qp.wait(bus="readout", duration=100)
+        text = str(qp).replace("expected_wait_time_ns=2252", "expected_wait_time_ns=long")
+
+        with pytest.raises(ParseError, match="as integers, got 'expected_wait_time_ns=long'"):
+            QProgram.from_qp(text)
+
     def test_deserialize_legacy_yaml_qprogram(self):
         """A QProgram saved as YAML by the former code loads into the qprogram nodes doing the same thing."""
         qp = load_legacy_qprogram()
@@ -652,7 +685,7 @@ class TestQProgram:
 
         gain_loop, index_loop = average.elements
         assert isinstance(gain_loop, Sweep)
-        assert (gain_loop.source.start, gain_loop.source.stop, gain_loop.source.step) == (0.0, 1.0, 0.5)
+        assert gain_loop.source == Linspace(0.0, 1.0, 3)
         (parallel,) = gain_loop.elements
         assert isinstance(parallel, Parallel)
         assert [loop.num_iterations() for loop in parallel.loops] == [3, 3]
@@ -693,6 +726,12 @@ class TestQProgram:
             ("wait_2", "wait"),
         ]
         assert "for wait_2 in [1.0, 2.0, 3.0]:" in str(qp)
+
+    def test_deserialize_legacy_yaml_qprogram_with_parallel_loops_of_different_lengths_raises_error(self):
+        """The former compiler ran a parallel loop for the points of its shortest loop: loops in lockstep must now have
+        the same number of points."""
+        with pytest.raises(DeserializationError, match="parallel loops must have the same number of iterations"):
+            ql.deserialize(LEGACY_QPROGRAM_YAML.replace("stop: 300\n", "stop: 500\n"))
 
     def test_deserialize_legacy_yaml_qprogram_twice_keeps_the_variables_of_each_file(self):
         """Two files sharing variable UUIDs, such as two saves of one program, each get the variables they hold."""
@@ -1166,6 +1205,27 @@ class TestQProgram:
         assert first.name == "m0"
         assert [element.handle.name for element in qp.body.elements] == ["m0", "m1", "m2"]
         assert block_qp.body.elements[0].handle.name == "m0"
+
+    def test_insert_block_declares_the_variables_its_loops_sweep(self):
+        """A block built in another program brings its loops: their variables are declared, so the program can be
+        written as .qp text and read back, as the results database does."""
+        block_qp = QProgram()
+        gain, offset, frequency = block_qp.variable("gain"), block_qp.variable("offset"), block_qp.variable("frequency")
+        with block_qp.block() as block:
+            with block_qp.sweep(gain).from_range(0, 1, 0.5):
+                block_qp.set_gain(bus="drive", gain=gain)
+                with block_qp.sweep(offset).from_range(0, 0.2, 0.1) | block_qp.sweep(frequency).from_range(0, 2e6, 1e6):
+                    block_qp.set_offset(bus="drive", offset_path0=offset)
+                    block_qp.set_frequency(bus="drive", frequency=frequency)
+                    block_qp.play(bus="drive", waveform=Square(1.0, 40))
+
+        qp = QProgram()
+        own_gain = qp.variable("gain")
+        qp.insert_block(block)
+
+        assert [variable.id for variable in qp.variables] == ["gain", "offset", "frequency"]
+        assert qp.variables[0] is own_gain
+        assert str(QProgram.from_qp(str(qp))) == str(qp)
 
     def test_average_method(self):
         """Test average method"""
@@ -2136,13 +2196,13 @@ class TestQProgram:
 
     @staticmethod
     def _sweep_steps(block):
-        """All the sweep steps (including those of Parallel blocks) reachable from ``block``."""
+        """All the sweep steps (including those of Parallel blocks) reachable from ``block``: the gap between their
+        first two points."""
         steps = []
         for element in block.elements:
-            if isinstance(element, Parallel):
-                steps += [loop.source.step for loop in element.loops]
-            elif isinstance(element, Sweep):
-                steps.append(element.source.step)
+            for loop in element.loops if isinstance(element, Parallel) else [element]:
+                if isinstance(loop, Sweep):
+                    steps.append(loop.source.values()[1] - loop.source.values()[0])
             if isinstance(element, Block):
                 steps += TestQProgram._sweep_steps(element)
         return steps
@@ -2644,18 +2704,16 @@ class TestQProgram:
         assert type(qp._body.elements[0].gain) is float
 
     def test_for_loop_with_numpy_bounds_stores_python_scalars(self):
-        """The deprecated for_loop and its ForLoop description take numpy bounds and store Python numbers."""
+        """The deprecated for_loop takes numpy bounds and stores Python numbers."""
         qp = QProgram()
         index = qp.variable("index")
         with pytest.warns(FutureWarning, match="qp.for_loop is deprecated"):
             loop_context = qp.for_loop(variable=index, start=np.int64(1), stop=np.int64(10), step=np.int64(1))
         with loop_context as loop:
             pass
-        description = ForLoop(index, np.int64(1), np.float64(10.0), np.int64(1))
 
-        assert [type(value) for value in (loop.source.start, loop.source.stop, loop.source.step)] == [float] * 3
+        assert [type(value) for value in (loop.source.start, loop.source.stop, loop.source.num)] == [float, float, int]
         assert loop.num_iterations() == 10
-        assert [type(value) for value in (description.start, description.stop, description.step)] == [int, float, int]
 
     def test_sweep_with_numpy_bounds_stores_python_scalars(self):
         qp = QProgram()

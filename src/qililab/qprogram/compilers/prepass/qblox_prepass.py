@@ -17,22 +17,25 @@
 from __future__ import annotations
 
 import math
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
-from qprogram import BinaryOp, Constant, Expression, Range, UnaryOp, Variable
+from qprogram import BinaryOp, Constant, Expression, Linspace, Range, UnaryOp, Variable
 from qprogram.blocks import Average, Block, Parallel, Sweep
 from qprogram.operations import Measure, ResetPhase, SetFrequency, SetGain, SetOffset, SetPhase, Sync, Wait
 from qprogram_qblox import Acquire, Scope, SetMarkers
 from qprogram_qblox import SetTrigger as QbloxSetTrigger
 from qprogram_qblox import WaitTrigger as QbloxWaitTrigger
 from qprogram_qdac import Play as QdacPlay
+from qprogram_qdac import SetOffset as QdacSetOffset
 from qprogram_qdac import SetTrigger as QdacSetTrigger
-from qpysequence.constants import MAX_ACQ_INDICES
+from qprogram_qdac import WaitTrigger as QdacWaitTrigger
+from qpysequence.constants import INST_MIN_WAIT, MAX_ACQ_INDICES
 
 from qililab.config import logger
 from qililab.qprogram.blocks import IfTrigger
 from qililab.qprogram.compilers.prepass.utils_prepass import keep_instrument_operations
+from qililab.qprogram.crosstalk.crosstalk_transform import apply_crosstalk_qblox
 from qililab.qprogram.operations.disable_autosync import DisableAutosync
 from qililab.qprogram.operations.measure_reset import MeasureReset
 
@@ -115,6 +118,10 @@ class QbloxPrepassResult:
     """Qblox buses that send on the trigger network, with their trigger address: the measurement buses of
     ``measure_reset``."""
 
+    loop_origins: dict[str, Sweep | Parallel] = field(default_factory=dict)
+    """Each variable the crosstalk compensation sweeps in place of the user's, by id, with the user's loop it
+    replaces, which the results are labelled with."""
+
 
 def prepare_qblox(
     qprogram: QProgram,
@@ -155,10 +162,11 @@ def prepare_qblox(
             network's propagation delay.
         NotImplementedError: If ``qp.if_trigger()`` is used in a way that isn't supported.
         ValueError: If a ``qp.sync()`` names a bus that isn't a Qblox bus, a ``qp.qblox.set_trigger`` has no outputs or
-            one its module doesn't have, or a ``qp.qblox.wait_trigger`` duration is a variable.
-        NotImplementedError: If an expression is the frequency or phase of an operation, a wait duration combines
-            several variables, a ``qp.set_offset`` with an expression sets path 1 too, or a bus has more
-            acquisitions than a sequencer can index at different depths or several in a block.
+            one its module doesn't have, a ``qp.qblox.wait_trigger`` duration is a variable, or a loop makes a wait
+            shorter than 4 ns.
+        NotImplementedError: If a QDAC operation is on a Qblox bus, an expression is the frequency or phase of an
+            operation, a wait duration combines several variables, a ``qp.set_offset`` with an expression sets path 1
+            too, or a bus has more acquisitions than a sequencer can index at different depths or several in a block.
     """
     if calibration is not None:
         if calibration.crosstalk_matrix_ac is not None:
@@ -168,8 +176,9 @@ def prepare_qblox(
                 "Using DC `crosstalk_matrix`.\nDefine `crosstalk_matrix_ac` to calibrate AC/fast-flux lines."
             )
             crosstalk = calibration.crosstalk_matrix
+    loop_origins: dict[str, Sweep | Parallel] = {}
     if crosstalk is not None:
-        qprogram = qprogram.with_crosstalk_qblox(crosstalk=crosstalk)
+        qprogram, loop_origins = apply_crosstalk_qblox(qprogram, crosstalk)
     if bus_distortions is not None:
         qprogram = qprogram.with_distortions(bus_distortions=bus_distortions)
 
@@ -213,24 +222,27 @@ def prepare_qblox(
         trigger_network_addresses={
             measure_reset.bus: measure_reset.trigger_address for measure_reset in measure_resets
         },
+        loop_origins=loop_origins,
     )
 
 
 def _prepare_operations(body: Block, markers: dict[str, str] | None) -> None:
     """Check the operations against what the Qblox compiler compiles, and write each expression the way it reads it.
 
-    The compiler reads an expression as ``left operator right`` with a constant only on the right and never negative:
-    ``5 + x`` becomes ``x + 5``, ``x + (-3)`` becomes ``x - 3``, ``-x`` becomes ``0 - x``, and a bare constant becomes
-    its number. Validation leaves no other expression than a variable, a constant, ``-x``, or one ``+`` or ``-``
-    between two of those.
+    The compiler reads an expression as ``left operator right``. A ``+`` has its constant on the right: ``5 + x``
+    becomes ``x + 5``. A constant after a variable is never negative: ``x + (-3)`` becomes ``x - 3`` and ``x - (-3)``
+    becomes ``x + 3``. ``5 - x`` keeps its constant on the left, which the compiler handles. ``-x`` becomes ``0 - x``,
+    and a bare constant becomes its number. Validation leaves no other expression than a variable, a constant, ``-x``,
+    or one ``+`` or ``-`` between two of those.
 
     Args:
         body (Block): The body of the QProgram the compiler walks. It is modified.
         markers (dict[str, str] | None): The marker mask of each bus, a non-zero one for an RF module.
 
     Raises:
-        NotImplementedError: If an expression is the frequency or phase of an operation, a wait duration combines
-            several variables, or a ``qp.set_offset`` with an expression sets path 1 too.
+        NotImplementedError: If a QDAC operation is on a Qblox bus, an expression is the frequency or phase of an
+            operation, a wait duration combines several variables, or a ``qp.set_offset`` with an expression sets
+            path 1 too.
         ValueError: If a ``qp.qblox.set_trigger`` has no outputs or one its module doesn't have, or a
             ``qp.qblox.wait_trigger`` duration is a variable.
     """
@@ -252,6 +264,8 @@ def _prepare_operations(body: Block, markers: dict[str, str] | None) -> None:
                 value = BinaryOp(op, left, right)
             setattr(node, name, value)
 
+        if isinstance(node, (QdacPlay, QdacSetOffset, QdacSetTrigger, QdacWaitTrigger)):
+            raise NotImplementedError(f"{node.__class__} is not supported in QBlox, on bus '{node.bus}'.")
         if isinstance(node, (SetFrequency, SetPhase)):
             name = "frequency" if isinstance(node, SetFrequency) else "phase"
             if isinstance(getattr(node, name), BinaryOp):
@@ -287,17 +301,24 @@ def _prepare_operations(body: Block, markers: dict[str, str] | None) -> None:
 
 
 def _prepare_loops(body: Block) -> None:
-    """Write each loop's ``Range`` the way the Qblox compiler reads it, in place.
+    """Write each loop's ``Range`` the way the Qblox compiler reads it, in place, and check the waits it sweeps.
 
-    A ``Range`` holds ``round((stop - start) / step) + 1`` points, so its last point can stop short of ``stop`` or step
+    The compiler reads a loop as a start, a step and a number of points: a ``Linspace`` becomes the ``Range`` with its
+    points. A ``Range`` holds ``round((stop - start) / step) + 1`` points, so its last point can stop short of ``stop`` or step
     past it: ``stop`` becomes that last point, kept as written when they only differ by rounding. The points don't
     change. A ``Range`` also stores its bounds as floats, ``Range(0, 10, 2)`` included: the whole ones become ints.
 
     Args:
         body (Block): The body of the QProgram the compiler walks. It is modified.
+
+    Raises:
+        ValueError: If a loop makes a wait shorter than the Q1ASM minimum of 4 ns.
     """
     for node in body.walk():
         for loop in node.loops if isinstance(node, Parallel) else [node]:
+            if isinstance(loop, Sweep) and isinstance(loop.source, Linspace):
+                start, stop, num = loop.source.start, loop.source.stop, loop.source.num
+                loop.source = Range(start, stop, (stop - start) / (num - 1)) if num > 1 else Range(start, start, 1)
             if not (isinstance(loop, Sweep) and isinstance(loop.source, Range)):
                 continue
             source = loop.source
@@ -307,6 +328,23 @@ def _prepare_loops(body: Block) -> None:
             source.start, source.stop, source.step = (
                 int(value) if float(value).is_integer() else value for value in (source.start, source.stop, source.step)
             )
+            for wait in node.walk():
+                if not (isinstance(wait, Wait) and isinstance(wait.duration, Expression)):
+                    continue
+                if loop.variable not in wait.duration.variables():
+                    continue
+                # The wait is linear in the variable: its shortest duration is at one end of the loop
+                durations = []
+                for value in (source.start, source.stop):
+                    loop.variable.set_value(value)
+                    durations.append(wait.duration.evaluate_or_raise())
+                loop.variable.reset()
+                if min(durations) < INST_MIN_WAIT:
+                    raise ValueError(
+                        f"The loop over {loop.variable.id!r} makes the wait on bus {wait.bus!r} last {min(durations):g} "
+                        f"ns, below the Q1ASM minimum of {INST_MIN_WAIT} ns: sweep it so that every wait lasts at least "
+                        f"{INST_MIN_WAIT} ns."
+                    )
 
 
 def _buses_exceeding_acquisition_depth(acquisition_metadata: AcquisitionMetadata) -> list[str]:

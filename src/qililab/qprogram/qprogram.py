@@ -20,7 +20,7 @@ from typing import TYPE_CHECKING, Any
 
 import numpy as np
 import qprogram as qp
-from qprogram.blocks import Block
+from qprogram.blocks import Block, Parallel, Sweep
 from qprogram.operations import Measure
 from qprogram.operations import Play as CorePlay
 from qprogram.operations.operation import MeasurementOperation
@@ -28,12 +28,15 @@ from qprogram.waveforms import Arbitrary, IQPair, IQWaveform, Waveform
 from qprogram_qblox import QbloxMixin
 from qprogram_qdac import Play as QdacPlay
 from qprogram_qdac import QdacMixin
+from qprogram_qdac import SetOffset as QdacSetOffset
+from qprogram_qdac import SetTrigger as QdacSetTrigger
+from qprogram_qdac import WaitTrigger as QdacWaitTrigger
 
 import qililab.qprogram.formats.vendor  # noqa: F401  (registers qililab's operations and blocks)
 from qililab.qprogram.blocks import (
-    ForLoop,
     IfTrigger,
     InfiniteLoop,
+    for_loop_linspace,
     reject_variables_swept_by_enclosing_loops,
     to_scalar,
 )
@@ -51,6 +54,7 @@ if TYPE_CHECKING:
     from qililab.qprogram.compilers.qdac_compiler import QdacCompilationOutput
 
 _PLAY_OPERATIONS = (CorePlay, QbloxPlay, QdacPlay)
+_QDAC_OPERATIONS = (QdacPlay, QdacSetOffset, QdacSetTrigger, QdacWaitTrigger)
 
 
 class QProgramCompilationOutput:
@@ -166,8 +170,9 @@ class QProgram(QbloxMixin, QdacMixin, qp.QProgram):
         """Append a copy of the elements of ``block`` to the active block.
 
         Each measurement in it gets a new name, allocated like any measurement's, so a block can be inserted several
-        times. A ``qp.qblox.disable_autosync`` setting at the top of ``block`` is left out: it belongs to the program
-        it was set on.
+        times. The variables its loops sweep are declared on this program, if it hasn't one with the same id yet. A
+        ``qp.qblox.disable_autosync`` setting at the top of ``block`` is left out: it belongs to the program it was
+        set on.
 
         Args:
             block (Block): The block whose elements to append.
@@ -179,6 +184,10 @@ class QProgram(QbloxMixin, QdacMixin, qp.QProgram):
                 if isinstance(node, MeasurementOperation):
                     node.handle.name = self._allocate_measurement_name(node.bus, requested=None)  # type: ignore[attr-defined]
                     node.handle._auto_named = True
+                for sweep in node.loops if isinstance(node, Parallel) else [node]:
+                    if isinstance(sweep, Sweep) and sweep.variable not in self.variables:
+                        variable = sweep.variable
+                        self.variable(variable.id, label=variable.label, units=variable.units)
             self._append_to_active(element)
 
     def infinite_loop(self) -> _BlockContext:
@@ -230,10 +239,10 @@ class QProgram(QbloxMixin, QdacMixin, qp.QProgram):
         )
 
     def for_loop(self, variable: qp.Variable, start: int | float, stop: int | float, step: int | float = 1) -> Any:
-        """Sweep ``variable`` from ``start`` to ``stop`` by ``step``. Deprecated: use ``qp.sweep(variable).from_range``.
+        """Sweep ``variable`` from ``start`` to ``stop`` by ``step``. Deprecated: use ``qp.sweep(variable).from_linspace``.
 
-        The loop keeps its point count, rounded down when ``step`` does not divide ``stop - start``
-        (``from_range`` rounds to the nearest).
+        The loop is a ``Linspace`` from ``start`` to ``stop``: its number of points is rounded down when ``step`` does
+        not divide ``stop - start``, and the points are spread evenly between them.
 
         Args:
             variable (Variable): The variable to be affected from the loop.
@@ -249,12 +258,11 @@ class QProgram(QbloxMixin, QdacMixin, qp.QProgram):
         """
         warnings.warn(
             "qp.for_loop is deprecated and will be removed in a future release: use "
-            "qp.sweep(variable).from_range(start, stop, step), which rounds the number of points to the nearest "
-            "when step does not divide stop - start.",
+            "qp.sweep(variable).from_linspace(start, stop, num), which sweeps the same points.",
             FutureWarning,
             stacklevel=2,
         )
-        return self.sweep(variable, ForLoop(variable, start, stop, step).to_range())
+        return self.sweep(variable, for_loop_linspace(start, stop, step))
 
     # Values often come from numpy. qprogram refuses a numpy integer as a number of shots, and elsewhere stores numpy
     # numbers as they are, so a program no longer compares equal once saved and reloaded. These methods convert
@@ -397,7 +405,7 @@ class QProgram(QbloxMixin, QdacMixin, qp.QProgram):
         Returns:
             QProgram: A new instance of QProgram with calibrated crosstalk.
         """
-        return apply_crosstalk_qblox(self, crosstalk)
+        return apply_crosstalk_qblox(self, crosstalk)[0]
 
     def with_crosstalk_qdac(
         self,
@@ -480,6 +488,8 @@ class QProgram(QbloxMixin, QdacMixin, qp.QProgram):
     ) -> Any:
         """Draw the QProgram using QBlox Compiler
 
+        Only the Qblox buses are drawn: a bus holding QDAC operations is left out.
+
         Args:
             time_window (int): Allows the user to stop the plotting after the specified number of ns have been plotted.
                 The plotting might not be the precise number of ns inputted. For example, if the timeout is 100 ns but
@@ -491,13 +501,20 @@ class QProgram(QbloxMixin, QdacMixin, qp.QProgram):
 
         Returns:
             plotly object: plotly.graph_objs._figure.Figure
+
+        Raises:
+            ValueError: If every bus of the QProgram holds QDAC operations: there is no Qblox bus to draw.
         """
         from qililab.instruments.qblox.qblox_draw import QbloxDraw
         from qililab.qprogram.compilers.qblox_compiler import QbloxCompiler
 
+        qdac_buses = {node.bus for node in self.body.walk() if isinstance(node, _QDAC_OPERATIONS)}
+        qblox_buses = [bus for bus in self.buses if bus not in qdac_buses]
+        if not qblox_buses:
+            raise ValueError("QProgram.draw() draws the Qblox buses, and every bus of this QProgram is a QDAC bus.")
         qblox_draw = QbloxDraw()
         compiler = QbloxCompiler()
-        sequencer = compiler.compile(qprogram=self, calibration=calibration)
+        sequencer = compiler.compile(qprogram=self, calibration=calibration, qblox_buses=qblox_buses)
         plotly_figure, _ = qblox_draw.draw(
             sequencer=sequencer,
             time_window=time_window,

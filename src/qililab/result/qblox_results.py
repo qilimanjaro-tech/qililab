@@ -122,19 +122,6 @@ def scope_trace(raw: dict) -> xr.DataArray:
     return xr.DataArray(trace, dims=("time", "IQ"), coords={"time": np.arange(len(trace)), "IQ": ["I", "Q"]})
 
 
-def append_measurement(result: QProgramResult, bus: str, name: str, fields: MeasurementFields) -> None:
-    """Append one measurement to ``result``, its ``iq`` array as primary data when it has one.
-
-    Args:
-        result (QProgramResult): The result to append to.
-        bus (str): The bus measuring.
-        name (str): The measurement's name.
-        fields (MeasurementFields): Its arrays, keyed by field name.
-    """
-    primary = fields.get(MeasurementField.IQ.value, next(iter(fields.values())))
-    result.append_measurement(bus=bus, name=name, data=primary, fields=fields)
-
-
 def ordered(result: QProgramResult, names: list[str]) -> QProgramResult:
     """Return the measurements of ``result`` in the order of ``names``: the order they are declared in the program.
 

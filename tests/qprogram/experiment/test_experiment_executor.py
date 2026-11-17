@@ -548,11 +548,18 @@ class TestExperimentExecutor:
             }
 
 
-    def test_inclusive_range(self):
-        """Test correct behavior and consistency of loop generation inside inclusive range."""
+    @staticmethod
+    def _experiment_loop_values(start, stop, step) -> np.ndarray:
+        experiment = Experiment(label="loops")
+        variable = experiment.variable("variable")
+        with experiment.for_loop(variable, start, stop, step) as loop:
+            pass
+        return loop.source.values()
 
-        # Mock passing self as None
-        int_result = ExperimentExecutor._inclusive_range(None, 0, 1000, 11)
+    def test_inclusive_range(self):
+        """An experiment's for_loop sweeps the points it always swept: their number rounded to the nearest, integers
+        when start, stop and step are, else rounded to the step's precision."""
+        int_result = self._experiment_loop_values(0, 1000, 11)
         int_check = np.array([   0,   11,   22,   33,   44,   55,   66,   77,   88,   99,  110,
             121,  132,  143,  154,  165,  176,  187,  198,  209,  220,  231,
             242,  253,  264,  275,  286,  297,  308,  319,  330,  341,  352,
@@ -563,14 +570,41 @@ class TestExperimentExecutor:
             846,  857,  868,  879,  890,  901,  912,  923,  934,  945,  956,
             967,  978,  989, 1000])
         
-        float_result = ExperimentExecutor._inclusive_range(None, 0, 10, 0.3)
+        float_result = self._experiment_loop_values(0, 10, 0.3)
         float_check = np.array([ 0. ,  0.3,  0.6,  0.9,  1.2,  1.5,  1.8,  2.1,  2.4,  2.7,  3. ,
             3.3,  3.6,  3.9,  4.2,  4.5,  4.8,  5.2,  5.5,  5.8,  6.1,  6.4,
             6.7,  7. ,  7.3,  7.6,  7.9,  8.2,  8.5,  8.8,  9.1,  9.4,  9.7,
             10. ])
         
         assert np.array_equal(int_result, int_check)
+        assert int_result.dtype.kind == "i"
         assert np.array_equal(float_result, float_check)
+
+    @pytest.mark.parametrize(
+        "start, stop, step, expected",
+        [
+            (0, 1, 0.6, [0.0, 0.5, 1.0]),
+            (0, 10, 6, [0, 5, 10]),
+            (0, 10, 3, [0, 3, 7, 10]),
+            (0.0, 10.0, 2.0, [0.0, 2.0, 4.0, 6.0, 8.0, 10.0]),
+            (100e6, 120e6, 10e6, [100e6, 110e6, 120e6]),
+            (1.0, 0.0, -0.3, [1.0, 0.7, 0.3, 0.0]),
+        ],
+    )
+    def test_experiment_for_loop_points_and_their_type(self, start, stop, step, expected):
+        """A step that doesn't divide the range rounds the number of points to the nearest; the points are integers
+        only when start, stop and step all are."""
+        values = self._experiment_loop_values(start, stop, step)
+
+        np.testing.assert_allclose(values, expected)
+        assert values.dtype.kind == ("i" if all(isinstance(x, int) for x in (start, stop, step)) else "f")
+
+    def test_experiment_for_loop_with_a_step_pointing_away_from_stop_raises(self):
+        experiment = Experiment(label="loops")
+        variable = experiment.variable("variable")
+
+        with pytest.raises(ValidationError, match="-2"):
+            experiment.for_loop(variable, 0, 1, -2)
 
     @pytest.mark.parametrize(
         "start, stop, step, expected",
@@ -589,8 +623,7 @@ class TestExperimentExecutor:
             loop_context = qp.for_loop(variable, start, stop, step)
         with loop_context as loop:
             pass
-        result = ExperimentExecutor._get_loop_values(None, loop, qprogram=True)
-        np.testing.assert_allclose(result, expected)
+        np.testing.assert_allclose(loop.source.values(), expected)
 
     @patch("qililab.platform.platform.get_db_manager")
     @patch("qililab.result.experiment_results_writer.h5py.File")

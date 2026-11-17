@@ -22,7 +22,7 @@ from types import LambdaType
 from typing import TYPE_CHECKING, Callable, cast
 
 import numpy as np
-from qprogram import QProgramResult, Range, Variable
+from qprogram import QProgramResult, Variable
 from qprogram.blocks import Average, Block, Parallel, Sweep
 from qprogram.operations import Operation
 from qprogram.operations.operation import MeasurementField, MeasurementOperation
@@ -195,7 +195,7 @@ class ExperimentExecutor:
         def traverse_qprogram(block: Block):
             """Traverses a QProgram to gather loop information."""
             if isinstance(block, (Sweep, Parallel)):
-                variables = self._get_variables_of_loop(block, qprogram=True)
+                variables = self._get_variables_of_loop(block)
 
                 self._qprogram_variables_stack.append(variables)
             if isinstance(block, Average):
@@ -507,41 +507,12 @@ class ExperimentExecutor:
         # Ensure the final state of the progress bar is rendered
         progress.refresh()
 
-    def _inclusive_range(self, start: int | float, stop: int | float, step: int | float) -> np.ndarray:
-        # Define the number of decimal places based on the precision of the step
-        decimal_places = -int(np.floor(np.log10(step))) if step < 1 else 0
-
-        # Calculate the number of steps
-        num_steps = round((stop - start) / step) + 1
-
-        # Use linspace and then round to avoid floating-point inaccuracies
-        result = np.linspace(start, stop, num_steps)
-
-        # Check if all inputs are integers
-        if all(isinstance(x, int) for x in [start, stop, step]):
-            return np.around(result, decimals=0).astype(int)
-        return np.around(result, decimals=decimal_places)
-
-    def _get_loop_values(self, loop: Sweep, qprogram: bool = False) -> np.ndarray:
-        """Compute the values for a single loop.
-
-        A QProgram loop takes its source's values. An experiment's ``for_loop`` keeps the values the experiment always
-        swept: integers when its bounds and step are, else rounded to the step's precision.
-        """
-        source = loop.source
-        if qprogram or not isinstance(source, Range):
-            return source.values()
-        start, stop, step = source.start, source.values()[-1], source.step
-        if all(float(value).is_integer() for value in (start, stop, step)):
-            return self._inclusive_range(int(start), int(stop), int(step))
-        return self._inclusive_range(start, stop, step)
-
-    def _get_variables_of_loop(self, block: Sweep | Parallel, qprogram: bool = False) -> list[VariableInfo]:
+    def _get_variables_of_loop(self, block: Sweep | Parallel) -> list[VariableInfo]:
         variables: dict[int, VariableInfo] = {}
 
         loops = block.loops if isinstance(block, Parallel) else [block]
         for loop in loops:
-            values = self._get_loop_values(loop, qprogram)
+            values = loop.source.values()
             label = loop.variable.label or loop.variable.id
             variable = VariableInfo(key=id(loop.variable), label=label, values=values)
             variables[id(loop.variable)] = variable

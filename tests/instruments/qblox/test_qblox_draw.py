@@ -308,6 +308,24 @@ class TestQBloxDraw:
         np.testing.assert_allclose(figure.data[0].y, np.array(expected_results[figure.data[0].name]), rtol=1e-2, atol=1e-12)
         np.testing.assert_allclose(figure.data[1].y, np.array(expected_results[figure.data[1].name]), rtol=1e-2, atol=1e-12)
 
+    def test_qp_draw_leaves_out_the_qdac_buses(self):
+        """draw() shows the Qblox sequencers: a bus holding QDAC operations is not drawn."""
+        qp = QProgram()
+        qp.play(bus="drive", waveform=Square(amplitude=0.5, duration=10))
+        qp.qdac.play(bus="flux", waveform=Square(amplitude=1.0, duration=10))
+
+        pio.renderers.default = "json"
+        figure = qp.draw()
+
+        assert {trace.name for trace in figure.data} == {"drive I", "drive Q"}
+
+    def test_qp_draw_of_qdac_operations_only_raises_error(self):
+        qp = QProgram()
+        qp.qdac.play(bus="flux", waveform=Square(amplitude=1.0, duration=10))
+
+        with pytest.raises(ValueError, match="every bus of this QProgram is a QDAC bus"):
+            qp.draw()
+
     def test_platform_draw_qcmrf(self, qp_plat_draw_qcmrf: QProgram, platform: Platform):
         expected_results = {
         "drive_line_q1_bus I": [0.00175136, 0.00095692, -0.00012664, -0.00108543, -0.00155323,

@@ -58,6 +58,7 @@ _BLOCKS = frozenset(
         "block.sweep",
         "block.parallel",
         "sweep.linear",
+        "sweep.linspace",
         "sweep.range",
         "vendor.qililab.infinite_loop",
         "vendor.qililab.if_trigger",

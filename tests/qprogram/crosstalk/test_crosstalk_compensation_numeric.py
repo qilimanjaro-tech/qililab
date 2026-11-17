@@ -9,7 +9,6 @@ import pytest
 from qprogram.waveforms import Square
 
 from qililab.qprogram import QProgram
-from qililab.qprogram.blocks import ForLoop, for_loop_iterations
 from qililab.qprogram.crosstalk.crosstalk_matrix import CrosstalkMatrix
 from qililab.qprogram.compilers.qblox_compiler import QbloxCompiler
 from tests.qprogram.crosstalk.crosstalk_simulation import assert_compensated
@@ -248,7 +247,7 @@ def test_constant_folded_into_a_shifted_loop_compiles_with_the_same_iteration_co
     compensated = flux_vs_flux_at_different_levels().with_crosstalk_qblox(crosstalk)
     inner = compensated.body.elements[0].elements[-1]
 
-    counts = {for_loop_iterations(loop.source.start, loop.source.stop, loop.source.step) for loop in inner.loops}
+    counts = {loop.num_iterations() for loop in inner.loops}
     assert counts == {3}
     assert len(inner.loops) > 2
     QbloxCompiler().compile(compensated)

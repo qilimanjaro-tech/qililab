@@ -5,14 +5,14 @@ from qprogram.blocks import Parallel, Sweep
 from qprogram.operations import SetGain, SetOffset
 
 from qililab import Arbitrary, Square
-from qililab.qprogram.blocks import ForLoop
+from qililab.qprogram.blocks import for_loop_linspace
 from qililab.qprogram.crosstalk.crosstalk_matrix import CrosstalkMatrix, NonLinearCrosstalkMatrix
 from qililab.qprogram.crosstalk.flux_vector import FluxVector, NonLinearFluxVector
 
 
 def for_loop(variable, start, stop, step):
     """The sweep ``qp.for_loop`` builds."""
-    return Sweep(variable, ForLoop(variable, start, stop, step).to_range())
+    return Sweep(variable, for_loop_linspace(start, stop, step))
 
 
 def values_loop(variable, values):

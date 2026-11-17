@@ -17,9 +17,9 @@ from typing import Any, Callable
 
 import numpy as np
 import qprogram as qp
-from qprogram import Values, Variable
+from qprogram import Range, Values, Variable
 
-from qililab.qprogram.blocks import ForLoop, reject_variables_swept_by_enclosing_loops
+from qililab.qprogram.blocks import reject_variables_swept_by_enclosing_loops
 from qililab.qprogram.calibration import Calibration
 from qililab.qprogram.crosstalk.crosstalk_matrix import CrosstalkMatrix
 from qililab.qprogram.experiment.operations import ExecuteQProgram, GetParameter, SetCrosstalk, SetParameter
@@ -27,6 +27,43 @@ from qililab.qprogram.qprogram import QProgram
 from qililab.qprogram.variable_ids import unique_variable_id
 from qililab.typings.enums import Parameter
 from qililab.yaml import yaml
+
+
+class _ForLoopValues(Values):
+    """The points of an experiment's ``for_loop``, kept with their type: ``Values`` stores floats, while a loop
+    written with integers sets its parameter to integers.
+
+    Args:
+        points (np.ndarray): The points.
+    """
+
+    def __init__(self, points: np.ndarray) -> None:
+        super().__init__(points)
+        self.points = points
+
+
+def _inclusive_range(start: int | float, stop: int | float, step: int | float) -> np.ndarray:
+    """Return the points an experiment's ``for_loop`` from ``start`` to ``stop`` by ``step`` sweeps.
+
+    The number of points is ``(stop - start) / step + 1`` rounded to the nearest, spread evenly from ``start`` to
+    ``stop``. They are integers when ``start``, ``stop`` and ``step`` all are, else rounded to the precision of
+    ``step``.
+
+    Args:
+        start (int | float): The first point.
+        stop (int | float): The last point.
+        step (int | float): The step the user wrote.
+
+    Returns:
+        np.ndarray: The points.
+    """
+    decimal_places = -int(np.floor(np.log10(abs(step)))) if abs(step) < 1 else 0
+    num_steps = round((stop - start) / step) + 1
+    # linspace, then rounding, avoids floating-point inaccuracies
+    points = np.linspace(start, stop, num_steps)
+    if all(isinstance(value, int) for value in (start, stop, step)):
+        return np.around(points, decimals=0).astype(int)
+    return np.around(points, decimals=decimal_places)
 
 
 @yaml.register_class
@@ -59,7 +96,8 @@ class Experiment(qp.QProgram):
     def for_loop(self, variable: Variable, start: int | float, stop: int | float, step: int | float = 1) -> Any:
         """Loop ``variable`` from ``start`` to ``stop`` by ``step``.
 
-        Blocks need to open a scope.
+        Blocks need to open a scope. The number of points is rounded to the nearest when ``step`` doesn't divide
+        ``stop - start``, and the points are integers when ``start``, ``stop`` and ``step`` all are.
 
         Args:
             variable (Variable): The variable to be affected from the loop.
@@ -69,8 +107,13 @@ class Experiment(qp.QProgram):
 
         Returns:
             The context manager opening the ``Sweep`` block.
+
+        Raises:
+            ValidationError: If ``step`` is zero or points away from ``stop``.
         """
-        return self.sweep(variable, ForLoop(variable, start, stop, step).to_range())
+        # A step pointing away from stop raises qprogram's ValidationError, naming the step as written
+        Range(start, stop, step)
+        return self.sweep(variable, _ForLoopValues(_inclusive_range(start, stop, step)))
 
     def loop(self, variable: Variable, values: np.ndarray) -> Any:
         """Loop ``variable`` over ``values``.

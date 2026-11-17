@@ -16,7 +16,7 @@
 import math
 import numbers
 
-from qprogram import Range, Variable
+from qprogram import Linspace, Range
 
 
 def to_scalar(value: object) -> object:
@@ -50,43 +50,27 @@ def _number(value: int | float) -> int | float:
     return int(value) if isinstance(value, numbers.Integral) else float(value)
 
 
-class ForLoop:
-    """A loop from ``start`` to ``stop`` by ``step``, as ``qp.for_loop`` and ``Experiment.for_loop`` take it.
+def for_loop_linspace(start: int | float, stop: int | float, step: int | float) -> Linspace:
+    """Return the ``Linspace`` a for_loop from ``start`` to ``stop`` by ``step`` sweeps.
 
-    It only computes the ``Range`` of the qprogram ``Sweep`` the program holds, with the for_loop's points.
+    A for_loop sweeps ``for_loop_iterations`` points, rounded down, spread evenly from ``start`` to ``stop``: the step
+    the user wrote when it divides ``stop - start``.
 
     Args:
-        variable (Variable): The variable the loop sweeps.
         start (int | float): First value of the loop.
         stop (int | float): Last value of the loop.
         step (int | float): Increment between consecutive values.
+
+    Returns:
+        Linspace: The loop's points.
+
+    Raises:
+        ValidationError: If ``step`` is zero or points away from ``stop``.
     """
-
-    def __init__(self, variable: Variable, start: int | float, stop: int | float, step: int | float) -> None:
-        self.variable: Variable = variable
-        self.start: int | float = _number(start)
-        self.stop: int | float = _number(stop)
-        self.step: int | float = _number(step)
-
-    def to_range(self) -> Range:
-        """Return the ``Range`` that sweeps the same points as the loop.
-
-        The range is first checked with the values the user wrote, so a step pointing away from ``stop`` raises
-        ``ValidationError`` naming that step. A for_loop sweeps ``for_loop_iterations`` points (rounded down, where
-        ``Range`` rounds to the nearest) spread evenly from ``start`` to ``stop``, so the step is then adjusted to
-        ``(stop - start) / (points - 1)``: the step the user wrote when it divides ``stop - start``.
-
-        Returns:
-            Range: The range with the loop's start, stop and point count.
-
-        Raises:
-            ValidationError: If ``step`` is zero or points away from ``stop``.
-        """
-        Range(self.start, self.stop, self.step)
-        points = for_loop_iterations(self.start, self.stop, self.step)
-        if points == 1:
-            return Range(self.start, self.start, self.step)
-        return Range(self.start, self.stop, (self.stop - self.start) / (points - 1))
+    start, stop, step = _number(start), _number(stop), _number(step)
+    # Raises qprogram's ValidationError, naming the step the user wrote
+    Range(start, stop, step)
+    return Linspace(start, stop, for_loop_iterations(start, stop, step))
 
 
 def for_loop_iterations(start: int | float, stop: int | float, step: int | float) -> int:

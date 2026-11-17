@@ -299,6 +299,7 @@ class QbloxCompiler:
         self._conditional: ConditionalTrigger | None = None
         self._single_channel: list[str] = []
         self._scopes: dict[str, Scope] = {}
+        self._loop_origins: dict[str, Sweep | Parallel] = {}
 
     def compile(
         self,
@@ -388,6 +389,7 @@ class QbloxCompiler:
         )
         self._qprogram = prepass.qprogram
         self._disable_autosync = prepass.disable_autosync
+        self._loop_origins = prepass.loop_origins
 
         self._sync_counter = 0
         self._scopes = {}
@@ -633,24 +635,12 @@ class QbloxCompiler:
         iterations = []
         for sweep in element.loops:
             source = cast("Range", sweep.source)
-            loop_start, loop_stop = source.start, source.stop
             operation = QbloxCompiler._get_reference_operation_of_loop(loop=sweep, starting_block=element)
             qpysequence_operation = (
                 QbloxCompiler._get_qpysequence_conversion_instructions(operation) if operation is not None else None
             )
-            if isinstance(operation, Wait):
-                if loop_start < INST_MIN_WAIT:
-                    logger.warning(
-                        f"Wait duration {loop_start} ns is below the Q1ASM minimum ({INST_MIN_WAIT} ns), clamping to {INST_MIN_WAIT} ns."
-                    )
-                    loop_start = INST_MIN_WAIT
-                if loop_stop < INST_MIN_WAIT:
-                    logger.warning(
-                        f"Wait duration {loop_stop} ns is below the Q1ASM minimum ({INST_MIN_WAIT} ns), clamping to {INST_MIN_WAIT} ns."
-                    )
-                    loop_stop = INST_MIN_WAIT
             scale_factor = qpysequence_operation.scale_factor if qpysequence_operation is not None else None
-            start, step, iters = QbloxCompiler._compute_loop_sweep(loop_start, loop_stop, source.step, scale_factor)
+            start, step, iters = QbloxCompiler._compute_loop_sweep(source.start, source.stop, source.step, scale_factor)
             loops.append((start, step, qpysequence_operation))
             iterations.append(iters)
         min_iterations = min(iterations)
@@ -684,28 +674,18 @@ class QbloxCompiler:
 
     def _handle_sweep(self, sweep: Sweep) -> bool:
         source = cast("Range", sweep.source)
-        loop_start, loop_stop = source.start, source.stop
         operation = QbloxCompiler._get_reference_operation_of_loop(sweep)
         qpysequence_operation = (
             QbloxCompiler._get_qpysequence_conversion_instructions(operation) if operation is not None else None
         )
-        if isinstance(operation, Wait):
-            if loop_start < INST_MIN_WAIT:
-                logger.warning(
-                    f"Wait duration {loop_start} ns is below the Q1ASM minimum ({INST_MIN_WAIT} ns), clamping to {INST_MIN_WAIT} ns."
-                )
-                loop_start = INST_MIN_WAIT
-            if loop_stop < INST_MIN_WAIT:
-                logger.warning(
-                    f"Wait duration {loop_stop} ns is below the Q1ASM minimum ({INST_MIN_WAIT} ns), clamping to {INST_MIN_WAIT} ns."
-                )
-                loop_stop = INST_MIN_WAIT
         scale_factor = qpysequence_operation.scale_factor if qpysequence_operation is not None else None
-        start, step, iterations = QbloxCompiler._compute_loop_sweep(loop_start, loop_stop, source.step, scale_factor)
+        start, step, iterations = QbloxCompiler._compute_loop_sweep(
+            source.start, source.stop, source.step, scale_factor
+        )
 
-        if isinstance(operation, Wait) and loop_stop > INST_MAX_WAIT:
+        if isinstance(operation, Wait) and source.stop > INST_MAX_WAIT:
             self._long_wait_dynamic = True
-        self._max_wait_dynamic = int(loop_stop)
+        self._max_wait_dynamic = int(source.stop)
 
         for bus in self._buses:
             qpy_loop = QPyProgram.IterativeLoop(
@@ -718,6 +698,24 @@ class QbloxCompiler:
             self._buses[bus].variable_to_register[sweep.variable] = qpy_loop.loop_registers[0]
             self._buses[bus].loop_counter += 1
         return True
+
+    def _result_loop(self, block: Sweep | Parallel) -> Sweep | Parallel:
+        """Return the loop the results label ``block``'s dimension with.
+
+        That is the user's loop that a crosstalk compensation replaced with ``block``, else ``block``.
+
+        Args:
+            block (Sweep | Parallel): A loop of the compiled program.
+
+        Returns:
+            Sweep | Parallel: The loop to label its results with.
+        """
+        origins = self._loop_origins
+        sweeps = block.loops if isinstance(block, Parallel) else [block]
+        origin = origins.get(sweeps[0].variable.id)
+        if origin is not None and all(origins.get(sweep.variable.id) is origin for sweep in sweeps):
+            return origin
+        return block
 
     def _handle_set_frequency(self, element: SetFrequency) -> None:
         frequency = element.frequency
@@ -761,9 +759,10 @@ class QbloxCompiler:
         (SetAwgGain, SetAwgOffs).
 
         Q1ASM forbids an immediate as the first operand of Add and Sub. The Qblox
-        pre-pass leaves a constant only on the right, never negative, so
-        Add(register, immediate, result) is always valid here. For "-", the left
-        operand may be an immediate (``cst - variable``), handled explicitly below.
+        pre-pass puts the constant of a "+" on the right and leaves no negative
+        constant after a variable, so Add(register, immediate, result) is always
+        valid here. For "-", the left operand may be an immediate
+        (``cst - variable``), handled explicitly below.
         """
         # TODO: the flattening of all variable expressions will be moved to qpysequence
 
@@ -1636,7 +1635,7 @@ class QbloxCompiler:
                 shape=self._buses[element.bus].shape_acquire,
                 intertwined=self._buses[element.bus].counter_acquire,
                 loops=[
-                    block
+                    self._result_loop(block)
                     for block in self._buses[element.bus].qprogram_block_stack
                     if isinstance(block, (Sweep, Parallel))
                 ],

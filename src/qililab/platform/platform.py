@@ -29,6 +29,7 @@ from typing import TYPE_CHECKING, Any, Callable, cast
 
 import numpy as np
 from qprogram import QProgramResult
+from qprogram.operations.operation import MeasurementField
 from ruamel.yaml import YAML
 
 from qililab.config import logger
@@ -58,7 +59,7 @@ from qililab.qprogram.compilers.qdac_compiler import QdacCompiler
 from qililab.qprogram.crosstalk.flux_vector import FluxVector
 from qililab.qprogram.experiment.experiment_executor import ExperimentExecutor
 from qililab.result.database import get_db_manager
-from qililab.result.qblox_results import append_measurement, measurement_fields, ordered, scope_trace
+from qililab.result.qblox_results import measurement_fields, ordered, scope_trace
 from qililab.result.stream_results import StreamArray
 from qililab.typings import ChannelID, DistortionState, InstrumentName, OutputID, Parameter, ParameterValue
 from qililab.utils.serialization import deserialize_from
@@ -1388,7 +1389,8 @@ class Platform:
                 )
                 for raw, acquisition in zip(raws, acquisitions.values()):
                     for name, fields in measurement_fields(raw, acquisition):
-                        append_measurement(result, bus_alias, name, fields)
+                        primary = fields.get(MeasurementField.IQ.value, next(iter(fields.values())))
+                        result.append_measurement(bus=bus_alias, name=name, data=primary, fields=fields)
                 if scope is not None and raws:
                     trace = scope_trace(raws[0])
                     result.append_measurement(bus=bus_alias, name=scope.name, data=trace, fields={"raw": trace})

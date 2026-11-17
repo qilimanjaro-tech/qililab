@@ -14,6 +14,7 @@ import logging
 import numpy as np
 import pytest
 import xarray as xr
+from qprogram import MeasurementHandle
 from qprogram.operations.operation import MeasurementField
 from qililab.data_management import build_platform as platform_build_platform
 from qililab.qprogram import QbloxCompilationOutput
@@ -42,7 +43,7 @@ from qililab.instruments.qblox.qblox_qrm import QbloxQRM
 from qililab.instruments.qdevil import QDevilQDac2
 from qililab.platform import Bus, Buses, Platform, Session
 from qililab.qprogram import Calibration, Experiment, QProgram, QbloxCompilationOutput
-from qililab.qprogram.crosstalk.crosstalk_matrix import CrosstalkMatrix
+from qililab.qprogram.crosstalk.crosstalk_matrix import CrosstalkMatrix, NonLinearCrosstalkMatrix
 from qililab.result.database import get_db_manager
 from qililab.settings import AnalogCompilationSettings, DigitalCompilationSettings, Runcard
 from qililab.settings.digital.gate_event import GateEvent
@@ -2849,6 +2850,57 @@ class TestMethods:
         assert data.values.tolist() == [[1.0, 4.0], [2.0, 5.0], [3.0, 6.0]]
         assert data.coords["gain"].values.tolist() == [0.0, 0.25, 0.5]
         assert data.coords["frequency"].values.tolist() == [10e6, 20e6, 30e6]
+
+    @staticmethod
+    def _flux_sweep_qprogram() -> tuple[QProgram, MeasurementHandle]:
+        """A flux sweep around a measurement, on a flux bus of the crosstalk matrix the tests below set."""
+        weights = IQPair(I=Square(amplitude=1.0, duration=120), Q=Square(amplitude=0.0, duration=120))
+        qprogram = QProgram()
+        flux = qprogram.variable("flux", units="V")
+        with qprogram.average(10):
+            with qprogram.sweep(flux).from_range(0.0, 0.2, 0.1):
+                qprogram.set_offset(bus="flux_line_q0_bus", offset_path0=flux)
+                qprogram.wait(bus="flux_line_q0_bus", duration=100)
+                qprogram.sync()
+                measurement = qprogram.qblox.acquire(bus="feedline_input_output_bus", weights=weights)
+        return qprogram, measurement
+
+    def test_qblox_results_of_a_flux_sweep_with_linear_crosstalk_keep_the_users_sweep(self, platform: Platform):
+        """The compensation runs the flux sweep as sweeps of the compensated biases: the results keep the user's
+        sweep, its name and its points, as without the compensation."""
+        qprogram, measurement = self._flux_sweep_qprogram()
+        platform.set_crosstalk(
+            CrosstalkMatrix.from_array(["flux_line_q0_bus", "flux_line_q1_bus"], np.linalg.inv([[1, 0.5], [0.5, 1]]))
+        )
+        raw = _raw_acquisition(path0=[1.0, 2.0, 3.0], path1=[4.0, 5.0, 6.0])
+
+        result, acquire, _ = self._execute_with_raw_acquisitions(platform, qprogram, [raw])
+
+        (acquisition,) = acquire.call_args.kwargs["acquisitions"].values()
+        assert [loop.variable.id for loop in acquisition.loops] == ["flux"]
+        data = result.get(measurement)
+        assert data.dims == ("flux", "IQ")
+        assert data.coords["flux"].values.tolist() == [0.0, 0.1, 0.2]
+        assert data.coords["flux"].attrs == {"units": "V"}
+        assert data.values.tolist() == [[1.0, 4.0], [2.0, 5.0], [3.0, 6.0]]
+
+    def test_qblox_results_of_a_flux_sweep_with_non_linear_crosstalk_come_back_once_per_point(self, platform: Platform):
+        """The compensation unrolls the flux sweep, so the measurement runs once per point: as before, it comes back
+        as one record per point, in the order they run."""
+        qprogram, _ = self._flux_sweep_qprogram()
+        platform.set_crosstalk(
+            NonLinearCrosstalkMatrix.from_linear(
+                CrosstalkMatrix.from_array(
+                    ["flux_line_q0_bus", "flux_line_q1_bus"], np.linalg.inv([[1, 0.5], [0.5, 1]])
+                )
+            )
+        )
+        raw = _raw_acquisition(path0=[1.0, 2.0, 3.0], path1=[4.0, 5.0, 6.0])
+
+        result, _, _ = self._execute_with_raw_acquisitions(platform, qprogram, [raw])
+
+        assert [record.name for record in result.measurements] == ["m0", "m0", "m0"]
+        assert [result.get(index).values.tolist() for index in range(3)] == [[1.0, 4.0], [2.0, 5.0], [3.0, 6.0]]
 
     def test_qblox_intertwined_results_scope(self, raw_measurement_data_intertwined_scope: dict, platform: Platform):
         """A scoped bus has its scope set up before the run and stored into its first acquisition: the trace is a

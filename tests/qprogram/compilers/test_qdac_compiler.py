@@ -828,6 +828,26 @@ class TestQdacCompiler:
         with pytest.raises(ValidationError, match="qdac.empty-trigger-outputs"):
             compiler.compile(qprogram=qp, qdacs=[qdac], qdac_buses=[flux1], qdac_offsets=[0])
 
+    @pytest.mark.parametrize(
+        "add_operation, message",
+        [
+            (
+                lambda qp: qp.qdac.play(bus="flux1", waveform=Square(1.0, 100), delay=5000.0),
+                "qp.qdac.play(..., delay=5000.0) on bus 'flux1' is outside the QDAC-II's range",
+            ),
+            (
+                lambda qp: qp.qdac.set_trigger(bus="flux1", duration=1e-7, outputs=[1]),
+                "qp.qdac.set_trigger(..., duration=1e-07) on bus 'flux1' is outside the QDAC-II's range",
+            ),
+        ],
+    )
+    def test_qdac_time_outside_the_qdac_range_raises_error(self, qdac: QDevilQDac2, flux1: Bus, add_operation, message):
+        qp = QProgram()
+        add_operation(qp)
+
+        with pytest.raises(ValidationError, match=re.escape(message)):
+            QdacCompiler().compile(qprogram=qp, qdacs=[qdac], qdac_buses=[flux1], qdac_offsets=[0])
+
     def test_set_offset_and_wait_trigger_call_arguments(self, qdac: QDevilQDac2, flux1: Bus, flux2: Bus):
         """The voltage set by set_offset, and wait_trigger on an external port."""
         qdac_bus = flux1.instruments[0]

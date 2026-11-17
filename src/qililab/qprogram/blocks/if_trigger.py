@@ -22,6 +22,8 @@ class IfTrigger(Block):
     qililab owns it: in a ``.qp`` file it reads ``qililab.if_trigger:``. It is not qprogram's
     ``Conditional``, which branches on a measured state.
 
+    Both parameters are stored as integers: a float loses its fraction, as it does in the Q1ASM waits.
+
     Args:
         trigger_padding_ns (int | None, optional): Extra wait, in ns, before checking the trigger. Defaults to None.
         expected_wait_time_ns (int | None, optional): The trigger period, in ns. Defaults to None.
@@ -29,8 +31,8 @@ class IfTrigger(Block):
 
     def __init__(self, trigger_padding_ns: int | None = None, expected_wait_time_ns: int | None = None) -> None:
         super().__init__()
-        self.trigger_padding_ns = trigger_padding_ns
-        self.expected_wait_time_ns = expected_wait_time_ns
+        self.trigger_padding_ns = None if trigger_padding_ns is None else int(trigger_padding_ns)
+        self.expected_wait_time_ns = None if expected_wait_time_ns is None else int(expected_wait_time_ns)
 
     def required_capabilities(self) -> set[str]:
         """Return the capability token of the block.

@@ -208,7 +208,7 @@ class QdacCompiler:
             self._buses[bus].loop_counter += 1
         return True
 
-    def _handle_sweep(self, element: Sweep):
+    def _handle_sweep(self, element: Sweep) -> bool:
         iterations = element.num_iterations()
         for qdac_bus_alias in self._qdac_buses_alias:
             self._loop_repetitions[qdac_bus_alias] *= iterations + 1
