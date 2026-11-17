@@ -17,7 +17,7 @@ import math
 import numbers
 from typing import cast
 
-from qprogram import Linspace, Range
+from qprogram import Linspace
 
 
 def to_scalar(value: object) -> object:
@@ -54,11 +54,10 @@ def for_loop_linspace(start: int | float, stop: int | float, step: int | float) 
         Linspace: The loop's points.
 
     Raises:
-        ValidationError: If ``step`` is zero or points away from ``stop``.
+        ValueError: If ``step`` is zero.
+        ValidationError: If ``step`` points away from ``stop``, which leaves no point to sweep.
     """
     start, stop, step = (cast("int | float", to_scalar(value)) for value in (start, stop, step))
-    # Raises qprogram's ValidationError, naming the step the user wrote
-    Range(start, stop, step)
     return Linspace(start, stop, for_loop_iterations(start, stop, step))
 
 

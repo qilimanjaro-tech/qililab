@@ -587,7 +587,6 @@ class TestExperimentExecutor:
             (0, 10, 3, [0, 3, 7, 10]),
             (0.0, 10.0, 2.0, [0.0, 2.0, 4.0, 6.0, 8.0, 10.0]),
             (100e6, 120e6, 10e6, [100e6, 110e6, 120e6]),
-            (1.0, 0.0, -0.3, [1.0, 0.7, 0.3, 0.0]),
         ],
     )
     def test_experiment_for_loop_points_and_their_type(self, start, stop, step, expected):
@@ -623,12 +622,14 @@ class TestExperimentExecutor:
         with pytest.raises(ValidationError, match="The Experiment uses features qililab does not support"):
             executor.execute()
 
-    def test_experiment_for_loop_with_a_step_pointing_away_from_stop_raises(self):
+    @pytest.mark.parametrize(("start", "stop", "step"), [(0, 1, -2), (1, 0, -0.5), (0, 1, 0)])
+    def test_experiment_for_loop_with_a_step_not_positive_raises(self, start, stop, step):
+        """Main's Experiment loops never ran a negative or zero step: they failed when run, now when built."""
         experiment = Experiment(label="loops")
         variable = experiment.variable("variable")
 
-        with pytest.raises(ValidationError, match="-2"):
-            experiment.for_loop(variable, 0, 1, -2)
+        with pytest.raises(ValueError, match=f"needs a positive step, got {step}"):
+            experiment.for_loop(variable, start, stop, step)
 
     @pytest.mark.parametrize(
         "start, stop, step, expected",

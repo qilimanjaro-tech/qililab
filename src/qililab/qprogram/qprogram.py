@@ -259,7 +259,8 @@ class QProgram(QbloxMixin, QdacMixin, qp.QProgram):
             The context manager opening the ``Sweep`` block.
 
         Raises:
-            ValidationError: If ``step`` is zero or points away from ``stop``.
+            ValueError: If ``step`` is zero.
+            ValidationError: If ``step`` points away from ``stop``, which leaves no point to sweep.
         """
         warnings.warn(
             "qp.for_loop is deprecated and will be removed in a future release: use "

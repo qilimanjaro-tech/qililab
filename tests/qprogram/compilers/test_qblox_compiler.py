@@ -6859,9 +6859,7 @@ class TestQBloxCompiler:
         qp = QProgram()
         offset = qp.variable("offset")
         # This for loop is empty as the steps point to the wrong direction: the loop can't even be built
-        with pytest.raises(
-            qprogram.ValidationError, match=re.escape("Range step -0.01 moves away from stop (0.0 -> 0.1)")
-        ):
+        with pytest.raises(qprogram.ValidationError, match="Linspace num must be >= 1"):
             qp.for_loop(variable=offset, start=0, stop=0.1, step=-0.01)
 
     def test_crosstalk_compensation_measure_reset_raise_errors(self):
@@ -7629,9 +7627,7 @@ class TestQBloxCompiler:
         """A step pointing away from ``stop`` gives no point, so the loop can't be compiled."""
         qp = QProgram()
         gain = qp.variable("gain")
-        with pytest.raises(
-            qprogram.ValidationError, match=re.escape("Range step -2.0 moves away from stop (0.0 -> 1.0)")
-        ):
+        with pytest.raises(qprogram.ValidationError, match="Linspace num must be >= 1"):
             qp.for_loop(variable=gain, start=0, stop=1, step=-2)
 
     def test_wait_combining_two_variables_raises_error(self):

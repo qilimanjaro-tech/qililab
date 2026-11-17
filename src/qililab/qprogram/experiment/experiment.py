@@ -17,7 +17,7 @@ from typing import Any, Callable, cast
 
 import numpy as np
 import qprogram as qp
-from qprogram import Range, Values, Variable
+from qprogram import Values, Variable
 
 from qililab.qprogram.blocks import reject_variables_swept_by_enclosing_loops, to_scalar
 from qililab.qprogram.calibration import Calibration
@@ -57,7 +57,7 @@ def _inclusive_range(start: int | float, stop: int | float, step: int | float) -
     Returns:
         np.ndarray: The points.
     """
-    decimal_places = -int(np.floor(np.log10(abs(step)))) if abs(step) < 1 else 0
+    decimal_places = -int(np.floor(np.log10(step))) if step < 1 else 0
     num_steps = round((stop - start) / step) + 1
     # linspace, then rounding, avoids floating-point inaccuracies
     points = np.linspace(start, stop, num_steps)
@@ -109,11 +109,11 @@ class Experiment(qp.QProgram):
             The context manager opening the ``Sweep`` block.
 
         Raises:
-            ValidationError: If ``step`` is zero or points away from ``stop``.
+            ValueError: If ``step`` is zero or negative.
         """
         start, stop, step = (cast("int | float", to_scalar(value)) for value in (start, stop, step))
-        # A step pointing away from stop raises qprogram's ValidationError, naming the step as written
-        Range(start, stop, step)
+        if step <= 0:
+            raise ValueError(f"An Experiment's for_loop needs a positive step, got {step}.")
         return self.sweep(variable, _ForLoopValues(_inclusive_range(start, stop, step)))
 
     def loop(self, variable: Variable, values: np.ndarray) -> Any:

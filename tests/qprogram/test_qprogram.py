@@ -479,7 +479,7 @@ class TestQProgram:
     def test_for_loop_with_step_pointing_away_from_stop_raises_error(self):
         qp = QProgram()
         variable = qp.variable("x")
-        with pytest.warns(FutureWarning), pytest.raises(ValidationError, match="moves away from stop"):
+        with pytest.warns(FutureWarning), pytest.raises(ValidationError, match="Linspace num must be >= 1"):
             qp.for_loop(variable=variable, start=0, stop=1, step=-2)
 
     def test_parallel_method(self):

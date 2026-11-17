@@ -699,7 +699,7 @@ class TestQdacCompiler:
         """A loop with a zero step raises when it is built."""
         qp = QProgram()
         loop_variable = qp.variable("test")
-        with pytest.warns(FutureWarning), pytest.raises(ValidationError, match="Range step must be non-zero"):
+        with pytest.warns(FutureWarning), pytest.raises(ValueError, match="Step value cannot be zero"):
             qp.for_loop(loop_variable, 0, 10, 0)
 
     def test_play_wait_trigger(self, qdac: QDevilQDac2, flux1: Bus, flux2: Bus):
