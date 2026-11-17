@@ -1,0 +1,57 @@
+name: Dev build
+
+# Publishes a development version (for example 0.35.2.dev17) of every commit on main that passes
+# Tests and Code Quality. Dev builds land in the same CodeArtifact repository as releases, but
+# installers only pick them when asked: `uv pip install --prerelease=allow qililab`, or an exact
+# pin such as `qililab==0.35.2.dev17`. Releases are still cut by publishing a GitHub release.
+
+on:
+  workflow_run:
+    workflows: ["Tests"]
+    types: [completed]
+    branches: [main]
+
+concurrency:
+  group: dev-build-${{ github.event.workflow_run.head_sha }}
+  cancel-in-progress: false
+
+jobs:
+  # Tests triggers this workflow; Code Quality runs in parallel on the same commit, so wait for it.
+  gate:
+    name: Wait for Code Quality
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_repository.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      actions: read
+    steps:
+      - name: Require a successful Code Quality run on the same commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          run_id=""
+          for _ in $(seq 1 30); do
+            run_id="$(gh run list -R "$GITHUB_REPOSITORY" --workflow code_quality.yml \
+              --commit "$SHA" --event push --limit 1 --json databaseId --jq '.[0].databaseId // empty')"
+            [ -n "$run_id" ] && break
+            sleep 10
+          done
+          if [ -z "$run_id" ]; then
+            echo "::error::No Code Quality run found for $SHA"
+            exit 1
+          fi
+          gh run watch -R "$GITHUB_REPOSITORY" "$run_id" --exit-status
+
+  publish:
+    name: Publish dev build
+    needs: [gate]
+    permissions:
+      contents: read
+      id-token: write  # required by publish.yml for OIDC access to CodeArtifact
+    uses: ./.github/workflows/publish.yml
+    with:
+      ref: ${{ github.event.workflow_run.head_sha }}

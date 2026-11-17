@@ -8,7 +8,7 @@ import pytest
 
 from qililab import Arbitrary, Domain, GaussianDragCorrection, Gaussian, IQPair, QProgram, Square, IQDrag
 from qililab.core import Variable, VariableExpression
-from qililab.qprogram.blocks import Average, Block, Conditional, Parallel
+from qililab.qprogram.blocks import Average, Block, Conditional, Parallel, for_loop_iterations
 from qililab.qprogram.calibration import Calibration
 from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix, NonLinearCrosstalkMatrix
 from qililab.pulse_distortion import ExponentialCorrection
@@ -31,6 +31,7 @@ from qililab.qprogram.operations import (
     SetPhase,
     Sync,
     Wait,
+    WaitTrigger,
 )
 from qililab.utils.serialization import deserialize, deserialize_from, serialize, serialize_to
 from tests.qprogram.crosstalk.crosstalk_simulation import assert_compensated
@@ -531,6 +532,43 @@ class TestQProgram(TestStructuredProgram):
         assert isinstance(qp._body.elements[0], Wait)
         assert qp._body.elements[0].bus == "drive"
         assert qp._body.elements[0].duration == 100
+
+    def test_wait_trigger_method(self):
+        """Test wait trigger method"""
+        qp = QProgram()
+        qp.wait_trigger(bus="flux_1", duration=100)
+        qp.wait_trigger(bus="flux_2", duration=100, port=1)
+
+        assert len(qp._active_block.elements) == 2
+        assert len(qp._body.elements) == 2
+        assert isinstance(qp._body.elements[0], WaitTrigger)
+        assert qp._body.elements[0].bus == "flux_1"
+        assert qp._body.elements[0].duration == 100
+        assert qp._body.elements[0].port == None
+
+        assert isinstance(qp._body.elements[1], WaitTrigger)
+        assert qp._body.elements[1].bus == "flux_2"
+        assert qp._body.elements[1].duration == 100
+        assert qp._body.elements[1].port == 1
+
+    def test_wait_trigger_method_with_bus_mapping(self):
+        """Test wait trigger method with bus mapping remaps the wait_trigger buses."""
+        qp = QProgram()
+        qp.wait_trigger(bus="flux_1", duration=100)
+        qp.wait_trigger(bus="flux_2", duration=100, port=1)
+
+        new_qp = qp.with_bus_mapping(bus_mapping={"flux_1": "flux_x", "flux_2": "flux_z"})
+        assert len(new_qp._active_block.elements) == 2
+        assert len(new_qp._body.elements) == 2
+        assert isinstance(new_qp._body.elements[0], WaitTrigger)
+        assert new_qp._body.elements[0].bus == "flux_x"
+        assert new_qp._body.elements[0].duration == 100
+        assert new_qp._body.elements[0].port == None
+
+        assert isinstance(new_qp._body.elements[1], WaitTrigger)
+        assert new_qp._body.elements[1].bus == "flux_z"
+        assert new_qp._body.elements[1].duration == 100
+        assert new_qp._body.elements[1].port == 1
 
     def test_measure_method(self):
         """Test measure method"""
@@ -1167,7 +1205,7 @@ class TestQProgram(TestStructuredProgram):
         """Test with_crosstalk_qblox does not append the usual trailing loop Sync when a flux loop
         iteration's last element is a qp.if_trigger() block: that Conditional already self-times its
         own exit, and a Sync placed right after it would touch the gated bus outside the block, which
-        QbloxCompiler._validate_conditional_bus_isolation forbids."""
+        the Qblox pre-pass forbids."""
         inverse_xtalk_array = np.linalg.inv([[1, 0.5], [0.5, 1]])
         crosstalk = CrosstalkMatrix().from_array(["flux1", "flux2"], inverse_xtalk_array)
         non_linear_crosstalk = NonLinearCrosstalkMatrix.from_linear(crosstalk)
@@ -1356,8 +1394,6 @@ class TestQProgram(TestStructuredProgram):
     def test_with_crosstalk_qblox_offset_flux_vs_flux_unequal_length_loops(self):
         """Nested flux-vs-flux offset loops of different lengths must not raise: the per-bus arrays
         are accumulated without an eager element-wise cross product and compensated via decomposition."""
-        from qililab.qprogram.qblox_compiler import QbloxCompiler
-
         crosstalk = CrosstalkMatrix().from_array(["flux1", "flux2"], np.linalg.inv([[1, 0.5], [0.5, 1]]))
         square_wf = Square(amplitude=0.1, duration=50)
         qp = QProgram()
@@ -1376,13 +1412,30 @@ class TestQProgram(TestStructuredProgram):
         outer = new_qp.body.elements[0]
         assert isinstance(outer, Parallel)
         inner = next(element for element in outer.elements if isinstance(element, Parallel))
-        assert {QbloxCompiler._calculate_iterations(loop.start, loop.stop, loop.step) for loop in outer.loops} == {39}
-        assert {QbloxCompiler._calculate_iterations(loop.start, loop.stop, loop.step) for loop in inner.loops} == {38}
+        assert {for_loop_iterations(loop.start, loop.stop, loop.step) for loop in outer.loops} == {39}
+        assert {for_loop_iterations(loop.start, loop.stop, loop.step) for loop in inner.loops} == {38}
 
         # Both flux buses are compensated at the innermost level, each combining the two variables.
         inner_offsets = [element for element in inner.elements if isinstance(element, SetOffset)]
         assert {offset.bus for offset in inner_offsets} == {"flux1", "flux2"}
         assert all(isinstance(offset.offset_path0, VariableExpression) for offset in inner_offsets)
+
+    @pytest.mark.parametrize("start, stop, step", [(0.0, 1.0, 0.3), (1.0, 0.0, -0.3)])
+    def test_with_crosstalk_qblox_loop_step_not_dividing_range(self, start, stop, step):
+        """A step that doesn't divide the range gives 4 points in both directions, and the compensated loops keep
+        them."""
+        crosstalk = CrosstalkMatrix().from_array(["flux1", "flux2"], np.linalg.inv([[1, 0.5], [0.5, 1]]))
+        qp = QProgram()
+        offset = qp.variable(label="offset", domain=Domain.Voltage)
+        with qp.for_loop(variable=offset, start=start, stop=stop, step=step):
+            qp.set_offset(bus="flux1", offset_path0=offset)
+            qp.play(bus="flux1", waveform=Square(amplitude=0.1, duration=50))
+
+        compensated = qp.with_crosstalk_qblox(crosstalk)
+
+        parallel = compensated.body.elements[0]
+        assert isinstance(parallel, Parallel)
+        assert {for_loop_iterations(loop.start, loop.stop, loop.step) for loop in parallel.loops} == {4}
 
     def test_with_crosstalk_qblox_offsets_across_loop_levels_carried_and_summed(self):
         """flux_1 offset set in the outer loop and flux_2 in the inner one: the outer level keeps its
@@ -1717,8 +1770,6 @@ class TestQProgram(TestStructuredProgram):
         assert not op.save_adc
 
         # Interface flags updated
-        assert "control" in qp.qblox.latch_enabled
-        assert qp.qblox.trigger_network_required["readout"] == 1
         assert qp.qblox.weight_duration == {"readout": [40]}
 
     def test_with_bus_mapping_measure_reset(self):

@@ -1,0 +1,42 @@
+# Copyright 2023 Qilimanjaro Quantum Tech
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import math
+
+
+def for_loop_iterations(start: int | float, stop: int | float, step: int | float) -> int:
+    """Number of points a for_loop from ``start`` to ``stop`` by ``step`` sweeps.
+
+    The count is rounded down whatever the sign of ``step``, so a loop never sweeps more points than its step allows
+    and a descending loop sweeps as many points as its ascending mirror. A count within 1e-9 of an integer snaps to it,
+    to absorb floating-point error (``0 -> 0.7`` by ``0.1`` is 8 points, not 7).
+
+    Args:
+        start (int | float): First value of the loop.
+        stop (int | float): Last value of the loop.
+        step (int | float): Increment between consecutive values, negative for a descending loop.
+
+    Returns:
+        int: The number of points, 0 or fewer when ``step`` points away from ``stop``; callers decide how to handle
+            that.
+
+    Raises:
+        ValueError: If ``step`` is zero.
+    """
+    if step == 0:
+        raise ValueError("Step value cannot be zero")
+    raw_iterations = (stop - start + step) / step
+    if abs(raw_iterations - round(raw_iterations)) < 1e-9:
+        return round(raw_iterations)
+    return math.floor(raw_iterations)

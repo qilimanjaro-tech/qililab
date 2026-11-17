@@ -19,6 +19,7 @@ from sqlalchemy import ARRAY, ForeignKey, Integer, String
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column, sessionmaker
 
+from qililab.result.database.database_fitting import add_fitting_by_id
 from qililab.result.result_management import load_results
 
 if TYPE_CHECKING:
@@ -150,28 +151,18 @@ class AutocalMeasurement(_AutocalBase):
 
         Args:
             database_manager (DatabaseManager): Database manager holding the session.
-            path (str | None, optional): Fitting plots or data path. Defaults to None.
-            parameters (dict[str, Any] | None, optional): Fitting parameters in dictionary form. Defaults to None.
+            path (str | None, optional): Fitting plots or data path. If empty or None, the stored value is kept.
+                Defaults to None.
+            parameters (dict[str, Any] | None, optional): Fitting parameters in dictionary form. If empty or None,
+                the stored value is kept. Defaults to None.
+
+        Returns:
+            AutocalMeasurement: the updated row, re-loaded from the database.
+
+        Raises:
+            IndexError: if the measurement does not exist in the database.
         """
-        session = database_manager.session
-        with session() as running_session:
-            persistent_instance = (
-                running_session.query(AutocalMeasurement)
-                .where(AutocalMeasurement.measurement_id == self.measurement_id)
-                .one_or_none()
-            )
-            if persistent_instance is None:
-                raise IndexError(f"Autocalibration measurement entry '{self.measurement_id}' does not exist.")
-            if path:
-                persistent_instance.fitting_path = path
-            if parameters:
-                persistent_instance.fitting_parameters = parameters
-            try:
-                running_session.commit()
-                return persistent_instance
-            except Exception as e:
-                running_session.rollback()
-                raise e
+        return add_fitting_by_id(AutocalMeasurement, database_manager, self.measurement_id, path, parameters)
 
     def __repr__(self):
         return f"{self.measurement_id} {self.experiment_name} {self.start_time} {self.end_time} {self.run_length} {self.calibration_id}"

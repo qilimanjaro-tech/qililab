@@ -66,20 +66,28 @@ class QbloxQCMRF(QbloxQCM):
     settings: QbloxQCMRFSettings
     # TODO: We should separate instrument settings and instrument parameters, such that the user can quickly get
     # al the settable parameters of an instrument.
-    parameters: ClassVar[set[Parameter]] = {
-        Parameter.OUT0_LO_FREQ,
-        Parameter.OUT0_LO_EN,
+    # Settable RF parameters, in the explicit order in which `initial_setup` applies them. This tuple is also the
+    # single source of truth for the membership (`in`) checks in `set_parameter`/`get_parameter`. The order matters:
+    # iterating a *set* of `str, Enum` members is hash-seed dependent, which made setup non-deterministic (see
+    # QHC-1654): the LO frequency could be set before the cal-type default (so runcard auto-calibration never ran),
+    # or the runcard DC offsets after it (overwriting the calibration result). Per output we apply, in order:
+    # attenuation, LO enable, the runcard offsets, the cal-type default, and finally the LO frequency, so that when
+    # auto-calibration is enabled it runs last, on the final configuration, and is not overwritten by any runcard
+    # value.
+    parameters: ClassVar[tuple[Parameter, ...]] = (
         Parameter.OUT0_ATT,
+        Parameter.OUT0_LO_EN,
         Parameter.OUT0_OFFSET_PATH0,
         Parameter.OUT0_OFFSET_PATH1,
-        Parameter.OUT1_LO_FREQ,
-        Parameter.OUT1_LO_EN,
+        Parameter.OUT0_LO_FREQ_CAL_TYPE_DEFAULT,
+        Parameter.OUT0_LO_FREQ,
         Parameter.OUT1_ATT,
+        Parameter.OUT1_LO_EN,
         Parameter.OUT1_OFFSET_PATH0,
         Parameter.OUT1_OFFSET_PATH1,
-        Parameter.OUT0_LO_FREQ_CAL_TYPE_DEFAULT,
         Parameter.OUT1_LO_FREQ_CAL_TYPE_DEFAULT,
-    }
+        Parameter.OUT1_LO_FREQ,
+    )
 
     @check_device_initialized
     def initial_setup(self):

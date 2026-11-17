@@ -348,13 +348,16 @@ class DatabaseManager:
 
         Args:
             id (int): measurement_id value given by the database.
-            path (str | None, optional): Path to the fitting results file. Mandatory for the ``"measurements"`` schema.
-                Defaults to None.
-            parameters (dict[str, Any] | None, optional): Fitting parameters. Defaults to None.
+            path (str | None, optional): Path to the fitting results file. If empty or None, the stored value is
+                kept. Defaults to None.
+            parameters (dict[str, Any] | None, optional): Fitting parameters. If empty or None, the stored value is
+                kept. Defaults to None.
+
+        Raises:
+            IndexError: if the measurement does not exist.
+            ValueError: if the manager's ``database_schema`` cannot store fitting information.
         """
         if self.database_schema == "measurements":
-            if path is None:
-                raise ValueError("A fitting 'path' is mandatory for the 'measurements' database schema.")
             return self._add_measurement_fitting(id, path, parameters)
         if self.database_schema == "autocal":
             return self._add_autocal_fitting(id, path, parameters)
@@ -428,6 +431,50 @@ class DatabaseManager:
         """
         return self._load_by_id(QaaS_Experiment, id)
 
+    def _build_result_path(
+        self,
+        experiment_name: str,
+        start_time: dt.datetime,
+        sample_name: str,
+        cooldown: str | None,
+        result_folder: str | None = None,
+        target: int | str | list[str] | None = None,
+        secondary: int | str | list[str] | None = None,
+    ) -> str:
+        """Build the ``.h5`` path of a new entry and create its folder.
+
+        With ``result_folder`` the file is ``<result_folder>/<experiment_name>[-<target>][-<secondary>]-<time>.h5``.
+        Without it, the file is ``<base>/<sample>[/<cooldown>]/<date>/<time>/<experiment_name>.h5``.
+
+        Raises:
+            ValueError: if ``result_folder`` is not absolute, or if it is None and the config has no base path.
+        """
+        time_str = start_time.strftime("%H_%M_%S_%f")
+        if result_folder is not None:
+            if not os.path.isabs(result_folder):
+                raise ValueError(f"`result_folder` must be an absolute path, got '{result_folder}'.")
+            folder = result_folder
+            name_parts = [experiment_name, _flatten_index(target), _flatten_index(secondary), time_str]
+            filename = "-".join(part for part in name_parts if part)
+        else:
+            bases = [base for base in (self.base_path_local, self.base_path_share) if base]
+            if not bases or self.folder_path is None:
+                raise ValueError(
+                    "No `result_folder` given and the database config has no `base_path_local` / `base_path_shared` "
+                    "/ `data_write_folder`."
+                )
+            write_folder = self.folder_path.lstrip("/\\")
+            candidates = [os.path.join(base, write_folder) for base in bases]
+            base_path = candidates[0] if os.path.isdir(candidates[0]) else candidates[-1]
+            sample_folders = [sample_name] if cooldown is None else [sample_name, cooldown]
+            folder = os.path.join(base_path, *sample_folders, start_time.strftime("%Y-%m-%d"), time_str)
+            filename = experiment_name
+
+        if not os.path.isdir(folder):
+            os.makedirs(folder, exist_ok=True)
+            warnings.warn(f"Data folder did not exist. Created one at {folder}")
+        return os.path.join(folder, f"{filename}.h5")
+
     def _rewrite_result_path(self, entry: Measurement | AutocalMeasurement | QaaS_Experiment) -> None:
         """Point ``result_path`` to the shared base path when the local file does not exist."""
         path = entry.result_path
@@ -458,7 +505,9 @@ class DatabaseManager:
             self._rewrite_result_path(entry)
         return entries if isinstance(id, list) else entries[0]
 
-    def _add_measurement_fitting(self, id: int, path: str, parameters: dict[str, Any] | None = None) -> Measurement:
+    def _add_measurement_fitting(
+        self, id: int, path: str | None = None, parameters: dict[str, Any] | None = None
+    ) -> Measurement:
         """Store fitting information in the measurements table."""
         measurement = self._load_by_id(Measurement, id)
         return measurement.add_fitting(self, path, parameters)
@@ -689,6 +738,8 @@ class DatabaseManager:
         qprogram: "QProgram | None" = None,
         parameters: list[str] | None = None,
         data_shape: np.ndarray | None = None,
+        result_folder: str | None = None,
+        secondary_idx: int | str | list[str] | None = None,
     ):
         """Add autocalibration measurement metadata and data path
 
@@ -700,31 +751,36 @@ class DatabaseManager:
             qprogram (QProgram | None, optional): Qprogram used on the experiment. Defaults to None.
             parameters (list[str] | None, optional): Parameters used on the experiment. Defaults to None.
             data_shape (np.ndarray | None, optional): Shape of the results array. Defaults to None.
+            result_folder (str | None, optional): Absolute folder where the ``.h5`` is saved. If None, the path is
+                built from the config base path, sample, cooldown and start time. Defaults to None.
+            secondary_idx (int | str | list[str] | None, optional): Secondary source, only used in the filename when
+                ``result_folder`` is given. Defaults to None.
         """
         start_time = dt.datetime.now()
 
         with self.session() as running_session:
-            calibration_id = (
-                running_session.query(CalibrationRun)  # type: ignore[union-attr]
-                .order_by(CalibrationRun.calibration_id.desc())
-                .first()
-                .calibration_id
+            calibration_run: CalibrationRun = (
+                running_session.query(CalibrationRun).order_by(CalibrationRun.calibration_id.desc()).first()  # type: ignore[assignment]
             )
+            calibration_id = calibration_run.calibration_id
+            sample_name = calibration_run.sample_name
+            cooldown = calibration_run.cooldown
 
-        base_path = calibration.parameters["data_folder"]
-
-        result_path = os.path.join(base_path, f"{experiment_name}.h5")
-
-        if not os.path.isdir(base_path):
-            os.makedirs(base_path)
-            warnings.warn(f"Data folder did not exist. Created one at {base_path}")
+        result_path = self._build_result_path(
+            experiment_name=experiment_name,
+            start_time=start_time,
+            sample_name=sample_name,
+            cooldown=cooldown,
+            result_folder=result_folder,
+            target=qubit_idx,
+            secondary=secondary_idx,
+        )
 
         self.calibration_measurement = AutocalMeasurement(
             experiment_name=experiment_name,
             calibration_id=calibration_id,
             qbit_idx=str(qubit_idx) if isinstance(qubit_idx, int) else qubit_idx,
             result_path=result_path,
-            fitting_path=base_path,
             experiment_completed=False,
             start_time=start_time,
             platform=platform,
@@ -811,13 +867,13 @@ class DatabaseManager:
         target: list[str] | None = None,
         secondary_source: list[str] | None = None,
         bus_mapping: dict[str, str] | None = None,
+        result_folder: str | None = None,
     ):
         """Add measurement metadata and data path
 
         Args:
             experiment_name (str): Experiment name.
             experiment_completed (bool): Status of the experiment.
-            base_path (str): Base path for data location.
             cooldown (str | None, optional): Cooldown id. Defaults to None.
             sample_name (str | None, optional): Sample id. Defaults to None.
             optional_identifier (str | None, optional): Optional additional information. Defaults to None.
@@ -834,6 +890,8 @@ class DatabaseManager:
             target (np.ndarray | None, optional): Target qubits list. Defaults to None.
             secondary_source (np.ndarray | None, optional): Secondary source buses list. Defaults to None.
             bus_mapping (dict[str, str] | None, optional): Bus map of the qprogram. Defaults to None.
+            result_folder (str | None, optional): Absolute folder where the ``.h5`` is saved. If None, the path is
+                built from the config base path, sample, cooldown and start time. Defaults to None.
         """
         if sample_name is None:
             if self.current_sample:
@@ -844,22 +902,15 @@ class DatabaseManager:
             cooldown = self.current_cd
 
         start_time = dt.datetime.now()
-        formatted_time = start_time.strftime("%Y-%m-%d/%H_%M_%S_%f")
-
-        base_path = f"{self.base_path_local}{self.folder_path}"
-        if not os.path.isdir(base_path):
-            base_path = f"{self.base_path_share}{self.folder_path}"
-        dir_path = (
-            f"{base_path}{self.current_sample}/{self.current_cd}/{formatted_time}"
-            if base_path[-1] == "/"
-            else f"{base_path}/{self.current_sample}/{self.current_cd}/{formatted_time}"
+        result_path = self._build_result_path(
+            experiment_name=experiment_name,
+            start_time=start_time,
+            sample_name=sample_name,
+            cooldown=cooldown,
+            result_folder=result_folder,
+            target=target,
+            secondary=secondary_source,
         )
-        result_path = f"{dir_path}/{experiment_name}.h5"
-
-        folder = dir_path
-        if not os.path.isfile(folder):
-            os.makedirs(folder)
-            warnings.warn(f"Data folder did not exist. Created one at {folder}")
 
         measurement = Measurement(
             experiment_name=experiment_name,
@@ -908,6 +959,7 @@ class DatabaseManager:
         qprogram: "QProgram | None" = None,
         calibration: "Calibration | None" = None,
         parameters: list[str] | None = None,
+        result_folder: str | None = None,
     ):
         """Add measurement metadata, data path and results from a finished experiment.
 
@@ -923,6 +975,8 @@ class DatabaseManager:
             qprogram (QProgram | None, optional): Qprogram used on the experiment. Defaults to None.
             calibration (Calibration | None, optional): Calibration used on the experiment. Defaults to None.
             parameters (list[str] | None, optional): Parameters used on the experiment. Defaults to None.
+            result_folder (str | None, optional): Absolute folder where the ``.h5`` is saved. If None, the path is
+                built from the config base path, sample, cooldown and start time. Defaults to None.
         """
         if sample_name is None:
             if self.current_sample:
@@ -933,18 +987,13 @@ class DatabaseManager:
             cooldown = self.current_cd
 
         start_time = dt.datetime.now()
-
-        base_path = f"{self.base_path_local}{self.folder_path}"
-        if not os.path.isdir(base_path):
-            base_path = f"{self.base_path_share}{self.folder_path}"
-        formatted_time = start_time.strftime("%Y-%m-%d/%H_%M_%S_%f")
-        dir_path = f"{base_path}/{self.current_sample}/{self.current_cd}/{formatted_time}"
-        result_path = f"{dir_path}/{experiment_name}.h5"
-
-        folder = dir_path
-        if not os.path.isfile(folder):
-            os.makedirs(folder)
-            warnings.warn(f"Data folder did not exist. Created one at {folder}")
+        result_path = self._build_result_path(
+            experiment_name=experiment_name,
+            start_time=start_time,
+            sample_name=sample_name,
+            cooldown=cooldown,
+            result_folder=result_folder,
+        )
 
         # Save results
         _file = h5py.File(name=result_path, mode="w")
@@ -979,6 +1028,15 @@ class DatabaseManager:
             except Exception as e:
                 running_session.rollback()
                 raise e
+
+
+def _flatten_index(index: int | str | list[str] | None) -> str | None:
+    """Index as a filename field: lists joined with ``-``, None or empty as None."""
+    if index is None:
+        return None
+    if isinstance(index, list):
+        return "-".join(str(item) for item in index) or None
+    return str(index)
 
 
 def _load_config(filename, section):

@@ -29,6 +29,7 @@ from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column, sessionmaker
 from xarray import DataArray
 
+from qililab.result.database.database_fitting import add_fitting_by_id
 from qililab.result.experiment_results import ExperimentResults
 from qililab.result.result_management import load_results
 
@@ -229,26 +230,29 @@ class Measurement(_MeasurementsBase):
         axis_labels = {dim: da.coords[dim].values for dim in da.dims[1:]}
         return arr, axis_labels
 
-    def add_fitting(self, database_manager: "DatabaseManager", path: str, parameters: dict[str, Any] | None = None):
-        """Add fitting_path and fitting_parameters into Measurements database table.
+    def add_fitting(
+        self, database_manager: "DatabaseManager", path: str | None = None, parameters: dict[str, Any] | None = None
+    ):
+        """Add fitting_path and fitting_parameters into the Measurements database table.
+
+        The row is re-loaded from the database by its ``measurement_id`` inside the session and only the
+        fitting columns are updated, instead of merging ``self``. This avoids a stale in-memory instance
+        overwriting columns that were changed elsewhere.
 
         Args:
-            database_manager (DatabaseManager): _description_
-            path (str): Fitting plots or data path.
-            parameters (dict[str, Any] | None, optional): Fitting parameters in dictionary form. Defaults to None.
+            database_manager (DatabaseManager): Database manager holding the session.
+            path (str | None, optional): Fitting plots or data path. If empty or None, the stored value is kept.
+                Defaults to None.
+            parameters (dict[str, Any] | None, optional): Fitting parameters in dictionary form. If empty or None,
+                the stored value is kept. Defaults to None.
+
+        Returns:
+            Measurement: the updated row, re-loaded from the database.
+
+        Raises:
+            IndexError: if the measurement does not exist in the database.
         """
-        session = database_manager.session
-        with session() as running_session:
-            persistent_instance = running_session.merge(self)
-            persistent_instance.fitting_path = path
-            if parameters:
-                persistent_instance.fitting_parameters = parameters
-            try:
-                running_session.commit()
-                return persistent_instance
-            except Exception as e:
-                running_session.rollback()
-                raise e
+        return add_fitting_by_id(Measurement, database_manager, self.measurement_id, path, parameters)
 
     def __repr__(self):
         return f"{self.measurement_id} {self.experiment_name} {self.start_time} {self.end_time} {self.run_length} {self.sample_name} {self.cooldown}"

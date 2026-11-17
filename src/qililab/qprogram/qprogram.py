@@ -19,7 +19,7 @@ from typing import TYPE_CHECKING, ClassVar, Self, Sequence, overload
 import numpy as np
 
 from qililab.core import Domain, Variable, requires_domain
-from qililab.qprogram.blocks import Block, Conditional, ForLoop, Parallel
+from qililab.qprogram.blocks import Block, Conditional, ForLoop, Parallel, for_loop_iterations
 from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix, NonLinearCrosstalkMatrix
 from qililab.qprogram.flux_vector import FluxVector, NonLinearFluxVector
 from qililab.qprogram.operations import (
@@ -224,21 +224,6 @@ class QProgram(SdkQProgram, StructuredProgram):
                         setattr(block.elements[index], "bus", bus_mapping[bus])
                     if isinstance(control_bus, str) and control_bus in bus_mapping:
                         setattr(block.elements[index], "control_bus", bus_mapping[control_bus])
-                    new_latch_enabled = []
-                    for bus in copied_qprogram.qblox.latch_enabled:
-                        if bus in bus_mapping:
-                            new_latch_enabled.append(bus_mapping[bus])
-                        else:
-                            new_latch_enabled.append(bus)
-                    copied_qprogram.qblox.latch_enabled = new_latch_enabled
-
-                    new_trigger_network_required = {}
-                    for bus, value in copied_qprogram.qblox.trigger_network_required.items():
-                        if bus in bus_mapping:
-                            new_trigger_network_required[bus_mapping[bus]] = value
-                        else:
-                            new_trigger_network_required[bus] = value
-                    copied_qprogram.qblox.trigger_network_required = new_trigger_network_required
                 elif hasattr(element, "bus"):
                     bus = getattr(element, "bus")
                     if isinstance(bus, str) and bus in bus_mapping:
@@ -315,8 +300,6 @@ class QProgram(SdkQProgram, StructuredProgram):
             QProgram: A new instance of QProgram with calibrated operations.
         """
         buses_to_add: set[str] = set()
-        latch_to_add: list[str] = []
-        trigger_network_to_add: dict[str, int] = {}
 
         def traverse(block: Block):
             for index, element in enumerate(block.elements):
@@ -393,8 +376,6 @@ class QProgram(SdkQProgram, StructuredProgram):
                     )
                     block.elements[index] = measure_reset_operation
                     buses_to_add.add(element.control_bus)
-                    latch_to_add.append(element.control_bus)
-                    trigger_network_to_add[element.bus] = element.trigger_address
 
                 if hasattr(element, "bus"):
                     bus = getattr(element, "bus")
@@ -405,12 +386,6 @@ class QProgram(SdkQProgram, StructuredProgram):
 
         if buses_to_add:
             copied_qprogram._buses.update(buses_to_add)
-
-        if latch_to_add:
-            copied_qprogram.qblox.latch_enabled.extend(latch_to_add)
-
-        if trigger_network_to_add:
-            copied_qprogram.qblox.trigger_network_required.update(trigger_network_to_add)
 
         return copied_qprogram
 
@@ -478,8 +453,6 @@ class QProgram(SdkQProgram, StructuredProgram):
         Returns:
             QProgram: A new instance of QProgram with calibrated crosstalk.
         """
-        from .qblox_compiler import QbloxCompiler
-
         self._bus_variable_map: dict[tuple[Variable | float | None, str], Variable] = {}
         self._block_variables: dict[Variable | float | None, list[Variable]] = {}
         self._parallel_loops: dict[Variable, list[ForLoop]] = {}
@@ -650,12 +623,7 @@ class QProgram(SdkQProgram, StructuredProgram):
                         np.linspace(
                             variable_loop.start,
                             variable_loop.stop,
-                            max(
-                                QbloxCompiler._calculate_iterations(
-                                    variable_loop.start, variable_loop.stop, variable_loop.step
-                                ),
-                                0,
-                            ),
+                            max(for_loop_iterations(variable_loop.start, variable_loop.stop, variable_loop.step), 0),
                         )
                         if isinstance(variable_loop, ForLoop)
                         else variable_loop
@@ -1191,8 +1159,8 @@ class QProgram(SdkQProgram, StructuredProgram):
             # Skipped when the tail ends in a Conditional (possibly wrapped in ForLoop/Parallel/etc.):
             # a qp.if_trigger() block already self-times its own exit (see
             # QbloxCompiler._handle_conditional_trigger_epilogue), and appending a Sync right after it
-            # would touch the conditional's gated bus outside the block, which
-            # QbloxCompiler._validate_conditional_bus_isolation forbids.
+            # would touch the conditional's gated bus outside the block, which the Qblox pre-pass
+            # (qililab.qprogram.prepass.qblox_prepass) forbids.
             if (
                 corrected_elements
                 and not isinstance(corrected_elements[-1], Sync)
@@ -1658,8 +1626,6 @@ class QProgram(SdkQProgram, StructuredProgram):
         def __init__(self, qprogram: "QProgram"):
             self.qprogram = qprogram
             self.disable_autosync: bool = False
-            self.latch_enabled: list[str] = []
-            self.trigger_network_required: dict[str, int] = {}
             self._weight_duration: dict[str, list[int | str]] = {}
 
         @property
@@ -1856,8 +1822,6 @@ class QProgram(SdkQProgram, StructuredProgram):
             self.qprogram._active_block.append(operation)
             self.qprogram._buses.add(bus)
             self.qprogram._buses.add(control_bus)
-            self.latch_enabled.append(control_bus)
-            self.trigger_network_required[bus] = trigger_address
             self._weight_duration.setdefault(bus, []).append(
                 weights.get_duration() if isinstance(weights, IQWaveform) else weights
             )

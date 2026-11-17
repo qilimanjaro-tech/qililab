@@ -111,13 +111,44 @@ Instead of manually creating the file, you can run:
 towncrier create --no-edit
 ```
 
-When cutting a new release, update the version in `pyproject.toml` and run:
+When cutting a new release, pass the new version explicitly (the installed version on `main` is a dev build):
 
 ```bash
-towncrier
+towncrier build --version 0.35.2
 ```
 
-This aggregates all the news fragments into `CHANGELOG.md` under the new version heading and removes the used fragments.
+This aggregates all the news fragments into `CHANGELOG.md` under the new version heading and removes the used fragments. See [Versions, dev builds and releases](#versions-dev-builds-and-releases) for the rest of the release steps.
+
+### Versions, dev builds and releases
+
+The version comes from git through [hatch-vcs](https://github.com/ofek/hatch-vcs); there is no version to bump in `pyproject.toml`.
+
+- A release tag such as `0.35.2` builds as `0.35.2`. Only bare `MAJOR.MINOR.PATCH` tags set the version; tags such as `bsc-15` or `v0.35.2` are ignored.
+- Every commit on `main` that passes Tests and Code Quality is published to CodeArtifact as a dev build, for example `0.35.3.dev4`, where `4` is the number of merges since the last release.
+- Dev builds are pre-releases, so installers skip them unless asked.
+
+With the CodeArtifact index configured as for releases, update to the latest dev build:
+
+```bash
+uv pip install --upgrade --prerelease=allow qililab
+```
+
+`--prerelease=allow` applies to every package that command resolves, not only qililab. For shared lab environments, prefer pinning an exact build, which also keeps the environment fixed or takes it back to a known-good one:
+
+```bash
+uv pip install "qililab==0.35.3.dev4"
+```
+
+Quote the exact version in bug reports and experiment records:
+
+```bash
+python -c "import qililab; print(qililab.__version__)"
+```
+
+To cut a release:
+
+1. Run `towncrier build --version <version>` and merge the resulting pull request.
+1. Publish a GitHub release whose tag is the bare version (for example `0.35.2`, no `v` prefix) on that merge commit. The Publish workflow builds the tagged commit and fails if the built version differs from the tag.
 
 ## Contributions
 
