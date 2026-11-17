@@ -11,7 +11,6 @@ from qprogram import (
     Linspace,
     MeasurementHandle,
     ParseError,
-    Range,
     ValidationError,
     Values,
     Variable,
@@ -762,7 +761,7 @@ class TestQProgram:
             qp = ql.deserialize(text)
 
         (trigger,) = [node for node in qp.body.walk() if isinstance(node, (QdacSetTrigger, QbloxSetTrigger))]
-        assert type(trigger) is trigger_type
+        assert isinstance(trigger, trigger_type)
         assert (trigger.duration, trigger.position, trigger.outputs) == attributes
 
     def test_deserialize_legacy_yaml_qdac_play_with_an_iq_waveform_loads_and_is_refused_when_compiled(self):
