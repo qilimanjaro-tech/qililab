@@ -762,7 +762,8 @@ class TestQProgram:
 
         (trigger,) = [node for node in qp.body.walk() if isinstance(node, (QdacSetTrigger, QbloxSetTrigger))]
         assert isinstance(trigger, trigger_type)
-        assert (trigger.duration, trigger.position, trigger.outputs) == expected
+        actual = (trigger.duration, trigger.position, trigger.outputs)
+        assert actual == expected
 
     def test_deserialize_legacy_yaml_qdac_play_with_an_iq_waveform_loads_and_is_refused_when_compiled(self):
         """An old program whose QDAC play had an IQ waveform still loads, and compiling it refuses the play: the former
