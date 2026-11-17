@@ -11,13 +11,15 @@ from uuid import uuid4
 import h5py
 import numpy as np
 import pytest
-from sqlalchemy import select, text
+from sqlalchemy import Row, select, text
 from sqlalchemy.exc import IntegrityError, OperationalError
+from sqlalchemy.orm import close_all_sessions
 
 from qililab.qprogram import Calibration
 from qililab.result.database.database_autocal import AutocalMeasurement
 from qililab.result.database.database_manager import get_db_manager, get_engine
 from qililab.result.database.database_measurements import Measurement
+from qililab.result.stream_results import StreamArray
 
 pytestmark = pytest.mark.skipif(
     not os.environ.get("QILILAB_TEST_POSTGRES_PORT"),
@@ -48,6 +50,8 @@ def postgres_manager(request, tmp_path):
         yield manager, model
     finally:
         if manager is not None:
+            # head/tail create short-lived ORM sessions without a context manager.
+            close_all_sessions()
             manager.engine.dispose()
         with admin.connect() as connection:
             connection.execute(text(f'DROP DATABASE "{database}" WITH (FORCE)'))
@@ -70,12 +74,26 @@ def test_postgresql_measurement_and_fitting_round_trip(postgres_manager, tmp_pat
             np.testing.assert_array_equal(result["results"][:], [[1.0, 2.0], [3.0, 4.0]])
             assert result["results"].dtype == np.dtype("float64")
             np.testing.assert_array_equal(result["loops/frequency"][:], [10.0, 20.0])
-        for read in (manager.head, manager.tail):
+        second = manager.add_results("integration", np.array([5.0, 6.0]), {}, result_folder=str(tmp_path))
+        for read, ordered_ids in (
+            (manager.head, [entry.measurement_id, second.measurement_id]),
+            (manager.tail, [second.measurement_id, entry.measurement_id]),
+        ):
             for light in (False, True):
-                assert read(light_read=light)[0].measurement_id == entry.measurement_id
-                frame = read(light_read=light, pandas_output=True)
-                assert frame["measurement_id"].tolist() == [entry.measurement_id]
-                assert frame["experiment_name"].tolist() == ["integration"]
+                rows = read(light_read=light, order_limit=None, exp_name="integration")
+                assert isinstance(rows[0], Row if light else Measurement)
+                assert [row.measurement_id for row in rows] == ordered_ids
+                assert read(light_read=light, order_limit=1)[0].measurement_id == ordered_ids[0]
+                frame = read(light_read=light, pandas_output=True, order_limit=None)
+                assert frame["measurement_id"].tolist() == ordered_ids
+                assert frame["experiment_name"].tolist() == ["integration", "integration"]
+                assert read(light_read=light, exp_name="missing") == []
+                assert (
+                    manager.head(light_read=light, before_id=second.measurement_id)[0].measurement_id == entry.measurement_id
+                )
+                assert (
+                    manager.tail(light_read=light, since_id=entry.measurement_id)[0].measurement_id == second.measurement_id
+                )
     else:
         manager.add_calibration_run({"node": "integration"}, "sample", "cooldown")
         calibration = Calibration()
@@ -95,7 +113,7 @@ def test_postgresql_measurement_and_fitting_round_trip(postgres_manager, tmp_pat
     assert manager.load_entry_by_id(entry.measurement_id).fitting_parameters == {"frequency_hz": 10.0}
     assert manager.add_fitting(entry.measurement_id, parameters={}).fitting_parameters == {"frequency_hz": 10.0}
     with pytest.raises(IndexError, match="does not exist"):
-        manager.add_fitting(entry.measurement_id + 1, parameters={"frequency_hz": 20.0})
+        manager.add_fitting(-1, parameters={"frequency_hz": 20.0})
 
 
 def test_postgresql_failed_transaction_can_be_rolled_back(postgres_manager):
@@ -106,7 +124,10 @@ def test_postgresql_failed_transaction_can_be_rolled_back(postgres_manager):
             session.commit()
         session.rollback()
         assert session.execute(select(model.measurement_id)).scalars().all() == []
-        assert session.execute(text("SELECT 42")).scalar_one() == 42
+        session.execute(text("CREATE TEMP TABLE recovery (value INTEGER)"))
+        session.execute(text("INSERT INTO recovery VALUES (42)"))
+        session.commit()
+        assert session.execute(text("SELECT value FROM recovery")).scalar_one() == 42
 
 
 def test_postgresql_missing_database_reports_connection_failure(postgres_manager):
@@ -117,3 +138,39 @@ def test_postgresql_missing_database_reports_connection_failure(postgres_manager
             engine.connect()
     finally:
         engine.dispose()
+    with manager.engine.connect() as connection:
+        assert connection.execute(text("SELECT 42")).scalar_one() == 42
+
+
+def test_postgresql_stream_array_consumer_round_trip(postgres_manager, tmp_path):
+    manager, _ = postgres_manager
+    if manager.database_schema == "measurements":
+        manager.add_sample("sample", "synthetic", "wafer", "sample", "run", "design", [2])
+        manager.set_sample_and_cooldown("sample")
+    else:
+        manager.add_calibration_run({"node": "stream"}, "sample", "cooldown")
+    calibration = Calibration()
+    calibration.parameters = {"amplitude": 0.25}
+    values = np.array([1.0 + 2.0j, 3.0 + 4.0j])
+    with StreamArray(
+        shape=values.shape,
+        loops={"frequency": np.array([10.0, 20.0])},
+        experiment_name="stream",
+        db_manager=manager,
+        calibration=calibration,
+        qubit_idx=0,
+        result_folder=str(tmp_path),
+    ) as stream:
+        stream[:] = values
+    loaded = manager.load_entry_by_id(stream.measurement.measurement_id)
+    assert loaded.experiment_name == "stream"
+    assert loaded.experiment_completed is True
+    assert loaded.end_time is not None
+    assert loaded.target == ["0"]
+    assert loaded.result_path == stream.path
+    with h5py.File(loaded.result_path) as result:
+        np.testing.assert_array_equal(result["results"][:], values)
+        assert result["results"].dtype == values.dtype
+        np.testing.assert_array_equal(result["loops/frequency"][:], [10.0, 20.0])
+    stream.add_fitting(parameters={"amplitude": 0.25})
+    assert manager.load_entry_by_id(loaded.measurement_id).fitting_parameters == {"amplitude": 0.25}

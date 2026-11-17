@@ -24,7 +24,7 @@ import h5py
 import numpy as np
 from pandas import read_sql
 from sqlalchemy import create_engine, exists
-from sqlalchemy.orm import Query, Session, sessionmaker
+from sqlalchemy.orm import Session, sessionmaker
 
 from qililab.result.database.database_autocal import AutocalMeasurement, CalibrationRun
 from qililab.result.database.database_measurements import Cooldown, Measurement, Sample, SequenceRun
@@ -540,7 +540,7 @@ class DatabaseManager:
             since_id (int | None, optional): If provided, only load measurements with measurement_id greater than since_id. Defaults to None.
         """
         with self.engine.connect() as con:
-            query: Query[Any] = self.session().query(Measurement)
+            query = self.session().query(Measurement)
 
             if current_sample and self.current_sample:
                 query = query.filter(Measurement.sample_name == self.current_sample)
@@ -558,7 +558,7 @@ class DatabaseManager:
             Measurement.platform.isnot
             if light_read:
                 # Note that some columns are missing that currently are not being used
-                query = query.with_entities(
+                row_query = query.with_entities(
                     Measurement.measurement_id,
                     Measurement.sequence_id,
                     Measurement.experiment_name,
@@ -581,6 +581,9 @@ class DatabaseManager:
                     (Measurement.dc_offsets != "null").label("has_dc_offsets"),
                     (Measurement.flux_offsets != "null").label("has_flux_offsets"),
                 )
+                if pandas_output:
+                    return read_sql(row_query.statement, con=con)
+                return row_query.all()
 
             if pandas_output:
                 return read_sql(query.statement, con=con)
@@ -607,7 +610,7 @@ class DatabaseManager:
             before_id (int | None, optional): If provided, only load measurements with measurement_id lower than since_id. Defaults to None.
         """
         with self.engine.connect() as con:
-            query: Query[Any] = self.session().query(Measurement)
+            query = self.session().query(Measurement)
 
             if current_sample and self.current_sample:
                 query = query.filter(Measurement.sample_name == self.current_sample)
@@ -625,7 +628,7 @@ class DatabaseManager:
 
             if light_read:
                 # Note that some columns are missing that currently are not being used
-                query = query.with_entities(
+                row_query = query.with_entities(
                     Measurement.measurement_id,
                     Measurement.sequence_id,
                     Measurement.experiment_name,
@@ -648,6 +651,9 @@ class DatabaseManager:
                     (Measurement.dc_offsets != "null").label("has_dc_offsets"),
                     (Measurement.flux_offsets != "null").label("has_flux_offsets"),
                 )
+                if pandas_output:
+                    return read_sql(row_query.statement, con=con)
+                return row_query.all()
 
             if pandas_output:
                 return read_sql(query.statement, con=con)

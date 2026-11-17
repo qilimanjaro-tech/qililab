@@ -1,134 +1,91 @@
-SQLAlchemy 2.1 hardware validation
+SQLAlchemy 2.1 database validation
 ==================================
 
-QHC-1644 keeps the PostgreSQL path on psycopg2 while adopting SQLAlchemy 2.1.
-The implementation is in `Qililab PR 1278
-<https://github.com/qilimanjaro-tech/qililab/pull/1278>`_.
-Code review can proceed while the hardware result is pending. Hardware evidence
-and independent human approval are still required before approval or merge.
+QHC-1644 keeps the PostgreSQL path on the shipped psycopg2 driver while adopting
+SQLAlchemy 2.1. The implementation is in `Qililab PR 1278
+<https://github.com/qilimanjaro-tech/qililab/pull/1278>`_. Database write/readback
+checks validate this change without instruments or a chip. This replaces the
+earlier hardware run plan, following the validation decision recorded on
+17 November 2026 in the PR. The prepared instrument-only test package is
+historical and is not a publication or merge dependency for this change.
+Independent human review is still required.
 
-Setup and planning inputs
--------------------------
+Scope
+-----
 
-Reserve the existing QHC Qblox instrument bench with a QRM-RF acquisition
-channel, terminated input or a validated attenuated loopback fixture. Use an
-approved readout-only runcard and a small binned integrated-I/Q acquisition.
-No chip is required for the proposed persistence test. Do not change firmware,
-QDAC biases or production configuration as part of this migration.
+The runtime changes select ``postgresql+psycopg2`` in ``get_engine`` and keep
+model and projected-row queries separately inferred in ``head`` and ``tail``.
+The dependency range is ``sqlalchemy>=2.1.8,<2.2``. Public functions, database
+INI fields, mapped models and stored file formats are unchanged.
 
-Before the run, record the actual asset and slot, receiving owner, instrument
-modules/firmware, procedure and runcard/program hashes. Agree bins, shots,
-integration time in ns, expected ``(2, bins)`` shape and an instrument-owner
-approved absolute I/Q bound in integrated-I/Q arbitrary units. The bound checks
-bench health. It does not permit any tolerance when comparing stored values
-with the capture that was written.
+The database layer is called by ``Platform.load_db_manager``, ``StreamArray``
+and ``ExperimentResultsWriter``. Validate those software boundaries with
+synthetic inputs and the existing consumer tests. Instrument acquisition,
+firmware and calibration are outside this change's validation scope.
 
-``Platform.session()`` enables sources in its runcard. The receiving owner must
-confirm that the selected runcard contains only approved test instruments,
-without unintended outputs or a connected chip. Acquisition must finish and
-cleanup must succeed before database writes begin.
+Disposable PostgreSQL setup
+---------------------------
 
-For Monday 16 November 2026 planning, confirm the actual bench/slot, the supported
-PostgreSQL version and the independent reviewer. These session inputs are not
-established by the library ownership register.
+Use a dedicated local PostgreSQL server bound to loopback, with a
+``qililab_test`` role (password ``test``) that can create databases. Set the
+server's port explicitly to opt in:
 
-Baseline and candidate
-----------------------
+.. code-block:: bash
 
-Use two isolated environments on the same lab host and equipment:
+   QILILAB_TEST_POSTGRES_PORT=55464 uv run pytest tests/result/test_database_postgresql.py
 
-* Baseline: Qililab 0.36.0 at
-  ``e3c86ffc48c909292dd033bcad8dd6e86cb0e78f``, SQLAlchemy 2.0.54.
-* Candidate: the reviewed full SHA of PR 1278, SQLAlchemy 2.1.8.
-* Both: the same lab-supported Python 3.11, 3.12 or 3.13 patch version,
-  QPySequence 0.12.0 and psycopg2-binary 2.9.13. Keep the rest of the package
-  tuple fixed apart from removal of optional greenlet. Record install receipts,
-  source/artifact identities and package lists privately.
-* Hold hardware, firmware, wiring, acquisition limits, calibration and runcard
-  fixed. Use the same deployment-supported PostgreSQL version for both.
-  Existing local evidence covers PostgreSQL 18.6 only.
+Each case creates and drops its own uniquely named database. Without the port,
+these integration tests skip. The fixtures use explicit temporary INI files
+with the existing ``user``, ``passwd``, ``host``, ``port``, ``database`` and
+``database_schema`` keys under ``[postgresql]``. They do not use the default
+home INI or an existing measurement database.
 
-If the bench uses a different package tuple, agree it with the reviewer first.
-Do not upgrade a working measurement environment in place or force unsupported
-packages just to match this plan.
+Run the driver and software consumer regressions as well:
 
-Provision two empty, dedicated databases per environment, named
-``qhc1644_<unique>_measurements`` and ``qhc1644_<unique>_autocal``. Supply explicit
-private INI files with the existing ``user``, ``passwd``, ``host``, ``port``,
-``database`` and ``database_schema`` keys under ``[postgresql]``. No default home
-INI or live measurement database is used. Keep credentials and addresses local.
+.. code-block:: bash
 
-Run sequence
-------------
+   uv run pytest tests/result tests/platform/test_platform.py tests/qprogram/test_experiment_executor.py
 
-#. In baseline environment A, acquire the approved binned I/Q result. Require
-   finite values, expected shape, the agreed instrument bound and successful
-   session cleanup. Preserve the actual array and its hash.
-#. Persist that capture through both ``measurements`` and ``autocal`` paths.
-   Check exact values, dtype, shape, coordinates, metadata, calibration
-   serialization, completion state, path meaning and HDF5 hash. Check fitting
-   parameters and both row/DataFrame forms of ``head`` and ``tail``.
-#. In candidate environment B, read A's unchanged database/file fixtures.
-   Do not recreate tables or convert the stored data.
-#. Run the same acquisition and persistence in B, with new output directories
-   and fresh test databases. Independent acquisitions contain noise, so assess
-   each against the same agreed bench bounds. Each persisted capture must match
-   its own input exactly, without tolerance or dtype conversion.
-#. For each schema/environment, reject an incomplete transaction, roll back,
-   prove no partial row remains and run a successful query. Attempt a uniquely
-   named nonexistent test database, observe a connection failure, then prove a
-   fresh valid connection works. Induce no shared-server or instrument outage.
-#. Reopen the unchanged A environment and read B's fixtures. Verify no schema or
-   file-format conversion was introduced. This step needs no new acquisition.
-#. Confirm the hardware is available for the normal procedure and sources are
-   in their approved final state. Stop and preserve evidence on failure.
+Baseline and candidate checks
+-----------------------------
 
-The notebook's fitting check stores deterministic I/Q summaries to exercise the
-persistence seam. It makes no claim about a physical model fit.
+Use isolated environments with SQLAlchemy 2.0.54 and 2.1.8. Record the full
+Qililab source identity, local diff or artifact hash, Python patch version,
+psycopg2-binary version, PostgreSQL version and remaining package versions.
+Existing local evidence used QPySequence 0.12.0 and psycopg2-binary 2.9.13.
+Keep the rest of each comparison's package tuple fixed apart from SQLAlchemy
+and its optional greenlet dependency.
 
-Run package and evidence
-------------------------
+Check both ``measurements`` and ``autocal`` schemas:
 
-The guarded notebook, persistence helper and result template are prepared for
-``QHC_hardware_tests/tests/qililab/qhc_1644_sqlalchemy/`` at test commit
-``af3974a``. Publication requires a repository writer: the author's account has
-read access and the private repository disables forking. The apply-ready patch
-and unexecuted notebook are available from the QHC-1644 planning handoff. The
-writer should publish the test PR and link it here and from QHC-1644 before the
-instrument session. No hardware result is claimed by this preparation.
+* Write and reload deterministic values, dtype, shape, coordinates and metadata.
+  Check calibration serialization, result paths, completion state and fitting
+  parameters. Stored values must match their input exactly.
+* For the measurements schema, exercise full-model and projected-row forms of
+  ``head`` and ``tail``, including DataFrame output, filtering, ordering and limits.
+  These methods are not available for the autocal schema.
+* Reject an incomplete transaction, roll back and verify no partial row remains.
+  Then prove the same session can complete a valid transaction.
+* Attempt a uniquely named missing database, observe the connection failure,
+  then prove a fresh valid connection works. Do not induce a shared-server outage.
+* Preserve the same synthetic fixtures across a 2.0.54 write, 2.1.8 read/update
+  and 2.0.54 read. Verify that no schema or file conversion is needed.
 
-Attach the following to PR 1278 and its test record:
+Keep raw artifacts and package receipts in the approved private evidence location.
+Do not commit populated INIs, credentials, deployment addresses or operational
+configuration. Remove only the disposable databases created for these checks.
 
-* Completed result template and sanitized executed notebook or HTML export.
-* Operator, date/slot, actual asset/procedure, module/firmware versions,
-  runcard/program/calibration hashes and pre-agreed acceptance bounds.
-* Both full Qililab SHAs, wheel/source provenance, Python and package tuples,
-  PostgreSQL version and deployment-matrix decision.
-* Each schema's measurement identifier, array/dtype/shape/coordinate/metadata
-  checks, fitting checks, capture/HDF5 hashes and cross-version readbacks.
-* Failed-transaction and failed-connection recovery, acquisition/cleanup status,
-  final safe state and all deviations or failed attempts.
-* Human hardware sign-off and independent code/result review links.
+Acceptance and review
+---------------------
 
-Keep raw data in the approved private artifact location and link immutable
-records. Do not commit populated INIs/runcards, credentials, instrument addresses
-or full private paths. A passing synthetic harness is not a hardware result.
-The operator/DB owner removes only these session databases after evidence review.
+Local PostgreSQL evidence covers 18.6. Confirm the supported deployment
+PostgreSQL versions with the maintainer and Platform, then provide evidence
+for that agreed matrix. Separately scoped QiliTools, Seqtante, Seqtante-open
+and SDK consumer compatibility remains required where applicable. Qililab's
+software consumer tests alone do not establish downstream deployment readiness.
 
-Review handoff
---------------
-
-Albert runs the test and remains the implementation author. The
-`Qililab maintenance entry
-<https://app.notion.com/p/3fb7eec14c538127b780c522db925f5b>`_
-nominates Flavie Le Bars as maintainer, with acceptance pending. Jordi Valls is
-the checked-in results/database CODEOWNER. Route the library and DB review to
-these contacts without treating a review request as accepted ongoing ownership.
-Albert does not approve his own PR.
-
-Follow the `QHC hardware-test workflow
-<https://app.notion.com/p/4087eec14c5381ed904ffeb2672f3b20>`_.
-A reviewer can comment that code review passed while hardware is pending.
-Do not mark the migration Approved, replace the hardware-needed label with
-``hardware-tested``, or merge until required evidence and independent approval
-are complete. Applicable downstream consumer checks remain separately scoped.
+Albert retains implementation ownership and cannot approve his own PR. Route
+database evidence to Ely and library review to Flavie, as recorded in PR 1278.
+The database reviewer must accept the write/readback, transaction and parity
+evidence, followed by fresh independent review of the revised code. Passing
+software checks do not claim completed approval, release or deployment.

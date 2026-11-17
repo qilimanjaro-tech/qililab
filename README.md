@@ -53,18 +53,9 @@ To run it the same way CI does (parallelized, with coverage):
 pytest -n auto --dist loadfile --cov=qililab --cov-report=xml tests
 ```
 
-The PostgreSQL integration tests are opt-in. Use a disposable local server with
-a `qililab_test` role (password `test`) that can create databases. Set its port
-explicitly to run the checks:
-
-```bash
-QILILAB_TEST_POSTGRES_PORT=55464 uv run pytest tests/result/test_database_postgresql.py
-```
-
-Each case creates and drops a uniquely named database. These checks exercise
-measurement/autocal persistence and rollback, they do not connect to instruments.
-Qililab uses the `psycopg2` driver explicitly with SQLAlchemy 2.1. Existing database
-INI fields remain the same.
+Qililab uses the shipped `psycopg2` driver with SQLAlchemy 2.1. Existing database
+INI fields are unchanged. See the [database validation guide](docs/development/sqlalchemy_21_validation.rst)
+for the opt-in PostgreSQL tests.
 
 ### Linting & Formatting
 
