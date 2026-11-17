@@ -6,7 +6,7 @@ from unittest.mock import MagicMock, Mock, call, create_autospec, patch
 import numpy as np
 import pytest
 import xarray as xr
-from qprogram import QProgramResult, ValidationError
+from qprogram import MeasurementField, QProgramResult, ValidationError
 
 from qililab import IQPair, Square
 from qililab.qililab_settings import get_settings
@@ -610,6 +610,26 @@ class TestExperimentExecutor:
         assert values_loop.source.values().dtype.kind == "i"
         assert for_loop.source.values().tolist() == [0, 2, 4]
         assert for_loop.source.values().dtype.kind == "i"
+
+    def test_execute_raises_for_a_measurement_without_its_iq(self, override_settings):
+        """The results file stores the IQ field of each measurement: one that asked for the state only can't be stored."""
+        pulse = IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
+        qprogram = QProgram()
+        qprogram.measure(bus="readout_bus", waveform=pulse, weights=pulse, fields=[MeasurementField.STATE])
+        experiment = Experiment(label="experiment")
+        experiment.execute_qprogram(qprogram)
+        state = xr.DataArray(np.array(0.5))
+        result = QProgramResult()
+        result.append_measurement(bus="readout_bus", name="m0", data=state, fields={"state": state})
+        executor = ExperimentExecutor(platform=make_platform_returning(result), experiment=experiment)
+
+        with override_settings(
+            experiment_results_save_in_database=False,
+            experiment_live_plot_enabled=False,
+            experiment_live_plot_on_slurm=False,
+        ):
+            with pytest.raises(ValueError, match="measurement 'm0' did not request it"):
+                executor.execute()
 
     def test_execute_refuses_a_loop_main_could_not_express(self, override_settings):
         """An Experiment's loops sweep values, as on main: qprogram's from_range or from_linspace are refused."""

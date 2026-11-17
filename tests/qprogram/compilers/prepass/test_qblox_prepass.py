@@ -4,6 +4,7 @@ import re
 import numpy as np
 import pytest
 
+from qprogram import Constant
 from qprogram.blocks import Average
 from qprogram.operations import Play, Sync
 from qprogram_qblox import Acquire
@@ -399,6 +400,36 @@ class TestPrepareQblox:
             prepare_qblox(qp, readout_modules={"readout": "qrm"})
 
         assert ("its trace averages over all of them" in caplog.text) is warns
+
+    @pytest.mark.parametrize("loop, warns", [("average", False), ("sweep", True)])
+    def test_scope_with_its_acquisition_inside_a_block(self, caplog, loop: str, warns: bool):
+        """An acquisition inside an average triggers the scope into one averaged trace; one inside a sweep makes the
+        trace average over every point."""
+        qp = QProgram()
+        qp.qblox.scope(bus="readout")
+        if loop == "average":
+            with qp.average(10):
+                qp.qblox.acquire(bus="readout", weights=WEIGHTS)
+        else:
+            frequency = qp.variable("frequency")
+            with qp.sweep(frequency).from_linspace(0, 100, 3):
+                qp.qblox.acquire(bus="readout", weights=WEIGHTS)
+
+        with caplog.at_level(logging.WARNING):
+            prepare_qblox(qp, readout_modules={"readout": "qrm"})
+
+        assert ("its trace averages over all of them" in caplog.text) is warns
+
+    def test_a_constant_is_written_as_its_number(self):
+        """qprogram can hold a Constant where a number goes: the compiler gets the number."""
+        qp = QProgram()
+        qp.set_gain(bus="drive", gain=Constant(0.5))
+        qp.play(bus="drive", waveform=DRIVE_WF)
+
+        set_gain = prepare_qblox(qp).qprogram.body.elements[0]
+
+        assert set_gain.gain == 0.5
+        assert not isinstance(set_gain.gain, Constant)
 
     def test_distortions_are_applied(self, flux_qprogram: QProgram):
         distortions = {"flux1": [ExponentialCorrection(tau_exponential=100.0, amp=0.5)]}

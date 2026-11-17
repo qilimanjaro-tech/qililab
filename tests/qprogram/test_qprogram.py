@@ -6,6 +6,7 @@ import numpy as np
 import pytest
 from qprogram import (
     BinaryOp,
+    Constant,
     InvalidVariableIdError,
     Linspace,
     MeasurementHandle,
@@ -31,6 +32,7 @@ from qililab.exceptions import VariableAllocated
 from qililab.pulse_distortion import ExponentialCorrection
 from qililab.qprogram.blocks import IfTrigger, InfiniteLoop, for_loop_iterations
 from qililab.qprogram.calibration import Calibration
+from qililab.qprogram.compilers.prepass import prepare_qdac
 from qililab.qprogram.compilers.qblox_compiler import QbloxCompiler
 from qililab.qprogram.crosstalk.crosstalk_matrix import CrosstalkMatrix, NonLinearCrosstalkMatrix
 from qililab.qprogram.operations import DisableAutosync, MeasureReset, QbloxPlay
@@ -743,6 +745,53 @@ class TestQProgram:
         assert [variable.id for variable in relabelled.variables] == ["gain", "frequency_of_drive", "wait", "wait_2"]
         assert [variable.id for variable in original.variables] == ["gain", "frequency_of_drive", "wait", "index"]
         assert not set(map(id, relabelled.variables)) & set(map(id, original.variables))
+
+    @pytest.mark.parametrize(
+        "replacement, trigger_type, attributes",
+        [
+            # A trigger at each step was a QDAC one, with or without outputs
+            ("    duration: 1e-05\n    outputs: null\n    position: step", QdacSetTrigger, (1e-05, "step", ())),
+            # A longer one at the start was a Qblox one
+            ("    duration: 100\n    outputs: 1\n    position: start", QbloxSetTrigger, (100, "start", 1)),
+        ],
+    )
+    def test_deserialize_legacy_yaml_set_trigger(self, replacement, trigger_type, attributes):
+        """A former set_trigger becomes the QDAC or the Qblox one it was."""
+        text = LEGACY_QPROGRAM_YAML.replace("    duration: 1e-05\n    outputs: 1\n    position: step", replacement)
+        with pytest.warns(UserWarning, match="had save_adc=True, which no longer exists"):
+            qp = ql.deserialize(text)
+
+        (trigger,) = [node for node in qp.body.walk() if isinstance(node, (QdacSetTrigger, QbloxSetTrigger))]
+        assert type(trigger) is trigger_type
+        assert (trigger.duration, trigger.position, trigger.outputs) == attributes
+
+    def test_deserialize_legacy_yaml_qdac_play_with_an_iq_waveform_loads_and_is_refused_when_compiled(self):
+        """An old program whose QDAC play had an IQ waveform still loads, and compiling it refuses the play: the former
+        QProgram played its I waveform only."""
+        text = LEGACY_QPROGRAM_YAML.replace(
+            "    waveform: !Arbitrary\n      samples: !ndarray\n        data: [0.0, 0.1, 0.2]\n        dtype: float64\n"
+            "        shape: !!python/tuple [3]\n",
+            "    waveform: !IQPair\n      I: !Square {amplitude: 0.1, duration: 40}\n"
+            "      Q: !Square {amplitude: 0.0, duration: 40}\n",
+            1,
+        )
+        with pytest.warns(UserWarning, match="had save_adc=True, which no longer exists"):
+            qp = ql.deserialize(text)
+
+        (play,) = [node for node in qp.body.walk() if isinstance(node, QdacPlay)]
+        assert isinstance(play.waveform, IQPair)
+        with pytest.raises(NotImplementedError, match=re.escape("qp.qdac.play on bus 'flux' takes one waveform, not an IQPair")):
+            prepare_qdac(qp, qdac_buses=["flux"], qdac_buses_offset={"flux": 0.0})
+
+    def test_deserialize_legacy_yaml_wait_trigger_with_a_port_is_a_qdac_one(self):
+        """A former wait_trigger with a port waited on a QDAC trigger input."""
+        text = LEGACY_QPROGRAM_YAML.replace("          port: null", "          port: 2")
+        with pytest.warns(UserWarning, match="had save_adc=True, which no longer exists"):
+            qp = ql.deserialize(text)
+
+        (wait,) = [node for node in qp.body.walk() if isinstance(node, (QdacWaitTrigger, QbloxWaitTrigger))]
+        assert isinstance(wait, QdacWaitTrigger)
+        assert (wait.bus, wait.port) == ("readout", 2)
 
     def test_deserialize_legacy_yaml_qprogram_with_if_trigger(self):
         """The former Conditional becomes an IfTrigger with the same parameters, the InfiniteLoop qililab's."""
@@ -1931,6 +1980,93 @@ class TestQProgram:
         assert isinstance(new_qp.body.elements[8], Measure)
         assert new_qp.body.elements[8].bus == "readout"
         assert isinstance(new_qp.body.elements[9], Sync)
+
+    @pytest.mark.parametrize("non_linear", [False, True])
+    def test_with_crosstalk_keeps_the_wait_time_of_a_qblox_play(self, non_linear: bool):
+        """A qp.qblox.play stays one after the linear and the non-linear compensations, with its wait_time."""
+        crosstalk = CrosstalkMatrix().from_array(["flux1", "flux2"], np.linalg.inv([[1, 0.5], [0.5, 1]]))
+        if non_linear:
+            crosstalk = NonLinearCrosstalkMatrix.from_linear(crosstalk)
+            crosstalk.set_non_linear_params("flux2", "flux1", beta_c=0.8, amplitude=0.5)
+        qp = QProgram()
+        qp.qblox.play(bus="flux1", waveform=Gaussian(amplitude=0.1, duration=50, num_sigmas=4), wait_time=60)
+
+        new_qp = qp.with_crosstalk_qblox(crosstalk)
+
+        plays = [element for element in new_qp.body.walk() if isinstance(element, (Play, QbloxPlay))]
+        assert {(play.bus, type(play), play.wait_time) for play in plays} == {
+            ("flux1", QbloxPlay, 60),
+            ("flux2", QbloxPlay, 60),
+        }
+
+    def test_with_crosstalk_non_linear_reads_a_constant_offset_as_its_number(self):
+        """qprogram can hold a Constant where a number goes: the compensation reads it as the number."""
+        crosstalk = CrosstalkMatrix().from_array(["flux1", "flux2"], np.linalg.inv([[1, 0.5], [0.5, 1]]))
+        non_linear_crosstalk = NonLinearCrosstalkMatrix.from_linear(crosstalk)
+        non_linear_crosstalk.set_non_linear_params("flux2", "flux1", beta_c=0.8, amplitude=0.5)
+
+        def build(offset: float | Constant) -> QProgram:
+            qp = QProgram()
+            qp.set_offset(bus="flux1", offset_path0=offset)
+            qp.play(bus="flux1", waveform=Square(amplitude=0.1, duration=50))
+            return qp
+
+        compensated = build(Constant(0.1)).with_crosstalk_qblox(non_linear_crosstalk)
+
+        assert str(compensated) == str(build(0.1).with_crosstalk_qblox(non_linear_crosstalk))
+
+    def test_with_crosstalk_qdac_compensates_inside_a_block(self):
+        """The QDAC compensation reaches the operations inside a block, with the voltages it gives at the top level."""
+        crosstalk = CrosstalkMatrix.from_buses(
+            buses={"flux1": {"flux1": 1.0, "flux2": 0.5}, "flux2": {"flux1": 0.1, "flux2": 1.0}}
+        )
+        offsets = {"flux1": 0.0, "flux2": 0.0}
+        nested = QProgram()
+        with nested.average(2):
+            nested.qdac.set_offset(bus="flux2", offset=0.3)
+        flat = QProgram()
+        flat.qdac.set_offset(bus="flux2", offset=0.3)
+
+        (average,) = nested.with_crosstalk_qdac(crosstalk=crosstalk, qdac_buses_offset=offsets).body.elements
+        flat_elements = flat.with_crosstalk_qdac(crosstalk=crosstalk, qdac_buses_offset=offsets).body.elements
+
+        voltages = {element.bus: element.offset for element in average.elements if isinstance(element, QdacSetOffset)}
+        assert set(voltages) == {"flux1", "flux2"}
+        assert voltages == {element.bus: element.offset for element in flat_elements if isinstance(element, QdacSetOffset)}
+
+    def test_with_crosstalk_qdac_refuses_a_play_with_an_iq_waveform(self):
+        """A QDAC channel outputs a single voltage: an IQ waveform is refused, as when the program is compiled."""
+        crosstalk = CrosstalkMatrix.from_buses(
+            buses={"flux1": {"flux1": 1.0, "flux2": 0.5}, "flux2": {"flux1": 0.1, "flux2": 1.0}}
+        )
+        qp = QProgram()
+        qp.qdac.play(bus="flux1", waveform=IQPair(I=Square(0.1, 40), Q=Square(0.0, 40)), dwell=2)
+
+        with pytest.raises(NotImplementedError, match=re.escape("qp.qdac.play on bus 'flux1' takes one waveform, not an IQPair")):
+            qp.with_crosstalk_qdac(crosstalk=crosstalk, qdac_buses_offset={"flux1": 0.0, "flux2": 0.0})
+
+    def test_with_calibration_leaves_a_measure_reset_with_a_missing_waveform_unresolved(self):
+        """A measure_reset is resolved whole or not at all: with one name missing, its names stay, so compiling it
+        reports the missing one."""
+        calibration = Calibration()
+        calibration.add_waveform(bus="readout", name="readout", waveform=IQPair(I=Square(1.0, 40), Q=Square(0.0, 40)))
+        qp = QProgram()
+        qp.qblox.measure_reset(
+            bus="readout", waveform="readout", weights="weights", control_bus="drive", reset_pulse="missing"
+        )
+
+        (reset,) = [node for node in qp.with_calibration(calibration).body.walk() if isinstance(node, MeasureReset)]
+
+        assert (reset.waveform, reset.weights, reset.reset_pulse) == ("readout", "weights", "missing")
+
+    def test_calibrated_names_need_the_alias_capability(self):
+        """A waveform given by its calibration name needs the profile's waveform.alias."""
+        qp = QProgram()
+        qp.qblox.measure_reset(bus="readout", waveform="readout", weights="weights", control_bus="drive", reset_pulse="pi")
+        (reset,) = [node for node in qp.body.walk() if isinstance(node, MeasureReset)]
+
+        assert "waveform.alias" in QbloxPlay(bus="drive", waveform="pi", wait_time=4).required_capabilities()
+        assert "waveform.alias" in reset.required_capabilities()
 
     @ignore_for_loop_deprecation
     def test_with_crosstalk_non_linear_play_before_loop(self):

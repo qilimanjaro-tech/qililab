@@ -6,6 +6,7 @@ Each case compares the compensated program with ``flux_to_bias`` of the original
 
 import numpy as np
 import pytest
+from qprogram.blocks import Parallel
 from qprogram.waveforms import Square
 
 from qililab.qprogram import QProgram
@@ -251,6 +252,18 @@ def test_constant_folded_into_a_shifted_loop_compiles_with_the_same_iteration_co
     assert counts == {3}
     assert len(inner.loops) > 2
     QbloxCompiler().compile(compensated)
+
+
+def test_shifted_copy_of_a_loop_alone_in_its_block_runs_with_it_in_lockstep():
+    """With a one-way coupling, the inner loop is the only compensated loop of its block: the shifted copy that takes
+    the constant turns it into a parallel loop, both running the same iterations."""
+    crosstalk = make_crosstalk([[1, 0], [0.5, 1]], OFFSETS)
+    compensated = flux_vs_flux_at_different_levels().with_crosstalk_qblox(crosstalk)
+    inner = compensated.body.elements[0].elements[-1]
+
+    assert isinstance(inner, Parallel)
+    assert {loop.num_iterations() for loop in inner.loops} == {3}
+    check(flux_vs_flux_at_different_levels, crosstalk)
 
 
 def test_single_iteration_loop_raises_a_clear_error():

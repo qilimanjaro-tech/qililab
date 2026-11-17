@@ -596,8 +596,8 @@ class _QbloxCrosstalkCompensation:
             QbloxPlayOperation: The play, a ``qp.qblox.play`` if the group's plays have a ``wait_time``.
 
         Raises:
-            ValueError: If the plays of the group don't have the same ``wait_time``, if their FlatTop parameters
-                differ, or if an ``Arbitrary`` envelope would not be an array.
+            ValueError: If the plays of the group don't have the same ``wait_time``, or if their FlatTop
+                parameters differ.
         """
         play_elements = [elements[element] for element in element_group if _is_qblox_play(elements[element])]
         if len({getattr(play, "wait_time", None) for play in play_elements}) > 1:
@@ -621,9 +621,7 @@ class _QbloxCrosstalkCompensation:
                 buffer=waveforms[0].buffer,  # type: ignore[union-attr]
             )
         else:
-            if not isinstance(bias_vector, np.ndarray):
-                raise ValueError("Arbitrary samples must be an array.")
-            waveform = Arbitrary(bias_vector)
+            waveform = Arbitrary(np.asarray(bias_vector))
 
         if wait_time is None:
             return Play(bus=bus, waveform=waveform)
@@ -1145,6 +1143,7 @@ def apply_crosstalk_qdac(
             FluxVector: The flux vector.
 
         Raises:
+            NotImplementedError: If the element plays an IQ waveform: a QDAC channel outputs a single voltage.
             ValueError: If the element plays an envelope of another size than the ones already in the flux vector.
         """
         envelope: float | Expression | np.ndarray
@@ -1153,7 +1152,10 @@ def apply_crosstalk_qdac(
         elif isinstance(element.waveform, Waveform):
             envelope = element.waveform.envelope()
         elif isinstance(element.waveform, IQWaveform):
-            envelope = element.waveform.get_I().envelope()
+            raise NotImplementedError(
+                f"qp.qdac.play on bus '{element.bus}' takes one waveform, not an {type(element.waveform).__name__}: "
+                "a QDAC channel outputs a single voltage."
+            )
 
         if isinstance(envelope, np.ndarray):
             existing_lengths = {

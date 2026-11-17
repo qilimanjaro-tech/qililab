@@ -46,7 +46,6 @@ from qprogram.operations import (
     Wait,
 )
 from qprogram.operations.operation import MeasurementOperation
-from qprogram.waveforms import IQWaveform, Waveform
 from qprogram_qblox import Acquire, SetMarkers
 from qprogram_qblox import SetTrigger as QbloxSetTrigger
 from qprogram_qblox import WaitTrigger as QbloxWaitTrigger
@@ -62,6 +61,7 @@ from qililab.yaml import yaml
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterator
 
+    from qprogram.waveforms import IQWaveform, Waveform
     from ruamel.yaml.constructor import BaseConstructor
     from ruamel.yaml.nodes import MappingNode, Node, ScalarNode
 
@@ -218,15 +218,13 @@ def _qdac_play(bus: str, waveform: Waveform | IQWaveform | str, arguments: dict[
 
     Args:
         bus (str): The bus.
-        waveform (Waveform | IQWaveform | str): The waveform, the I waveform of an IQ one, or the name of a calibrated
-            one.
+        waveform (Waveform | IQWaveform | str): The waveform, or the name of a calibrated one. An IQ waveform is
+            kept as it is: the program loads, and compiling it refuses the play.
         arguments (dict[str, Any]): ``dwell``, ``delay``, ``repetitions`` and ``stepped``, None when not given.
 
     Returns:
         QdacPlay: The play.
     """
-    if isinstance(waveform, IQWaveform):
-        waveform = waveform.get_I()
     # a calibrated waveform's name stays a str until the calibration resolves it
     return QdacPlay(
         bus=bus,
