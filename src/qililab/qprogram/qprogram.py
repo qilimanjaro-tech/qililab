@@ -116,7 +116,7 @@ class QProgram(QbloxMixin, QdacMixin, qp.QProgram):
             gain = qp.variable("gain")
 
             # Sweep the variable's value over the range [0.0, 1.0]
-            with qp.sweep(gain).from_range(0.0, 1.0, 0.01):
+            with qp.sweep(gain).from_linspace(0.0, 1.0, 101):
                 # Change the gain output of the drive_bus
                 qp.set_gain(bus="drive_bus", gain=gain)
 
@@ -182,13 +182,18 @@ class QProgram(QbloxMixin, QdacMixin, qp.QProgram):
                 continue
             for node in element.walk():
                 if isinstance(node, MeasurementOperation):
-                    node.handle.name = self._allocate_measurement_name(node.bus, requested=None)  # type: ignore[attr-defined]
-                    node.handle._auto_named = True
+                    # The names of the program the block comes from: cleared, so they don't hold the new ones back
+                    node.handle.name = ""  # type: ignore[attr-defined]
                 for sweep in node.loops if isinstance(node, Parallel) else [node]:
                     if isinstance(sweep, Sweep) and sweep.variable not in self.variables:
                         variable = sweep.variable
                         self.variable(variable.id, label=variable.label, units=variable.units)
             self._append_to_active(element)
+            # Named once in the program, so two measurements of one element can't get the same free name
+            for node in element.walk():
+                if isinstance(node, MeasurementOperation):
+                    node.handle.name = self._allocate_measurement_name(node.bus, requested=None)  # type: ignore[attr-defined]
+                    node.handle._auto_named = True
 
     def infinite_loop(self) -> _BlockContext:
         """Define an infinite loop.

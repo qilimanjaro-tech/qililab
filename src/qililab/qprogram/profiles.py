@@ -11,30 +11,29 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""The capability profile listing what qililab can run: ``qililab-qblox-parity-v1``.
+"""The capability profiles listing what qililab can run: ``qililab-qblox-parity-v1`` and ``qililab-experiment-parity-v1``.
 
-qprogram can describe much more than qililab compiles today. Every program is validated against
-[`QILILAB_QBLOX_PARITY_V1`][qililab.qprogram.profiles.QILILAB_QBLOX_PARITY_V1] before compilation, so anything else
-fails there with qprogram's ``missing-capability`` (or one of the ``qililab.*`` codes below) instead of compiling to
-something wrong.
+qprogram can describe much more than qililab runs. Every QProgram is validated against
+[`QILILAB_QBLOX_PARITY_V1`][qililab.qprogram.profiles.QILILAB_QBLOX_PARITY_V1] before compilation, and every Experiment
+against [`QILILAB_EXPERIMENT_PARITY_V1`][qililab.qprogram.profiles.QILILAB_EXPERIMENT_PARITY_V1] before it runs, so
+anything else fails there with qprogram's ``missing-capability`` (or one of the ``qililab.*`` codes below) instead of
+running something wrong.
 
-- Everything runs in real time on the Qblox sequencers, except QDAC operations, which run on the PC as setup before
-  the run. So loops are real-time only, and a QDAC operation inside a loop is rejected; a plain ``qp.block()`` may
-  hold QDAC operations.
-- Loops sweep a ``Range`` only. No conditionals other than ``if_trigger``, no fragment calls, no
-  ``set_parameter``/``get_parameter``, no ``qblox.set_acquisition_threshold``/``set_acquisition_rotation``.
+- A QProgram's loops sweep a ``Linspace`` only (``qp.for_loop``, ``from_linspace``), as qililab's ``for_loop`` did. No
+  conditionals other than ``if_trigger``, no fragment calls, no ``set_parameter``/``get_parameter``, no
+  ``qblox.set_acquisition_threshold``/``set_acquisition_rotation``. QDAC operations may sit inside loops.
+- An Experiment's loops sweep values only (``for_loop``, ``loop``, ``from_values``), as qililab's Experiment did.
 - Expressions are a variable, a constant, a negated variable, or one ``+`` or ``-`` between two of those.
 - Waveforms are the ones qililab had, with no variable in their parameters.
 """
 
 from collections.abc import Iterable, Iterator
-from numbers import Real
 from weakref import WeakKeyDictionary
 
 import qprogram_qblox  # noqa: F401  (registers the qblox tokens)
 
 # Importing qprogram_qdac also registers the qdac tokens and profile.
-import qprogram_qdac
+import qprogram_qdac  # noqa: F401
 from qprogram import BinaryOp, Constant, Expression, UnaryOp, Variable
 from qprogram.protocol import (
     BusCapabilities,
@@ -59,7 +58,6 @@ _BLOCKS = frozenset(
         "block.parallel",
         "sweep.linear",
         "sweep.linspace",
-        "sweep.range",
         "vendor.qililab.infinite_loop",
         "vendor.qililab.if_trigger",
     }
@@ -129,8 +127,7 @@ def _waveform_expressions(waveform: object) -> Iterator[Expression]:
 
 
 # Per validate() run, whether each waveform already checked uses a variable, by id. A program plays the same waveform
-# object many times, and each play is checked against both halves of its bus: each waveform is only looked through
-# once. The run's waveforms stay alive while it lasts, so their ids don't change.
+# object many times: each waveform is only looked through once. The run's waveforms stay alive while it lasts, so their ids don't change.
 _WAVEFORMS_WITH_VARIABLES: WeakKeyDictionary[ValidationContext, dict[int, bool]] = WeakKeyDictionary()
 
 
@@ -213,43 +210,6 @@ def _reject_unsupported_arithmetic(node: object, ctx: ValidationContext) -> Iter
             )
 
 
-_QDAC_TIME_RANGES: tuple[tuple[type, str, str, float, float], ...] = (
-    (qprogram_qdac.Play, "qp.qdac.play", "delay", 0.0, 3600.0),
-    (qprogram_qdac.SetTrigger, "qp.qdac.set_trigger", "duration", 1e-6, 3600.0),
-)
-"""The QDAC-II's range, in seconds, of the QDAC times qprogram-qdac passes through unchecked: (operation, its call,
-attribute, minimum, maximum)."""
-
-
-def _reject_qdac_time_out_of_range(node: object, ctx: ValidationContext) -> Iterable[Diagnostic | DomainConstraint]:
-    """Reject a QDAC play delay or trigger width outside what the QDAC-II takes.
-
-    qprogram-qdac only checks the dwell; the delay and the trigger width would otherwise reach the instrument as they
-    are.
-
-    Args:
-        node (object): The AST node being validated.
-        ctx (ValidationContext): Program-wide facts, unused.
-
-    Yields:
-        Diagnostic: A ``qililab.qdac-out-of-range`` error when the value is outside the QDAC-II's range.
-    """
-    for operation, call, attribute, minimum, maximum in _QDAC_TIME_RANGES:
-        if not isinstance(node, operation):
-            continue
-        value = getattr(node, attribute, None)
-        if isinstance(value, Real) and not minimum <= float(value) <= maximum:
-            yield Diagnostic(
-                severity="error",
-                code="qililab.qdac-out-of-range",
-                message=(
-                    f"{call}(..., {attribute}={value}) on bus {node.bus!r} is outside the QDAC-II's range: the "  # type: ignore[attr-defined]
-                    f"{attribute} must be from {minimum:g} s to {maximum:g} s."
-                ),
-                node=node,  # type: ignore[arg-type]
-            )
-
-
 QILILAB_QBLOX_PARITY_V1_PROFILE = Profile(
     name="qililab-qblox-parity-v1",
     version=(1, 0, 0),
@@ -258,63 +218,53 @@ QILILAB_QBLOX_PARITY_V1_PROFILE = Profile(
     limits={},
     predicates=(),
 )
-"""Platform-level half: the blocks, sweeps and expressions qililab runs, all in real time, and the compiler setting
+"""Platform level: the blocks, loops and expressions qililab runs, and the compiler setting
 ``qililab.disable_autosync``."""
 
-QILILAB_HOST_PARITY_V1_PROFILE = Profile(
-    name="qililab-host-parity-v1",
+QILILAB_BUS_PARITY_V1_PROFILE = Profile(
+    name="qililab-bus-parity-v1",
     version=(1, 0, 0),
     extends=None,
-    capabilities=frozenset({"block.block", "vendor.qililab.disable_autosync"}),
+    capabilities=_QBLOX_OPERATIONS | _QDAC_OPERATIONS | _QILILAB_WAVEFORMS | {"waveform.single", "waveform.iq"},
+    limits={},
+    predicates=(
+        _reject_variable_in_waveform,
+        _reject_unsupported_arithmetic,
+        *resolve_profile("qdac-default-v1").predicates,
+    ),
+)
+"""Bus level: the Qblox and QDAC operations qililab compiles, with qprogram-qdac's own checks. Which bus may carry
+which operation is checked by the Qblox and QDAC pre-passes."""
+
+QILILAB_EXPERIMENT_PARITY_V1_PROFILE = Profile(
+    name="qililab-experiment-parity-v1",
+    version=(1, 0, 0),
+    extends=None,
+    capabilities=frozenset(
+        {"block.block", "block.average", "block.sweep", "block.parallel", "sweep.values", "sweep.arbitrary"}
+    )
+    | _EXPRESSIONS,
     limits={},
     predicates=(),
 )
-"""Platform-level PC half: only plain blocks, so that one can group QDAC operations, which run on the PC, and the
-compiler setting ``qililab.disable_autosync``, which runs nowhere, so it never decides where the body runs. Loops,
-averages and ``if_trigger`` stay real-time only."""
+"""What an Experiment runs: blocks, averages and loops over values, which ``for_loop``, ``loop`` and ``from_values``
+build."""
 
-QILILAB_QBLOX_BUS_PARITY_V1_PROFILE = Profile(
-    name="qililab-qblox-bus-parity-v1",
-    version=(1, 0, 0),
-    extends=None,
-    capabilities=_QBLOX_OPERATIONS | _QILILAB_WAVEFORMS | {"waveform.single", "waveform.iq"},
-    limits={},
-    predicates=(_reject_variable_in_waveform, _reject_unsupported_arithmetic),
-)
-"""Real-time half of a bus: the Qblox operations qililab compiles."""
-
-QILILAB_QDAC_BUS_PARITY_V1_PROFILE = Profile(
-    name="qililab-qdac-bus-parity-v1",
-    version=(1, 0, 0),
-    extends=None,
-    capabilities=_QDAC_OPERATIONS
-    | (_QILILAB_WAVEFORMS - {"waveform.iq_drag", "waveform.iq_pair"})
-    | {"waveform.single"},
-    limits={},
-    predicates=(_reject_variable_in_waveform, *resolve_profile("qdac-default-v1").predicates),
-)
-"""PC half of a bus: the QDAC operations qililab sets up before the run, with qprogram-qdac's own checks."""
-
-for _profile in (
-    QILILAB_QBLOX_PARITY_V1_PROFILE,
-    QILILAB_HOST_PARITY_V1_PROFILE,
-    QILILAB_QBLOX_BUS_PARITY_V1_PROFILE,
-    QILILAB_QDAC_BUS_PARITY_V1_PROFILE,
-):
+for _profile in (QILILAB_QBLOX_PARITY_V1_PROFILE, QILILAB_BUS_PARITY_V1_PROFILE, QILILAB_EXPERIMENT_PARITY_V1_PROFILE):
     register_profile(_profile)
 
 QILILAB_QBLOX_PARITY_V1 = PlatformCapabilities(
     bus={},
-    platform=BusCapabilities(
-        rt=CompilerCapabilities.from_profile("qililab-qblox-parity-v1"),
-        host=CompilerCapabilities.from_profile("qililab-host-parity-v1"),
-    ),
+    platform=BusCapabilities(rt=CompilerCapabilities.from_profile("qililab-qblox-parity-v1"), host=None),
+    default_bus_profile=BusCapabilities(rt=CompilerCapabilities.from_profile("qililab-bus-parity-v1"), host=None),
+)
+"""What a qililab platform runs, passed to ``qprogram.validate``. Buses are plain names, so they all share one slot."""
+
+QILILAB_EXPERIMENT_PARITY_V1 = PlatformCapabilities(
+    bus={},
+    platform=BusCapabilities(rt=CompilerCapabilities.from_profile("qililab-experiment-parity-v1"), host=None),
     default_bus_profile=BusCapabilities(
-        rt=CompilerCapabilities.from_profile("qililab-qblox-bus-parity-v1"),
-        host=CompilerCapabilities.from_profile(
-            "qililab-qdac-bus-parity-v1", extra_predicates=(_reject_qdac_time_out_of_range,)
-        ),
+        rt=CompilerCapabilities.from_profile("qililab-experiment-parity-v1"), host=None
     ),
 )
-"""What a qililab platform runs, passed to ``qprogram.validate``. Buses are plain names, so they all share one slot.
-The QDAC half of a bus also checks the QDAC-II's range of a play delay and a trigger width."""
+"""What an Experiment runs, passed to ``qprogram.validate`` by the experiment executor."""

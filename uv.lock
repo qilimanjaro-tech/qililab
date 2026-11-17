@@ -3378,7 +3378,7 @@ requires-dist = [
     { name = "qcodes-contrib-drivers", specifier = ">=0.23.0" },
     { name = "qprogram", specifier = ">=0.3.0" },
     { name = "qprogram-qblox", git = "https://github.com/qilimanjaro-tech/qprogram-qblox?rev=d7cdd96e54ebfdb0f19ea98a6dca6cdff29d6a26" },
-    { name = "qprogram-qdac", git = "https://github.com/qilimanjaro-tech/qprogram-qdac?rev=0cf4dbe7f83a96486e599470c1450f4e454588a9" },
+    { name = "qprogram-qdac", git = "https://github.com/qilimanjaro-tech/qprogram-qdac?rev=db4545e992c20b9d330ed5c98ddd0c6607315221" },
     { name = "qpysequence", specifier = ">=0.12.0", index = "https://qilimanjaro-723412851021.d.codeartifact.eu-west-1.amazonaws.com/pypi/qilimanjaro/simple" },
     { name = "rich", specifier = ">=14.0.0" },
     { name = "ruamel-yaml", specifier = ">=0.18.10" },
@@ -3435,8 +3435,8 @@ dependencies = [
 
 [[package]]
 name = "qprogram-qdac"
-version = "0.2.0"
-source = { git = "https://github.com/qilimanjaro-tech/qprogram-qdac?rev=0cf4dbe7f83a96486e599470c1450f4e454588a9#0cf4dbe7f83a96486e599470c1450f4e454588a9" }
+version = "0.3.0"
+source = { git = "https://github.com/qilimanjaro-tech/qprogram-qdac?rev=db4545e992c20b9d330ed5c98ddd0c6607315221#db4545e992c20b9d330ed5c98ddd0c6607315221" }
 dependencies = [
     { name = "qprogram" },
 ]

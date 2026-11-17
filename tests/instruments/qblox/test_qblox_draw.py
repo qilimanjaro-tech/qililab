@@ -18,8 +18,7 @@ def fixture_parsing() -> QProgram:
     frequency = qp.variable("drive")
     FREQ_START = 100e6
     FREQ_STOP = 200e6
-    FREQ_STEP = 50e6
-    with qp.sweep(frequency).from_range(FREQ_START, FREQ_STOP, FREQ_STEP):
+    with qp.sweep(frequency).from_linspace(FREQ_START, FREQ_STOP, 3):
         qp.set_frequency(bus="drive", frequency=frequency)
         qp.play(bus="drive", waveform=Square(amplitude=1, duration=10))
         qp.wait("drive", 10)
@@ -32,9 +31,8 @@ def fixture_qp_draw() -> QProgram:
     frequency = qp.variable("drive")
     FREQ_START = 100e6
     FREQ_STOP = 200e6
-    FREQ_STEP = 50e6
     qp.set_gain("drive", 1)
-    with qp.sweep(frequency).from_range(FREQ_START, FREQ_STOP, FREQ_STEP):
+    with qp.sweep(frequency).from_linspace(FREQ_START, FREQ_STOP, 3):
         with qp.average(2):
             qp.reset_phase("drive")
             qp.set_frequency(bus="drive", frequency=frequency)
@@ -55,7 +53,7 @@ def fixture_qp_draw_with_time_window() -> QProgram:
     )
     weights_shape = Square(amplitude=1, duration=20)
     bins = qp.variable("bins")
-    with qp.sweep(bins).from_range(1, 3, 1):
+    with qp.sweep(bins).from_linspace(1, 3, 3):
         qp.wait("readout_q13_bus", 10)
         qp.measure(bus="readout_q13_bus", waveform=square_wf, weights=IQPair(I=weights_shape, Q=weights_shape))
     return qp
@@ -67,7 +65,7 @@ def fixture_qp_draw_with_time_window_nested_loop() -> QProgram:
     frequency = qp.variable("frequency")
     ampl = qp.variable("amplitude")
     with qp.average(3):
-        with qp.sweep(frequency).from_range(0, 100e6, 100e6):
+        with qp.sweep(frequency).from_linspace(0, 100e6, 2):
             # The step does not divide the range: the deprecated for_loop keeps its point count rounded down.
             with pytest.warns(FutureWarning, match="qp.for_loop is deprecated"):
                 amplitude_loop = qp.for_loop(ampl, 0, 1, 0.3)
@@ -160,8 +158,7 @@ def fixture_not_sub():
     frequency = qp.variable("drive")
     FREQ_START = -100e6
     FREQ_STOP = -200e6
-    FREQ_STEP = -50e6
-    with qp.sweep(frequency).from_range(FREQ_START, FREQ_STOP, FREQ_STEP):
+    with qp.sweep(frequency).from_linspace(FREQ_START, FREQ_STOP, 3):
         qp.set_frequency(bus="drive", frequency=frequency)
         qp.play(bus="drive", waveform=Square(amplitude=1, duration=10))
         qp.wait("drive", 10)
@@ -590,7 +587,7 @@ class TestQBloxDraw:
         qprogram = QProgram()
 
         time = qprogram.variable("time")
-        with qprogram.sweep(time).from_range(10, 500, 10):
+        with qprogram.sweep(time).from_linspace(10, 500, 50):
             qprogram.play(bus="drive_line_q0_bus", waveform=drive_wf)
             qprogram.play(bus="drive_line_q1_bus", waveform=drive_wf)
             qprogram.wait(bus="drive_line_q1_bus", duration=time)

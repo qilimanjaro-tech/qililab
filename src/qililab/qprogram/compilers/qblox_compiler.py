@@ -22,7 +22,7 @@ import numpy as np
 import qpysequence as QPy
 import qpysequence.program as QPyProgram
 import qpysequence.program.instructions as QPyInstructions
-from qprogram import BinaryOp, Constant, Range, Variable
+from qprogram import BinaryOp, Constant, Linspace, Variable
 from qprogram.blocks import Average, Block, Parallel, Sweep
 from qprogram.operations import (
     Measure,
@@ -44,7 +44,7 @@ from qpysequence.enums import TriggerCondition as QPyTriggerCondition
 
 from qililab.config import logger
 from qililab.constants import QBLOXCONSTANTS
-from qililab.qprogram.blocks import IfTrigger, InfiniteLoop, for_loop_iterations
+from qililab.qprogram.blocks import IfTrigger, InfiniteLoop
 from qililab.qprogram.calibration import Calibration
 from qililab.qprogram.compilers.prepass import prepare_qblox, prepare_shared
 from qililab.qprogram.crosstalk.crosstalk_matrix import CrosstalkMatrix
@@ -634,13 +634,13 @@ class QbloxCompiler:
         loops = []
         iterations = []
         for sweep in element.loops:
-            source = cast("Range", sweep.source)
+            source = cast("Linspace", sweep.source)
             operation = QbloxCompiler._get_reference_operation_of_loop(loop=sweep, starting_block=element)
             qpysequence_operation = (
                 QbloxCompiler._get_qpysequence_conversion_instructions(operation) if operation is not None else None
             )
             scale_factor = qpysequence_operation.scale_factor if qpysequence_operation is not None else None
-            start, step, iters = QbloxCompiler._compute_loop_sweep(source.start, source.stop, source.step, scale_factor)
+            start, step, iters = QbloxCompiler._compute_loop_sweep(source.start, source.stop, source.num, scale_factor)
             loops.append((start, step, qpysequence_operation))
             iterations.append(iters)
         min_iterations = min(iterations)
@@ -673,15 +673,13 @@ class QbloxCompiler:
         return True
 
     def _handle_sweep(self, sweep: Sweep) -> bool:
-        source = cast("Range", sweep.source)
+        source = cast("Linspace", sweep.source)
         operation = QbloxCompiler._get_reference_operation_of_loop(sweep)
         qpysequence_operation = (
             QbloxCompiler._get_qpysequence_conversion_instructions(operation) if operation is not None else None
         )
         scale_factor = qpysequence_operation.scale_factor if qpysequence_operation is not None else None
-        start, step, iterations = QbloxCompiler._compute_loop_sweep(
-            source.start, source.stop, source.step, scale_factor
-        )
+        start, step, iterations = QbloxCompiler._compute_loop_sweep(source.start, source.stop, source.num, scale_factor)
 
         if isinstance(operation, Wait) and source.stop > INST_MAX_WAIT:
             self._long_wait_dynamic = True
@@ -2004,9 +2002,8 @@ class QbloxCompiler:
 
     @staticmethod
     def _compute_loop_sweep(
-        start: int | float, stop: int | float, step: int | float, scale_factor: float | int | None = None
+        start: int | float, stop: int | float, iterations: int, scale_factor: float | int | None = None
     ) -> tuple[float, float, int]:
-        iterations = for_loop_iterations(start, stop, step)
         if iterations == 1:
             # Single point: the formulas below divide by iterations - 1, which is 0. The loop runs once, so use a
             # step of 0: the register stays at start and no add/sub is written.

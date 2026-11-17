@@ -112,9 +112,9 @@ def fixture_offset_no_path1() -> QProgram:
 def fixture_offset_loop() -> QProgram:
     qp = QProgram()
     variable_offset = qp.variable("offset")
-    with qp.sweep(variable_offset).from_range(0.0, 0.2, 0.1):
+    with qp.sweep(variable_offset).from_linspace(0.0, 0.2, 3):
         qp.set_offset(bus="drive", offset_path0=variable_offset, offset_path1=0.2)
-    with qp.sweep(variable_offset).from_range(0.0, 0.2, 0.1):
+    with qp.sweep(variable_offset).from_linspace(0.0, 0.2, 3):
         qp.set_offset(bus="drive", offset_path0=0.2, offset_path1=variable_offset)
     return qp
 
@@ -123,9 +123,9 @@ def fixture_offset_loop() -> QProgram:
 def fixture_offset_loop_negative() -> QProgram:
     qp = QProgram()
     variable_offset = qp.variable("offset")
-    with qp.sweep(variable_offset).from_range(0.0, 0.2, 0.1):
+    with qp.sweep(variable_offset).from_linspace(0.0, 0.2, 3):
         qp.set_offset(bus="drive", offset_path0=variable_offset, offset_path1=-0.5)
-    with qp.sweep(variable_offset).from_range(0.0, 0.2, 0.1):
+    with qp.sweep(variable_offset).from_linspace(0.0, 0.2, 3):
         qp.set_offset(bus="drive", offset_path0=-0.5, offset_path1=variable_offset)
     return qp
 
@@ -135,8 +135,8 @@ def fixture_offset_loop_two_variables() -> QProgram:
     qp = QProgram()
     offset_a = qp.variable("offset_a")
     offset_b = qp.variable("offset_b")
-    with qp.sweep(offset_a).from_range(0.0, 0.2, 0.1):
-        with qp.sweep(offset_b).from_range(0.0, 0.3, 0.1):
+    with qp.sweep(offset_a).from_linspace(0.0, 0.2, 3):
+        with qp.sweep(offset_b).from_linspace(0.0, 0.3, 4):
             qp.set_offset(bus="drive", offset_path0=offset_a, offset_path1=offset_b)
     return qp
 
@@ -146,7 +146,7 @@ def fixture_dynamic_wait() -> QProgram:
     drag_pair = IQDrag(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=1.2)
     qp = QProgram()
     duration = qp.variable("time")
-    with qp.sweep(duration).from_range(100, 200, 10):
+    with qp.sweep(duration).from_linspace(100, 200, 11):
         qp.play(bus="drive", waveform=drag_pair)
         qp.wait(bus="drive", duration=duration)
     return qp
@@ -157,7 +157,7 @@ def fixture_dynamic_wait_multiple_buses() -> QProgram:
     drag_pair = IQDrag(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=1.2)
     qp = QProgram()
     duration = qp.variable("time")
-    with qp.sweep(duration).from_range(100, 200, 10):
+    with qp.sweep(duration).from_linspace(100, 200, 11):
         qp.play(bus="drive", waveform=drag_pair)
         qp.wait(bus="readout", duration=duration)
         qp.play(bus="readout", waveform=drag_pair)
@@ -170,7 +170,7 @@ def fixture_dynamic_wait_multiple_buses_with_disable_autosync() -> QProgram:
     qp = QProgram()
     qp.qblox.disable_autosync = True
     duration = qp.variable("time")
-    with qp.sweep(duration).from_range(100, 200, 10):
+    with qp.sweep(duration).from_linspace(100, 200, 11):
         qp.play(bus="drive", waveform=drag_pair)
         qp.wait(bus="readout", duration=duration)
         qp.play(bus="readout", waveform=drag_pair)
@@ -182,7 +182,7 @@ def fixture_sync_with_dynamic_wait() -> QProgram:
     drag_pair = IQDrag(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=1.2)
     qp = QProgram()
     duration = qp.variable("time")
-    with qp.sweep(duration).from_range(100, 200, 10):
+    with qp.sweep(duration).from_linspace(100, 200, 11):
         qp.play(bus="drive", waveform=drag_pair)
         qp.wait(bus="drive", duration=duration)
         qp.sync()
@@ -261,7 +261,7 @@ def fixture_average_with_for_loop() -> QProgram:
     qp = QProgram()
     gain = qp.variable("gain")
     with qp.average(shots=1000):
-        with qp.sweep(gain).from_range(0, 1.0, 0.1):
+        with qp.sweep(gain).from_linspace(0, 1.0, 11):
             qp.play(bus="drive", waveform=drag_pair)
             qp.set_gain(bus="readout", gain=gain)
             qp.play(bus="readout", waveform=readout_pair)
@@ -277,7 +277,7 @@ def fixture_average_with_for_loop_nshots() -> QProgram:
     qp = QProgram()
     nshots = qp.variable("nshots")
     with qp.average(shots=1000):
-        with qp.sweep(nshots).from_range(0, 2, 1):
+        with qp.sweep(nshots).from_linspace(0, 2, 3):
             qp.play(bus="drive", waveform=drag_pair)
             qp.play(bus="readout", waveform=readout_pair)
             qp.qblox.acquire(bus="readout", weights=weights_pair)
@@ -295,7 +295,7 @@ def fixture_acquire_loop_with_for_loop_with_weights_of_same_waveform() -> QProgr
     qp = QProgram()
     gain = qp.variable("gain")
     with qp.average(shots=1000):
-        with qp.sweep(gain).from_range(0, 1.0, 0.1):
+        with qp.sweep(gain).from_linspace(0, 1.0, 11):
             qp.play(bus="drive", waveform=drag_pair)
             qp.set_gain(bus="readout", gain=gain)
             qp.play(bus="readout", waveform=readout_pair)
@@ -313,12 +313,12 @@ def fixture_average_with_multiple_for_loops_and_acquires() -> QProgram:
     frequency = qp.variable("frequency")
     gain = qp.variable("gain")
     with qp.average(shots=1000):
-        with qp.sweep(frequency).from_range(0, 500, 10):
+        with qp.sweep(frequency).from_linspace(0, 500, 51):
             qp.set_frequency(bus="readout", frequency=frequency)
             qp.play(bus="readout", waveform=readout_pair)
             qp.qblox.acquire(bus="readout", weights=weights_pair_0)
         qp.qblox.acquire(bus="readout", weights=weights_pair_1)
-        with qp.sweep(gain).from_range(0.0, 1.0, 0.1):
+        with qp.sweep(gain).from_linspace(0.0, 1.0, 11):
             qp.set_gain(bus="readout", gain=gain)
             qp.play(bus="readout", waveform=readout_pair)
             qp.qblox.acquire(bus="readout", weights=weights_pair_2)
@@ -370,7 +370,7 @@ def fixture_exceeds_depth_for_loop_blocks() -> QProgram:
     qp = QProgram()
     bins = qp.variable("bins")
     for _ in range(33):
-        with qp.sweep(bins).from_range(0, 10, 1):
+        with qp.sweep(bins).from_linspace(0, 10, 11):
             qp.qblox.acquire(bus="readout", weights=weights)
     return qp
 
@@ -455,9 +455,9 @@ def fixture_average_with_nested_for_loops() -> QProgram:
     frequency = qp.variable("frequency")
     gain = qp.variable("gain")
     with qp.average(shots=1000):
-        with qp.sweep(gain).from_range(0, 1, 0.1):
+        with qp.sweep(gain).from_linspace(0, 1, 11):
             qp.set_gain(bus="drive", gain=gain)
-            with qp.sweep(frequency).from_range(0, 500, 10):
+            with qp.sweep(frequency).from_linspace(0, 500, 51):
                 qp.play(bus="drive", waveform=drag_pair)
                 qp.sync()
                 qp.set_frequency(bus="readout", frequency=frequency)
@@ -484,7 +484,7 @@ def fixture_average_with_parallel_for_loops() -> QProgram:
     frequency = qp.variable("frequency")
     gain = qp.variable("gain")
     with qp.average(shots=1000):
-        with qp.sweep(frequency).from_range(100, 200, 10) | qp.sweep(gain).from_range(0, 1, 0.1):
+        with qp.sweep(frequency).from_linspace(100, 200, 11) | qp.sweep(gain).from_linspace(0, 1, 11):
             qp.set_gain(bus="drive", gain=gain)
             qp.set_frequency(bus="readout", frequency=frequency)
             qp.play(bus="drive", waveform=drag_pair)
@@ -499,7 +499,7 @@ def fixture_for_loop_variable_with_no_target() -> QProgram:
     qp = QProgram()
     variable = qp.variable("float_scalar")
     with qp.average(shots=1000):
-        with qp.sweep(variable).from_range(0, 100, 4):
+        with qp.sweep(variable).from_linspace(0, 100, 26):
             qp.set_frequency(bus="drive", frequency=100)
             qp.set_phase(bus="drive", phase=90)
     return qp
@@ -668,7 +668,7 @@ def fixture_dynamic_sync() -> QProgram:
     weights_pair = IQPair(I=Square(amplitude=1.0, duration=2000), Q=Square(amplitude=0.0, duration=2000))
     qp = QProgram()
     duration = qp.variable("time")
-    with qp.sweep(duration).from_range(100, 200, 10):
+    with qp.sweep(duration).from_linspace(100, 200, 11):
         qp.play(bus="drive", waveform=drag_pair)
         qp.wait(bus="drive", duration=duration)
         qp.sync()
@@ -684,7 +684,7 @@ def fixture_dynamic_sync_long_wait() -> QProgram:
     weights_pair = IQPair(I=Square(amplitude=1.0, duration=1000), Q=Square(amplitude=0.0, duration=1000))
     qp = QProgram()
     duration = qp.variable("time")
-    with qp.sweep(duration).from_range(10, 200_000, 10):
+    with qp.sweep(duration).from_linspace(10, 200_000, 20000):
         qp.play(bus="drive", waveform=drag_pair)
         qp.wait(bus="drive", duration=duration)
         qp.sync()
@@ -700,7 +700,7 @@ def fixture_dynamic_sync_variable_expression_difference() -> QProgram:
     weights_pair = IQPair(I=Square(amplitude=1.0, duration=2000), Q=Square(amplitude=0.0, duration=2000))
     qp = QProgram()
     duration = qp.variable("time")
-    with qp.sweep(duration).from_range(100, 200, 10):
+    with qp.sweep(duration).from_linspace(100, 200, 11):
         qp.play(bus="drive", waveform=drag_pair)
         qp.wait(bus="drive", duration=duration - 50)
         qp.sync()
@@ -718,7 +718,7 @@ def fixture_dynamic_sync_variable_expression_sum() -> QProgram:
     weights_pair = IQPair(I=Square(amplitude=1.0, duration=2000), Q=Square(amplitude=0.0, duration=2000))
     qp = QProgram()
     duration = qp.variable("time")
-    with qp.sweep(duration).from_range(100, 50_000, 10):
+    with qp.sweep(duration).from_linspace(100, 50_000, 4991):
         qp.play(bus="drive", waveform=drag_pair)
         qp.wait(bus="drive", duration=duration + 500)
         qp.sync()
@@ -736,7 +736,7 @@ def fixture_dynamic_sync_delay() -> QProgram:
     weights_pair = IQPair(I=Square(amplitude=1.0, duration=2000), Q=Square(amplitude=0.0, duration=2000))
     qp = QProgram()
     duration = qp.variable("time")
-    with qp.sweep(duration).from_range(100, 200, 10):
+    with qp.sweep(duration).from_linspace(100, 200, 11):
         qp.play(bus="drive", waveform=drag_pair)
         qp.wait(bus="drive", duration=duration)
         qp.sync()
@@ -848,12 +848,8 @@ def fixture_cryoscope_qprogram() -> QProgram:
     qp.set_gain(bus=f"drive", gain=1)
     qp.set_gain(bus=f"readout", gain=1)
     with qp.average(HW_AVG):
-        with qp.sweep(flux_amplitude).from_range(
-            AMPLITUDE_VALUES[0], AMPLITUDE_VALUES[-1], AMPLITUDE_VALUES[1] - AMPLITUDE_VALUES[0]
-        ):
-            with qp.sweep(time).from_range(
-                int(DURATION_VALUES[0]), int(DURATION_VALUES[-1]), int(DURATION_VALUES[1] - DURATION_VALUES[0])
-            ):
+        with qp.sweep(flux_amplitude).from_linspace(AMPLITUDE_VALUES[0], AMPLITUDE_VALUES[-1], len(AMPLITUDE_VALUES)):
+            with qp.sweep(time).from_linspace(int(DURATION_VALUES[0]), int(DURATION_VALUES[-1]), len(DURATION_VALUES)):
                 qp.set_gain(bus=f"flux", gain=flux_amplitude)
                 qp.sync()
                 qp.play(bus=f"drive", waveform=drag_pair)
@@ -903,7 +899,7 @@ def fixture_dynamic_wait_three_buses_dynamic_static() -> QProgram:
     drag_pair = IQDrag(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=1.2)
     qp = QProgram()
     duration = qp.variable("time")
-    with qp.sweep(duration).from_range(100, 200, 10):
+    with qp.sweep(duration).from_linspace(100, 200, 11):
         qp.wait(bus="drive", duration=duration)
         qp.sync()
         qp.play(bus="drive", waveform=drag_pair)
@@ -920,7 +916,7 @@ def fixture_dynamic_wait_three_buses_static_static() -> QProgram:
     drag_pair = IQDrag(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=1.2)
     qp = QProgram()
     duration = qp.variable("time")
-    with qp.sweep(duration).from_range(100, 200, 10):
+    with qp.sweep(duration).from_linspace(100, 200, 11):
         qp.wait(bus="drive", duration=duration)
         qp.sync()
         qp.play(bus="drive", waveform=drag_pair)
@@ -937,7 +933,7 @@ def variable_expression_one_gain() -> QProgram:
     drag_pair = IQDrag(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=1.2)
     qp = QProgram()
     gain = qp.variable("gain")
-    with qp.sweep(gain).from_range(0.1, 0.9, 0.1):
+    with qp.sweep(gain).from_linspace(0.1, 0.9, 9):
         qp.set_gain("drive", gain + 0.1)
         qp.play(bus="drive", waveform=drag_pair)
         qp.set_gain("drive", gain - 0.1)
@@ -964,7 +960,7 @@ def variable_expression_offset() -> QProgram:
     drag_pair = IQDrag(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=1.2)
     qp = QProgram()
     offset = qp.variable("offset")
-    with qp.sweep(offset).from_range(0.1, 0.9, 0.1):
+    with qp.sweep(offset).from_linspace(0.1, 0.9, 9):
         qp.set_offset("drive", offset + 0.1)
         qp.play(bus="drive", waveform=drag_pair)
         qp.set_offset("drive", offset - 0.1)
@@ -990,7 +986,7 @@ def variable_expression_offset() -> QProgram:
 def variable_expression_two_offset() -> QProgram:
     qp = QProgram()
     offset = qp.variable("offset")
-    with qp.sweep(offset).from_range(0, 1, 0.1):
+    with qp.sweep(offset).from_linspace(0, 1, 11):
         qp.set_offset(bus="drive", offset_path0=offset + 10, offset_path1=30)
     return qp
 
@@ -999,7 +995,7 @@ def variable_expression_two_offset() -> QProgram:
 def variable_expression_offsetq_variable_expression() -> QProgram:
     qp = QProgram()
     offset = qp.variable("offset")
-    with qp.sweep(offset).from_range(0, 1, 0.1):
+    with qp.sweep(offset).from_linspace(0, 1, 11):
         qp.set_offset(bus="drive", offset_path0=10, offset_path1=30 + offset)
     return qp
 
@@ -1010,8 +1006,8 @@ def variable_expression_two_gains() -> QProgram:
     qp = QProgram()
     gain1 = qp.variable("gain1")
     gain2 = qp.variable("gain2")
-    with qp.sweep(gain1).from_range(0, 1, 0.1):
-        with qp.sweep(gain2).from_range(1, 0, -0.1):
+    with qp.sweep(gain1).from_linspace(0, 1, 11):
+        with qp.sweep(gain2).from_linspace(1, 0, 11):
             qp.set_gain("drive", gain1 + gain2)
             qp.play(bus="drive", waveform=drag_pair)
             qp.set_gain("drive", gain1 - gain2)
@@ -1036,7 +1032,7 @@ def fixture_crosstalk_qprogram() -> QProgram:
     square_iq = IQPair(I=square_wf, Q=square_wf)
     qp = QProgram()
     offset = qp.variable("offset")
-    with qp.sweep(offset).from_range(0, 0.1, 0.01):
+    with qp.sweep(offset).from_linspace(0, 0.1, 11):
         qp.set_offset(bus="flux1", offset_path0=offset)
         qp.wait(bus="drive", duration=10)
         qp.wait(bus="flux1", duration=10)
@@ -1055,7 +1051,7 @@ def fixture_crosstalk_qprogram_gain_loop() -> QProgram:
     square_iq = IQPair(I=square_wf, Q=square_wf)
     qp = QProgram()
     gain = qp.variable("gain")
-    with qp.sweep(gain).from_range(0, 0.1, 0.01):
+    with qp.sweep(gain).from_linspace(0, 0.1, 11):
         qp.set_offset(bus="flux1", offset_path0=0.05)
         qp.wait(bus="drive", duration=10)
         qp.wait(bus="flux1", duration=10)
@@ -1076,11 +1072,11 @@ def fixture_crosstalk_qprogram_parallel() -> QProgram:
     gain_2 = qp.variable("gain_2")
     offset_1 = qp.variable("offset_1")
     offset_2 = qp.variable("offset_2")
-    with qp.sweep(gain_1).from_range(0, 0.1, 0.01) | qp.sweep(gain_2).from_range(0.1, 0, -0.01):
+    with qp.sweep(gain_1).from_linspace(0, 0.1, 11) | qp.sweep(gain_2).from_linspace(0.1, 0, 11):
         qp.set_gain(bus="flux1", gain=gain_1)
         qp.set_gain(bus="flux2", gain=gain_2)
         qp.play(bus="flux1", waveform=square_wf)
-    with qp.sweep(offset_1).from_range(0, 0.1, 0.01) | qp.sweep(offset_2).from_range(0.1, 0, -0.01):
+    with qp.sweep(offset_1).from_linspace(0, 0.1, 11) | qp.sweep(offset_2).from_linspace(0.1, 0, 11):
         qp.set_offset(bus="flux1", offset_path0=offset_1)
         qp.set_offset(bus="flux2", offset_path0=offset_2)
         qp.wait(bus="flux1", duration=10)
@@ -1110,8 +1106,8 @@ def fixture_crosstalk_qprogram_double_gain_loop() -> QProgram:
     qp = QProgram()
     gain_1 = qp.variable("gain_1")
     gain_2 = qp.variable("gain_2")
-    with qp.sweep(gain_1).from_range(0, 0.1, 0.01):
-        with qp.sweep(gain_2).from_range(0.1, 0, -0.01):
+    with qp.sweep(gain_1).from_linspace(0, 0.1, 11):
+        with qp.sweep(gain_2).from_linspace(0.1, 0, 11):
             qp.set_gain(bus="flux1", gain=gain_1)
             qp.set_gain(bus="flux2", gain=gain_2)
             qp.play(bus="flux1", waveform=square_wf)
@@ -1124,8 +1120,8 @@ def fixture_crosstalk_qprogram_double_offset_loop() -> QProgram:
     qp = QProgram()
     offset_1 = qp.variable("offset_1")
     offset_2 = qp.variable("offset_2")
-    with qp.sweep(offset_1).from_range(0, 0.1, 0.01):
-        with qp.sweep(offset_2).from_range(0.1, 0, -0.01):
+    with qp.sweep(offset_1).from_linspace(0, 0.1, 11):
+        with qp.sweep(offset_2).from_linspace(0.1, 0, 11):
             qp.set_offset(bus="flux1", offset_path0=offset_1)
             qp.set_offset(bus="flux2", offset_path0=offset_2)
             qp.play(bus="flux1", waveform=square_wf)
@@ -1138,7 +1134,7 @@ def inner_average_outer_sweep() -> QProgram:
     weights_pair = IQPair(I=Square(amplitude=1.0, duration=2000), Q=Square(amplitude=0.0, duration=2000))
     qp = QProgram()
     frequency = qp.variable("frequency")
-    with qp.sweep(frequency).from_range(100, 200, 10):
+    with qp.sweep(frequency).from_linspace(100, 200, 11):
         with qp.average(shots=100):
             qp.set_frequency(bus="readout", frequency=frequency)
             qp.measure(bus="readout", waveform=readout_pair, weights=weights_pair)
@@ -1172,7 +1168,7 @@ def fixture_non_linear_crosstalk_qprogram_inner_non_flux_loop() -> QProgram:
     frequency = qp.variable("frequency")
     offset = qp.variable("offset")
     with qp.for_loop(variable=offset, start=0, stop=0.1, step=0.08):
-        with qp.sweep(frequency).from_range(100, 200, 10):
+        with qp.sweep(frequency).from_linspace(100, 200, 11):
             qp.set_frequency(bus="drive", frequency=frequency)
             qp.set_offset(bus="flux2", offset_path0=offset)
             qp.wait(bus="drive", duration=10)
@@ -1210,11 +1206,11 @@ def fixture_non_linear_crosstalk_qprogram_parallel() -> QProgram:
     gain_2 = qp.variable("gain_2")
     offset_1 = qp.variable("offset_1")
     offset_2 = qp.variable("offset_2")
-    with qp.sweep(gain_1).from_range(0, 0.1, 0.1) | qp.sweep(gain_2).from_range(0.1, 0, -0.1):
+    with qp.sweep(gain_1).from_linspace(0, 0.1, 2) | qp.sweep(gain_2).from_linspace(0.1, 0, 2):
         qp.set_gain(bus="flux1", gain=gain_1)
         qp.set_gain(bus="flux2", gain=gain_2)
         qp.play(bus="flux1", waveform=square_wf)
-    with qp.sweep(offset_1).from_range(0, 0.1, 0.1) | qp.sweep(offset_2).from_range(0.1, 0, -0.1):
+    with qp.sweep(offset_1).from_linspace(0, 0.1, 2) | qp.sweep(offset_2).from_linspace(0.1, 0, 2):
         qp.set_offset(bus="flux1", offset_path0=offset_1)
         qp.set_offset(bus="flux2", offset_path0=offset_2)
         qp.wait(bus="flux1", duration=10)
@@ -1256,7 +1252,7 @@ def inner_average_outer_sweep_two_measures() -> QProgram:
     weights_pair = IQPair(I=Square(amplitude=1.0, duration=2000), Q=Square(amplitude=0.0, duration=2000))
     qp = QProgram()
     frequency = qp.variable("frequency")
-    with qp.sweep(frequency).from_range(100, 200, 10):
+    with qp.sweep(frequency).from_linspace(100, 200, 11):
         with qp.average(shots=100):
             qp.set_frequency(bus="readout", frequency=frequency)
             qp.measure(bus="readout", waveform=readout_pair, weights=weights_pair)
@@ -1270,7 +1266,7 @@ def inner_average_outer_sweep_three_measures() -> QProgram:
     weights_pair = IQPair(I=Square(amplitude=1.0, duration=2000), Q=Square(amplitude=0.0, duration=2000))
     qp = QProgram()
     frequency = qp.variable("frequency")
-    with qp.sweep(frequency).from_range(100, 200, 10):
+    with qp.sweep(frequency).from_linspace(100, 200, 11):
         with qp.average(shots=100):
             qp.set_frequency("readout", frequency)
             qp.measure(bus="readout", waveform=readout_pair, weights=weights_pair)
@@ -1537,7 +1533,7 @@ class TestQBloxCompiler:
         """A loop variable can only drive a frequency, phase, gain, offset or wait."""
         qp = QProgram()
         duration = qp.variable("duration")
-        with qp.sweep(duration).from_range(4, 100, 4):
+        with qp.sweep(duration).from_linspace(4, 100, 25):
             qp.qblox.set_trigger(bus="drive", duration=duration, outputs=1)
 
         compiler = QbloxCompiler()
@@ -1548,7 +1544,7 @@ class TestQBloxCompiler:
 
         qp = QProgram()
         duration = qp.variable("duration")
-        with qp.sweep(duration).from_range(4, 100, 4):
+        with qp.sweep(duration).from_linspace(4, 100, 25):
             qp.wait(bus="drive", duration=duration)
             qp.qblox.wait_trigger(bus="drive", duration=duration)
 
@@ -1644,7 +1640,7 @@ class TestQBloxCompiler:
         qp = QProgram()
         idx = qp.variable("idx")
         with qp.if_trigger(expected_wait_time_ns=3000):
-            with qp.sweep(idx).from_range(4, 12, 4):  # 3 iterations
+            with qp.sweep(idx).from_linspace(4, 12, 3):  # 3 iterations
                 qp.wait(bus="readout", duration=100)
                 qp.qblox.acquire(
                     bus="readout",
@@ -1806,7 +1802,7 @@ class TestQBloxCompiler:
     def test_if_trigger_dynamic_wait_duration_raises_error(self):
         qp = QProgram()
         duration = qp.variable("duration")
-        with qp.sweep(duration).from_range(4, 20, 4):
+        with qp.sweep(duration).from_linspace(4, 20, 5):
             with qp.if_trigger(expected_wait_time_ns=2252):
                 qp.wait(bus="readout", duration=duration)
                 qp.qblox.acquire(bus="readout", weights=IQPair(I=Square(1, 100), Q=Square(0, 100)))
@@ -1828,7 +1824,7 @@ class TestQBloxCompiler:
         a = qp.variable("a")
         b = qp.variable("b")
         with qp.if_trigger(expected_wait_time_ns=2252):
-            with qp.sweep(a).from_range(0, 1, 1) | qp.sweep(b).from_range(0, 1, 1):
+            with qp.sweep(a).from_linspace(0, 1, 2) | qp.sweep(b).from_linspace(0, 1, 2):
                 qp.qblox.acquire(bus="readout", weights=IQPair(I=Square(1, 100), Q=Square(0, 100)))
 
         compiler = QbloxCompiler()
@@ -1940,7 +1936,7 @@ class TestQBloxCompiler:
             qp.qdac.play(bus="qdac_flux", waveform=Square(1, 100), dwell=3)
 
         compiler = QbloxCompiler()
-        with pytest.raises(qprogram.ValidationError, match="empty-domain: Block 'IfTrigger' has no executable domain"):
+        with pytest.raises(ValueError, match=re.escape("qp.if_trigger()'s body must contain at least one instruction on a qblox bus")):
             compiler.compile(qprogram=qp, qblox_buses=["readout"])
 
     def test_if_trigger_padding_too_small_raises_error(self):
@@ -5186,7 +5182,7 @@ class TestQBloxCompiler:
     def test_set_phase_with_variable_uses_register(self):
         qp = QProgram()
         phase = qp.variable("phase")
-        with qp.sweep(phase).from_range(0, 0.5, 0.1):
+        with qp.sweep(phase).from_linspace(0, 0.5, 6):
             qp.set_phase(bus="drive", phase=phase)
 
         compiler = QbloxCompiler()
@@ -5641,7 +5637,7 @@ class TestQBloxCompiler:
         directions depending on sweep direction."""
         qp = QProgram()
         gain = qp.variable("gain")
-        with qp.sweep(gain).from_range(1.0, -1.0, -2 / 3):
+        with qp.sweep(gain).from_linspace(1.0, -1.0, 4):
             qp.set_gain(bus="drive", gain=gain)
 
         compiler = QbloxCompiler()
@@ -5672,7 +5668,7 @@ class TestQBloxCompiler:
         pre-migration integer step without going through qpysequence's own scaling code."""
         qp = QProgram()
         phase = qp.variable("phase")
-        with qp.sweep(phase).from_range(2 * np.pi, 0.0, -2 * np.pi / 3):
+        with qp.sweep(phase).from_linspace(2 * np.pi, 0.0, 4):
             qp.set_phase(bus="drive", phase=phase)
 
         compiler = QbloxCompiler()
@@ -7475,7 +7471,7 @@ class TestQBloxCompiler:
         qp = QProgram()
         frequency = qp.variable("frequency")
         gain = qp.variable("gain")
-        with qp.sweep(frequency).from_range(10e6, 10e6, 10e6) | qp.sweep(gain).from_range(0.5, 0.5, 0.1):
+        with qp.sweep(frequency).from_linspace(10e6, 10e6, 1) | qp.sweep(gain).from_linspace(0.5, 0.5, 1):
             qp.set_frequency(bus="drive", frequency=frequency)
             qp.set_gain(bus="drive", gain=gain)
             qp.play(
@@ -7514,7 +7510,7 @@ class TestQBloxCompiler:
         frequency = qp.variable("frequency")
         gain = qp.variable("gain")
         with qp.average(shots=10):
-            with qp.sweep(frequency).from_range(10e6, 40e6, 10e6) | qp.sweep(gain).from_range(0.0, 1.0, 1 / 3):
+            with qp.sweep(frequency).from_linspace(10e6, 40e6, 4) | qp.sweep(gain).from_linspace(0.0, 1.0, 4):
                 qp.set_frequency(bus="drive", frequency=frequency)
                 qp.set_gain(bus="drive", gain=gain)
                 qp.play(bus="drive", waveform=drive_wf)
@@ -7588,7 +7584,7 @@ class TestQBloxCompiler:
         frequency = qp.variable("frequency")
         gain = qp.variable("gain")
         message = "parallel loops must have the same number of iterations to advance in lockstep"
-        combined = qp.sweep(frequency).from_range(10e6, 50e6, 10e6) | qp.sweep(gain).from_range(0.0, 1.0, 0.5)
+        combined = qp.sweep(frequency).from_linspace(10e6, 50e6, 5) | qp.sweep(gain).from_linspace(0.0, 1.0, 3)
         with pytest.raises(qprogram.ValidationError, match=message):
             with combined:
                 pass
@@ -7599,7 +7595,7 @@ class TestQBloxCompiler:
         qp = QProgram()
         gain_1 = qp.variable("gain_1")
         gain_2 = qp.variable("gain_2")
-        with qp.sweep(gain_1).from_range(0, 0.1, 0.1) | qp.sweep(gain_2).from_range(0.1, 0, -0.1):
+        with qp.sweep(gain_1).from_linspace(0, 0.1, 2) | qp.sweep(gain_2).from_linspace(0.1, 0, 2):
             qp.set_gain(bus="flux_1", gain=gain_1)
             qp.set_gain(bus="flux_2", gain=gain_2)
             qp.play(bus="flux_1", waveform=square_wf)
@@ -7637,19 +7633,14 @@ class TestQBloxCompiler:
             qprogram.ValidationError, match=re.escape("Range step -2.0 moves away from stop (0.0 -> 1.0)")
         ):
             qp.for_loop(variable=gain, start=0, stop=1, step=-2)
-        gain_sweep = qp.sweep(gain)
-        with pytest.raises(
-            qprogram.ValidationError, match=re.escape("Range step -2.0 moves away from stop (0.0 -> 1.0)")
-        ):
-            gain_sweep.from_range(0, 1, -2)
 
     def test_wait_combining_two_variables_raises_error(self):
         """A wait computed in registers can take one variable, not an expression of two."""
         qp = QProgram()
         first = qp.variable("first")
         second = qp.variable("second")
-        with qp.sweep(first).from_range(100, 200, 100):
-            with qp.sweep(second).from_range(100, 200, 100):
+        with qp.sweep(first).from_linspace(100, 200, 2):
+            with qp.sweep(second).from_linspace(100, 200, 2):
                 qp.wait(bus="drive", duration=first + second)
         compiler = QbloxCompiler()
 
@@ -7661,7 +7652,7 @@ class TestQBloxCompiler:
         """set_frequency and set_phase take a variable or a number, not an expression."""
         qp = QProgram()
         value = qp.variable("value")
-        with qp.sweep(value).from_range(0.0, 1.0, 0.5):
+        with qp.sweep(value).from_linspace(0.0, 1.0, 3):
             getattr(qp, f"set_{parameter}")("drive", value + 1)
         compiler = QbloxCompiler()
 
@@ -7790,7 +7781,7 @@ class TestQBloxCompiler:
         only operations on Qblox buses set how the loop register is scaled."""
         qp = QProgram()
         voltage = qp.variable("voltage")
-        with qp.sweep(voltage).from_range(0.0, 0.5, 0.1):
+        with qp.sweep(voltage).from_linspace(0.0, 0.5, 6):
             qp.set_offset(bus="qdac_flux", offset_path0=voltage)
             qp.play(
                 bus="drive", waveform=IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
@@ -7823,7 +7814,7 @@ class TestQBloxCompiler:
         qp = QProgram()
         voltage = qp.variable("voltage")
         qp.play(bus="drive", waveform=pulse)
-        with qp.sweep(voltage).from_range(0.0, 1.0, 0.1):
+        with qp.sweep(voltage).from_linspace(0.0, 1.0, 11):
             qp.set_offset(bus="qdac_flux", offset_path0=voltage)
         qp.play(bus="drive", waveform=pulse)
 

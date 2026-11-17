@@ -79,41 +79,24 @@ class TestPrepareShared:
             prepare_shared(qp)
 
     def test_nested_loops_on_one_variable_raises_error(self):
-        """The builder refuses an inner loop over the variable of an enclosing one; the pre-pass also checks the
-        programs the builder didn't build, such as ones read from .qp."""
+        """The builder refuses an inner loop over the variable of an enclosing one, as qililab always did."""
         qp = QProgram()
         x = qp.variable("x")
-        with qp.sweep(x).from_range(0, 10, 1):
-            inner = qp.sweep(x).from_range(100, 110, 1)
+        with qp.sweep(x).from_linspace(0, 10, 11):
+            inner = qp.sweep(x).from_linspace(100, 110, 11)
             with pytest.raises(VariableAllocated):
                 with inner:
                     pass
 
-        text = """#!QProgram 0.3
+    def test_range_sweep_raises_error(self):
+        """qililab's loops were linspaces: qprogram's from_range, which keeps the step, is refused."""
+        qp = QProgram()
+        x = qp.variable("x")
+        with qp.sweep(x).from_range(0, 10, 1):
+            qp.wait(bus="drive", duration=100)
 
-body:
-  var x
-
-  for x in Range(start=0.0, stop=10.0, step=1.0):
-    for x in Range(start=100.0, stop=110.0, step=1.0):
-      wait "drive" 100
-"""
-        with pytest.raises(VariableAllocated):
-            prepare_shared(QProgram.from_qp(text))
-
-    def test_disable_autosync_inside_a_block_raises_error(self):
-        """qp.qblox.disable_autosync only ever puts it at the top of the body; a .qp file could put it elsewhere."""
-        text = """#!QProgram 0.3
-
-require qililab 0.1
-
-body:
-  average 10:
-    qililab.disable_autosync
-    wait "drive" 100
-"""
-        with pytest.raises(ValueError, match="qililab.disable_autosync applies to the whole program"):
-            prepare_shared(QProgram.from_qp(text))
+        with pytest.raises(ValidationError, match="requires capability 'sweep.range'"):
+            prepare_shared(qp)
 
     @pytest.mark.parametrize(
         "expression, code",
@@ -134,8 +117,8 @@ body:
         qp = QProgram()
         g = qp.variable("g")
         h = qp.variable("h")
-        with qp.sweep(g).from_range(0.0, 1.0, 0.5):
-            with qp.sweep(h).from_range(0.0, 1.0, 0.5):
+        with qp.sweep(g).from_linspace(0.0, 1.0, 3):
+            with qp.sweep(h).from_linspace(0.0, 1.0, 3):
                 qp.set_gain(bus="drive", gain=expression(g, h))
 
         with pytest.raises(ValidationError, match=re.escape(code)):

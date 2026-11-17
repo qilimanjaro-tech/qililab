@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from collections import deque
 from typing import TYPE_CHECKING, Any, Callable
 
 import numpy as np
@@ -20,7 +19,6 @@ from qprogram.blocks import Average, Block, Parallel, Sweep
 from qprogram.waveforms import Arbitrary
 from qprogram_qdac import Play, SetOffset, SetTrigger, WaitTrigger
 
-from qililab.constants import QDACCONSTANTS
 from qililab.instruments.qdevil import QDevilQDac2
 from qililab.qprogram.blocks import IfTrigger, InfiniteLoop
 from qililab.qprogram.calibration import Calibration
@@ -51,20 +49,6 @@ class QdacCompilationOutput:
         self.trigger_position = trigger_position
 
 
-class QdacBusCompilationInfo:
-    """Class representing the information stored by QdacCompiler for a bus."""
-
-    def __init__(self) -> None:
-        # Stacks to manage block hierarchy during compilation
-        self.qprogram_block_stack: deque[Block] = deque()
-
-        # Counters to help with naming and indexing
-        self.loop_counter = 0
-
-        # Trigger to mark that the dc has been set
-        self.dc_set: bool = False
-
-
 class QdacCompiler:
     """A class for controling QProgram to Qdac hardware."""
 
@@ -84,7 +68,6 @@ class QdacCompiler:
         }
 
         self._qprogram: QProgram
-        self._buses: dict[str, QdacBusCompilationInfo]
         self._qdac_buses: list["Bus"]
         self._qdac_buses_by_alias: dict[str, "Bus"]
         self._qdac_buses_alias: list[str]
@@ -92,9 +75,6 @@ class QdacCompiler:
         self._qdacs: list[QDevilQDac2]
         self._out_instrument: QDevilQDac2 | None
 
-        self._dc_dwell: int = QDACCONSTANTS.DEFAULT_DWELL_US
-        self._dc_delay: float = 0.0
-        self._dc_stepped: bool = False
         self._loop_repetitions: dict[str, int] = {}
         self._infinite_loop: bool = False
         self._play_params: dict[str, Any] = {}
@@ -133,8 +113,6 @@ class QdacCompiler:
         """
 
         def traverse(block: Block) -> None:
-            for bus in self._buses and self._qdac_buses_alias:
-                self._buses[bus].qprogram_block_stack.append(block)
             for element in block.elements:
                 # The QDAC pre-pass leaves only QDAC operations and blocks
                 handler = self._handlers.get(type(element))
@@ -142,8 +120,6 @@ class QdacCompiler:
                     handler(element)
                 if isinstance(element, Block):
                     traverse(element)
-            for bus in self._buses and self._qdac_buses_alias:
-                self._buses[bus].qprogram_block_stack.pop()
 
         self._qdacs = qdacs
         self._out_instrument = out_instrument
@@ -177,7 +153,6 @@ class QdacCompiler:
             A dictionary where the keys are bus names and the values are BusCompilationInfo objects.
         """
 
-        self._buses = {bus: QdacBusCompilationInfo() for bus in self._qdac_buses_alias}
         self._loop_repetitions.update(dict.fromkeys(self._qdac_buses_alias, 1))
 
         self._channels = {bus.alias: bus.channels[0] for bus in self._qdac_buses if bus.alias in self._qdac_buses_alias}
@@ -191,29 +166,21 @@ class QdacCompiler:
         for qdac_bus_alias in self._qdac_buses_alias:
             self._loop_repetitions[qdac_bus_alias] *= min(iterations) + 1
 
-        for bus in self._buses:
-            self._buses[bus].loop_counter += 1
         return True
 
     def _handle_average(self, element: Average):
         for qdac_bus_alias in self._qdac_buses_alias:
             self._loop_repetitions[qdac_bus_alias] *= element.shots + 1
-        for bus in self._buses:
-            self._buses[bus].loop_counter += 1
         return True
 
     def _handle_infinite_loop(self, _: InfiniteLoop):
         self._infinite_loop = True
-        for bus in self._buses:
-            self._buses[bus].loop_counter += 1
         return True
 
     def _handle_sweep(self, element: Sweep) -> bool:
         iterations = element.num_iterations()
         for qdac_bus_alias in self._qdac_buses_alias:
             self._loop_repetitions[qdac_bus_alias] *= iterations + 1
-        for bus in self._buses:
-            self._buses[bus].loop_counter += 1
         return True
 
     def _handle_set_offset(self, element: SetOffset):
@@ -225,7 +192,6 @@ class QdacCompiler:
         instrument.set_parameter(
             parameter=Parameter.VOLTAGE, value=element.offset, channel_id=self._channels[element.bus]
         )
-        self._buses[element.bus].dc_set = True
 
     def _handle_set_trigger(self, element: SetTrigger):
         # Condition to check if positions are properly set.
@@ -332,12 +298,6 @@ class QdacCompiler:
             if isinstance(instrument, QDevilQDac2)
         )
         waveform = element.waveform
-        if not element.dwell:
-            element.dwell = self._dc_dwell
-        if not element.delay:
-            element.delay = self._dc_delay  # type: ignore[assignment]
-        if not element.stepped:
-            element.stepped = self._dc_stepped
         if not element.repetitions:
             element.repetitions = self._loop_repetitions[element.bus]
         if self._infinite_loop:

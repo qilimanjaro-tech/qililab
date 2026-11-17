@@ -132,7 +132,7 @@ each amplitude, sweep the drive gain directly inside the QProgram, so the whole 
 
     qp = QProgram()
     gain = qp.variable("gain")
-    with qp.sweep(gain).from_range(0.0, 1.0, 0.1):
+    with qp.sweep(gain).from_linspace(0.0, 1.0, 11):
         qp.set_gain(bus="drive_line_q0_bus", gain=gain)
         qp.play(bus="drive_line_q0_bus", waveform=pi_pulse)
         measurement = qp.measure(bus="feedline_bus", waveform=readout_pulse, weights=weights)
@@ -171,7 +171,7 @@ To sweep the delay, declare a variable and use it with the ``wait()`` method, in
 
     qp = QProgram()
     wait_time = qp.variable("wait_time", units="ns")
-    with qp.sweep(wait_time).from_range(0, 10000, 1000):
+    with qp.sweep(wait_time).from_linspace(0, 10000, 11):
         qp.play(bus="drive_line_q0_bus", waveform=half_pi_pulse)
         qp.wait(bus="drive_line_q0_bus", duration=wait_time)
         qp.play(bus="drive_line_q0_bus", waveform=half_pi_pulse)

@@ -661,3 +661,40 @@ class TestCalibration:
             match="Crosstalk History is empty. First run `Calibration.add_intra_crosstalk` and `Calibration.add_inter_crosstalk`",
         ):
             calibration.remove_history_step()
+
+
+# A calibration with a block, as this version of qililab saves it: the block is a dump of qprogram's own objects.
+SAVED_CALIBRATION_WITH_BLOCK_YAML = """!Calibration
+blocks:
+  measure: !!python/object:qprogram.blocks.block.Block
+    _elements:
+    - !!python/object:qprogram_qblox.operations.Acquire
+      bus: readout
+      fields: !!python/tuple [iq]
+      handle: !!python/object/new:qprogram.result.MeasurementHandle
+        state: !!python/tuple
+        - null
+        - _auto_named: false
+          _values: {}
+          name: m0
+      weights: !IQPair
+        I: !Square {amplitude: 1.0, duration: 100}
+        Q: !Square {amplitude: 0.0, duration: 100}
+crosstalk_history: []
+crosstalk_matrix: null
+crosstalk_matrix_ac: null
+parameters: {}
+waveforms: {}
+weights: {}
+"""
+
+
+def test_saved_calibration_with_a_block_still_loads():
+    """A qprogram release that renames an object or attribute the saved block uses would break this file: fail here,
+    not in the lab."""
+    calibration = deserialize(SAVED_CALIBRATION_WITH_BLOCK_YAML, Calibration)
+
+    (acquire,) = calibration.get_block("measure").elements
+    assert acquire.bus == "readout"
+    assert acquire.name == "m0"
+    assert acquire.weights == IQPair(I=Square(1.0, 100), Q=Square(0.0, 100))

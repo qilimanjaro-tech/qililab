@@ -49,17 +49,19 @@ class TestExperiment:
         assert instance._body.elements[0] is block
 
     def test_parallel_method(self, instance: Experiment):
-        """Sweeps combined with | run in lockstep, in a Parallel block."""
+        """Sweeps over values combined with | run in lockstep, in a Parallel block: what Experiment.parallel did."""
         var1 = instance.variable("int_scalar")
         var2 = instance.variable("float_scalar")
-        with instance.sweep(var1).from_range(0, 10, 1) | instance.sweep(var2).from_range(0.0, 1.0, 0.1) as loop:
+        with instance.sweep(var1).from_values(np.arange(11)) | instance.sweep(var2).from_values(
+            np.linspace(0.0, 1.0, 11)
+        ) as loop:
             # __enter__
             assert isinstance(loop, Parallel)
             assert len(loop.loops) == 2
             assert all(isinstance(sweep, Sweep) for sweep in loop.loops)
             assert [sweep.variable for sweep in loop.loops] == [var1, var2]
-            assert loop.loops[0].source == Range(0, 10, 1)
-            assert loop.loops[1].source == Range(0.0, 1.0, 0.1)
+            np.testing.assert_allclose(loop.loops[0].source.values(), np.arange(11))
+            np.testing.assert_allclose(loop.loops[1].source.values(), np.linspace(0.0, 1.0, 11))
             assert instance._active_block is loop
         # __exit__
         assert len(instance._body.elements) == 1
@@ -189,7 +191,7 @@ class TestExperiment:
         file = "test_serialization_deserialization_experiment.yml"
         qp = QProgram()
         gain = qp.variable("gain")
-        with qp.sweep(gain).from_range(0.0, 1.0, 0.1):
+        with qp.sweep(gain).from_linspace(0.0, 1.0, 11):
             qp.set_gain(bus="drive_bus", gain=gain)
             qp.play(bus="drive_bus", waveform=IQPair(I=Square(1.0, 200), Q=Square(1.0, 200)))
 
@@ -219,3 +221,52 @@ class TestExperiment:
         assert isinstance(deserialized_experiment, Experiment)
 
         os.remove(file)
+
+
+# An Experiment as this version of qililab saves it: the program is a dump of qprogram's own objects.
+SAVED_EXPERIMENT_YAML = """!Experiment
+_block_stack: !deque
+- &id002 !!python/object:qprogram.blocks.block.Block
+  _elements:
+  - !!python/object:qprogram.blocks.sweep.Sweep
+    _elements:
+    - !SetParameter
+      alias: flux_bus
+      channel_id: null
+      output_id: null
+      parameter: !Parameter VOLTAGE-voltage
+      value: &id001 !!python/object:qprogram.variable.Variable
+        _description: null
+        _id: flux
+        _label: null
+        _units: null
+        _value: !!python/object:qprogram.variable._UnassignedType {}
+    source: !!python/object:qililab.qprogram.experiment.experiment._ForLoopValues
+      points: !ndarray
+        data: [0, 1, 2]
+        dtype: int64
+        shape: !!python/tuple [3]
+    variable: *id001
+_body: *id002
+_fragments: {}
+_pending_conditional: null
+_qp_source_map: {}
+_schema: null
+_variables:
+- *id001
+description: null
+label: flux
+"""
+
+
+def test_saved_experiment_still_loads():
+    """A qprogram release that renames an object or attribute the saved Experiment uses would break this file: fail
+    here, not in the lab."""
+    experiment = deserialize(SAVED_EXPERIMENT_YAML, Experiment)
+
+    (loop,) = experiment.body.elements
+    (set_parameter,) = loop.elements
+    assert experiment.label == "flux"
+    assert loop.source.values().tolist() == [0, 1, 2]
+    assert set_parameter.alias == "flux_bus"
+    assert set_parameter.value is loop.variable

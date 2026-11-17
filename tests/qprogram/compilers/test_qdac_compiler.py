@@ -435,7 +435,8 @@ class TestQdacCompiler:
             )
 
     def test_play_iq_pair_raises_error(self, qdac: QDevilQDac2, flux1: Bus, flux2: Bus):
-        """A QDAC play takes a single waveform: an IQPair fails validation (it used to play its I waveform)."""
+        """A QDAC play takes a single waveform: an IQPair raises, also with crosstalk (it used to play its I
+        waveform)."""
         crosstalk = CrosstalkMatrix.from_buses(
             buses={"flux1": {"flux1": 1.0, "flux2": 0.5}, "flux2": {"flux1": 0.1, "flux2": 1.0}}
         )
@@ -445,7 +446,7 @@ class TestQdacCompiler:
         qp.qdac.set_trigger(bus="flux1", duration=10e-6, outputs=[1], position="start")
 
         compiler = QdacCompiler()
-        with pytest.raises(ValidationError, match=re.escape("'Play' requires capability 'waveform.iq_pair'")):
+        with pytest.raises(NotImplementedError, match="qp.qdac.play on bus 'flux1' takes one waveform, not an IQPair"):
             compiler.compile(
                 qprogram=qp, qdacs=[qdac], qdac_buses=[flux1, flux2], qdac_offsets=[0, 0], crosstalk=crosstalk
             )
@@ -534,28 +535,6 @@ class TestQdacCompiler:
             compiler.compile(
                 qprogram=qp, qdacs=[qdac], qdac_buses=[flux1, flux2], qdac_offsets=[0, 0], crosstalk=crosstalk
             )
-
-    @pytest.mark.parametrize("delay", [-1e-6, 3600.5])
-    def test_play_delay_out_of_range_raises_error(self, qdac: QDevilQDac2, flux1: Bus, delay: float):
-        """The QDAC-II takes a play delay from 0 s to 3600 s: any other is refused before it reaches the instrument."""
-        qp = QProgram()
-        qp.qdac.play(bus="flux1", waveform=Square(1.0, 100), dwell=2, delay=delay)
-
-        with pytest.raises(ValidationError, match=re.escape(f"qp.qdac.play(..., delay={delay}) on bus 'flux1'")):
-            QdacCompiler().compile(qprogram=qp, qdacs=[qdac], qdac_buses=[flux1], qdac_offsets=[0])
-
-    @pytest.mark.parametrize("duration", [0.0, 0.5e-6, 3601.0])
-    def test_set_trigger_duration_out_of_range_raises_error(self, qdac: QDevilQDac2, flux1: Bus, duration: float):
-        """The QDAC-II takes a trigger width from 1 µs to 3600 s: any other is refused before it reaches the
-        instrument."""
-        qp = QProgram()
-        qp.qdac.play(bus="flux1", waveform=Square(1.0, 100), dwell=2)
-        qp.qdac.set_trigger(bus="flux1", duration=duration, outputs=[1], position="start")
-
-        with pytest.raises(
-            ValidationError, match=re.escape(f"qp.qdac.set_trigger(..., duration={duration}) on bus 'flux1'")
-        ):
-            QdacCompiler().compile(qprogram=qp, qdacs=[qdac], qdac_buses=[flux1], qdac_offsets=[0])
 
     def test_play_delay_and_trigger_duration_at_their_limits_compile(self, qdac: QDevilQDac2, flux1: Bus):
         """The largest delay and the shortest trigger width the QDAC-II takes reach the instrument as they are."""
@@ -689,27 +668,32 @@ class TestQdacCompiler:
         with pytest.raises(ValidationError, match=re.escape("qililab.variable-in-waveform")):
             compiler.compile(qprogram=qp, qdacs=[qdac], qdac_buses=[flux1], qdac_offsets=[0])
 
-    @pytest.mark.parametrize("loop", ["average", "sweep", "for_loop", "parallel", "infinite_loop"])
-    def test_qdac_operation_inside_loop_raises_error(self, qdac: QDevilQDac2, flux1: Bus, loop: str):
-        """QDAC operations run on the PC before the run, so one inside a (real-time) loop fails validation. Their
-        repetitions are no longer derived from the loops they are in: pass `repetitions` instead."""
+    @pytest.mark.parametrize(
+        "loop, repetitions",
+        [("average", 6), ("sweep", 12), ("for_loop", 11), ("parallel", 3), ("infinite_loop", -1)],
+    )
+    def test_qdac_play_inside_a_loop_repeats_once_per_iteration(
+        self, qdac: QDevilQDac2, flux1: Bus, loop: str, repetitions: int
+    ):
+        """As on main, a QDAC play without repetitions inside a loop repeats its list for each iteration, plus one,
+        and forever inside an infinite loop."""
         qp = QProgram()
         x = qp.variable("x")
         y = qp.variable("y")
         contexts = {
             "average": lambda: qp.average(5),
-            "sweep": lambda: qp.sweep(x).from_range(0, 10, 1),
+            "sweep": lambda: qp.sweep(x).from_linspace(0, 10, 11),
             "for_loop": lambda: qp.for_loop(x, 0, 0.1, 0.011),
-            "parallel": lambda: qp.sweep(x).from_range(0, 1, 1) | qp.sweep(y).from_range(0, 1, 1),
+            "parallel": lambda: qp.sweep(x).from_linspace(0, 1, 2) | qp.sweep(y).from_linspace(0, 1, 2),
             "infinite_loop": qp.infinite_loop,
         }
         with pytest.warns(FutureWarning) if loop == "for_loop" else contextlib.nullcontext():
             with contexts[loop]():
                 qp.qdac.play(bus="flux1", waveform=Square(1.0, 100), dwell=2)
 
-        compiler = QdacCompiler()
-        with pytest.raises(ValidationError, match="empty-domain"):
-            compiler.compile(qprogram=qp, qdacs=[qdac], qdac_buses=[flux1], qdac_offsets=[0])
+        QdacCompiler().compile(qprogram=qp, qdacs=[qdac], qdac_buses=[flux1], qdac_offsets=[0])
+
+        assert flux1.instruments[0].upload_voltage_list.call_args.kwargs["repetitions"] == repetitions
 
     def test_for_loops_with_no_iterations_raises_error(self):
         """A loop with a zero step raises when it is built."""
@@ -762,14 +746,13 @@ class TestQdacCompiler:
 
     def test_conditional_qdac_op_inside_if_trigger_raises_error(self, qdac: QDevilQDac2, flux1: Bus):
         """A QDAC-bus operation cannot be placed inside qp.if_trigger(): QDAC generates the external trigger
-        and has no way to conditionally gate on whether that same trigger was received on the Qblox side. It
-        now fails validation, as a QDAC operation inside any real-time block does."""
+        and has no way to conditionally gate on whether that same trigger was received on the Qblox side."""
         qp = QProgram()
         with qp.if_trigger(expected_wait_time_ns=1000):
             qp.qdac.play(bus="flux1", waveform=Square(1.0, 100))
 
         compiler = QdacCompiler()
-        with pytest.raises(ValidationError, match=re.escape("empty-domain: Block 'IfTrigger' has no executable domain")):
+        with pytest.raises(NotImplementedError, match=re.escape("cannot be used inside qp.if_trigger()")):
             compiler.compile(qprogram=qp, qdacs=[qdac], qdac_buses=[flux1], qdac_offsets=[0])
 
     def test_bare_sync_inside_if_trigger_is_allowed(self, qdac: QDevilQDac2, flux1: Bus):
@@ -827,26 +810,6 @@ class TestQdacCompiler:
         compiler = QdacCompiler()
         with pytest.raises(ValidationError, match="qdac.empty-trigger-outputs"):
             compiler.compile(qprogram=qp, qdacs=[qdac], qdac_buses=[flux1], qdac_offsets=[0])
-
-    @pytest.mark.parametrize(
-        "add_operation, message",
-        [
-            (
-                lambda qp: qp.qdac.play(bus="flux1", waveform=Square(1.0, 100), delay=5000.0),
-                "qp.qdac.play(..., delay=5000.0) on bus 'flux1' is outside the QDAC-II's range",
-            ),
-            (
-                lambda qp: qp.qdac.set_trigger(bus="flux1", duration=1e-7, outputs=[1]),
-                "qp.qdac.set_trigger(..., duration=1e-07) on bus 'flux1' is outside the QDAC-II's range",
-            ),
-        ],
-    )
-    def test_qdac_time_outside_the_qdac_range_raises_error(self, qdac: QDevilQDac2, flux1: Bus, add_operation, message):
-        qp = QProgram()
-        add_operation(qp)
-
-        with pytest.raises(ValidationError, match=re.escape(message)):
-            QdacCompiler().compile(qprogram=qp, qdacs=[qdac], qdac_buses=[flux1], qdac_offsets=[0])
 
     def test_set_offset_and_wait_trigger_call_arguments(self, qdac: QDevilQDac2, flux1: Bus, flux2: Bus):
         """The voltage set by set_offset, and wait_trigger on an external port."""
@@ -1030,11 +993,27 @@ class TestQdacCompiler:
             channel_id=1, out_port=1, trigger="trigger_flux1_1_step", width_s=100e-6, step=True
         )
 
-    def test_loop_without_qdac_operation_does_not_multiply_the_next_qdac_play_repetitions(
+    def test_qdac_play_without_repetitions_inside_an_average_repeats_once_per_shot(
         self, qdac: QDevilQDac2, flux1: Bus
     ):
-        """A loop with no QDAC operation before a QDAC play no longer multiplies its repetitions: a QDAC play
-        repeats `repetitions` times, 1 by default."""
+        """A QDAC play without repetitions repeats its list for every loop it is compiled after, as on main: shots
+        + 1 for an average."""
+        qdac_bus = flux1.instruments[0]
+        ramp_wf = Arbitrary(samples=np.array([0.0, 0.1, 0.2]))
+        qp = QProgram()
+        with qp.average(shots=500):
+            qp.qdac.play(bus="flux1", waveform=ramp_wf, dwell=3)
+            qp.qblox.acquire(bus="readout", weights=IQPair(I=Square(1.0, 100), Q=Square(0.0, 100)))
+
+        QdacCompiler().compile(qprogram=qp, qdacs=[qdac], qdac_buses=[flux1], qdac_offsets=[0])
+
+        qdac_bus.upload_voltage_list.assert_called_once_with(
+            waveform=ramp_wf, channel_id=1, dwell_us=3, sync_delay_s=0, repetitions=501, stepped=False
+        )
+
+    def test_loop_before_a_qdac_play_multiplies_its_repetitions(self, qdac: QDevilQDac2, flux1: Bus):
+        """As on main, the loops compiled before a QDAC play without repetitions count too, even when the play is
+        not inside them (QHC-1689)."""
         qdac_bus = flux1.instruments[0]
         ramp_wf = Arbitrary(samples=np.array([0.0, 0.1, 0.2]))
         qp = QProgram()
@@ -1046,7 +1025,7 @@ class TestQdacCompiler:
         compiler.compile(qprogram=qp, qdacs=[qdac], qdac_buses=[flux1], qdac_offsets=[0])
 
         qdac_bus.upload_voltage_list.assert_called_once_with(
-            waveform=ramp_wf, channel_id=1, dwell_us=3, sync_delay_s=0, repetitions=1, stepped=False
+            waveform=ramp_wf, channel_id=1, dwell_us=3, sync_delay_s=0, repetitions=11, stepped=False
         )
 
     def test_unmapped_named_operation_with_crosstalk_raises_error(self, qdac: QDevilQDac2, flux1: Bus, flux2: Bus):

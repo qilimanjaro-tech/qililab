@@ -80,7 +80,7 @@ def fixture_qprogram():
     """Fixture to create a mock QProgram."""
     qp = QProgram()
     gain = qp.variable("gain")
-    with qp.sweep(gain).from_range(0, 1.0, 0.1):
+    with qp.sweep(gain).from_linspace(0, 1.0, 11):
         qp.set_gain(bus="readout_bus", gain=gain)
         qp.measure(
             "readout_bus",
@@ -125,8 +125,7 @@ def fixture_qprogram_uneven_parallel():
     frequency_1 = qp.variable("freq_1")
     frequency_2 = qp.variable("freq_2")
     # 10 points over each range, the points for_loops with an 11 MHz step gave.
-    step = 100e6 / 9
-    with qp.sweep(frequency_1).from_range(100e6, 200e6, step) | qp.sweep(frequency_2).from_range(200e6, 100e6, -step):
+    with qp.sweep(frequency_1).from_linspace(100e6, 200e6, 10) | qp.sweep(frequency_2).from_linspace(200e6, 100e6, 10):
         qp.set_frequency(bus="readout_bus", frequency=frequency_1)
         qp.set_frequency(bus="readout_bus", frequency=frequency_2)
         qp.measure(
@@ -192,7 +191,7 @@ def fixture_experiment(qprogram: QProgram, crosstalk: CrosstalkMatrix):
             experiment.set_parameter(alias="readout_bus", parameter=Parameter.LO_FREQUENCY, value=frequency)
             experiment.execute_qprogram(qprogram)
     # Test parallel loops
-    with experiment.sweep(bias).from_range(0.0, 1.0, 0.5) | experiment.sweep(frequency).from_values(np.array([2e9, 3e9, 4e9])):
+    with experiment.sweep(bias).from_values(np.array([0.0, 0.5, 1.0])) | experiment.sweep(frequency).from_values(np.array([2e9, 3e9, 4e9])):
         experiment.set_parameter(alias="readout_bus", parameter=Parameter.VOLTAGE, value=bias)
         experiment.set_parameter(alias="readout_bus", parameter=Parameter.LO_FREQUENCY, value=frequency)
         experiment.execute_qprogram(qprogram)
@@ -201,7 +200,7 @@ def fixture_experiment(qprogram: QProgram, crosstalk: CrosstalkMatrix):
     # test_execute_qprogram_lambda_with_shots_from_loop.
 
     # Test qprogram lambda with two variables from loop
-    with experiment.sweep(bias).from_range(0.0, 1.0, 0.5) | experiment.sweep(frequency).from_values(np.array([2e9, 3e9, 4e9])):
+    with experiment.sweep(bias).from_values(np.array([0.0, 0.5, 1.0])) | experiment.sweep(frequency).from_values(np.array([2e9, 3e9, 4e9])):
         experiment.execute_qprogram(
             lambda frequency=frequency, bias=bias: get_qprogram_frequency_and_bias_by_loop(
                 frequency=frequency, bias=bias, qprogram=qprogram
@@ -409,7 +408,7 @@ class TestExperimentExecutor:
         qp = QProgram()
         frequency = qp.variable("frequency")
         # 11 points
-        with qp.sweep(frequency).from_range(0, 10, 1):
+        with qp.sweep(frequency).from_linspace(0, 10, 11):
             qp.qblox.acquire(bus="readout_bus", weights=IQPair(Square(1.0, 100), Square(1.0, 100)))
 
         experiment = Experiment(label="acquire_experiment")
@@ -439,7 +438,7 @@ class TestExperimentExecutor:
         qp = QProgram()
         frequency = qp.variable("frequency")
         # 11 points
-        with qp.sweep(frequency).from_range(0, 10, 1):
+        with qp.sweep(frequency).from_linspace(0, 10, 11):
             qp.measure(
                 "readout_bus",
                 waveform=IQPair(Square(1.0, 40), Square(1.0, 40)),
@@ -598,6 +597,30 @@ class TestExperimentExecutor:
 
         np.testing.assert_allclose(values, expected)
         assert values.dtype.kind == ("i" if all(isinstance(x, int) for x in (start, stop, step)) else "f")
+
+    def test_experiment_loops_keep_integers_and_take_numpy_bounds(self):
+        """As on main: a loop over integers sets integers, and numpy bounds are accepted."""
+        experiment = Experiment(label="loops")
+        first, second = experiment.variable("first"), experiment.variable("second")
+        with experiment.loop(first, np.array([10, 20])) as values_loop:
+            pass
+        with experiment.for_loop(second, np.int64(0), np.int64(4), np.int64(2)) as for_loop:
+            pass
+
+        assert values_loop.source.values().tolist() == [10, 20]
+        assert values_loop.source.values().dtype.kind == "i"
+        assert for_loop.source.values().tolist() == [0, 2, 4]
+        assert for_loop.source.values().dtype.kind == "i"
+
+    def test_execute_refuses_a_loop_main_could_not_express(self, override_settings):
+        """An Experiment's loops sweep values, as on main: qprogram's from_range or from_linspace are refused."""
+        experiment = Experiment(label="experiment")
+        flux = experiment.variable("flux")
+        with experiment.sweep(flux).from_range(0.0, 1.0, 0.5):
+            experiment.set_parameter(alias="flux_bus", parameter=Parameter.VOLTAGE, value=flux)
+
+        with pytest.raises(ValidationError, match="The Experiment uses features qililab does not support"):
+            ExperimentExecutor(platform=make_platform_returning(make_qprogram_result()), experiment=experiment).execute()
 
     def test_experiment_for_loop_with_a_step_pointing_away_from_stop_raises(self):
         experiment = Experiment(label="loops")

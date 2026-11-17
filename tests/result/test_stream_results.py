@@ -712,7 +712,7 @@ class TestFluxOffsets:
         qprogram = QProgram()
         qprogram.set_offset("flux_q0", 0.15)
         variable = qprogram.variable("amp")
-        with qprogram.sweep(variable).from_range(0, 1, 0.1):
+        with qprogram.sweep(variable).from_linspace(0, 1, 11):
             qprogram.set_offset("flux_q1", variable)
         stream_array.qprogram = qprogram
 

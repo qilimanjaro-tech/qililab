@@ -31,8 +31,10 @@ from rich.progress import BarColumn, Progress, TaskID, TextColumn, TimeElapsedCo
 
 from qililab.qililab_settings import get_settings
 from qililab.qprogram.blocks import to_scalar
+from qililab.qprogram.compilers.prepass.shared_prepass import validate
 from qililab.qprogram.experiment.experiment import Experiment
 from qililab.qprogram.experiment.operations import ExecuteQProgram, GetParameter, SetCrosstalk, SetParameter
+from qililab.qprogram.profiles import QILILAB_EXPERIMENT_PARITY_V1
 from qililab.result.experiment_results_writer import (
     ExperimentDataBaseMetadata,
     ExperimentMetadata,
@@ -556,7 +558,12 @@ class ExperimentExecutor:
 
         Returns:
             str: The path to the file where the results are stored.
+
+        Raises:
+            ValidationError: If the experiment uses something qililab does not support, such as a loop over something
+                else than values.
         """
+        validate(self.experiment, QILILAB_EXPERIMENT_PARITY_V1)
         executed_at = datetime.now()
 
         # Create file path to store results

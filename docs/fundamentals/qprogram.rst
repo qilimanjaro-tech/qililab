@@ -43,16 +43,16 @@ These loops enable the user to iterate over a sequence of values for a given var
 
 Sweeps
 ^^^^^^^
-The `sweep` method opens a loop over a range of values, from `start` to `stop` by `step`. `start` is always the first value; `stop` is the last one when `step` divides `stop - start`.
+The `sweep` method opens a loop over `num` values spread evenly from `start` to `stop`, both included.
 
 .. code-block:: python3
 
     qp = QProgram()
     frequency = qp.variable("frequency", units="Hz")
-    with qp.sweep(frequency).from_range(100e6, 200e6, 10e6):
+    with qp.sweep(frequency).from_linspace(100e6, 200e6, 11):
         qp.set_frequency(bus="drive_bus", frequency=frequency)
 
-The former ``for_loop(variable, start, stop, step)`` still works but is deprecated: when `step` does not divide `stop - start`, it rounds the number of points down where ``from_range`` rounds it to the nearest.
+The former ``for_loop(variable, start, stop, step)`` still works but is deprecated: it sweeps the same points as ``from_linspace``, with the number of points rounded down when `step` does not divide `stop - start`. qprogram's ``from_range``, which keeps the step, is refused.
 
 Inner Loops
 ^^^^^^^^^^^^
@@ -64,9 +64,9 @@ Loops can be nested, which is invaluable for experiments that require multi-dime
     qp = QProgram()
     frequency = qp.variable("frequency", units="Hz")
     gain = qp.variable("gain")
-    with qp.sweep(frequency).from_range(100e6, 200e6, 10e6):
+    with qp.sweep(frequency).from_linspace(100e6, 200e6, 11):
         qp.set_frequency(bus="drive_bus", frequency=frequency)
-        with qp.sweep(gain).from_range(0.0, 1.0, 0.1):
+        with qp.sweep(gain).from_linspace(0.0, 1.0, 11):
             qp.set_gain(bus="drive_bus", gain=gain)
 
 Parallel Loops
@@ -79,7 +79,7 @@ Several sweeps combined with ``|`` run in parallel, advancing together. They mus
     qp = QProgram()
     frequency = qp.variable("frequency", units="Hz")
     gain = qp.variable("gain")
-    with qp.sweep(frequency).from_range(100e6, 200e6, 10e6) | qp.sweep(gain).from_range(0.0, 1.0, 0.1):
+    with qp.sweep(frequency).from_linspace(100e6, 200e6, 11) | qp.sweep(gain).from_linspace(0.0, 1.0, 11):
         qp.set_frequency(bus="drive_bus", frequency=frequency)
         qp.set_gain(bus="drive_bus", gain=gain)
 

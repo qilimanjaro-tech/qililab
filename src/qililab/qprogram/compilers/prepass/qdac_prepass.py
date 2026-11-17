@@ -20,6 +20,7 @@ from typing import TYPE_CHECKING
 
 from qprogram.blocks import Block
 from qprogram.operations import Sync
+from qprogram.waveforms import IQWaveform
 from qprogram_qdac import Play, SetOffset, SetTrigger, WaitTrigger
 
 from qililab.qprogram.blocks import IfTrigger
@@ -45,8 +46,8 @@ def prepare_qdac(
 ) -> QProgram:
     """Prepare a QProgram, already through the shared pre-pass, for the QDAC compiler.
 
-    Applies the crosstalk compensation (the given matrix, else the calibration's DC matrix), checks that every
-    operation on a QDAC bus is one the QDAC-II runs, then keeps only the operations on QDAC buses. Syncs and
+    Checks that every operation on a QDAC bus is one the QDAC-II runs, applies the crosstalk compensation (the given
+    matrix, else the calibration's DC matrix), then keeps only the operations on QDAC buses. Syncs and
     ``qililab.disable_autosync`` are dropped: they only concern the Qblox compiler.
 
     Args:
@@ -63,17 +64,17 @@ def prepare_qdac(
         QProgram: A copy of the transformed QProgram with only the operations on QDAC buses.
 
     Raises:
-        NotImplementedError: If an operation on a QDAC bus is inside ``qp.if_trigger()``, or isn't a QDAC
-            operation (a ``qp.sync()`` naming a QDAC bus included).
+        NotImplementedError: If an operation on a QDAC bus is inside ``qp.if_trigger()``, isn't a QDAC operation (a
+            ``qp.sync()`` naming a QDAC bus included), or is a ``qp.qdac.play`` of an I/Q waveform.
     """
+    qdac_bus_set = set(qdac_buses)
+    _validate_qdac_operations(qprogram.body, qdac_bus_set)
     if calibration is not None and calibration.crosstalk_matrix and crosstalk is None:
         crosstalk = calibration.crosstalk_matrix
     if crosstalk is not None:
         qprogram = qprogram.with_crosstalk_qdac(
             crosstalk=crosstalk, target_fluxes=target_fluxes, qdac_buses_offset=qdac_buses_offset
         )
-    qdac_bus_set = set(qdac_buses)
-    _validate_qdac_operations(qprogram.body, qdac_bus_set)
     return keep_instrument_operations(qprogram, qdac_bus_set, drop=(DisableAutosync, Sync))
 
 
@@ -88,7 +89,8 @@ def _validate_qdac_operations(block: Block, qdac_buses: set[str], inside_if_trig
     Raises:
         NotImplementedError: If an operation on a QDAC bus is inside ``qp.if_trigger()``: the QDAC generates the
             external trigger, so it can't skip an operation depending on whether the Qblox side received it. Or if
-            the operation isn't a QDAC operation, a ``qp.sync()`` naming a QDAC bus included.
+            the operation isn't a QDAC operation, a ``qp.sync()`` naming a QDAC bus included, or if a
+            ``qp.qdac.play`` plays an I/Q waveform: a QDAC channel outputs a single voltage.
     """
     for element in block.elements:
         in_if_trigger = inside_if_trigger or isinstance(element, IfTrigger)
@@ -106,5 +108,10 @@ def _validate_qdac_operations(block: Block, qdac_buses: set[str], inside_if_trig
                     "SetOffset": " Use qp.qdac.set_offset() on a QDAC bus.",
                 }.get(type(element).__name__, "")
                 raise NotImplementedError(f"{element.__class__} is not supported in QDACII.{hint}")
+            if isinstance(element, Play) and isinstance(element.waveform, IQWaveform):
+                raise NotImplementedError(
+                    f"qp.qdac.play on bus '{qdac_bus}' takes one waveform, not an {type(element.waveform).__name__}: "
+                    "a QDAC channel outputs a single voltage."
+                )
         if isinstance(element, Block):
             _validate_qdac_operations(element, qdac_buses, in_if_trigger)

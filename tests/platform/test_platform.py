@@ -1929,24 +1929,6 @@ class TestMethods:
         mock_controller.set_ext_trigger.assert_called_once()
         unused_controller.set_ext_trigger.assert_not_called()
 
-    def test_execute_qprogram_with_qblox_and_qdac_timeout_error_wrong_bus(self, platform_qblox_qdac: Platform):
-        """Test that the execute_qprogram method retries correctly when the timed-out bus is not the one with timeout config."""
-        mock_output, mock_qdac_output, _, mock_bus = self._build_qdac_timeout_mocks()
-        # First call (direct check on leaked bus) returns 0, fallback scan returns 3 each retry
-        mock_bus.check_recurrent_timeout.side_effect = [0, 3, 0, 3, 0, 3, 0, 3]
-
-        platform_qblox_qdac.buses.get = MagicMock(return_value=mock_bus)
-        platform_qblox_qdac._qpy_sequence_cache = {}
-        platform_qblox_qdac.trigger_runs = 0
-
-        with pytest.raises(TimeoutError):
-            platform_qblox_qdac._execute_qblox_compilation_output(
-                output=QProgramCompilationOutput(qblox=mock_output, qdac=mock_qdac_output), debug=False
-            )
-
-        # initial attempt + 3 retries = 4 total
-        assert mock_bus.run.call_count == 4
-
     @pytest.mark.parametrize(
         "execute",
         [
@@ -2751,7 +2733,7 @@ class TestMethods:
         qprogram = QProgram()
         amplitude = qprogram.variable("amplitude", label="Amplitude", units="V")
         with qprogram.average(10):
-            with qprogram.sweep(amplitude).from_range(0.0, 1.0, 1.0):
+            with qprogram.sweep(amplitude).from_linspace(0.0, 1.0, 2):
                 qprogram.set_gain(bus="feedline_input_output_bus", gain=amplitude)
                 m0 = qprogram.qblox.acquire(
                     bus="feedline_input_output_bus", weights=weights, fields=[MeasurementField.IQ, MeasurementField.STATE]
@@ -2788,8 +2770,8 @@ class TestMethods:
         outer = qprogram.variable("outer")
         inner = qprogram.variable("inner")
         with qprogram.average(10):
-            with qprogram.sweep(outer).from_range(0.0, 1.0, 1.0):
-                with qprogram.sweep(inner).from_range(0.0, 1.0, 0.5):
+            with qprogram.sweep(outer).from_linspace(0.0, 1.0, 2):
+                with qprogram.sweep(inner).from_linspace(0.0, 1.0, 3):
                     qprogram.set_gain(bus="feedline_input_output_bus", gain=inner)
                     m0 = qprogram.qblox.acquire(
                         bus="feedline_input_output_bus",
@@ -2836,7 +2818,7 @@ class TestMethods:
         qprogram = QProgram()
         gain = qprogram.variable("gain")
         frequency = qprogram.variable("frequency")
-        with qprogram.sweep(gain).from_range(0.0, 0.5, 0.25) | qprogram.sweep(frequency).from_range(10e6, 30e6, 10e6):
+        with qprogram.sweep(gain).from_linspace(0.0, 0.5, 3) | qprogram.sweep(frequency).from_linspace(10e6, 30e6, 3):
             qprogram.set_gain(bus="feedline_input_output_bus", gain=gain)
             qprogram.set_frequency(bus="feedline_input_output_bus", frequency=frequency)
             measurement = qprogram.qblox.acquire(bus="feedline_input_output_bus", weights=weights)
@@ -2858,7 +2840,7 @@ class TestMethods:
         qprogram = QProgram()
         flux = qprogram.variable("flux", units="V")
         with qprogram.average(10):
-            with qprogram.sweep(flux).from_range(0.0, 0.2, 0.1):
+            with qprogram.sweep(flux).from_linspace(0.0, 0.2, 3):
                 qprogram.set_offset(bus="flux_line_q0_bus", offset_path0=flux)
                 qprogram.wait(bus="flux_line_q0_bus", duration=100)
                 qprogram.sync()

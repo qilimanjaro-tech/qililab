@@ -16,12 +16,11 @@ Limitations:
       compiler runs it.
 """
 
-import math
 from collections.abc import Iterator
 from typing import Literal
 
 import numpy as np
-from qprogram import BinaryOp, Constant, Expression, Range, UnaryOp, Variable
+from qprogram import BinaryOp, Constant, Expression, UnaryOp, Variable
 from qprogram.blocks import Block, Parallel, Sweep
 from qprogram.operations import Measure, Play, SetGain, SetOffset, Wait
 from qprogram_qblox import Acquire
@@ -29,7 +28,6 @@ from qprogram_qblox import WaitTrigger as QbloxWaitTrigger
 from qprogram_qdac import Play as QdacPlay
 from qprogram_qdac import WaitTrigger as QdacWaitTrigger
 
-from qililab.qprogram.blocks import for_loop_iterations
 from qililab.qprogram.crosstalk.crosstalk_matrix import CrosstalkMatrix
 from qililab.qprogram.operations import MeasureReset, QbloxPlay
 from qililab.qprogram.qprogram import QProgram
@@ -42,17 +40,8 @@ _PLAY_OPERATIONS = (Play, QbloxPlay, QdacPlay)
 
 
 def loop_values(loop: Sweep) -> np.ndarray:
-    """Values a loop takes on the hardware, using the compilers' iteration count."""
-    source = loop.source
-    if not isinstance(source, Range):
-        return np.asarray(source.values(), dtype=float)
-    last = source.start + source.step * (source.length() - 1)
-    if math.isclose(last, source.stop, rel_tol=1e-9, abs_tol=1e-12):
-        last = source.stop
-    iterations = for_loop_iterations(source.start, last, source.step)
-    if iterations <= 1:
-        return np.array([source.start], dtype=float)[: max(iterations, 0)]
-    return np.linspace(source.start, last, iterations)
+    """Values a loop takes on the hardware."""
+    return np.asarray(loop.source.values(), dtype=float)
 
 
 def evaluate(value: float | Expression | None, env: dict[Variable, float]) -> float | None:

@@ -26,7 +26,7 @@ def make_crosstalk(matrix, flux_offsets=None) -> CrosstalkMatrix:
 def single_sweep() -> QProgram:
     qp = QProgram()
     x = qp.variable("x")
-    with qp.sweep(x).from_range(0, 0.2, 0.1):
+    with qp.sweep(x).from_linspace(0, 0.2, 3):
         qp.set_offset("flux1", x)
         qp.set_offset("flux2", 0.05)
         qp.wait("flux1", 100)
@@ -44,7 +44,7 @@ def test_simulate_records_state_at_each_wait_and_later_offsets_replace_earlier_o
     x = qp.variable("x")
     qp.set_offset("flux1", 0.3)
     qp.wait("flux1", 100)
-    with qp.sweep(x).from_range(0, 0.1, 0.1):
+    with qp.sweep(x).from_linspace(0, 0.1, 2):
         qp.set_offset("flux1", x)
         qp.wait("flux1", 100)
 
@@ -72,7 +72,7 @@ def test_parallel_loops_of_different_lengths_raise():
     qp = QProgram()
     x = qp.variable("x")
     y = qp.variable("y")
-    with qp.sweep(x).from_range(0, 0.1, 0.05) | qp.sweep(y).from_range(0, 0.1, 0.05) as parallel:
+    with qp.sweep(x).from_linspace(0, 0.1, 3) | qp.sweep(y).from_linspace(0, 0.1, 3) as parallel:
         qp.set_offset("flux1", x)
         qp.wait("flux1", 100)
     # A Parallel refuses loops of different lengths when built, so give it one afterwards.

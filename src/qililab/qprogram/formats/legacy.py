@@ -20,7 +20,8 @@ same thing, so ``deserialize`` of an old program, or of a calibration holding ol
 The former operations did not say which instrument they were for: a ``play`` became a QDAC play only at compile time,
 when its bus was a QDAC bus. Here an operation becomes a QDAC one when it carries an argument only the QDAC takes (a
 play's ``dwell``, ``delay``, ``repetitions`` or ``stepped``, a wait for a trigger's ``port``, a trigger at each
-``step``). For the others, pass the QDAC buses to `qdac_operations`.
+``step``). The others load as Qblox operations: on a QDAC bus, compiling them raises an error naming the
+``qp.qdac.*`` call to use.
 """
 
 from __future__ import annotations
@@ -50,7 +51,6 @@ from qprogram_qblox import Acquire, SetMarkers
 from qprogram_qblox import SetTrigger as QbloxSetTrigger
 from qprogram_qblox import WaitTrigger as QbloxWaitTrigger
 from qprogram_qdac import Play as QdacPlay
-from qprogram_qdac import SetOffset as QdacSetOffset
 from qprogram_qdac import SetTrigger as QdacSetTrigger
 from qprogram_qdac import WaitTrigger as QdacWaitTrigger
 
@@ -417,51 +417,6 @@ def _construct_qprogram(constructor: BaseConstructor, node: MappingNode) -> Iter
     program.qblox.disable_autosync = bool(mapping.get("qblox", {}).get("disable_autosync", False))
     for index, operation in enumerate(node for node in program.body.walk() if isinstance(node, MeasurementOperation)):
         operation.handle.name = f"m{index}"
-
-
-def qdac_operations(qprogram: QProgram, qdac_buses: set[str]) -> QProgram:
-    """Return a copy of a QProgram read from old YAML with its operations on ``qdac_buses`` made QDAC ones.
-
-    The former ``play``, ``set_offset``, ``wait_trigger`` and ``set_trigger`` did not say they were for the QDAC; those
-    the loader could not tell apart become ``qp.qdac.play``, ``qp.qdac.set_offset``, ``qp.qdac.wait_trigger`` and
-    ``qp.qdac.set_trigger`` here when their bus is a QDAC bus.
-
-    Args:
-        qprogram (QProgram): The program read from old YAML.
-        qdac_buses (set[str]): The QDAC buses.
-
-    Returns:
-        QProgram: The copy, with QDAC operations on the QDAC buses.
-
-    Raises:
-        ValueError: If a ``wait_trigger`` on a QDAC bus has no port.
-    """
-    from copy import deepcopy
-
-    program = deepcopy(qprogram)
-
-    def convert(element: Block | Operation) -> Block | Operation:
-        if getattr(element, "bus", None) not in qdac_buses:
-            return element
-        if isinstance(element, Play):
-            return _qdac_play(element.bus, element.waveform, {})
-        if isinstance(element, SetOffset):
-            return QdacSetOffset(bus=element.bus, offset=element.offset_path0)
-        if isinstance(element, QbloxWaitTrigger):
-            if element.port is None:
-                raise ValueError(f"The wait_trigger on QDAC bus {element.bus!r} has no port, which the QDAC requires.")
-            return QdacWaitTrigger(bus=element.bus, port=element.port)
-        if isinstance(element, QbloxSetTrigger):
-            outputs = [] if element.outputs is None else element.outputs
-            outputs = outputs if isinstance(outputs, list) else [outputs]
-            return QdacSetTrigger(
-                bus=element.bus, duration=element.duration, position=cast("Any", element.position), outputs=outputs
-            )
-        return element
-
-    for block in (node for node in program.body.walk() if isinstance(node, Block)):
-        block.elements[:] = [convert(element) for element in block.elements]
-    return program
 
 
 def _register() -> None:

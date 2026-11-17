@@ -81,38 +81,38 @@ class TestPrepareQblox:
         with pytest.raises(NotImplementedError, match=rf"qprogram_qdac\.operations\.{name}'> is not supported in QBlox, on bus 'drive'\."):
             prepare_qblox(qp, qblox_buses=["drive"])
 
-    def test_range_bounds_are_ints_when_whole(self):
-        """A Range stores its bounds as floats: the compiler gets the whole ones back as ints, the user's program
+    def test_linspace_bounds_are_ints_when_whole(self):
+        """A Linspace stores its bounds as floats: the compiler gets the whole ones back as ints, the user's program
         is left as it is."""
         qp = QProgram()
         duration, gain = qp.variable("duration"), qp.variable("gain")
-        with qp.sweep(duration).from_range(20, 120, 20) | qp.sweep(gain).from_range(0, 0.5, 0.1):
+        with qp.sweep(duration).from_linspace(20, 120, 6) | qp.sweep(gain).from_linspace(0, 0.5, 6):
             qp.wait(bus="drive", duration=duration)
             qp.set_gain(bus="drive", gain=gain)
 
         result = prepare_qblox(qp)
 
         (parallel,) = result.qprogram.body.elements
-        bounds = [(loop.source.start, loop.source.stop, loop.source.step) for loop in parallel.loops]
-        assert bounds == [(20, 120, 20), (0, 0.5, 0.1)]
+        bounds = [(loop.source.start, loop.source.stop, loop.source.num) for loop in parallel.loops]
+        assert bounds == [(20, 120, 6), (0, 0.5, 6)]
         assert [type(value) for value in bounds[0]] == [int, int, int]
-        assert [type(value) for value in bounds[1]] == [int, float, float]
+        assert [type(value) for value in bounds[1]] == [int, float, int]
         assert type(qp.body.elements[0].loops[0].source.start) is float
 
     @pytest.mark.parametrize(
-        "start, stop, step, duration, shortest",
+        "start, stop, num, duration, shortest",
         [
-            (0, 100, 20, lambda time: time, "0"),
-            (2, 100, 2, lambda time: time, "2"),
-            (100, 0, -25, lambda time: time, "0"),
-            (100, 200, 10, lambda time: 102 - time, "-98"),
+            (0, 100, 6, lambda time: time, "0"),
+            (2, 100, 50, lambda time: time, "2"),
+            (100, 0, 5, lambda time: time, "0"),
+            (100, 200, 11, lambda time: 102 - time, "-98"),
         ],
     )
-    def test_loop_making_a_wait_shorter_than_4_ns_raises_error(self, start, stop, step, duration, shortest):
+    def test_loop_making_a_wait_shorter_than_4_ns_raises_error(self, start, stop, num, duration, shortest):
         """Q1ASM can't wait less than 4 ns: a loop that would is refused before it runs."""
         qp = QProgram()
         time = qp.variable("time")
-        with qp.sweep(time).from_range(start, stop, step):
+        with qp.sweep(time).from_linspace(start, stop, num):
             qp.wait(bus="drive", duration=duration(time))
 
         with pytest.raises(ValueError, match=f"The loop over 'time' makes the wait on bus 'drive' last {shortest} ns"):
@@ -121,7 +121,7 @@ class TestPrepareQblox:
     def test_parallel_loop_making_a_wait_shorter_than_4_ns_raises_error(self):
         qp = QProgram()
         time, gain = qp.variable("time"), qp.variable("gain")
-        with qp.sweep(time).from_range(0, 100, 20) | qp.sweep(gain).from_range(0, 0.5, 0.1):
+        with qp.sweep(time).from_linspace(0, 100, 6) | qp.sweep(gain).from_linspace(0, 0.5, 6):
             qp.set_gain(bus="drive", gain=gain)
             qp.wait(bus="drive", duration=time)
 
@@ -132,20 +132,20 @@ class TestPrepareQblox:
         """Only the waits count: a loop from 0 that never waits less than 4 ns runs as written."""
         qp = QProgram()
         time = qp.variable("time")
-        with qp.sweep(time).from_range(0, 100, 20):
+        with qp.sweep(time).from_linspace(0, 100, 6):
             qp.wait(bus="drive", duration=time + 8)
 
         result = prepare_qblox(qp)
 
         (loop,) = result.qprogram.body.elements
-        assert (loop.source.start, loop.source.stop, loop.source.step) == (0, 100, 20)
+        assert (loop.source.start, loop.source.stop, loop.source.num) == (0, 100, 6)
 
     def test_expressions_are_written_the_way_the_compiler_reads_them(self):
         """The constant of a + goes on the right, a constant after a variable is never negative, c - x is kept,
         and -x becomes 0 - x."""
         qp = QProgram()
         duration, gain = qp.variable("duration"), qp.variable("gain")
-        with qp.sweep(duration).from_range(100, 200, 50) | qp.sweep(gain).from_range(0.1, 0.3, 0.1):
+        with qp.sweep(duration).from_linspace(100, 200, 3) | qp.sweep(gain).from_linspace(0.1, 0.3, 3):
             qp.wait(bus="drive", duration=8 + duration)
             qp.set_gain(bus="drive", gain=gain + -0.5)
             qp.set_offset(bus="drive", offset_path0=-gain)
@@ -165,8 +165,8 @@ class TestPrepareQblox:
         rounding only is kept as written. The points don't change."""
         qp = QProgram()
         short, exact = qp.variable("short"), qp.variable("exact")
-        with qp.sweep(short).from_range(0, 1, 0.3):
-            with qp.sweep(exact).from_range(0, 0.3, 0.1):
+        with qp.sweep(short).from_linspace(0, 0.9, 4):
+            with qp.sweep(exact).from_linspace(0, 0.3, 4):
                 qp.set_gain(bus="drive", gain=short)
                 qp.set_offset(bus="drive", offset_path0=exact)
 

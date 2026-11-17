@@ -34,7 +34,7 @@ def check(build, crosstalk, quantity="offset"):
 def single_sweep_with_fixed_flux():
     qp = QProgram()
     x = qp.variable("x")
-    with qp.sweep(x).from_range(0, 0.2, 0.1):
+    with qp.sweep(x).from_linspace(0, 0.2, 3):
         qp.set_offset("flux1", x)
         qp.set_offset("flux2", 0.05)
         qp.wait("flux1", 100)
@@ -45,9 +45,9 @@ def flux_vs_flux_at_different_levels():
     qp = QProgram()
     x = qp.variable("x")
     y = qp.variable("y")
-    with qp.sweep(x).from_range(0, 0.2, 0.1):
+    with qp.sweep(x).from_linspace(0, 0.2, 3):
         qp.set_offset("flux1", x)
-        with qp.sweep(y).from_range(0, 0.2, 0.1):
+        with qp.sweep(y).from_linspace(0, 0.2, 3):
             qp.set_offset("flux2", y)
             qp.wait("flux1", 100)
     return qp
@@ -57,8 +57,8 @@ def flux_vs_flux_in_the_inner_loop():
     qp = QProgram()
     x = qp.variable("x")
     y = qp.variable("y")
-    with qp.sweep(x).from_range(0, 0.2, 0.1):
-        with qp.sweep(y).from_range(0, 0.2, 0.1):
+    with qp.sweep(x).from_linspace(0, 0.2, 3):
+        with qp.sweep(y).from_linspace(0, 0.2, 3):
             qp.set_offset("flux1", x)
             qp.set_offset("flux2", y)
             qp.wait("flux1", 100)
@@ -68,7 +68,7 @@ def flux_vs_flux_in_the_inner_loop():
 def fixed_flux_next_to_a_sweep():
     qp = QProgram()
     x = qp.variable("x")
-    with qp.sweep(x).from_range(0, 0.2, 0.1):
+    with qp.sweep(x).from_linspace(0, 0.2, 3):
         qp.set_offset("flux1", x)
         qp.set_offset("flux2", 0.3)
         qp.wait("flux1", 100)
@@ -80,7 +80,7 @@ def park_then_sweep_the_same_bus():
     x = qp.variable("x")
     qp.set_offset("flux1", 0.2)
     qp.wait("flux1", 100)
-    with qp.sweep(x).from_range(0, 0.2, 0.1):
+    with qp.sweep(x).from_linspace(0, 0.2, 3):
         qp.set_offset("flux1", x)
         qp.wait("flux1", 100)
     return qp
@@ -90,7 +90,7 @@ def fixed_flux_on_another_bus_then_sweep():
     qp = QProgram()
     x = qp.variable("x")
     qp.set_offset("flux2", 0.05)
-    with qp.sweep(x).from_range(0, 0.2, 0.1):
+    with qp.sweep(x).from_linspace(0, 0.2, 3):
         qp.set_offset("flux1", x)
         qp.wait("flux1", 100)
     return qp
@@ -99,7 +99,7 @@ def fixed_flux_on_another_bus_then_sweep():
 def reset_after_a_sweep():
     qp = QProgram()
     x = qp.variable("x")
-    with qp.sweep(x).from_range(0, 0.2, 0.1):
+    with qp.sweep(x).from_linspace(0, 0.2, 3):
         qp.set_offset("flux1", x)
         qp.wait("flux1", 100)
     qp.set_offset("flux1", 0.0)
@@ -111,9 +111,9 @@ def inner_loop_sweeps_the_same_bus_again():
     qp = QProgram()
     x = qp.variable("x")
     y = qp.variable("y")
-    with qp.sweep(x).from_range(0, 0.2, 0.1):
+    with qp.sweep(x).from_linspace(0, 0.2, 3):
         qp.set_offset("flux1", x)
-        with qp.sweep(y).from_range(0, 0.2, 0.1):
+        with qp.sweep(y).from_linspace(0, 0.2, 3):
             qp.set_offset("flux1", y)
             qp.wait("flux1", 100)
     return qp
@@ -123,9 +123,9 @@ def inner_loop_sweeps_the_same_bus_again_with_more_points():
     qp = QProgram()
     x = qp.variable("x")
     y = qp.variable("y")
-    with qp.sweep(x).from_range(0, 0.2, 0.1):
+    with qp.sweep(x).from_linspace(0, 0.2, 3):
         qp.set_offset("flux1", x)
-        with qp.sweep(y).from_range(0, 0.5, 0.1):
+        with qp.sweep(y).from_linspace(0, 0.5, 6):
             qp.set_offset("flux1", y)
             qp.wait("flux1", 100)
     return qp
@@ -135,9 +135,9 @@ def inner_loop_sweeps_the_same_bus_again_with_fewer_points():
     qp = QProgram()
     x = qp.variable("x")
     y = qp.variable("y")
-    with qp.sweep(x).from_range(0, 0.2, 0.1):
+    with qp.sweep(x).from_linspace(0, 0.2, 3):
         qp.set_offset("flux1", x)
-        with qp.sweep(y).from_range(0, 0.1, 0.1):
+        with qp.sweep(y).from_linspace(0, 0.1, 2):
             qp.set_offset("flux1", y)
             qp.wait("flux1", 100)
     return qp
@@ -147,9 +147,9 @@ def inner_parallel_sweeps_the_same_bus_again_with_more_points():
     qp = QProgram()
     x = qp.variable("x")
     y = qp.variable("y")
-    with qp.sweep(x).from_range(0, 0.2, 0.1):
+    with qp.sweep(x).from_linspace(0, 0.2, 3):
         qp.set_offset("flux1", x)
-        with qp.sweep(y).from_range(0, 0.5, 0.1):
+        with qp.sweep(y).from_linspace(0, 0.5, 6):
             qp.set_offset("flux1", y)
             qp.wait("flux1", 100)
     return qp
@@ -160,9 +160,9 @@ def inner_parallel_of_two_loops_sweeps_both_buses_again():
     x = qp.variable("x")
     y = qp.variable("y")
     z = qp.variable("z")
-    with qp.sweep(x).from_range(0, 0.2, 0.1):
+    with qp.sweep(x).from_linspace(0, 0.2, 3):
         qp.set_offset("flux1", x)
-        with qp.sweep(y).from_range(0, 0.5, 0.1) | qp.sweep(z).from_range(-0.1, 0.4, 0.1):
+        with qp.sweep(y).from_linspace(0, 0.5, 6) | qp.sweep(z).from_linspace(-0.1, 0.4, 6):
             qp.set_offset("flux1", y)
             qp.set_offset("flux2", z)
             qp.wait("flux1", 100)
@@ -174,9 +174,9 @@ def park_then_nested_sweep():
     x = qp.variable("x")
     y = qp.variable("y")
     qp.set_offset("flux1", 0.2)
-    with qp.sweep(x).from_range(0, 0.2, 0.1):
+    with qp.sweep(x).from_linspace(0, 0.2, 3):
         qp.set_offset("flux2", x)
-        with qp.sweep(y).from_range(0, 0.2, 0.1):
+        with qp.sweep(y).from_linspace(0, 0.2, 3):
             qp.set_offset("flux1", y)
             qp.wait("flux1", 100)
     return qp
@@ -231,7 +231,7 @@ def test_gain_before_a_sweep_is_kept_apart_from_the_offsets(quantity):
         qp = QProgram()
         x = qp.variable("x")
         qp.set_gain("flux1", 0.5)
-        with qp.sweep(x).from_range(0, 0.2, 0.1):
+        with qp.sweep(x).from_linspace(0, 0.2, 3):
             qp.set_offset("flux1", x)
             qp.play("flux1", Square(-0.2, 100))
             qp.wait("flux1", 50)
@@ -271,11 +271,11 @@ def test_inner_loop_setting_only_some_of_the_buses_an_outer_loop_sweeps_raises()
     qp = QProgram()
     x = qp.variable("x")
     y = qp.variable("y")
-    with qp.sweep(x).from_range(0, 0.2, 0.1):
+    with qp.sweep(x).from_linspace(0, 0.2, 3):
         qp.set_offset("flux1", x)
         qp.set_offset("flux2", x)
         qp.wait("flux2", 75)
-        with qp.sweep(y).from_range(0, 0.2, 0.1):
+        with qp.sweep(y).from_linspace(0, 0.2, 3):
             qp.set_offset("flux2", y)
             qp.wait("flux2", 50)
     crosstalk = make_crosstalk(np.eye(2))
@@ -289,11 +289,11 @@ def test_three_loops_on_one_bus_raise_a_clear_error():
     x = qp.variable("x")
     y = qp.variable("y")
     z = qp.variable("z")
-    with qp.sweep(x).from_range(0, 0.2, 0.1):
+    with qp.sweep(x).from_linspace(0, 0.2, 3):
         qp.set_offset("flux1", x)
-        with qp.sweep(y).from_range(0, 0.2, 0.1):
+        with qp.sweep(y).from_linspace(0, 0.2, 3):
             qp.set_offset("flux2", y)
-            with qp.sweep(z).from_range(0, 0.2, 0.1):
+            with qp.sweep(z).from_linspace(0, 0.2, 3):
                 qp.set_offset("flux3", z)
                 qp.wait("flux1", 100)
     dense = [[1, 0.2, 0.05], [0.1, 1, 0.15], [0.03, 0.12, 1]]

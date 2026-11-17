@@ -15,6 +15,7 @@
 
 import math
 import numbers
+from typing import cast
 
 from qprogram import Linspace, Range
 
@@ -38,18 +39,6 @@ def to_scalar(value: object) -> object:
     return float(value)
 
 
-def _number(value: int | float) -> int | float:
-    """Return ``value`` as a Python ``int`` or ``float``, numpy numbers included.
-
-    Args:
-        value (int | float): The number.
-
-    Returns:
-        int | float: ``int(value)`` for an integral number, else ``float(value)``.
-    """
-    return int(value) if isinstance(value, numbers.Integral) else float(value)
-
-
 def for_loop_linspace(start: int | float, stop: int | float, step: int | float) -> Linspace:
     """Return the ``Linspace`` a for_loop from ``start`` to ``stop`` by ``step`` sweeps.
 
@@ -67,7 +56,7 @@ def for_loop_linspace(start: int | float, stop: int | float, step: int | float) 
     Raises:
         ValidationError: If ``step`` is zero or points away from ``stop``.
     """
-    start, stop, step = _number(start), _number(stop), _number(step)
+    start, stop, step = (cast("int | float", to_scalar(value)) for value in (start, stop, step))
     # Raises qprogram's ValidationError, naming the step the user wrote
     Range(start, stop, step)
     return Linspace(start, stop, for_loop_iterations(start, stop, step))

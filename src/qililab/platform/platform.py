@@ -59,7 +59,7 @@ from qililab.qprogram.compilers.qdac_compiler import QdacCompiler
 from qililab.qprogram.crosstalk.flux_vector import FluxVector
 from qililab.qprogram.experiment.experiment_executor import ExperimentExecutor
 from qililab.result.database import get_db_manager
-from qililab.result.qblox_results import measurement_fields, ordered, scope_trace
+from qililab.result.qblox_results import measurement_fields, scope_trace
 from qililab.result.stream_results import StreamArray
 from qililab.typings import ChannelID, DistortionState, InstrumentName, OutputID, Parameter, ParameterValue
 from qililab.utils.serialization import deserialize_from
@@ -201,7 +201,7 @@ class Platform:
             # Defining the Rabi sweep as a single QProgram:
             qp = ql.QProgram()
             gain = qp.variable("gain")
-            with qp.sweep(gain).from_range(0.0, 1.0, 0.1):
+            with qp.sweep(gain).from_linspace(0.0, 1.0, 11):
                 qp.set_gain(bus="drive_line_q0_bus", gain=gain)
                 qp.play(bus="drive_line_q0_bus", waveform=pi_pulse)
                 measurement = qp.measure(bus="feedline_bus", waveform=readout_pulse, weights=weights)
@@ -243,7 +243,7 @@ class Platform:
             # Defining the Ramsey sweep as a single QProgram:
             qp = ql.QProgram()
             wait_time = qp.variable("wait_time", units="ns")
-            with qp.sweep(wait_time).from_range(0, 10000, 1000):
+            with qp.sweep(wait_time).from_linspace(0, 10000, 11):
                 qp.play(bus="drive_line_q0_bus", waveform=half_pi_pulse)
                 qp.wait(bus="drive_line_q0_bus", duration=wait_time)
                 qp.play(bus="drive_line_q0_bus", waveform=half_pi_pulse)
@@ -1327,13 +1327,11 @@ class Platform:
                             instrument.desync_sequencer(sequencer_id=int(channel))
                 self.trigger_runs += 1
 
-                timeout_repetitions = bus.check_recurrent_timeout()
-                if timeout_repetitions == 0:
-                    # Double check timeout_repetitions in case bus is not right, while giving priority on the bus where it crashed.
-                    timeout_repetitions = next(
-                        (rep for bus in buses.values() if (rep := bus.check_recurrent_timeout()) != 0),
-                        0,
-                    )
+                # The first bus that allows repetitions after a timeout
+                timeout_repetitions = next(
+                    (rep for bus in buses.values() if (rep := bus.check_recurrent_timeout()) != 0),
+                    0,
+                )
                 if timeout_repetitions > 0 and self.trigger_runs <= timeout_repetitions:
                     logger.warning(
                         f"Timeout reached for triggered measurement, trying again. {self.trigger_runs}/{timeout_repetitions}"
@@ -1373,7 +1371,7 @@ class Platform:
         Returns:
             QProgramResult: The results, one record per measurement.
         """
-        result = QProgramResult()
+        records: list[tuple[str, str, dict]] = []
         for bus_alias, bus in buses.items():
             if not bus.has_adc():
                 continue
@@ -1388,13 +1386,17 @@ class Platform:
                     scope=scope is not None,
                 )
                 for raw, acquisition in zip(raws, acquisitions.values()):
-                    for name, fields in measurement_fields(raw, acquisition):
-                        primary = fields.get(MeasurementField.IQ.value, next(iter(fields.values())))
-                        result.append_measurement(bus=bus_alias, name=name, data=primary, fields=fields)
+                    records.extend((bus_alias, name, fields) for name, fields in measurement_fields(raw, acquisition))
                 if scope is not None and raws:
                     trace = scope_trace(raws[0])
-                    result.append_measurement(bus=bus_alias, name=scope.name, data=trace, fields={"raw": trace})
-        return ordered(result, [handle.name for handle in output.qprogram.measurement_handles()])
+                    records.append((bus_alias, scope.name, {"raw": trace}))
+        # The buses are read one after the other: the records go back to the order the program declares them in
+        position = {handle.name: index for index, handle in enumerate(output.qprogram.measurement_handles())}
+        result = QProgramResult()
+        for bus_alias, name, fields in sorted(records, key=lambda record: position[record[1]]):
+            primary = fields.get(MeasurementField.IQ.value, next(iter(fields.values())))
+            result.append_measurement(bus=bus_alias, name=name, data=primary, fields=fields)
+        return result
 
     def execute_qprogram(
         self,
@@ -1615,10 +1617,10 @@ class Platform:
         )
 
         # Acquire results
-        results = self._acquire_qblox_parallel_results(
-            outputs=outputs,
-            buses_per_qprogram=buses_per_qprogram,
-        )
+        results = [
+            self._acquire_qblox_results(output=output, buses=buses)
+            for output, buses in zip(outputs, buses_per_qprogram)
+        ]
 
         # Reset instrument settings
         self._reset_qblox_parallel_sequencers(
@@ -1690,16 +1692,6 @@ class Platform:
         for qprogram_idx, sequences in enumerate(sequences_per_qprogram):
             for bus_alias in sequences:
                 buses_per_qprogram[qprogram_idx][bus_alias].run()
-
-    def _acquire_qblox_parallel_results(
-        self,
-        outputs: list[QbloxCompilationOutput],
-        buses_per_qprogram: list[dict[str, Bus]],
-    ) -> list[QProgramResult]:
-        return [
-            self._acquire_qblox_results(output=output, buses=buses)
-            for output, buses in zip(outputs, buses_per_qprogram)
-        ]
 
     def _reset_qblox_parallel_sequencers(
         self,

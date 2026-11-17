@@ -19,7 +19,7 @@ from copy import deepcopy
 from typing import TYPE_CHECKING, TypeGuard
 
 import numpy as np
-from qprogram import Expression, Linspace, Range, Variable
+from qprogram import Expression, Linspace, Variable
 from qprogram.blocks import Block, Parallel, Sweep
 from qprogram.operations import Measure, Play, SetGain, SetOffset, Sync, Wait
 from qprogram.waveforms import Arbitrary, FlatTop, IQWaveform, Square, Waveform
@@ -29,7 +29,7 @@ from qprogram_qdac import SetOffset as QdacSetOffset
 
 from qililab.qprogram.blocks import IfTrigger
 from qililab.qprogram.crosstalk.crosstalk_matrix import CrosstalkMatrix, NonLinearCrosstalkMatrix
-from qililab.qprogram.crosstalk.flux_vector import FluxVector, NonLinearFluxVector, sweep_points
+from qililab.qprogram.crosstalk.flux_vector import FluxVector, NonLinearFluxVector
 from qililab.qprogram.crosstalk.utils_crosstalk import CrosstalkElements, NonLinearFlagState, operation_key
 from qililab.qprogram.operations.measure_reset import MeasureReset
 from qililab.qprogram.operations.play import QbloxPlay
@@ -81,16 +81,15 @@ def _is_qblox_play(element: Block | Operation) -> TypeGuard[Play | QbloxPlay]:
 
 
 def _is_linear_sweep(block: object) -> bool:
-    """Whether ``block`` is a sweep over a ``Range`` or a ``Linspace``, the loops ``from_range``, ``from_linspace`` and
-    ``qp.for_loop`` build.
+    """Whether ``block`` is a sweep over a ``Linspace``, the loop ``qp.for_loop`` and ``from_linspace`` build.
 
     Args:
         block (object): The node.
 
     Returns:
-        bool: True for a ``Sweep`` whose source is a ``Range`` or a ``Linspace``.
+        bool: True for a ``Sweep`` whose source is a ``Linspace``.
     """
-    return isinstance(block, Sweep) and isinstance(block.source, (Range, Linspace))
+    return isinstance(block, Sweep) and isinstance(block.source, Linspace)
 
 
 def _flux_value(operation: SetOffset | SetGain) -> float | Expression:
@@ -225,7 +224,7 @@ class _QbloxCrosstalkCompensation:
             variable (Variable): The variable.
         """
         if variable not in self.program.variables:
-            self.program._variables.append(variable)
+            self.program.variable(variable.id)
 
     def traverse(self, block: Block, flux_vector: dict[str, FluxVector] | None = None) -> None:
         """Traverse all the elements of ``block``, rewriting loops and the ``play``, ``set_offset`` and ``set_gain``.
@@ -381,7 +380,6 @@ class _QbloxCrosstalkCompensation:
 
         Raises:
             NotImplementedError: If the element plays an I/Q waveform.
-            ValueError: If the loop sweeping the element's variable has no points.
         """
         envelope: float | Expression | np.ndarray
         if isinstance(element, SetOffset):
@@ -406,11 +404,7 @@ class _QbloxCrosstalkCompensation:
                 if depth is not None:
                     self.bus_loop_depth[element.bus] = depth
                 self.variable_buses.setdefault((type(element), envelope), set()).add(element.bus)
-                envelope = sweep_points(variable_loop)  # type: ignore[arg-type]
-                if not envelope.tolist():
-                    raise ValueError(
-                        "Parameters of the loop not assigned correctly. Please check start, stop and step values."
-                    )
+                envelope = np.asarray(variable_loop.source.values(), dtype=float)  # type: ignore[union-attr]
         envelope_is_array = isinstance(envelope, np.ndarray) and envelope.ndim > 0
         # The bus being set is replaced, so its previous value doesn't count.
         existing_arrays = [
@@ -901,9 +895,7 @@ class _QbloxCrosstalkCompensation:
             shifted = self.new_variable(f"{loop.variable.id}{shift}")
             shifted_loop = Sweep(
                 shifted,
-                Linspace(source.start + constant, source.stop + constant, source.num)  # type: ignore[attr-defined]
-                if isinstance(source, Linspace)
-                else Range(source.start + constant, source.stop + constant, source.step),  # type: ignore[attr-defined]
+                Linspace(source.start + constant, source.stop + constant, source.num),  # type: ignore[attr-defined]
             )
             if isinstance(parallel, Parallel):
                 parallel.loops = [*parallel.loops, shifted_loop]

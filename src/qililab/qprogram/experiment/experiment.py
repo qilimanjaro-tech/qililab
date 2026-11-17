@@ -13,13 +13,13 @@
 # limitations under the License.
 """Experiment: platform parameter changes and QProgram executions, looped over on the PC."""
 
-from typing import Any, Callable
+from typing import Any, Callable, cast
 
 import numpy as np
 import qprogram as qp
 from qprogram import Range, Values, Variable
 
-from qililab.qprogram.blocks import reject_variables_swept_by_enclosing_loops
+from qililab.qprogram.blocks import reject_variables_swept_by_enclosing_loops, to_scalar
 from qililab.qprogram.calibration import Calibration
 from qililab.qprogram.crosstalk.crosstalk_matrix import CrosstalkMatrix
 from qililab.qprogram.experiment.operations import ExecuteQProgram, GetParameter, SetCrosstalk, SetParameter
@@ -30,8 +30,8 @@ from qililab.yaml import yaml
 
 
 class _ForLoopValues(Values):
-    """The points of an experiment's ``for_loop``, kept with their type: ``Values`` stores floats, while a loop
-    written with integers sets its parameter to integers.
+    """The points of an experiment's ``for_loop`` or ``loop``, kept with their type: ``Values`` stores floats, while a
+    loop written with integers sets its parameter to integers.
 
     Args:
         points (np.ndarray): The points.
@@ -111,6 +111,7 @@ class Experiment(qp.QProgram):
         Raises:
             ValidationError: If ``step`` is zero or points away from ``stop``.
         """
+        start, stop, step = (cast("int | float", to_scalar(value)) for value in (start, stop, step))
         # A step pointing away from stop raises qprogram's ValidationError, naming the step as written
         Range(start, stop, step)
         return self.sweep(variable, _ForLoopValues(_inclusive_range(start, stop, step)))
@@ -127,7 +128,7 @@ class Experiment(qp.QProgram):
         Returns:
             The context manager opening the ``Sweep`` block.
         """
-        return self.sweep(variable, Values(values))
+        return self.sweep(variable, _ForLoopValues(np.asarray(values)))
 
     # Replaces qprogram's QProgram.get_parameter(bus, parameter), which takes other arguments
     def get_parameter(  # type: ignore[override]

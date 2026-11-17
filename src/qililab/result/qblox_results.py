@@ -19,7 +19,6 @@ from typing import TYPE_CHECKING, Any
 
 import numpy as np
 import xarray as xr
-from qprogram import QProgramResult
 from qprogram.blocks import Parallel, Sweep
 from qprogram.operations.operation import MeasurementField
 
@@ -28,23 +27,6 @@ if TYPE_CHECKING:
 
 MeasurementFields = dict[str, xr.DataArray]
 """The arrays of one measurement, keyed by field name (``iq``, ``state``, ``raw``)."""
-
-
-def _coordinate_attributes(sweep: Sweep) -> dict[str, str]:
-    """Return the xarray attributes describing a swept variable: its ``label`` and ``units``, when given.
-
-    Args:
-        sweep (Sweep): The sweep binding the variable.
-
-    Returns:
-        dict[str, str]: ``long_name`` and ``units``, for those the variable declares.
-    """
-    attributes = {}
-    if sweep.variable.label is not None:
-        attributes["long_name"] = sweep.variable.label
-    if sweep.variable.units is not None:
-        attributes["units"] = sweep.variable.units
-    return attributes
 
 
 def _dimension(loop: Sweep | Parallel) -> tuple[str, dict[str, Any]]:
@@ -62,7 +44,15 @@ def _dimension(loop: Sweep | Parallel) -> tuple[str, dict[str, Any]]:
     sweeps = loop.loops if isinstance(loop, Parallel) else [loop]
     name = "|".join(sweep.variable.id for sweep in sweeps)
     coordinates = {
-        sweep.variable.id: xr.Variable(name, sweep.source.values(), attrs=_coordinate_attributes(sweep))
+        sweep.variable.id: xr.Variable(
+            name,
+            sweep.source.values(),
+            attrs={
+                key: value
+                for key, value in (("long_name", sweep.variable.label), ("units", sweep.variable.units))
+                if value is not None
+            },
+        )
         for sweep in sweeps
     }
     return name, coordinates
@@ -120,20 +110,3 @@ def scope_trace(raw: dict) -> xr.DataArray:
         [np.asarray(scope["path0"]["data"], dtype=float), np.asarray(scope["path1"]["data"], dtype=float)], axis=-1
     )
     return xr.DataArray(trace, dims=("time", "IQ"), coords={"time": np.arange(len(trace)), "IQ": ["I", "Q"]})
-
-
-def ordered(result: QProgramResult, names: list[str]) -> QProgramResult:
-    """Return the measurements of ``result`` in the order of ``names``: the order they are declared in the program.
-
-    Args:
-        result (QProgramResult): The result, its measurements in acquisition order.
-        names (list[str]): The measurement names, in declaration order.
-
-    Returns:
-        QProgramResult: A result holding the same measurements, in declaration order.
-    """
-    position = {name: index for index, name in enumerate(names)}
-    in_order = QProgramResult()
-    for record in sorted(result.measurements, key=lambda record: position.get(record.name, len(position))):
-        in_order.append_measurement(bus=record.bus, name=record.name, data=record.data, fields=record.fields)
-    return in_order

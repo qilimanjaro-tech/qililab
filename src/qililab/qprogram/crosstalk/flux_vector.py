@@ -14,66 +14,19 @@
 
 from __future__ import annotations
 
-import math
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, cast
 
 import numpy as np
-from qprogram import BinaryOp, Constant, Expression, Range, UnaryOp, Variable
+from qprogram import Constant, Expression, Variable
 from qprogram.blocks import Parallel, Sweep
 from qprogram.operations import SetGain, SetOffset
 from qprogram.waveforms import Arbitrary, Square, Waveform
 
-from qililab.qprogram.blocks import for_loop_iterations
 from qililab.yaml import yaml
 
 if TYPE_CHECKING:
     from qililab.qprogram.crosstalk.crosstalk_matrix import CrosstalkMatrix
-
-
-def sweep_points(sweep: Sweep) -> np.ndarray:
-    """The values a sweep takes when it runs, as the Qblox compiler runs it.
-
-    A ``Range`` runs like a for_loop, from ``start`` to its last point in ``for_loop_iterations`` evenly spread points,
-    its last point being ``stop`` when the range lands on it. Any other source runs over its own values.
-
-    Args:
-        sweep (Sweep): The sweep.
-
-    Returns:
-        np.ndarray: Its values, in order.
-    """
-    source = sweep.source
-    if not isinstance(source, Range):
-        return np.asarray(source.values(), dtype=float)
-    last = source.start + source.step * (source.length() - 1)
-    if math.isclose(last, source.stop, rel_tol=1e-9, abs_tol=1e-12):
-        last = source.stop
-    return np.linspace(source.start, last, max(for_loop_iterations(source.start, last, source.step), 0))
-
-
-def _as_number(value: float | Expression) -> float | Expression:
-    """Return a ``Constant`` as its number, and anything else unchanged.
-
-    Args:
-        value (float | Expression): The value.
-
-    Returns:
-        float | Expression: The number held by a constant, else ``value``.
-    """
-    return value.value if isinstance(value, Constant) else value
-
-
-def _as_expression(value: float | Expression) -> Expression:
-    """Return a number as a ``Constant``, and an expression unchanged.
-
-    Args:
-        value (float | Expression): The value.
-
-    Returns:
-        Expression: The expression.
-    """
-    return value if isinstance(value, Expression) else Constant(float(value))
 
 
 @yaml.register_class
@@ -291,8 +244,8 @@ class NonLinearFluxVector:
             super().__setitem__(label, context)
 
     def __init__(self) -> None:
-        self.offset: dict[str, float | Expression] = {}
-        self.gain: dict[str, float | Expression] = {}
+        self.offset: dict[str, float | Variable] = {}
+        self.gain: dict[str, float | Variable] = {}
         self.buses: set[str] = set()
         self.crosstalk: CrosstalkMatrix | None = None
 
@@ -303,26 +256,43 @@ class NonLinearFluxVector:
     def _set_offset(self, bus: str, value: float | Expression) -> None:
         if bus not in self.buses:
             raise ValueError(f"The bus {bus} is not in crosstalk.")
-        if isinstance(value, Expression):
-            self._verify_variable_exists(value)
-
-        self.offset[bus] = value
+        self.offset[bus] = self._checked_value(bus, value)
 
     def _set_gain(self, bus: str, value: float | Expression) -> None:
         if bus not in self.buses:
             raise ValueError(f"The bus {bus} is not in crosstalk.")
-        if isinstance(value, Expression):
-            self._verify_variable_exists(value)
+        self.gain[bus] = self._checked_value(bus, value)
 
-        self.gain[bus] = value
+    def _checked_value(self, bus: str, value: float | Expression) -> float | Variable:
+        """Return an offset or gain the non-linear compensation can follow: a number, or a loop's variable.
 
-    def _verify_variable_exists(self, value: Expression) -> None:
+        Args:
+            bus (str): The flux bus.
+            value (float | Expression): The offset or gain.
+
+        Returns:
+            float | Variable: The value, a constant as its number.
+
+        Raises:
+            NotImplementedError: If the value is an expression of a variable, such as ``x + 0.05``.
+            ValueError: If the variable isn't swept by a loop around the operation.
+        """
+        if isinstance(value, Constant):
+            return value.value
+        if not isinstance(value, Expression):
+            return value
+        if not isinstance(value, Variable):
+            raise NotImplementedError(
+                f"A non-linear crosstalk compensation can't follow the expression {value!r} on flux bus {bus!r}: set "
+                "the bus to the loop's variable itself."
+            )
         for variable in sorted(value.variables(), key=lambda variable: variable.id):
             if variable.id not in self.variables:
                 raise ValueError(
                     f"Variable with label {variable.id} hasn't been contextualized with a loop.\n"
                     "Use set_loop to contextualize variables."
                 )
+        return value
 
     def has_loop(self, block: object) -> bool:
         """Whether ``block`` is one of the registered loops (the very block, not an equal one).
@@ -370,7 +340,7 @@ class NonLinearFluxVector:
                 already registered (duplicate variable across active loops).
         """
         if isinstance(loop, Parallel):
-            loop_points = [sweep_points(in_loop) for in_loop in loop.loops]
+            loop_points = [np.asarray(in_loop.source.values(), dtype=float) for in_loop in loop.loops]
             loop_iterations = [len(points) for points in loop_points]
             if not np.allclose(loop_iterations, loop_iterations[0]):
                 raise ValueError("All the loops in a parallel loop should have the same length")
@@ -380,7 +350,7 @@ class NonLinearFluxVector:
                 )
         elif isinstance(loop, Sweep):
             self.variables[loop.variable.id] = self.VariableContext(
-                loop.variable.id, sweep_points(loop), self.curr_loop_id
+                loop.variable.id, np.asarray(loop.source.values(), dtype=float), self.curr_loop_id
             )
         self.loops[self.curr_loop_id] = loop
         self.curr_loop_id += 1
@@ -413,43 +383,14 @@ class NonLinearFluxVector:
             label: float(vc.arr[-1]) for label, vc in self.variables.items() if vc.loop_ref == loop_id
         }
 
-        for bus in self.offset:
-            self.offset[bus] = self._substitute_last_values(self.offset[bus], last_values)
-        for bus in self.gain:
-            self.gain[bus] = self._substitute_last_values(self.gain[bus], last_values)
+        for values in (self.offset, self.gain):
+            for bus, value in values.items():
+                if isinstance(value, Variable):
+                    values[bus] = last_values.get(value.id, value)
 
         # Clean up all VariableContexts for this loop_id and the loop itself
         for label in [lbl for lbl, vc in self.variables.items() if vc.loop_ref == loop_id]:
             del self.variables[label]
-
-    def _substitute_last_values(
-        self,
-        expr: float | Expression,
-        last_values: dict[str, float],
-    ) -> float | Expression:
-        """Replace the variables of ``last_values`` by their value, folding a sum or difference of two numbers.
-
-        Args:
-            expr (float | Expression): The offset or gain.
-            last_values (dict[str, float]): The value of each variable to replace, by id.
-
-        Returns:
-            float | Expression: The offset or gain with those variables replaced.
-        """
-        if isinstance(expr, BinaryOp):
-            left = _as_number(self._substitute_last_values(expr.left, last_values))
-            right = _as_number(self._substitute_last_values(expr.right, last_values))
-            if not isinstance(left, Expression) and not isinstance(right, Expression) and expr.op in ("+", "-"):
-                return float(left + right) if expr.op == "+" else float(left - right)
-            return BinaryOp(expr.op, _as_expression(left), _as_expression(right))
-        if isinstance(expr, UnaryOp):
-            operand = _as_number(self._substitute_last_values(expr.operand, last_values))
-            if not isinstance(operand, Expression) and expr.op in ("+", "-"):
-                return float(operand) if expr.op == "+" else -float(operand)
-            return UnaryOp(expr.op, _as_expression(operand))
-        if isinstance(expr, Variable):
-            return last_values.get(expr.id, expr)
-        return expr
 
     def get_corrected_play(self, waveforms: dict[str, Waveform]) -> dict[str, np.ndarray]:
         """Computes the crosstalk-compensated waveform per bus.
@@ -557,7 +498,7 @@ class NonLinearFluxVector:
             return [-1], {-1: 1}
         return unique_loop_refs, loop_lengths
 
-    def _generate_matrix_values(self, values: dict[str, float | Expression]) -> dict[str, np.ndarray]:
+    def _generate_matrix_values(self, values: dict[str, float | Variable]) -> dict[str, np.ndarray]:
         unique_loop_refs, loop_lengths = self._loop_structure()
         total_length = int(np.prod(list(loop_lengths.values()))) if loop_lengths else 1
 
@@ -565,8 +506,6 @@ class NonLinearFluxVector:
         for bus, val in values.items():
             if isinstance(val, Variable):
                 result[bus] = self._expand_variable(val, unique_loop_refs, loop_lengths)
-            elif isinstance(val, Expression):
-                result[bus] = np.asarray(self._evaluate_expr(val, unique_loop_refs, loop_lengths), dtype=float)
             else:
                 result[bus] = np.full(total_length, float(val))
         return result
@@ -587,50 +526,6 @@ class NonLinearFluxVector:
         )
         outer = int(np.prod([loop_lengths[unique_loop_refs[j]] for j in range(pos)]) if pos > 0 else 1)
         return np.tile(np.repeat(var_ctx.arr, inner), outer)
-
-    def _evaluate_expr(
-        self,
-        expr: Expression | int | float,
-        unique_loop_refs: list[int],
-        loop_lengths: dict[int, int],
-    ) -> np.ndarray | float:
-        """Evaluate an offset or gain over all loop combinations.
-
-        Args:
-            expr (Expression | int | float): The offset or gain: a number, a variable, or a sum, difference or negation
-                of those.
-            unique_loop_refs (list[int]): The registered loops, sorted high to low.
-            loop_lengths (dict[int, int]): The length of each registered loop.
-
-        Returns:
-            np.ndarray | float: Its values, as a 1D array covering all loop combinations, or a number.
-
-        Raises:
-            ValueError: If the expression uses another operation than a sum, a difference or a sign.
-        """
-        if isinstance(expr, BinaryOp):
-            left = self._evaluate_expr(expr.left, unique_loop_refs, loop_lengths)
-            right = self._evaluate_expr(expr.right, unique_loop_refs, loop_lengths)
-            if expr.op == "+":
-                return left + right
-            if expr.op == "-":
-                return left - right
-            raise ValueError(f"Unsupported expression operator: {expr.op}")
-        if isinstance(expr, UnaryOp):
-            operand = self._evaluate_expr(expr.operand, unique_loop_refs, loop_lengths)
-            if expr.op == "+":
-                return operand
-            if expr.op == "-":
-                return -operand
-            raise ValueError(f"Unsupported expression operator: {expr.op}")
-        if isinstance(expr, Variable):
-            return self._expand_variable(expr, unique_loop_refs, loop_lengths)
-        if isinstance(expr, Constant):
-            return float(expr.value)
-        if isinstance(expr, Expression):
-            raise ValueError(f"Unsupported expression: {expr!r}")
-        # plain int / float — numpy broadcasts with arrays above
-        return float(expr)
 
     def set_crosstalk(self, crosstalk: CrosstalkMatrix):
         """Attaches a crosstalk matrix and populates the bus registry.
@@ -653,7 +548,7 @@ class NonLinearFluxVector:
 
     def set_crosstalk_from_bias(
         self, crosstalk: CrosstalkMatrix, bias_vector: dict[str, float | np.ndarray]
-    ) -> dict[str, float | Expression]:
+    ) -> dict[str, float | Variable]:
         """Computes per-bus flux values from hardware bias values using the linear crosstalk matrix.
 
         Calls set_crosstalk internally to attach the matrix and initialise the bus registry,

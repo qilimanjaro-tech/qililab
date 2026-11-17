@@ -16,11 +16,10 @@
 
 from __future__ import annotations
 
-import math
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
-from qprogram import BinaryOp, Constant, Expression, Linspace, Range, UnaryOp, Variable
+from qprogram import BinaryOp, Constant, Expression, Linspace, UnaryOp, Variable
 from qprogram.blocks import Average, Block, Parallel, Sweep
 from qprogram.operations import Measure, ResetPhase, SetFrequency, SetGain, SetOffset, SetPhase, Sync, Wait
 from qprogram_qblox import Acquire, Scope, SetMarkers
@@ -301,12 +300,9 @@ def _prepare_operations(body: Block, markers: dict[str, str] | None) -> None:
 
 
 def _prepare_loops(body: Block) -> None:
-    """Write each loop's ``Range`` the way the Qblox compiler reads it, in place, and check the waits it sweeps.
+    """Write each loop's bounds the way the Qblox compiler reads them, in place, and check the waits it sweeps.
 
-    The compiler reads a loop as a start, a step and a number of points: a ``Linspace`` becomes the ``Range`` with its
-    points. A ``Range`` holds ``round((stop - start) / step) + 1`` points, so its last point can stop short of ``stop`` or step
-    past it: ``stop`` becomes that last point, kept as written when they only differ by rounding. The points don't
-    change. A ``Range`` also stores its bounds as floats, ``Range(0, 10, 2)`` included: the whole ones become ints.
+    A ``Linspace`` stores its bounds as floats, ``Linspace(0, 10, 3)`` included: the whole ones become ints.
 
     Args:
         body (Block): The body of the QProgram the compiler walks. It is modified.
@@ -316,17 +312,11 @@ def _prepare_loops(body: Block) -> None:
     """
     for node in body.walk():
         for loop in node.loops if isinstance(node, Parallel) else [node]:
-            if isinstance(loop, Sweep) and isinstance(loop.source, Linspace):
-                start, stop, num = loop.source.start, loop.source.stop, loop.source.num
-                loop.source = Range(start, stop, (stop - start) / (num - 1)) if num > 1 else Range(start, start, 1)
-            if not (isinstance(loop, Sweep) and isinstance(loop.source, Range)):
+            if not (isinstance(loop, Sweep) and isinstance(loop.source, Linspace)):
                 continue
             source = loop.source
-            last = source.start + source.step * (source.length() - 1)
-            if not math.isclose(last, source.stop, rel_tol=1e-9, abs_tol=1e-12):
-                source.stop = last
-            source.start, source.stop, source.step = (
-                int(value) if float(value).is_integer() else value for value in (source.start, source.stop, source.step)
+            source.start, source.stop = (
+                int(value) if float(value).is_integer() else value for value in (source.start, source.stop)
             )
             for wait in node.walk():
                 if not (isinstance(wait, Wait) and isinstance(wait.duration, Expression)):
@@ -342,8 +332,8 @@ def _prepare_loops(body: Block) -> None:
                 if min(durations) < INST_MIN_WAIT:
                     raise ValueError(
                         f"The loop over {loop.variable.id!r} makes the wait on bus {wait.bus!r} last {min(durations):g} "
-                        f"ns, below the Q1ASM minimum of {INST_MIN_WAIT} ns: sweep it so that every wait lasts at least "
-                        f"{INST_MIN_WAIT} ns."
+                        f"ns, below the Q1ASM minimum of {INST_MIN_WAIT} ns: every wait must last at least {INST_MIN_WAIT} ns, "
+                        f"for example by starting the loop at {INST_MIN_WAIT} ns."
                     )
 
 

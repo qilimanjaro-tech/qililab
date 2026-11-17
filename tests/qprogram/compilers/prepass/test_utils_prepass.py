@@ -15,7 +15,7 @@ class TestKeepInstrumentOperations:
             qp.play(bus="drive", waveform=IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40)))
             qp.wait(bus="qdac", duration=100)
             qp.sync()
-            with qp.sweep(offset).from_range(0.0, 0.5, 0.1):
+            with qp.sweep(offset).from_linspace(0.0, 0.5, 6):
                 qp.set_offset(bus="qdac", offset_path0=offset)
 
         kept = keep_instrument_operations(qp, {"drive", "readout"})
@@ -39,7 +39,7 @@ class TestKeepInstrumentOperations:
         qp = QProgram()
         frequency = qp.variable("frequency")
         with qp.average(10):
-            with qp.sweep(frequency).from_range(10e6, 100e6, 10e6):
+            with qp.sweep(frequency).from_linspace(10e6, 100e6, 10):
                 qp.wait(bus="qdac", duration=100)
 
         kept = keep_instrument_operations(qp, {"drive"})
