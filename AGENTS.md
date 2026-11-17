@@ -35,8 +35,12 @@ Qilimanjaro's quantum-control library: it builds a platform from a runcard, expr
 
 ## Boundaries
 
+- Require explicit human authorization before committing, pushing, opening or updating a pull request, merging, publishing, or making destructive Git changes. Local validation does not grant that authorization.
+
 - Validate with synthetic inputs and offline tests; hardware, lab databases and production runcards are in scope only when the task names them.
+
 - Report every gate you could not run and why.
+
 - Keep credentials, runcards with real addresses and measurement data out of the repository and out of agent instructions.
 
 ## Critical invariants
