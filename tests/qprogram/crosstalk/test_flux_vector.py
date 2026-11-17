@@ -178,8 +178,9 @@ class TestNonLinearFluxVector:
     def test_set_loop_raises_on_duplicate_variable(self, nlfv_no_crosstalk):
         phi = Variable("phi")
         nlfv_no_crosstalk.set_loop(for_loop(phi, start=0.0, stop=1.0, step=0.1))
+        second_loop = for_loop(phi, start=0.0, stop=2.0, step=0.2)
         with pytest.raises(ValueError):
-            nlfv_no_crosstalk.set_loop(for_loop(phi, start=0.0, stop=2.0, step=0.2))
+            nlfv_no_crosstalk.set_loop(second_loop)
 
     def test_exit_loop_ignores_unset_loops(self, nlfv_no_crosstalk):
         phi = Variable("phi")

@@ -746,7 +746,7 @@ class TestQProgram:
         assert not set(map(id, relabelled.variables)) & set(map(id, original.variables))
 
     @pytest.mark.parametrize(
-        "replacement, trigger_type, attributes",
+        "replacement, trigger_type, expected",
         [
             # A trigger at each step was a QDAC one, with or without outputs
             ("    duration: 1e-05\n    outputs: null\n    position: step", QdacSetTrigger, (1e-05, "step", ())),
@@ -754,7 +754,7 @@ class TestQProgram:
             ("    duration: 100\n    outputs: 1\n    position: start", QbloxSetTrigger, (100, "start", 1)),
         ],
     )
-    def test_deserialize_legacy_yaml_set_trigger(self, replacement, trigger_type, attributes):
+    def test_deserialize_legacy_yaml_set_trigger(self, replacement, trigger_type, expected):
         """A former set_trigger becomes the QDAC or the Qblox one it was."""
         text = LEGACY_QPROGRAM_YAML.replace("    duration: 1e-05\n    outputs: 1\n    position: step", replacement)
         with pytest.warns(UserWarning, match="had save_adc=True, which no longer exists"):
@@ -762,7 +762,7 @@ class TestQProgram:
 
         (trigger,) = [node for node in qp.body.walk() if isinstance(node, (QdacSetTrigger, QbloxSetTrigger))]
         assert isinstance(trigger, trigger_type)
-        assert (trigger.duration, trigger.position, trigger.outputs) == attributes
+        assert (trigger.duration, trigger.position, trigger.outputs) == expected
 
     def test_deserialize_legacy_yaml_qdac_play_with_an_iq_waveform_loads_and_is_refused_when_compiled(self):
         """An old program whose QDAC play had an IQ waveform still loads, and compiling it refuses the play: the former
