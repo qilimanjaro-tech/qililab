@@ -1314,7 +1314,10 @@ class Platform:
                 # set up the trigger network if required
                 if bus_alias in output.qblox.trigger_network_addresses:  # type: ignore[union-attr]
                     trigger_address = output.qblox.trigger_network_addresses[bus_alias]  # type: ignore[union-attr]
-                    buses[bus_alias]._setup_trigger_network(trigger_address=trigger_address)
+                    buses[bus_alias]._setup_trigger_network(
+                        trigger_address=trigger_address,
+                        invert=bus_alias == output.qblox.herald_bus,  # type: ignore[union-attr]
+                    )
                     for controller in self.instrument_controllers.elements:
                         if isinstance(controller, QbloxClusterController):
                             controller.device.reset_trigger_monitor_count(address=trigger_address)

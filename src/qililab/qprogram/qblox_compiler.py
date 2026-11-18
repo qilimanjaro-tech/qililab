@@ -44,6 +44,7 @@ from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
 from qililab.qprogram.operations import (
     Acquire,
     Measure,
+    MeasureHerald,
     MeasureReset,
     Operation,
     Play,
@@ -111,7 +112,10 @@ class QbloxCompilationOutput:
         requires_external_trigger (bool): Whether the compiled sequences wait on the cluster's external trigger, i.e. the
             QProgram has a ``wait_trigger`` on a Qblox bus or an ``if_trigger`` block.
         trigger_network_addresses (dict[str, int]): Buses that send their acquisition result on the trigger network,
-            with their trigger address, i.e. the measurement buses of ``qp.qblox.measure_reset()``.
+            with their trigger address, i.e. the measurement buses of ``qp.qblox.measure_reset()`` and
+            ``qp.qblox.measure_herald()``.
+        herald_bus (str | None): The measurement bus of ``qp.qblox.measure_herald()``, if any. Its trigger fires on the
+            ground state instead of the excited state.
     """
 
     def __init__(
@@ -121,12 +125,14 @@ class QbloxCompilationOutput:
         acquisitions: Acquisitions,
         requires_external_trigger: bool = False,
         trigger_network_addresses: dict[str, int] | None = None,
+        herald_bus: str | None = None,
     ):
         self.qprogram = qprogram
         self.sequences = sequences
         self.acquisitions = acquisitions
         self.requires_external_trigger = requires_external_trigger
         self.trigger_network_addresses = trigger_network_addresses if trigger_network_addresses is not None else {}
+        self.herald_bus = herald_bus
 
     def __iter__(self):
         """Allows the class to be unpacked as a tuple (program, config, measurements)."""
@@ -265,6 +271,7 @@ class QbloxCompiler:
             Sync: self._handle_sync,
             Measure: self._handle_measure,
             MeasureReset: self._handle_measure_reset,
+            MeasureHerald: self._handle_measure_herald,
             Acquire: self._handle_acquire,
             Play: self._handle_play,
             Conditional: self._handle_block,
@@ -340,6 +347,10 @@ class QbloxCompiler:
                 if not handler:
                     raise NotImplementedError(f"{element.__class__} is currently not supported in QBlox.")
                 appended = handler(element)
+                if isinstance(element, MeasureHerald):
+                    # Its wait_sync realigns every bus, dropping the delays already applied: the next play applies
+                    # them again
+                    delay_implemented = False
                 if isinstance(element, Block):
                     if isinstance(element, Conditional):
                         self._handle_conditional_trigger_prologue()
@@ -555,6 +566,7 @@ class QbloxCompiler:
             acquisitions=acquisitions,
             requires_external_trigger=prepass.requires_external_trigger,
             trigger_network_addresses=prepass.trigger_network_addresses,
+            herald_bus=prepass.herald_bus,
         )
 
     def _populate_buses(self) -> dict[str, BusCompilationInfo]:
@@ -1803,6 +1815,107 @@ class QbloxCompiler:
         self._handle_conditional(
             bus=element.control_bus, enable=DISABLE_CONDITIONAL, address=0, operator=0, else_duration=INST_MIN_WAIT
         )
+
+    def _handle_measure_herald(self, element: MeasureHerald) -> None:
+        """Measure until the ground state is found, then realign every bus with a ``wait_sync``.
+
+        Each attempt runs under a ``set_cond`` NOR on the trigger address: once the bus has counted a ground-state
+        trigger, each instruction of the remaining attempts is replaced by a 4 ns wait. The herald has its own
+        acquisition, whose last axis is the attempts: attempt ``k`` writes bin ``k`` after the bins of the enclosing
+        loops.
+
+        Args:
+            element (MeasureHerald): The herald to compile.
+
+        Raises:
+            ValueError: If the bus needs more acquisition indices than the sequencer has.
+        """
+        bus = element.bus
+        bus_info = self._buses[bus]
+
+        # The other acquisitions of the bus take the indices before: one per block, or only 0 when exceeds_depth
+        acquisition_index = 1 if bus_info.exceeds_depth else len(self._acquisition_metadata.get(bus, {}))
+        if acquisition_index > MAX_ACQUISITION_INDEX:
+            raise ValueError(
+                f"Bus '{bus}' needs {acquisition_index + 1} acquisition indices with its qp.qblox.measure_herald(), but "
+                f"a sequencer has {MAX_ACQUISITION_INDEX + 1}."
+            )
+        loops = [
+            (i, loop)
+            for i, loop in enumerate(bus_info.qpy_block_stack)
+            if isinstance(loop, QPyProgram.IterativeLoop) and not loop.name.startswith("avg")
+        ]
+        shape = (*(loop.iterations for _, loop in loops), element.max_attempts)
+        acquisition_name = f"Acquisition {acquisition_index}"
+        bus_info.acquisitions[acquisition_name] = AcquisitionData(bus=bus, save_adc=False, shape=shape, intertwined=1)
+        bus_info.qpy_sequence._acquisitions.add(
+            name=acquisition_name, num_bins=math.prod(shape), index=acquisition_index
+        )
+
+        # Start from the first bin of the current iteration of the enclosing loops. That first bin is reset where the
+        # other acquisitions reset their bin register, and moves on by max_attempts at each iteration of the innermost
+        # loop
+        bin_register = QPyProgram.Register()
+        if loops:
+            first_bin_register = QPyProgram.Register()
+            bus_info.qpy_block_stack[loops[0][0] - 1].add(
+                component=QPyInstructions.Move(source=0, destination=first_bin_register), insert_idx=0
+            )
+            bus_info.qpy_block_stack[-1].add(
+                component=QPyInstructions.Move(source=first_bin_register, destination=bin_register)
+            )
+        else:
+            bus_info.qpy_block_stack[-1].add(component=QPyInstructions.Move(source=0, destination=bin_register))
+
+        index_I, index_Q, integration_length = self._append_to_weights_of_bus(bus, element.weights)
+        register_I = self._get_or_create_weight_register(bus, index_I, block_index=0)
+        register_Q = self._get_or_create_weight_register(bus, index_Q, block_index=0)
+
+        self._handle_latch_rst(bus=bus, duration=INST_MIN_WAIT)
+        herald_loop = QPyProgram.Loop(name="herald", begin=element.max_attempts)
+        bus_info.qpy_block_stack[-1].add(herald_loop)
+        bus_info.qpy_block_stack.append(herald_loop)
+        # NOR: run this attempt only if no ground-state trigger has been counted yet
+        self._handle_conditional(
+            bus=bus,
+            enable=ENABLE_CONDITIONAL,
+            address=element.trigger_address,
+            operator=QPyTriggerCondition.NOR,
+            else_duration=INST_MIN_WAIT,
+        )
+        self._handle_play(Play(bus=bus, waveform=element.waveform, wait_time=bus_info.time_of_flight))
+        herald_loop.add(
+            QPyInstructions.AcquireWeighed(
+                acquisition=acquisition_index,
+                bin=bin_register,
+                weight_0=register_I,
+                weight_1=register_Q,
+                duration=integration_length,
+            )
+        )
+        herald_loop.add(QPyInstructions.Add(a=bin_register, b=1, destination=bin_register))
+        # Lets the trigger of this attempt reach the bus before the next attempt checks it
+        herald_loop.add(QPyInstructions.Wait(duration=WAIT_TRIGGER_NETWORK_INTERMODULES))
+        bus_info.qpy_block_stack.pop()
+        self._handle_conditional(
+            bus=bus, enable=DISABLE_CONDITIONAL, address=0, operator=0, else_duration=INST_MIN_WAIT
+        )
+
+        # The herald takes a variable time: every bus waits for the others, then counts its durations from there
+        for info in self._buses.values():
+            info.qpy_block_stack[-1].add(component=QPyInstructions.WaitSync(INST_MIN_WAIT))
+            info.static_duration = 0
+            info.duration_since_sync = 0
+            info.marked_for_sync = False
+            info.marked_for_dynamic_sync = False
+            info.has_pending_dynamic_expression = False
+
+        if loops:
+            bus_info.qpy_block_stack[loops[-1][0]].add(
+                component=QPyInstructions.Add(
+                    a=first_bin_register, b=element.max_attempts, destination=first_bin_register
+                )
+            )
 
     def _handle_play(self, element: Play) -> None:
         waveform_I, waveform_Q = element.get_waveforms()

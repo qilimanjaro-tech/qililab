@@ -55,7 +55,9 @@ def fixture_qrm(platform: Platform) -> QbloxQRM:
         "thresholded_acq_threshold",
         "thresholded_acq_rotation",
         "thresholded_acq_trigger_address",
-        "thresholded_acq_trigger_en"
+        "thresholded_acq_trigger_en",
+        "thresholded_acq_trigger_invert",
+        "set_trigger_thresholding",
     ]
 
     module_mock_spec = [
@@ -461,7 +463,15 @@ class TestQbloxQRM:
         raw_seq = qrm.device.sequencers[sequencer_id]
         qrm._setup_trigger_network(trigger_address=trigger_address, sequencer_id=sequencer_id)
         raw_seq.thresholded_acq_trigger_address.assert_called_with(trigger_address)
+        raw_seq.thresholded_acq_trigger_invert.assert_called_with(False)
         raw_seq.thresholded_acq_trigger_en.assert_called_with(True)
+        raw_seq.set_trigger_thresholding.assert_called_with(trigger_address, 1, False)
+
+    def test_setup_trigger_network_inverted(self, qrm: QbloxQRM):
+        """measure_herald's trigger fires on the ground state."""
+        raw_seq = qrm.device.sequencers[0]
+        qrm._setup_trigger_network(trigger_address=3, sequencer_id=0, invert=True)
+        raw_seq.thresholded_acq_trigger_invert.assert_called_with(True)
 
     def test_set_parameter_threshold_stores_model_only(self, qrm: QbloxQRM):
         """set_parameter(THRESHOLD) must update the stored value but never program the device directly —

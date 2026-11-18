@@ -3464,7 +3464,276 @@ class TestQBloxCompiler:
 
         assert is_q1asm_equal(sequences["drive"], drive_str)
         assert is_q1asm_equal(sequences["readout"], readout_str)
-        
+
+    def test_measure_herald(self):
+        """Each shot measures until the ground state, then every bus waits for the others before the experiment.
+
+        The herald's bins have the attempts as last axis, after the bins of the frequency loop, and its result comes
+        before the experiment's measure.
+        """
+        wf = IQPair(I=Square(amplitude=1.0, duration=100), Q=Square(amplitude=0.0, duration=100))
+        qp = QProgram()
+        frequency = qp.variable(label="frequency", domain=Domain.Frequency)
+        with qp.average(10):
+            with qp.for_loop(variable=frequency, start=100e6, stop=200e6, step=50e6):
+                qp.qblox.measure_herald(bus="readout", waveform=wf, weights=wf, max_attempts=5)
+                qp.set_frequency(bus="drive", frequency=frequency)
+                qp.play(bus="drive", waveform=IQDrag(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=1.2))
+                qp.sync()
+                qp.measure(bus="readout", waveform=wf, weights=wf)
+                qp.wait(bus="readout", duration=400)
+
+        output = QbloxCompiler().compile(qprogram=qp, times_of_flight={"readout": 28})
+
+        drive_str = """
+            setup:
+                            wait_sync        4
+                            set_mrk          0
+                            upd_param        4
+
+            main:
+                            move             10, R0
+            avg_0:
+                            move             400000000, R1
+                            move             3, R2
+            loop_0:
+                            wait_sync        4
+                            set_freq         R1
+                            play             0, 1, 40
+                            wait             528
+                            add              R1, 200000000, R1
+                            loop             R2, @loop_0
+                            loop             R0, @avg_0
+                            set_mrk          0
+                            upd_param        4
+                            stop
+        """
+        readout_str = """
+            setup:
+                            set_latch_en     1, 4
+                            wait_sync        4
+                            set_mrk          0
+                            upd_param        4
+
+                            move             1, R0
+                            move             0, R1
+            main:
+                            move             10, R2
+            avg_0:
+                            move             0, R3
+                            move             0, R4
+                            move             400000000, R5
+                            move             3, R6
+            loop_0:
+                            move             R4, R7
+                            latch_rst        4
+                            move             5, R8
+            herald:
+                            set_cond         1, 1, 1, 4
+                            play             0, 1, 28
+                            acquire_weighed  1, R7, R1, R0, 100
+                            add              R7, 1, R7
+                            wait             400
+                            loop             R8, @herald
+                            set_cond         0, 0, 0, 4
+                            wait_sync        4
+                            add              R4, 5, R4
+                            wait             40
+                            play             0, 1, 28
+                            acquire_weighed  0, R3, R1, R0, 100
+                            add              R3, 1, R3
+                            wait             400
+                            add              R5, 200000000, R5
+                            loop             R6, @loop_0
+                            loop             R2, @avg_0
+                            set_mrk          0
+                            upd_param        4
+                            stop
+        """
+        assert is_q1asm_equal(output.sequences["drive"], drive_str)
+        assert is_q1asm_equal(output.sequences["readout"], readout_str)
+        assert output.sequences["readout"]._acquisitions.to_dict() == {
+            "Acquisition 1": {"num_bins": 15, "index": 1},
+            "Acquisition 0": {"num_bins": 3, "index": 0},
+        }
+        assert [(name, data.shape) for name, data in output.acquisitions["readout"].items()] == [
+            ("Acquisition 1", (3, 5)),
+            ("Acquisition 0", (3,)),
+        ]
+        assert output.trigger_network_addresses == {"readout": 1}
+        assert output.herald_bus == "readout"
+
+    def test_measure_herald_without_loops(self):
+        """With no loop around the herald, its bins start from 0."""
+        wf = IQPair(I=Square(amplitude=1.0, duration=100), Q=Square(amplitude=0.0, duration=100))
+        qp = QProgram()
+        qp.qblox.measure_herald(bus="readout", waveform=wf, weights=wf, max_attempts=3, trigger_address=2)
+
+        output = QbloxCompiler().compile(qprogram=qp)
+
+        readout_str = """
+            setup:
+                            set_latch_en     1, 4
+                            wait_sync        4
+                            set_mrk          0
+                            upd_param        4
+
+                            move             1, R0
+                            move             0, R1
+            main:
+                            move             0, R2
+                            latch_rst        4
+                            move             3, R3
+            herald:
+                            set_cond         1, 2, 1, 4
+                            play             0, 1, 4
+                            acquire_weighed  0, R2, R1, R0, 100
+                            add              R2, 1, R2
+                            wait             400
+                            loop             R3, @herald
+                            set_cond         0, 0, 0, 4
+                            wait_sync        4
+                            set_mrk          0
+                            upd_param        4
+                            stop
+        """
+        assert is_q1asm_equal(output.sequences["readout"], readout_str)
+        assert output.acquisitions["readout"]["Acquisition 0"].shape == (3,)
+        assert output.trigger_network_addresses == {"readout": 2}
+
+    def test_measure_herald_in_average_inside_for_loop(self):
+        """Every shot of a loop iteration writes the same herald bins, which move on once per loop iteration.
+
+        The herald takes the acquisition index after those of the bus's blocks, so after the average's measures.
+        """
+        wf = IQPair(I=Square(amplitude=1.0, duration=100), Q=Square(amplitude=0.0, duration=100))
+        qp = QProgram()
+        frequency = qp.variable(label="frequency", domain=Domain.Frequency)
+        with qp.for_loop(variable=frequency, start=1e6, stop=2e6, step=1e6):
+            with qp.average(10):
+                qp.measure(bus="readout", waveform=wf, weights=wf)
+                qp.qblox.measure_herald(bus="readout", waveform=wf, weights=wf, max_attempts=3)
+                qp.measure(bus="readout", waveform=wf, weights=wf)
+
+        output = QbloxCompiler().compile(qprogram=qp)
+
+        readout_str = """
+            setup:
+                            set_latch_en     1, 4
+                            wait_sync        4
+                            set_mrk          0
+                            upd_param        4
+
+                            move             1, R0
+                            move             1, R1
+                            move             0, R2
+                            move             0, R3
+            main:
+                            move             0, R4
+                            move             1000000, R5
+                            move             2, R6
+            loop_0:
+                            move             10, R7
+            avg_0:
+                            play             0, 1, 4
+                            acquire_weighed  0, R4, R3, R1, 100
+                            move             R2, R8
+                            latch_rst        4
+                            move             3, R9
+            herald:
+                            set_cond         1, 1, 1, 4
+                            play             0, 1, 4
+                            acquire_weighed  1, R8, R3, R1, 100
+                            add              R8, 1, R8
+                            wait             400
+                            loop             R9, @herald
+                            set_cond         0, 0, 0, 4
+                            wait_sync        4
+                            play             0, 1, 4
+                            acquire_weighed  0, R0, R3, R1, 100
+                            loop             R7, @avg_0
+                            add              R4, 2, R4
+                            add              R2, 3, R2
+                            add              R0, 2, R0
+                            add              R5, 1000000, R5
+                            loop             R6, @loop_0
+                            set_mrk          0
+                            upd_param        4
+                            stop
+        """
+        assert is_q1asm_equal(output.sequences["readout"], readout_str)
+        assert [(name, data.shape) for name, data in output.acquisitions["readout"].items()] == [
+            ("Acquisition 0", (2,)),
+            ("Acquisition 1", (2, 3)),
+        ]
+
+    def test_measure_herald_applies_the_delays_again(self):
+        """The herald's wait_sync realigns every bus, so the next play is delayed again."""
+        wf = IQPair(I=Square(amplitude=1.0, duration=100), Q=Square(amplitude=0.0, duration=100))
+        drag = IQDrag(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=1.2)
+        qp = QProgram()
+        with qp.average(10):
+            qp.play(bus="drive", waveform=drag)
+            qp.qblox.measure_herald(bus="readout", waveform=wf, weights=wf, max_attempts=3)
+            qp.play(bus="drive", waveform=drag)
+
+        sequences, _ = QbloxCompiler().compile(qprogram=qp, delays={"drive": 20})
+
+        drive_str = """
+            setup:
+                            wait_sync        4
+                            set_mrk          0
+                            upd_param        4
+
+            main:
+                            move             10, R0
+            avg_0:
+                            wait             20
+                            play             0, 1, 40
+                            wait_sync        4
+                            wait             20
+                            play             0, 1, 40
+                            loop             R0, @avg_0
+                            set_mrk          0
+                            upd_param        4
+                            stop
+        """
+        assert is_q1asm_equal(sequences["drive"], drive_str)
+
+    def test_measure_herald_after_acquisitions_beyond_one_index(self):
+        """When the bus's acquisitions share index 0 (more than 32 of them), the herald takes index 1."""
+        wf = IQPair(I=Square(amplitude=1.0, duration=100), Q=Square(amplitude=0.0, duration=100))
+        qp = QProgram()
+        for _ in range(33):
+            with qp.average(1):
+                qp.measure(bus="readout", waveform=wf, weights=wf)
+        qp.qblox.measure_herald(bus="readout", waveform=wf, weights=wf, max_attempts=2)
+
+        output = QbloxCompiler().compile(qprogram=qp)
+
+        assert output.sequences["readout"]._acquisitions.to_dict() == {
+            "Acquisition 0": {"num_bins": 33, "index": 0},
+            "Acquisition 1": {"num_bins": 2, "index": 1},
+        }
+
+    def test_measure_herald_without_free_acquisition_index_raises_error(self):
+        """32 blocks with an acquisition take every acquisition index of the sequencer."""
+        wf = IQPair(I=Square(amplitude=1.0, duration=100), Q=Square(amplitude=0.0, duration=100))
+        qp = QProgram()
+        for _ in range(32):
+            with qp.average(1):
+                qp.measure(bus="readout", waveform=wf, weights=wf)
+        qp.qblox.measure_herald(bus="readout", waveform=wf, weights=wf)
+
+        with pytest.raises(
+            ValueError,
+            match=re.escape(
+                "Bus 'readout' needs 33 acquisition indices with its qp.qblox.measure_herald(), but a sequencer has "
+                "32."
+            ),
+        ):
+            QbloxCompiler().compile(qprogram=qp)
+
     def test_dynamic_sync(self, dynamic_sync_delay: QProgram):
         compiler = QbloxCompiler()
         sequences, _ = compiler.compile(qprogram=dynamic_sync_delay)

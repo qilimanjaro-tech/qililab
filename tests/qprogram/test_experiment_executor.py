@@ -1,5 +1,6 @@
 import datetime
 import os
+import re
 import tempfile
 from unittest.mock import MagicMock, Mock, call, create_autospec, patch
 
@@ -498,6 +499,31 @@ class TestExperimentExecutor:
             for measurement_index in range(2):
                 data, _ = experiment_results.get(0, measurement_index)
                 assert data.shape == (11, 2)
+
+    def test_execute_measure_herald_raises_error(self, override_settings):
+        """Its result has the attempts as one more axis, that the results structure has no place for."""
+        qp = QProgram()
+        with qp.average(10):
+            qp.qblox.measure_herald(bus="readout_bus", waveform="readout", weights="weights")
+            qp.measure(bus="readout_bus", waveform="readout", weights="weights")
+
+        experiment = Experiment(label="herald_experiment")
+        experiment.execute_qprogram(qp)
+
+        with override_settings(
+            experiment_results_save_in_database=False,
+            experiment_live_plot_enabled=False,
+            experiment_live_plot_on_slurm=False,
+        ):
+            executor = ExperimentExecutor(platform=make_platform_returning(QProgramResults()), experiment=experiment)
+            with pytest.raises(
+                NotImplementedError,
+                match=re.escape(
+                    "qp.qblox.measure_herald() is not supported in an Experiment yet: run its QProgram with "
+                    "platform.execute_qprogram()."
+                ),
+            ):
+                executor.execute()
 
     @patch("qililab.platform.platform.get_db_manager")
     @patch("qililab.result.experiment_results_writer.h5py.File")

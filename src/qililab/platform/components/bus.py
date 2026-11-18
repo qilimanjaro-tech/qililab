@@ -343,8 +343,10 @@ class Bus:
                 return instrument.get_parameter(Parameter.TIMEOUT_REPETITIONS, channel_id=int(channel))
         return 0
 
-    def _setup_trigger_network(self, trigger_address):
+    def _setup_trigger_network(self, trigger_address, invert=False):
         for instrument, instrument_channel in zip(self.instruments, self.channels):
             if isinstance(instrument, (QbloxQRM)):
-                instrument._setup_trigger_network(trigger_address=trigger_address, sequencer_id=instrument_channel)
+                instrument._setup_trigger_network(
+                    trigger_address=trigger_address, sequencer_id=instrument_channel, invert=invert
+                )
                 return
