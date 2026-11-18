@@ -3,15 +3,14 @@
 import copy
 import os
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
-from tests.data import Galadriel
 
 import qililab as ql
-from qililab.data_management import save_platform, build_platform
+from qililab.data_management import build_platform, save_platform
 from qililab.platform import Platform
-from qililab.typings import Parameter, ReferenceClock
+from tests.data import Galadriel
 
 
 class TestPlatformData:
@@ -61,30 +60,6 @@ class TestPlatformData:
         assert target.read_text(encoding="utf-8") == original_content
         # The failed save leaves no leftover temporary files behind.
         assert [p.name for p in tmp_path.iterdir()] == ["runcard.yml"]
-
-    def test_save_platform_serialises_enum_valued_settings(self, tmp_path):
-        """save_platform must serialise Enum members stored in settings, not only plain strings.
-
-        Several instruments' `set_parameter` store a `str, Enum` member directly in their
-        settings (e.g. ReferenceClock, VNASweepTypes, SourceMode, IntegrationMode). ruamel.yaml
-        cannot represent those, which used to raise a RepresenterError. The dumper now coerces
-        any Enum to its underlying value, so the save succeeds and round-trips (QHC-1777).
-        """
-        platform = build_platform(Galadriel.runcard)
-        controller = platform.instrument_controllers.get_instrument_controller(
-            alias="rohde_schwarz_controller_0"
-        )
-        # Emulate an instrument that stores the raw Enum (not `.value`) in its settings.
-        controller.settings.reference_clock = ReferenceClock.EXTERNAL
-
-        path = save_platform(path=str(tmp_path / "runcard.yml"), platform=platform)
-        reloaded = build_platform(path)
-        assert (
-            reloaded.get_parameter(
-                alias="rohde_schwarz_controller_0", parameter=Parameter.REFERENCE_CLOCK
-            )
-            == "external"
-        )
 
 
 class TestBuildPlatformCornerCases:

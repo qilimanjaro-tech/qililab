@@ -12,28 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os
-import shutil
-import tempfile
-from enum import Enum
+import io
 from pathlib import Path
 
 from ruamel.yaml import YAML
 
 from .platform import Platform
 from .settings import Runcard
-
-
-def _represent_enum(representer, data):
-    """Serialise any ``Enum`` member as its underlying value (e.g. a plain string).
-
-    Several ``set_parameter`` implementations store ``str, Enum`` members (``ReferenceClock``,
-    ``VNASweepTypes``, ``SourceMode``, ``IntegrationMode``, ...) directly into the settings.
-    ruamel.yaml cannot represent those Enum members, which made ``save_platform`` raise a
-    ``RepresenterError``. Coercing to ``data.value`` dumps the same plain value that a runcard
-    loaded from disk would hold, so the save round-trips.
-    """
-    return representer.represent_data(data.value)
 
 
 def save_platform(path: str, platform: Platform) -> str:
@@ -68,34 +53,12 @@ def save_platform(path: str, platform: Platform) -> str:
     else:
         new_path = Path(path)
 
-    # Resolve symlinks so that, when `new_path` points at a symlinked runcard, we write through
-    # to (and atomically replace) the real file instead of replacing the link with a plain file.
-    target = Path(os.path.realpath(new_path))
-
-    data = platform.to_dict()
-    yaml = YAML()
-    # Make the dumper coerce any Enum member (that a `set_parameter` may have stored in the
-    # settings) to its underlying value, so serialisation never fails with a RepresenterError.
-    yaml.representer.add_multi_representer(Enum, _represent_enum)
-
-    # Serialise atomically: dump to a temporary file in the same directory and only then replace
-    # the target with os.replace. If anything above fails, the temporary file is removed and the
-    # existing runcard at `target` is left untouched, instead of being truncated to 0 bytes by
-    # opening the target in write mode.
-    fd, tmp_name = tempfile.mkstemp(dir=target.parent, prefix=f".{target.name}.", suffix=".tmp")
-    replaced = False
-    try:
-        with os.fdopen(fd, mode="w", encoding="utf-8") as file:
-            yaml.dump(data=data, stream=file)
-        if target.exists():
-            # Preserve the permissions of the runcard being overwritten; mkstemp creates the
-            # temporary file with owner-only 0o600, which brand-new runcards keep.
-            shutil.copymode(target, tmp_name)
-        os.replace(tmp_name, target)
-        replaced = True
-    finally:
-        if not replaced and os.path.exists(tmp_name):
-            os.unlink(tmp_name)
+    # Serialise to a string first, so that a dump error never touches the existing runcard. Opening
+    # the file in write mode up front (as before) truncated it to 0 bytes before serialisation ran,
+    # wiping the runcard when the dump then failed.
+    stream = io.StringIO()
+    YAML().dump(data=platform.to_dict(), stream=stream)
+    new_path.write_text(stream.getvalue(), encoding="utf-8")
 
     return str(new_path)
 
