@@ -783,6 +783,21 @@ class TestQProgram:
         with pytest.raises(NotImplementedError, match=re.escape("qp.qdac.play on bus 'flux' takes one waveform, not an IQPair")):
             prepare_qdac(qp, qdac_buses=["flux"], qdac_buses_offset={"flux": 0.0})
 
+    def test_deserialize_legacy_yaml_qprogram_with_numpy_numbers(self):
+        """Files written while qililab depended on qilisdk hold numpy numbers (!np_scalar): they load into the same
+        program, with Python numbers, so qprogram accepts the shots and the compiler the wait_trigger duration."""
+        text = LEGACY_QPROGRAM_YAML
+        for field in ("dwell: 2", "repetitions: 3", "duration: 4", "shots: 100"):
+            name, value = field.split(": ")
+            text = text.replace(f" {field}\n", f" {name}: !np_scalar {{dtype: int64, value: {value}}}\n", 1)
+        assert text.count("!np_scalar") == 4
+        with pytest.warns(UserWarning, match="had save_adc=True, which no longer exists"):
+            qp = ql.deserialize(text)
+
+        assert str(qp) == str(load_legacy_qprogram())
+        (wait_trigger,) = [node for node in qp.body.walk() if isinstance(node, QbloxWaitTrigger)]
+        assert type(wait_trigger.duration) is int
+
     def test_deserialize_legacy_yaml_wait_trigger_with_a_port_is_a_qdac_one(self):
         """A former wait_trigger with a port waited on a QDAC trigger input."""
         text = LEGACY_QPROGRAM_YAML.replace("          port: null", "          port: 2")

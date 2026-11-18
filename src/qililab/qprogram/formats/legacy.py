@@ -53,7 +53,7 @@ from qprogram_qdac import Play as QdacPlay
 from qprogram_qdac import SetTrigger as QdacSetTrigger
 from qprogram_qdac import WaitTrigger as QdacWaitTrigger
 
-from qililab.qprogram.blocks import IfTrigger, InfiniteLoop, for_loop_linspace
+from qililab.qprogram.blocks import IfTrigger, InfiniteLoop, for_loop_linspace, to_scalar
 from qililab.qprogram.operations import MeasureReset, QbloxPlay
 from qililab.qprogram.variable_ids import unique_variable_id
 from qililab.yaml import yaml
@@ -76,7 +76,10 @@ _QDAC_ONLY_TRIGGER_POSITIONS = ("step", "end_step")
 
 
 def _mapping(constructor: BaseConstructor, node: MappingNode) -> dict[str, Any]:
-    """Construct a mapping node deeply.
+    """Construct a mapping node deeply, its numpy numbers as Python ones.
+
+    Files written while qililab depended on qilisdk hold numpy numbers (``!np_scalar``), which qprogram refuses or
+    keeps as they are (QHC-1873): they become Python numbers, as the QProgram methods make them.
 
     Args:
         constructor (BaseConstructor): The YAML constructor.
@@ -85,7 +88,8 @@ def _mapping(constructor: BaseConstructor, node: MappingNode) -> dict[str, Any]:
     Returns:
         dict[str, Any]: The mapping.
     """
-    return constructor.construct_mapping(node, deep=True)  # type: ignore[attr-defined]
+    mapping = constructor.construct_mapping(node, deep=True)  # type: ignore[attr-defined]
+    return {key: to_scalar(value) for key, value in mapping.items()}
 
 
 def _construct_variable(constructor: BaseConstructor, node: MappingNode) -> Variable:
