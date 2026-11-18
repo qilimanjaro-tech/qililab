@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import io
 from pathlib import Path
 
 from ruamel.yaml import YAML
@@ -52,8 +53,12 @@ def save_platform(path: str, platform: Platform) -> str:
     else:
         new_path = Path(path)
 
-    with open(file=new_path, mode="w", encoding="utf-8") as file:
-        YAML().dump(data=platform.to_dict(), stream=file)
+    # Serialise to a string first, so that a dump error never touches the existing runcard. Opening
+    # the file in write mode up front (as before) truncated it to 0 bytes before serialisation ran,
+    # wiping the runcard when the dump then failed.
+    stream = io.StringIO()
+    YAML().dump(data=platform.to_dict(), stream=stream)
+    new_path.write_text(stream.getvalue(), encoding="utf-8")
 
     return str(new_path)
 
