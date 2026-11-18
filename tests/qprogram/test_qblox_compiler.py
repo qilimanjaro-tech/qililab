@@ -3526,10 +3526,10 @@ class TestQBloxCompiler:
                             move             3, R6
             loop_0:
                             move             R4, R7
-                            latch_rst        4
+                            latch_rst        8
+                            set_cond         1, 1, 1, 4
                             move             5, R8
             herald:
-                            set_cond         1, 1, 1, 4
                             play             0, 1, 28
                             acquire_weighed  1, R7, R1, R0, 100
                             add              R7, 1, R7
@@ -3582,10 +3582,10 @@ class TestQBloxCompiler:
                             move             0, R1
             main:
                             move             0, R2
-                            latch_rst        4
+                            latch_rst        8
+                            set_cond         1, 2, 1, 4
                             move             3, R3
             herald:
-                            set_cond         1, 2, 1, 4
                             play             0, 1, 4
                             acquire_weighed  0, R2, R1, R0, 100
                             add              R2, 1, R2
@@ -3638,10 +3638,10 @@ class TestQBloxCompiler:
                             play             0, 1, 4
                             acquire_weighed  0, R4, R3, R1, 100
                             move             R2, R8
-                            latch_rst        4
+                            latch_rst        8
+                            set_cond         1, 1, 1, 4
                             move             3, R9
             herald:
-                            set_cond         1, 1, 1, 4
                             play             0, 1, 4
                             acquire_weighed  1, R8, R3, R1, 100
                             add              R8, 1, R8

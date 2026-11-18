@@ -24,7 +24,7 @@ class MeasureHerald(Operation):
         bus: str,
         waveform: IQWaveform,
         weights: IQWaveform,
-        max_attempts: int = 50,
+        max_attempts: int = 10,
         trigger_address: int = 1,
     ) -> None:
         super().__init__()
@@ -42,7 +42,7 @@ class MeasureHeraldCalibrated(Operation):
         bus: str,
         waveform: str,
         weights: str,
-        max_attempts: int = 50,
+        max_attempts: int = 10,
         trigger_address: int = 1,
     ) -> None:
         super().__init__()

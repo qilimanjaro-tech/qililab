@@ -1880,7 +1880,7 @@ class QProgram(StructuredProgram):
             bus: str,
             waveform: IQWaveform,
             weights: IQWaveform,
-            max_attempts: int = 50,
+            max_attempts: int = 10,
             trigger_address: int = 1,
         ) -> None:
             """Measure until the qubit is found in the ground state, then continue. See the main overload."""
@@ -1891,7 +1891,7 @@ class QProgram(StructuredProgram):
             bus: str,
             waveform: str,
             weights: str,
-            max_attempts: int = 50,
+            max_attempts: int = 10,
             trigger_address: int = 1,
         ) -> None:
             """Measure until the qubit is found in the ground state, then continue. See the main overload."""
@@ -1901,14 +1901,14 @@ class QProgram(StructuredProgram):
             bus: str,
             waveform: IQWaveform | str,
             weights: IQWaveform | str,
-            max_attempts: int = 50,
+            max_attempts: int = 10,
             trigger_address: int = 1,
         ) -> None:
             """Measure until the qubit is found in the ground state, then continue: heralding on the ground state.
 
             Each attempt measures ``bus`` and thresholds the result with the bus threshold. The bus sends a trigger
             when the result is the ground state, and counts its own triggers: once one is counted, the remaining
-            attempts are skipped, taking 4 ns each. After the herald, every Qblox bus of the QProgram waits for the
+            attempts are skipped, taking 12 ns each. After the herald, every Qblox bus of the QProgram waits for the
             others, so the operations that follow start together.
 
             A QProgram can have only one herald, and compiling raises otherwise. Place it inside ``qp.average(...)``
@@ -1932,7 +1932,9 @@ class QProgram(StructuredProgram):
                 bus (str): Identifier of the measurement bus.
                 waveform (IQWaveform | str): Waveform played during each measurement.
                 weights (IQWaveform | str): Weights used for demodulation/integration.
-                max_attempts (int, optional): Maximum number of measurements per shot. Defaults to 50.
+                max_attempts (int, optional): Maximum number of measurements per shot. Defaults to 10. Too large a
+                    value can stop the sequencer with a real-time queue underflow when the shot finds the ground state
+                    early; the limit depends on the QProgram.
                 trigger_address (int, optional): Trigger network address the bus sends its results on. Defaults to 1.
 
             Raises:

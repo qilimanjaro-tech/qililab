@@ -1819,8 +1819,8 @@ class QbloxCompiler:
     def _handle_measure_herald(self, element: MeasureHerald) -> None:
         """Measure until the ground state is found, then realign every bus with a ``wait_sync``.
 
-        Each attempt runs under a ``set_cond`` NOR on the trigger address: once the bus has counted a ground-state
-        trigger, each instruction of the remaining attempts is replaced by a 4 ns wait. The herald has its own
+        The attempts run under one ``set_cond`` NOR on the trigger address: once the bus has counted a ground-state
+        trigger, each real-time instruction of the remaining attempts is replaced by a 4 ns wait. The herald has its own
         acquisition, whose last axis is the attempts: attempt ``k`` writes bin ``k`` after the bins of the enclosing
         loops.
 
@@ -1871,11 +1871,11 @@ class QbloxCompiler:
         register_I = self._get_or_create_weight_register(bus, index_I, block_index=0)
         register_Q = self._get_or_create_weight_register(bus, index_Q, block_index=0)
 
-        self._handle_latch_rst(bus=bus, duration=INST_MIN_WAIT)
-        herald_loop = QPyProgram.Loop(name="herald", begin=element.max_attempts)
-        bus_info.qpy_block_stack[-1].add(herald_loop)
-        bus_info.qpy_block_stack.append(herald_loop)
-        # NOR: run this attempt only if no ground-state trigger has been counted yet
+        # 8 ns, as Qblox recommends: the reset only reaches the conditional logic one 4 ns cycle after latch_rst
+        # starts, so with latch_rst 4 the first attempt's play could still see a trigger counted before the herald
+        self._handle_latch_rst(bus=bus, duration=2 * INST_MIN_WAIT)
+        # NOR: from here, a real-time instruction runs only if no ground-state trigger has been counted yet. Each one
+        # checks the counters when it runs, so one set_cond covers every attempt
         self._handle_conditional(
             bus=bus,
             enable=ENABLE_CONDITIONAL,
@@ -1883,6 +1883,9 @@ class QbloxCompiler:
             operator=QPyTriggerCondition.NOR,
             else_duration=INST_MIN_WAIT,
         )
+        herald_loop = QPyProgram.Loop(name="herald", begin=element.max_attempts)
+        bus_info.qpy_block_stack[-1].add(herald_loop)
+        bus_info.qpy_block_stack.append(herald_loop)
         self._handle_play(Play(bus=bus, waveform=element.waveform, wait_time=bus_info.time_of_flight))
         herald_loop.add(
             QPyInstructions.AcquireWeighed(
