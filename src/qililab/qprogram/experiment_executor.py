@@ -436,7 +436,7 @@ class ExperimentExecutor:
 
                         # Bind the values for known variables, and retrieve deferred ones when the lambda is executed
                         elements_operations.append(
-                            lambda operation=element, call_parameters=call_parameters, qprogram_index=qprogram_index: (
+                            lambda operation=element, call_parameters=call_parameters, deferred_parameters=deferred_parameters, qprogram_index=qprogram_index: (
                                 store_results(
                                     self.platform.execute_qprogram(
                                         qprogram=operation.qprogram(
