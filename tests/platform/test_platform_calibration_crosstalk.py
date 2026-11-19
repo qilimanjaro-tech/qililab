@@ -287,53 +287,34 @@ class TestZeroHelpers:
 
 
 class TestPartialOverlap:
-    @pytest.mark.parametrize(
-        ("platform_buses", "shared"),
-        [(("qdac_bus_1",), "qdac_bus_1"), (("qdac_bus_1", "qdac_bus_2", AC_BUS), "qdac_bus_1, qdac_bus_2")],
-    )
-    def test_set_crosstalk_raises_on_partial_overlap_with_dc_matrix(
-        self, platform: Platform, platform_buses: tuple[str, ...], shared: str
+    def test_partial_platform_crosstalk_does_not_rewrite_its_buses(
+        self, platform: Platform, bus_mocks: dict[str, MagicMock]
     ):
+        platform_matrix = CrosstalkMatrix.from_buses(buses={"qdac_bus_1": {"qdac_bus_1": 0.25}})
         platform.set_calibration(calibration_with(dc=dc_matrix()))
-        matrix = CrosstalkMatrix.from_buses(buses={a: {b: 1.0 if a == b else 0.1 for b in platform_buses} for a in platform_buses})
+        platform.set_crosstalk(platform_matrix)
+        platform.set_parameter(alias="qdac_bus_1", parameter=Parameter.FLUX, value=0.2)
 
-        with pytest.raises(
-            ValueError,
-            match=re.escape(
-                f"platform.crosstalk and calibration.crosstalk_matrix share {shared} but not all their buses. "
-                "Give both matrices the same buses, or no common buses."
-            ),
-        ):
-            platform.set_crosstalk(matrix)
+        with pytest.raises(ValueError, match=not_inside("qdac_bus_2", platform_matrix)):
+            platform.set_parameter(alias="qdac_bus_2", parameter=Parameter.FLUX, value=0.1)
 
-        assert platform.crosstalk is None
+        assert written(bus_mocks["qdac_bus_1"]) == [
+            (Parameter.VOLTAGE, pytest.approx(platform_matrix.flux_to_bias({"qdac_bus_1": 0.2})["qdac_bus_1"]))
+        ]
+        bus_mocks["qdac_bus_2"].assert_not_called()
+        assert platform.get_parameter(alias="qdac_bus_1", parameter=Parameter.FLUX) == 0.2
 
-    def test_set_calibration_raises_on_partial_overlap_with_ac_matrix(self, platform: Platform):
-        platform.set_crosstalk(
-            CrosstalkMatrix.from_buses(
-                buses={"qdac_bus_1": {"qdac_bus_1": 1.0, AC_BUS: 0.1}, AC_BUS: {"qdac_bus_1": 0.1, AC_BUS: 1.0}}
-            )
-        )
+    def test_workaround_accepts_a_calibration_with_more_buses(self, platform: Platform):
+        old = calibration_with(dc=CrosstalkMatrix.from_buses(buses={"qdac_bus_1": {"qdac_bus_1": 1.0}}))
+        new = calibration_with(dc=dc_matrix())
+        platform.set_calibration(old)
+        platform.set_crosstalk(old.crosstalk_matrix)
 
-        calibration = calibration_with(ac=ac_matrix())
-        with pytest.raises(
-            ValueError,
-            match=re.escape(
-                f"platform.crosstalk and calibration.crosstalk_matrix_ac share {AC_BUS} but not all their buses. "
-                "Give both matrices the same buses, or no common buses."
-            ),
-        ):
-            platform.set_calibration(calibration)
+        platform.set_calibration(new)
+        platform.set_crosstalk(new.crosstalk_matrix)
 
-        assert platform.calibration is None
-
-    def test_disjoint_matrices_are_accepted(self, platform: Platform):
-        platform.set_crosstalk(dc_matrix())
-        calibration = calibration_with(ac=ac_matrix())
-
-        platform.set_calibration(calibration)
-
-        assert platform.calibration is calibration
+        assert platform.calibration is new
+        assert platform.crosstalk is new.crosstalk_matrix
 
 
 class TestWarnings:
