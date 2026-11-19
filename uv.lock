@@ -3779,7 +3779,7 @@ requires-dist = [
     { name = "qcodes", specifier = "==0.54.3" },
     { name = "qcodes-contrib-drivers", specifier = ">=0.23.0" },
     { name = "qm-qua", marker = "extra == 'quantum-machines'", specifier = "==1.2.4" },
-    { name = "qpysequence", git = "https://github.com/qilimanjaro-tech/qpysequence?rev=fb763f042bc934814aa2d1948f39b1fac04a4ecf" },
+    { name = "qpysequence", git = "https://github.com/qilimanjaro-tech/qpysequence?branch=qhc-1922-linq-herald-instructions" },
     { name = "rich", specifier = ">=14.0.0" },
     { name = "ruamel-yaml", specifier = ">=0.18.10" },
     { name = "scipy", specifier = ">=1.15" },
@@ -3856,7 +3856,7 @@ wheels = [
 [[package]]
 name = "qpysequence"
 version = "0.12.1.dev6+gfb763f0"
-source = { git = "https://github.com/qilimanjaro-tech/qpysequence?rev=fb763f042bc934814aa2d1948f39b1fac04a4ecf#fb763f042bc934814aa2d1948f39b1fac04a4ecf" }
+source = { git = "https://github.com/qilimanjaro-tech/qpysequence?branch=qhc-1922-linq-herald-instructions#fb763f042bc934814aa2d1948f39b1fac04a4ecf" }
 dependencies = [
     { name = "loguru" },
     { name = "numpy", version = "2.4.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
