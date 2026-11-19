@@ -1,0 +1,1 @@
+Restricted GitHub CI dependency builds to two reviewed source-only compatibility exceptions, pinned and hashed isolated build requirements, and checked all supported Python versions. Development now requires uv 0.13.8 or newer.
