@@ -27,6 +27,7 @@ from qililab.qprogram.blocks import Average, Block, Conditional, ForLoop
 from qililab.qprogram.operations import (
     Acquire,
     Measure,
+    MeasureHerald,
     MeasureReset,
     Play,
     PlayWithCalibratedWaveform,
@@ -114,8 +115,8 @@ def prepare_qblox(
 
     Applies the crosstalk compensation (the calibration's AC matrix, else the given one, else the calibration's DC
     matrix with a warning) and the bus distortions. Then walks the whole QProgram, including operations on other
-    instruments, to collect the acquisition metadata, validate ``qp.if_trigger()`` and ``qp.qblox.measure_reset()``,
-    and find the trigger requirements. Finally keeps only the operations on Qblox buses.
+    instruments, to collect the acquisition metadata, validate ``qp.if_trigger()``, ``qp.qblox.measure_reset()`` and
+    ``qp.qblox.measure_herald()``, and find the trigger requirements. Finally keeps only the operations on Qblox buses.
 
     Args:
         qprogram (QProgram): The QProgram returned by the shared pre-pass. It is not modified.
@@ -128,11 +129,13 @@ def prepare_qblox(
         QbloxPrepassResult: The QProgram with only Qblox operations, and what the compiler needs to know about it.
 
     Raises:
-        ValueError: If a ``qp.qblox.measure_reset()`` measures or resets on a bus that isn't a Qblox bus, or if a
+        ValueError: If a ``qp.qblox.measure_reset()`` measures or resets on a bus that isn't a Qblox bus, if a
+            ``qp.qblox.measure_herald()`` measures on a bus that isn't a Qblox bus, or if a
             ``qp.if_trigger()`` block has no operation on a Qblox bus, no wait time given or derivable from a QDAC
             ``set_trigger(position='step')`` + ``play(dwell=...)``, or a ``trigger_padding_ns`` below the trigger
             network's propagation delay.
-        NotImplementedError: If ``qp.if_trigger()`` is used in a way that isn't supported.
+        NotImplementedError: If ``qp.if_trigger()`` is used in a way that isn't supported, or if there is more than one
+            ``qp.qblox.measure_herald()``.
     """
     if calibration is not None:
         if calibration.crosstalk_matrix_ac is not None:
@@ -164,6 +167,15 @@ def prepare_qblox(
                 f"qp.qblox.measure_reset() measures on bus '{measure_reset.bus}' and resets on bus "
                 f"'{measure_reset.control_bus}', but both must be Qblox buses; the Qblox buses are {sorted(qblox_buses)}."
             )
+
+    measure_heralds = [leaf for leaf in leaves if isinstance(leaf, MeasureHerald)]
+    if len(measure_heralds) > 1:
+        raise NotImplementedError("Only one qp.qblox.measure_herald() is supported per QProgram.")
+    if measure_heralds and measure_heralds[0].bus not in qblox_buses:
+        raise ValueError(
+            f"qp.qblox.measure_herald() measures on bus '{measure_heralds[0].bus}', but it must be a Qblox bus; the "
+            f"Qblox buses are {sorted(qblox_buses)}."
+        )
 
     return QbloxPrepassResult(
         qprogram=keep_instrument_operations(qprogram, qblox_bus_set),

@@ -1,5 +1,5 @@
 version = 1
-revision = 5
+revision = 3
 requires-python = ">=3.11"
 resolution-markers = [
     "python_full_version >= '3.15' and platform_python_implementation == 'PyPy' and sys_platform == 'win32'",
@@ -3591,7 +3591,7 @@ wheels = [
 
 [[package]]
 name = "qblox-instruments"
-version = "1.0.3"
+version = "1.4.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "configparser" },
@@ -3601,10 +3601,11 @@ dependencies = [
     { name = "numpy", version = "2.5.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
     { name = "pysquashfsimage" },
     { name = "qcodes" },
+    { name = "semver" },
     { name = "spirack" },
-    { name = "strenum" },
+    { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/3f/c5/92860233ea0d7f14df45df10633682f40d86ee03d2667b423c8f3c574307/qblox_instruments-1.0.3.tar.gz", hash = "sha256:798528d69253c64f6e70b283c623a7cb6b5265806320bd90cec424a9f384f5ff", size = 2305021, upload-time = "2025-12-15T22:37:11.946Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/9d/9f/c06eb0292e93cbb439667dfc7b8e189a303f32c8c74d3dd3d9cf06f22fcd/qblox_instruments-1.4.1.tar.gz", hash = "sha256:85a2cb6e5d394a770defa1e87c32b060b9deb64eff76628138a77bbe1783482d", size = 4215608, upload-time = "2026-10-12T16:30:35.997Z" }
 
 [[package]]
 name = "qcodes"
@@ -3774,11 +3775,11 @@ requires-dist = [
     { name = "pydantic", specifier = ">=2.9.0" },
     { name = "pydantic-settings", specifier = ">=2.12.0" },
     { name = "pyvisa-py", specifier = ">=0.7.2" },
-    { name = "qblox-instruments", specifier = "==1.0.3" },
+    { name = "qblox-instruments", specifier = "==1.4.1" },
     { name = "qcodes", specifier = "==0.54.3" },
     { name = "qcodes-contrib-drivers", specifier = ">=0.23.0" },
     { name = "qm-qua", marker = "extra == 'quantum-machines'", specifier = "==1.2.4" },
-    { name = "qpysequence", specifier = ">=0.12.0", index = "https://qilimanjaro-723412851021.d.codeartifact.eu-west-1.amazonaws.com/pypi/qilimanjaro/simple" },
+    { name = "qpysequence", git = "https://github.com/qilimanjaro-tech/qpysequence?rev=fb763f042bc934814aa2d1948f39b1fac04a4ecf" },
     { name = "rich", specifier = ">=14.0.0" },
     { name = "ruamel-yaml", specifier = ">=0.18.10" },
     { name = "scipy", specifier = ">=1.15" },
@@ -3854,16 +3855,12 @@ wheels = [
 
 [[package]]
 name = "qpysequence"
-version = "0.12.0"
-source = { registry = "https://qilimanjaro-723412851021.d.codeartifact.eu-west-1.amazonaws.com/pypi/qilimanjaro/simple" }
+version = "0.12.1.dev6+gfb763f0"
+source = { git = "https://github.com/qilimanjaro-tech/qpysequence?rev=fb763f042bc934814aa2d1948f39b1fac04a4ecf#fb763f042bc934814aa2d1948f39b1fac04a4ecf" }
 dependencies = [
     { name = "loguru" },
     { name = "numpy", version = "2.4.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
     { name = "numpy", version = "2.5.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
-]
-sdist = { url = "https://qilimanjaro-723412851021.d.codeartifact.eu-west-1.amazonaws.com/pypi/qilimanjaro/simple/qpysequence/0.12.0/qpysequence-0.12.0.tar.gz", hash = "sha512:5e471cc88e4cfe42f1a07fe40ae74d5d4abb90c8e70ca964e72bdd47b840a67c0fd80a9d8f4343ff19c3998d307bd394ecfe29493feda5969aa0642ffb21a306", size = 142873, upload-time = "2026-11-05T14:32:22.354Z" }
-wheels = [
-    { url = "https://qilimanjaro-723412851021.d.codeartifact.eu-west-1.amazonaws.com/pypi/qilimanjaro/simple/qpysequence/0.12.0/qpysequence-0.12.0-py3-none-any.whl", hash = "sha512:bb72afe85e86c622307b503ee3b7c5564e8eb4a5f117221702f8480bf60789eb818845af05dd91daaf895f068c12b2ab33f5dd4880baac0eddeb24f818784313", size = 120733, upload-time = "2026-11-05T14:32:21.961Z" },
 ]
 
 [[package]]
@@ -4243,6 +4240,15 @@ wheels = [
 ]
 
 [[package]]
+name = "semver"
+version = "3.1.2"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/ec/a0/3d3f51a1304c0e8c93e06a23308f566f2d52d62f92dac903b85ef79dea6f/semver-3.1.2.tar.gz", hash = "sha256:bea193552413194252d33ff26ce0962b76669bd1c6fb17e8e203ac37f072feaf", size = 293659, upload-time = "2026-11-15T17:01:42.931Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/ab/60/27e29790ff15ea0a485b8dc200d514328294f956e4abc3d43d88c0b5338d/semver-3.1.2-py3-none-any.whl", hash = "sha256:45d107c3fa880910441dfab9d555046cba2829a25feeadfe4a1566439635c510", size = 19100, upload-time = "2026-11-15T17:01:41.321Z" },
+]
+
+[[package]]
 name = "setuptools"
 version = "84.1.0"
 source = { registry = "https://pypi.org/simple" }
@@ -4535,15 +4541,6 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/28/e3/55dcc2cfbc3ca9c29519eb6884dd1415ecb53b0e934862d3559ddcb7e20b/stack_data-0.6.3.tar.gz", hash = "sha256:836a778de4fec4dcd1dcd89ed8abff8a221f58308462e1c4aa2a3cf30148f0b9", size = 44707, upload-time = "2023-09-30T13:58:05.479Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/f1/7b/ce1eafaf1a76852e2ec9b22edecf1daa58175c090266e9f6c64afcd81d91/stack_data-0.6.3-py3-none-any.whl", hash = "sha256:d5558e0c25a4cb0853cddad3d77da9891a08cb85dd9f9f91b9f8cd66e511e695", size = 24521, upload-time = "2023-09-30T13:58:03.53Z" },
-]
-
-[[package]]
-name = "strenum"
-version = "0.4.15"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/85/ad/430fb60d90e1d112a62ff57bdd1f286ec73a2a0331272febfddd21f330e1/StrEnum-0.4.15.tar.gz", hash = "sha256:878fb5ab705442070e4dd1929bb5e2249511c0bcf2b0eeacf3bcd80875c82eff", size = 23384, upload-time = "2023-06-29T22:02:58.399Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/81/69/297302c5f5f59c862faa31e6cb9a4cd74721cd1e052b38e464c5b402df8b/StrEnum-0.4.15-py3-none-any.whl", hash = "sha256:a30cda4af7cc6b5bf52c8055bc4bf4b2b6b14a93b574626da33df53cf7740659", size = 8851, upload-time = "2023-06-29T22:02:56.947Z" },
 ]
 
 [[package]]

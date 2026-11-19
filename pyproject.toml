@@ -36,7 +36,7 @@ dependencies = [
     "pydantic>=2.9.0",
     "pydantic-settings>=2.12.0",
     "pyvisa-py>=0.7.2",
-    "qblox-instruments==1.0.3",
+    "qblox-instruments==1.4.1",
     "qcodes==0.54.3",
     "qcodes-contrib-drivers>=0.23.0",
     "qpysequence>=0.12.0",
@@ -123,7 +123,9 @@ url = "https://aws@qilimanjaro-723412851021.d.codeartifact.eu-west-1.amazonaws.c
 explicit = true
 
 [tool.uv.sources]
-qpysequence = { index = "qilimanjaro" }
+# Pinned to a commit until its release is out: qpysequence's PR #101 (the LINQ feedback instructions, cmp, jz and
+# jnz, and real-time durations of 0, QHC-1922). The git source is replaced by a version pin once it is released.
+qpysequence = { git = "https://github.com/qilimanjaro-tech/qpysequence", rev = "fb763f042bc934814aa2d1948f39b1fac04a4ecf" }
 
 [tool.ruff]
 line-length = 120
