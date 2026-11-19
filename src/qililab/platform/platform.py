@@ -850,15 +850,32 @@ class Platform:
 
         self.flux_vector[alias] = value
 
-    def _warn_crosstalk_overrides(self) -> None:
-        """Warns which matrices ``platform.crosstalk`` and the calibration's crosstalk matrices replace."""
-        if self.crosstalk is None or self.calibration is None:
+    @staticmethod
+    def _check_crosstalk_sources(crosstalk: CrosstalkMatrix | None, calibration: Calibration | None) -> None:
+        """Checks ``crosstalk`` against the calibration's crosstalk matrices and warns which one replaces the other.
+
+        Raises:
+            ValueError: If ``crosstalk`` shares some, but not all, of its buses with a calibration crosstalk matrix.
+        """
+        if crosstalk is None or calibration is None:
             return
-        dc, ac = self.calibration.crosstalk_matrix, self.calibration.crosstalk_matrix_ac
+        dc, ac = calibration.crosstalk_matrix, calibration.crosstalk_matrix_ac
+        buses = set(crosstalk.matrix)
+        for name, matrix in (("calibration.crosstalk_matrix", dc), ("calibration.crosstalk_matrix_ac", ac)):
+            if matrix is None or matrix is crosstalk:
+                continue
+            other = set(matrix.matrix)
+            shared = buses & other
+            if shared and buses != other:
+                raise ValueError(
+                    f"platform.crosstalk and {name} share {', '.join(sorted(shared))} but not all their buses. "
+                    "Give both matrices the same buses, or no common buses."
+                )
+
         overrides = []
-        if dc is not None and dc is not self.crosstalk:
+        if dc is not None and dc is not crosstalk:
             overrides.append("platform.crosstalk replaces calibration.crosstalk_matrix")
-        if ac is not None and ac is not self.crosstalk and not ac.matrix.keys().isdisjoint(self.crosstalk.matrix):
+        if ac is not None and ac is not crosstalk and not buses.isdisjoint(ac.matrix):
             overrides.append("calibration.crosstalk_matrix_ac replaces platform.crosstalk on Qblox buses")
         if overrides:
             logger.warning(f"Both platform.crosstalk and platform.calibration hold crosstalk: {'; '.join(overrides)}.")
@@ -868,24 +885,28 @@ class Platform:
 
         Args:
             calibration (Calibration | str): Calibration class or file path.
+
+        Raises:
+            ValueError: If ``platform.crosstalk`` shares some, but not all, of its buses with a crosstalk matrix of the calibration.
         """
         if isinstance(calibration, str):
             calibration = deserialize_from(file=calibration, cls=Calibration)
-        changed = calibration is not self.calibration
+        if calibration is not self.calibration:
+            self._check_crosstalk_sources(self.crosstalk, calibration)
         self.calibration = calibration
-        if changed:
-            self._warn_crosstalk_overrides()
 
     def set_crosstalk(self, crosstalk: CrosstalkMatrix):
         """Sets the crosstalk matrix using the crosstalk matrix class.
 
         Args:
             crosstalk (CrosstalkMatrix): Crosstalk matrix to implement on the sample
+
+        Raises:
+            ValueError: If ``crosstalk`` shares some, but not all, of its buses with a crosstalk matrix of ``platform.calibration``.
         """
-        changed = crosstalk is not self.crosstalk
+        if crosstalk is not self.crosstalk:
+            self._check_crosstalk_sources(crosstalk, self.calibration)
         self.crosstalk = crosstalk
-        if changed:
-            self._warn_crosstalk_overrides()
 
     def set_flux_to_zero(self, bus_list: list[str] | None = None):
         """Set all lines inside the crosstalk / bus list to 0 Phi0, sets everything into the crosstalk offsets.

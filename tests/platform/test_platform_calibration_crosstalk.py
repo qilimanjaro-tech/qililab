@@ -118,19 +118,33 @@ class TestMatrixChoice:
         assert written(bus_mocks[AC_BUS]) == [(Parameter.OFFSET_OUT0, pytest.approx(dc.flux_to_bias({AC_BUS: 0.2})[AC_BUS]))]
 
     def test_platform_crosstalk_replaces_dc_matrix(self, platform: Platform, bus_mocks: dict[str, MagicMock]):
-        platform_matrix = CrosstalkMatrix.from_buses(buses={"qdac_bus_1": {"qdac_bus_1": 0.25}})
+        platform_matrix = CrosstalkMatrix.from_buses(
+            buses={
+                "qdac_bus_1": {"qdac_bus_1": 0.5, "qdac_bus_2": 0.3},
+                "qdac_bus_2": {"qdac_bus_1": 0.3, "qdac_bus_2": 0.5},
+            }
+        )
         platform.set_calibration(calibration_with(dc=dc_matrix()))
         platform.set_crosstalk(platform_matrix)
 
         platform.set_parameter(alias="qdac_bus_1", parameter=Parameter.FLUX, value=0.2)
 
-        assert written(bus_mocks["qdac_bus_1"]) == [
-            (Parameter.VOLTAGE, pytest.approx(platform_matrix.flux_to_bias({"qdac_bus_1": 0.2})["qdac_bus_1"]))
-        ]
-        bus_mocks["qdac_bus_2"].assert_not_called()
-        with pytest.raises(ValueError, match=not_inside("qdac_bus_2", platform_matrix)):
-            platform.set_parameter(alias="qdac_bus_2", parameter=Parameter.FLUX, value=0.1)
-        bus_mocks["qdac_bus_1"].assert_called_once()
+        expected = platform_matrix.flux_to_bias({"qdac_bus_1": 0.2, "qdac_bus_2": 0.0})
+        assert written(bus_mocks["qdac_bus_1"]) == [(Parameter.VOLTAGE, pytest.approx(expected["qdac_bus_1"]))]
+        assert written(bus_mocks["qdac_bus_2"]) == [(Parameter.VOLTAGE, pytest.approx(expected["qdac_bus_2"]))]
+
+    def test_qblox_platform_crosstalk_replaces_dc_matrix_for_qdac_buses(
+        self, platform: Platform, bus_mocks: dict[str, MagicMock]
+    ):
+        platform_matrix = CrosstalkMatrix.from_buses(buses={AC_BUS: {AC_BUS: 0.25}})
+        platform.set_calibration(calibration_with(dc=dc_matrix()))
+        platform.set_crosstalk(platform_matrix)
+
+        with pytest.raises(ValueError, match=not_inside("qdac_bus_1", platform_matrix)):
+            platform.set_parameter(alias="qdac_bus_1", parameter=Parameter.FLUX, value=0.1)
+
+        for mock in bus_mocks.values():
+            mock.assert_not_called()
 
     def test_ac_matrix_replaces_platform_crosstalk_on_qblox_buses(
         self, platform: Platform, bus_mocks: dict[str, MagicMock]
@@ -206,12 +220,13 @@ class TestZeroHelpers:
 
     def test_set_flux_to_zero_default_skips_replaced_matrix(self, platform: Platform, bus_mocks: dict[str, MagicMock]):
         platform.set_calibration(calibration_with(dc=dc_matrix()))
-        platform.set_crosstalk(CrosstalkMatrix.from_buses(buses={"qdac_bus_1": {"qdac_bus_1": 0.25}}))
+        platform.set_crosstalk(CrosstalkMatrix.from_buses(buses={AC_BUS: {AC_BUS: 0.25}}))
 
         platform.set_flux_to_zero()
 
-        assert written(bus_mocks["qdac_bus_1"]) == [(Parameter.VOLTAGE, 0.0)]
-        bus_mocks["qdac_bus_2"].assert_not_called()
+        assert written(bus_mocks[AC_BUS]) == [(Parameter.OFFSET_OUT0, 0.0)]
+        for alias in DC_BUSES:
+            bus_mocks[alias].assert_not_called()
 
     def test_set_flux_to_zero_validates_every_bus_before_writing(
         self, platform: Platform, bus_mocks: dict[str, MagicMock]
@@ -269,6 +284,55 @@ class TestZeroHelpers:
         for alias in DC_BUSES:
             bus_mocks[alias].assert_not_called()
             assert platform.get_parameter(alias=alias, parameter=Parameter.FLUX) == 0.2
+
+
+class TestPartialOverlap:
+    @pytest.mark.parametrize(
+        ("platform_buses", "shared"),
+        [(("qdac_bus_1",), "qdac_bus_1"), (("qdac_bus_1", "qdac_bus_2", AC_BUS), "qdac_bus_1, qdac_bus_2")],
+    )
+    def test_set_crosstalk_raises_on_partial_overlap_with_dc_matrix(
+        self, platform: Platform, platform_buses: tuple[str, ...], shared: str
+    ):
+        platform.set_calibration(calibration_with(dc=dc_matrix()))
+        matrix = CrosstalkMatrix.from_buses(buses={a: {b: 1.0 if a == b else 0.1 for b in platform_buses} for a in platform_buses})
+
+        with pytest.raises(
+            ValueError,
+            match=re.escape(
+                f"platform.crosstalk and calibration.crosstalk_matrix share {shared} but not all their buses. "
+                "Give both matrices the same buses, or no common buses."
+            ),
+        ):
+            platform.set_crosstalk(matrix)
+
+        assert platform.crosstalk is None
+
+    def test_set_calibration_raises_on_partial_overlap_with_ac_matrix(self, platform: Platform):
+        platform.set_crosstalk(
+            CrosstalkMatrix.from_buses(
+                buses={"qdac_bus_1": {"qdac_bus_1": 1.0, AC_BUS: 0.1}, AC_BUS: {"qdac_bus_1": 0.1, AC_BUS: 1.0}}
+            )
+        )
+
+        with pytest.raises(
+            ValueError,
+            match=re.escape(
+                f"platform.crosstalk and calibration.crosstalk_matrix_ac share {AC_BUS} but not all their buses. "
+                "Give both matrices the same buses, or no common buses."
+            ),
+        ):
+            platform.set_calibration(calibration_with(ac=ac_matrix()))
+
+        assert platform.calibration is None
+
+    def test_disjoint_matrices_are_accepted(self, platform: Platform):
+        platform.set_crosstalk(dc_matrix())
+        calibration = calibration_with(ac=ac_matrix())
+
+        platform.set_calibration(calibration)
+
+        assert platform.calibration is calibration
 
 
 class TestWarnings:
