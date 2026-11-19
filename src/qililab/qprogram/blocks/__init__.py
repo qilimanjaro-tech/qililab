@@ -12,10 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from .average import Average
-from .block import Block
+from qprogram.blocks import Average, Block, ForLoop
+
 from .conditional import Conditional
-from .for_loop import ForLoop, for_loop_iterations
+from .for_loop import for_loop_iterations
 from .infinite_loop import InfiniteLoop
 from .loop import Loop
 from .parallel import Parallel

@@ -22,7 +22,7 @@ from uuid import UUID
 
 from qililab.config import logger
 from qililab.constants import QDACCONSTANTS
-from qililab.core.variables import Variable
+from qililab.core import Variable
 from qililab.qprogram.blocks import Average, Block, Conditional, ForLoop
 from qililab.qprogram.operations import (
     Acquire,

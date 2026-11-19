@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from qililab.core.variables import Domain
+from qililab.core import Domain
 from qililab.qprogram import QProgram
 from qililab.qprogram.blocks import ForLoop
 from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix

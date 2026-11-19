@@ -2,7 +2,7 @@ from qililab import IQPair, QProgram, Square
 from qililab.qprogram.blocks import Average, Block, ForLoop
 from qililab.qprogram.operations import Play, SetOffset, Sync, Wait
 from qililab.qprogram.prepass.utils_prepass import keep_instrument_operations
-from qililab.core.variables import Domain
+from qililab.core import Domain
 
 
 class TestKeepInstrumentOperations:

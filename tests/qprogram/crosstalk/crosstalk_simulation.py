@@ -21,7 +21,7 @@ from typing import Literal
 
 import numpy as np
 
-from qililab.core.variables import Variable, VariableExpression
+from qililab.core import Variable, VariableExpression
 from qililab.qprogram.blocks import Block, ForLoop, Loop, Parallel, for_loop_iterations
 from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
 from qililab.qprogram.operations import (

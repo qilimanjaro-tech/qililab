@@ -14,20 +14,6 @@
 
 import math
 
-from qililab.core.variables import Variable
-from qililab.qprogram.blocks.block import Block
-from qililab.yaml import yaml
-
-
-@yaml.register_class
-class ForLoop(Block):
-    def __init__(self, variable: Variable, start: int | float, stop: int | float, step: int | float) -> None:
-        super().__init__()
-        self.variable: Variable = variable
-        self.start: int | float = start
-        self.stop: int | float = stop
-        self.step: int | float = step
-
 
 def for_loop_iterations(start: int | float, stop: int | float, step: int | float) -> int:
     """Number of points a for_loop from ``start`` to ``stop`` by ``step`` sweeps.

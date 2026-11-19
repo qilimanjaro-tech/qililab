@@ -28,7 +28,7 @@ from qpysequence.enums import TriggerCondition as QPyTriggerCondition
 
 from qililab.config import logger
 from qililab.constants import QBLOXCONSTANTS
-from qililab.core.variables import Domain, Variable, VariableExpression
+from qililab.core import Domain, Variable, VariableExpression
 from qililab.qprogram.blocks import (
     Average,
     Block,
@@ -1978,8 +1978,6 @@ class QbloxCompiler:
 
         if not operations:
             return None
-        if isinstance(operations[0], Play) and operations[0].get_waveform_variables():
-            raise NotImplementedError("TODO: Variables referenced in a loop cannot be used in Play operation.")
         return operations[0]
 
     @staticmethod

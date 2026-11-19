@@ -9,17 +9,13 @@ from qililab.instruments import Instrument, Instruments
 from qililab.instruments.qdevil.qdevil_qdac2 import QDevilQDac2
 from qililab.platform import Bus
 from qililab.qprogram import Calibration, QdacCompiler, QProgram
-from qililab.qprogram.blocks import Block
-from qililab.qprogram.blocks.for_loop import ForLoop
-from qililab.qprogram.blocks.loop import Loop
+from qililab.qprogram.blocks import Block, ForLoop, Loop
 from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix, NonLinearCrosstalkMatrix
 from qililab.qprogram.operations import Play
 from qililab.qprogram.qdac_compiler import QdacCompilationOutput
-from qililab.core.variables import Domain
+from qililab.core import Domain
 from qililab.typings.enums import Parameter
-from qililab.waveforms import Square
-from qililab.waveforms.arbitrary import Arbitrary
-from qililab.waveforms.iq_pair import IQPair
+from qililab.waveforms import Square, Arbitrary, IQPair
 
 
 def _collect_plays(block: Block) -> dict:
@@ -1003,7 +999,7 @@ class TestQdacCompiler:
 
         compiler = QdacCompiler()
         with pytest.raises(
-            NotImplementedError, match=f"<class 'qililab.qprogram.operations.sync.Sync'> is not supported in QDACII."
+            NotImplementedError, match=r"<class 'qprogram.operations.sync.Sync'> is not supported in QDACII."
         ):
             compiler.compile(qprogram=qp, qdacs=[qdac], qdac_buses=[flux1, flux2], qdac_offsets=[0, 0])
 
@@ -1023,7 +1019,7 @@ class TestQdacCompiler:
 
         compiler = QdacCompiler()
         with pytest.raises(
-            NotImplementedError, match=f"<class 'qililab.qprogram.operations.sync.Sync'> is not supported in QDACII."
+            NotImplementedError, match=r"<class 'qprogram.operations.sync.Sync'> is not supported in QDACII."
         ):
             compiler.compile(
                 qprogram=qp, qdacs=[qdac], qdac_buses=[flux1, flux2], qdac_offsets=[0, 0], crosstalk=crosstalk
@@ -1385,7 +1381,7 @@ class TestQdacCompiler:
 
         compiler = QdacCompiler()
         with pytest.raises(
-            NotImplementedError, match=re.escape("<class 'qililab.qprogram.operations.wait.Wait'> is not supported in QDACII.")
+            NotImplementedError, match=re.escape("<class 'qprogram.operations.wait.Wait'> is not supported in QDACII.")
         ):
             compiler.compile(qprogram=qp, qdacs=[qdac], qdac_buses=[flux1], qdac_offsets=[0])
 

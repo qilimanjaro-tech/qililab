@@ -8,6 +8,9 @@ on:
       - "synchronize"
       - "ready_for_review"
 
+env:
+  PYX_API_KEY: ${{ secrets.PYX_API_KEY }}
+
 concurrency:
   group: docs-${{ github.head_ref || github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}

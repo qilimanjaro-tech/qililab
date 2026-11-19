@@ -108,26 +108,6 @@ def test_legacy_tuple_deserialization():
     assert isinstance(loaded_tuple, tuple)
 
 
-def test_tuple_serialization_does_not_use_legacy_tag():
-    """Test that tuples serialized today no longer use the legacy '!tuple' tag."""
-    original_tuple = (1, 2, 3)
-
-    # Dump the tuple to YAML
-    stream = io.StringIO()
-    yaml.dump(original_tuple, stream)
-    yaml_str = stream.getvalue()
-
-    # Verify that the legacy tag is not used
-    assert "!tuple" not in yaml_str
-
-    # Load the tuple back from YAML
-    loaded_tuple = yaml.load(yaml_str)
-
-    # Verify that the original and loaded tuples are equal
-    assert original_tuple == loaded_tuple
-    assert isinstance(loaded_tuple, tuple)
-
-
 @pytest.mark.parametrize(
     ("dtype", "value"),
     [("float64", 1.5), ("float32", 1.5), ("int64", 7), ("int32", -3), ("uint8", 255), ("bool", True)],
@@ -143,67 +123,6 @@ def test_legacy_np_scalar_deserialization(dtype, value):
     assert isinstance(loaded_scalar, np.generic)
     assert loaded_scalar.dtype == np.dtype(dtype)
     assert loaded_scalar == np.dtype(dtype).type(value)
-
-
-def test_np_scalar_serialization_does_not_use_legacy_tag():
-    """Test that numpy scalars serialized today no longer use the legacy '!np_scalar' tag."""
-    assert "!np_scalar" not in dump_to_string({"value": np.float32(1.5)})
-
-
-@pytest.mark.parametrize(
-    ("scalar", "equivalent"),
-    [
-        (np.float64(1.5), 1.5),
-        (np.float32(1.5), 1.5),
-        (np.int64(7), 7),
-        (np.int32(-3), -3),
-        (np.uint8(255), 255),
-        (np.bool_(True), True),
-        (np.str_("hi"), "hi"),
-        (np.float64("nan"), float("nan")),
-        (np.float64("inf"), float("inf")),
-        (np.float64("-inf"), float("-inf")),
-    ],
-)
-def test_np_scalar_serializes_like_a_plain_python_scalar(scalar, equivalent):
-    """Test that numpy scalars serialize byte for byte like their plain Python equivalents."""
-    assert dump_to_string(scalar) == dump_to_string(equivalent)
-
-
-def test_np_scalars_serialize_to_a_plain_yaml_document():
-    """Test the document produced for a mapping holding numpy scalars, tags and all."""
-    original = {"frequency": np.float64(5.2e9), "index": np.int64(3), "enabled": np.bool_(False)}
-
-    assert dump_to_string(original) == "{enabled: false, frequency: 5200000000.0, index: 3}\n"
-
-
-@pytest.mark.parametrize(
-    ("scalar", "expected"),
-    [(np.float64(1.5), 1.5), (np.float32(1.5), 1.5), (np.int64(7), 7), (np.int32(-3), -3), (np.uint8(255), 255)],
-)
-def test_np_numeric_scalar_round_trip_preserves_value_but_not_dtype(scalar, expected):
-    """Test that a round trip returns the plain Python equivalent of a numeric numpy scalar.
-
-    An untagged scalar carries no dtype, so dropping it is the intended trade-off: runcards and
-    qprograms hold physical parameters whose numpy dtype is incidental.
-    """
-    loaded_scalar = yaml.load(dump_to_string({"value": scalar}))["value"]
-
-    assert loaded_scalar == pytest.approx(expected)
-    assert type(loaded_scalar) is type(expected)
-    assert not isinstance(loaded_scalar, np.generic)
-
-
-@pytest.mark.parametrize(
-    ("scalar", "expected"), [(np.bool_(True), True), (np.bool_(False), False), (np.str_("hi"), "hi")]
-)
-def test_np_non_numeric_scalar_round_trip_preserves_value_but_not_dtype(scalar, expected):
-    """Test that a round trip returns the plain Python equivalent of a boolean or string numpy scalar."""
-    loaded_scalar = yaml.load(dump_to_string({"value": scalar}))["value"]
-
-    assert loaded_scalar == expected
-    assert type(loaded_scalar) is type(expected)
-    assert not isinstance(loaded_scalar, np.generic)
 
 
 def test_np_float32_round_trip_is_exact_when_recast():

@@ -12,10 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from qililab.core.variables import Variable
-from qililab.qprogram.operations.operation import Operation
+from qililab.core import Variable
 from qililab.typings.enums import Parameter
 from qililab.yaml import yaml
+
+from . import Operation
 
 
 @yaml.register_class

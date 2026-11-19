@@ -14,7 +14,8 @@
 
 """__init__.py"""
 
+from qprogram.exceptions import VariableAllocated
+
 from .data_unavailable import DataUnavailable
-from .variable_allocated import VariableAllocated
 
 __all__ = ["DataUnavailable", "VariableAllocated"]

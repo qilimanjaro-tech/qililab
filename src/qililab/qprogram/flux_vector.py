@@ -19,7 +19,7 @@ from typing import TYPE_CHECKING, cast
 
 import numpy as np
 
-from qililab.core.variables import Variable, VariableExpression
+from qililab.core import Variable, VariableExpression
 from qililab.qprogram.blocks import ForLoop, Loop, Parallel, for_loop_iterations
 from qililab.qprogram.operations import SetGain, SetOffset
 from qililab.waveforms import Arbitrary, Square, Waveform

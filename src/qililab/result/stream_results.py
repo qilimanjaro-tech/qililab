@@ -19,7 +19,7 @@ from typing import TYPE_CHECKING, Any
 import h5py
 import numpy as np
 
-from qililab.core.variables import Variable
+from qililab.core import Variable
 from qililab.instruments.qblox.qblox_module import QbloxModule
 from qililab.instruments.qdevil.qdevil_qdac2 import QDevilQDac2
 from qililab.qprogram.blocks import Block

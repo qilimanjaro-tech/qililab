@@ -7,7 +7,7 @@ Each case compares the compensated program with ``flux_to_bias`` of the original
 import numpy as np
 import pytest
 
-from qililab.core.variables import Domain
+from qililab.core import Domain
 from qililab.qprogram import QProgram
 from qililab.qprogram.blocks import ForLoop, for_loop_iterations
 from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
