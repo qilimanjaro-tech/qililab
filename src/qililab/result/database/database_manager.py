@@ -32,6 +32,10 @@ from qililab.result.database.database_qaas import QaaS_Experiment
 from qililab.utils.serialization import serialize
 
 if TYPE_CHECKING:
+    from pandas import DataFrame
+    from sqlalchemy.engine import Connection
+    from sqlalchemy.orm import Query
+
     from qililab.platform.platform import Platform
     from qililab.qprogram.calibration import Calibration
     from qililab.qprogram.experiment import Experiment
@@ -47,6 +51,16 @@ _SCHEMA_MODELS: dict[DatabaseSchema, type[Measurement | AutocalMeasurement | Qaa
     "qaas": QaaS_Experiment,
 }
 _Entry = TypeVar("_Entry", bound=Measurement | AutocalMeasurement | QaaS_Experiment)
+_QueryResult = TypeVar("_QueryResult")
+
+
+def _read_query(
+    query: "Query[_QueryResult]", con: "Connection", pandas_output: bool
+) -> "DataFrame | list[_QueryResult]":
+    """Materialize a model or projected-row query in the requested output format."""
+    if pandas_output:
+        return read_sql(query.statement, con=con)
+    return query.all()
 
 
 def _is_database_schema(value: object) -> TypeGuard[DatabaseSchema]:
@@ -558,7 +572,7 @@ class DatabaseManager:
             Measurement.platform.isnot
             if light_read:
                 # Note that some columns are missing that currently are not being used
-                query = query.with_entities(
+                row_query = query.with_entities(
                     Measurement.measurement_id,
                     Measurement.sequence_id,
                     Measurement.experiment_name,
@@ -581,10 +595,9 @@ class DatabaseManager:
                     (Measurement.dc_offsets != "null").label("has_dc_offsets"),
                     (Measurement.flux_offsets != "null").label("has_flux_offsets"),
                 )
+                return _read_query(row_query, con, pandas_output)
 
-            if pandas_output:
-                return read_sql(query.statement, con=con)
-            return query.all()
+            return _read_query(query, con, pandas_output)
 
     @_requires_schema("measurements")
     def head(
@@ -625,7 +638,7 @@ class DatabaseManager:
 
             if light_read:
                 # Note that some columns are missing that currently are not being used
-                query = query.with_entities(
+                row_query = query.with_entities(
                     Measurement.measurement_id,
                     Measurement.sequence_id,
                     Measurement.experiment_name,
@@ -648,10 +661,9 @@ class DatabaseManager:
                     (Measurement.dc_offsets != "null").label("has_dc_offsets"),
                     (Measurement.flux_offsets != "null").label("has_flux_offsets"),
                 )
+                return _read_query(row_query, con, pandas_output)
 
-            if pandas_output:
-                return read_sql(query.statement, con=con)
-            return query.all()
+            return _read_query(query, con, pandas_output)
 
     @_requires_schema("measurements")
     def get_qprogram(self, measurement_id: int) -> str:
@@ -1079,7 +1091,7 @@ def get_engine(user: str, passwd: str, host: str, port: str, database: str):
         port (str): Host port
         database (str): Database name
     """
-    url = f"postgresql://{user}:{passwd}@{host}:{port}/{database}"
+    url = f"postgresql+psycopg2://{user}:{passwd}@{host}:{port}/{database}"
     return create_engine(url)
 
 

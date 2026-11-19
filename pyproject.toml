@@ -43,7 +43,7 @@ dependencies = [
     "rich>=14.0.0",
     "ruamel-yaml>=0.18.10",
     "scipy>=1.15",
-    "sqlalchemy<2.1",
+    "sqlalchemy>=2.1.8,<2.2",
     "submitit>=1.5.2",
     "xarray>=2025.11.0",
 ]
