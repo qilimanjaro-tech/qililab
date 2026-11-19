@@ -315,6 +315,7 @@ class TestPartialOverlap:
             )
         )
 
+        calibration = calibration_with(ac=ac_matrix())
         with pytest.raises(
             ValueError,
             match=re.escape(
@@ -322,7 +323,7 @@ class TestPartialOverlap:
                 "Give both matrices the same buses, or no common buses."
             ),
         ):
-            platform.set_calibration(calibration_with(ac=ac_matrix()))
+            platform.set_calibration(calibration)
 
         assert platform.calibration is None
 
