@@ -307,6 +307,9 @@ class Platform:
         self.crosstalk: CrosstalkMatrix | None = None
         """Crosstalk matrix information, defaults to None (only used on FLUX parameters)"""
 
+        self._crosstalk_warned_pair: tuple[CrosstalkMatrix, Calibration] | None = None
+        """Last ``(crosstalk, calibration)`` pair that warned about two crosstalk sources."""
+
         self.qdac_buses: list[Bus] = []
         """List of buses that use the instrument `QDevilQDac2`, defaults to an empty list for no qdac buses."""
 
@@ -635,9 +638,9 @@ class Platform:
         element = self.get_element(alias=alias)
 
         if parameter == Parameter.FLUX:
+            crosstalk = self._process_crosstalk(alias, value)
+            self._write_flux_biases(element, crosstalk)
             self.flux_parameter[alias] = float(value)
-            self._process_crosstalk(alias, value)
-            self._set_bias_from_element(element)
             return
 
         if parameter in {
@@ -798,26 +801,113 @@ class Platform:
             flux_element.set_parameter(parameter=parameter, value=flux_value)
         return
 
-    def _process_crosstalk(self, alias: str, value):
-        """Calculates the Current/Voltage of the set parameter based on the value of the flux and the crosstalk matrix"""
-        if not self.crosstalk:
-            raise ValueError("Crosstalk matrix has not been set")
+    def _calibration_crosstalk(self) -> list[tuple[str, CrosstalkMatrix]]:
+        """The calibration's crosstalk matrices, AC first, named as in the calibration."""
+        if self.calibration is None:
+            return []
+        matrices = [
+            ("calibration.crosstalk_matrix_ac", self.calibration.crosstalk_matrix_ac),
+            ("calibration.crosstalk_matrix", self.calibration.crosstalk_matrix),
+        ]
+        return [(name, matrix) for name, matrix in matrices if matrix is not None]
 
-        bus_list = list(self.crosstalk.matrix.keys())
+    def _crosstalk_sources(self) -> list[tuple[str, CrosstalkMatrix]]:
+        """All crosstalk matrices the static flux helpers can use, in precedence order.
+
+        Raises:
+            ValueError: If neither ``platform.crosstalk`` nor a calibration crosstalk matrix is set.
+        """
+        sources = [("platform.crosstalk", self.crosstalk)] if self.crosstalk is not None else []
+        sources += self._calibration_crosstalk()
+        if not sources:
+            raise ValueError("Crosstalk matrix has not been set")
+        return sources
+
+    def _group_buses_by_crosstalk(self, bus_list: list[str]) -> list[tuple[CrosstalkMatrix, list[str]]]:
+        """Sorts ``bus_list`` by crosstalk matrix: ``platform.crosstalk`` for the buses it contains, else the calibration's AC or DC matrix.
+
+        Returns:
+            list[tuple[CrosstalkMatrix, list[str]]]: Each matrix with its buses from ``bus_list``, in ``bus_list`` order.
+
+        Raises:
+            ValueError: If no matrix is set, if a bus is in no matrix, or if a bus is only in both calibration matrices.
+        """
+        sources = self._crosstalk_sources()
+        platform_buses = set(self.crosstalk.matrix) if self.crosstalk is not None else set()
+        calibration = [
+            (name, matrix, set(matrix.matrix) - platform_buses) for name, matrix in self._calibration_crosstalk()
+        ]
+
+        if len(calibration) == 2:
+            in_both = calibration[0][2] & calibration[1][2]
+            ambiguous = [bus for bus in bus_list if bus in in_both]
+            if ambiguous:
+                verb, pronoun = ("is", "it") if len(ambiguous) == 1 else ("are", "them")
+                raise ValueError(
+                    f"{', '.join(ambiguous)} {verb} inside both {calibration[0][0]} and {calibration[1][0]}. "
+                    f"Remove {pronoun} from one of them or add {pronoun} to platform.crosstalk."
+                )
+
+        known = platform_buses.union(*(buses for _, _, buses in calibration))
+        missing = [bus for bus in bus_list if bus not in known]
+        if missing:
+            if self.crosstalk is not None and len(sources) == 1:
+                raise ValueError(f"{', '.join(missing)} not inside crosstalk matrix\n{self.crosstalk}")
+            matrices = "\n".join(f"{name}: {list(matrix.matrix)}" for name, matrix in sources)
+            raise ValueError(f"{', '.join(missing)} not inside any crosstalk matrix:\n{matrices}")
+
+        groups: list[tuple[CrosstalkMatrix, set[str]]] = (
+            [(self.crosstalk, platform_buses)] if self.crosstalk is not None else []
+        )
+        groups += [(matrix, buses) for _, matrix, buses in calibration]
+        return [
+            (matrix, [bus for bus in bus_list if bus in buses])
+            for matrix, buses in groups
+            if not buses.isdisjoint(bus_list)
+        ]
+
+    def _write_flux_biases(self, element: Bus | InstrumentController | Instrument | None, crosstalk: CrosstalkMatrix):
+        """Writes the biases of ``crosstalk``'s buses only, leaving the buses of other crosstalk matrices untouched."""
+        flux_vector = cast("FluxVector", self.flux_vector)
+        bias_vector = flux_vector.bias_vector
+        flux_vector.bias_vector = {bus: bias for bus, bias in bias_vector.items() if bus in crosstalk.matrix}
+        try:
+            self._set_bias_from_element(element)
+        finally:
+            flux_vector.bias_vector = bias_vector
+
+    def _process_crosstalk(self, alias: str, value) -> CrosstalkMatrix:
+        """Calculates the Current/Voltage of the set parameter based on the value of the flux and the crosstalk matrix"""
+        crosstalk = self._group_buses_by_crosstalk([alias])[0][0]
 
         if not self.flux_vector:
             self.flux_vector = FluxVector()
-        for flux in bus_list:
-            if flux not in self.flux_vector.flux_vector.keys():
+        for flux in crosstalk.matrix:
+            if flux not in self.flux_vector.flux_vector:
                 self.flux_vector[flux] = 0
 
-        if alias not in self.crosstalk.matrix.keys():
-            raise ValueError(f"{alias} not inside crosstalk matrix\n{self.crosstalk}")
-
-        if not self.flux_vector.crosstalk or self.crosstalk != self.flux_vector.crosstalk:
-            self.flux_vector.set_crosstalk(self.crosstalk)
+        if self.flux_vector.crosstalk is not crosstalk:
+            self.flux_vector.set_crosstalk(crosstalk)
 
         self.flux_vector[alias] = value
+        return crosstalk
+
+    def _warn_two_crosstalk_sources(self) -> None:
+        """Warns once per ``(crosstalk, calibration)`` pair when ``platform.crosstalk`` and a different calibration crosstalk matrix are both set."""
+        others = [name for name, matrix in self._calibration_crosstalk() if matrix is not self.crosstalk]
+        if self.crosstalk is None or self.calibration is None or not others:
+            return
+        last = self._crosstalk_warned_pair
+        if last is not None and last[0] is self.crosstalk and last[1] is self.calibration:
+            return
+        self._crosstalk_warned_pair = (self.crosstalk, self.calibration)
+        message = (
+            f"platform.crosstalk and {' and '.join(others)} are both set. set_parameter(FLUX), set_flux_to_zero and "
+            "set_bias_to_zero use platform.crosstalk for the buses it contains."
+        )
+        if "calibration.crosstalk_matrix_ac" in others:
+            message += " QProgram compilation uses calibration.crosstalk_matrix_ac first for Qblox buses."
+        logger.warning(message)
 
     def set_calibration(self, calibration: Calibration | str) -> None:
         """Sets the Calibration class from a given Calibration or the file's path.
@@ -826,9 +916,9 @@ class Platform:
             calibration (Calibration | str): Calibration class or file path.
         """
         if isinstance(calibration, str):
-            self.calibration = deserialize_from(file=calibration, cls=Calibration)
-            return
+            calibration = deserialize_from(file=calibration, cls=Calibration)
         self.calibration = calibration
+        self._warn_two_crosstalk_sources()
 
     def set_crosstalk(self, crosstalk: CrosstalkMatrix):
         """Sets the crosstalk matrix using the crosstalk matrix class.
@@ -837,18 +927,20 @@ class Platform:
             crosstalk (CrosstalkMatrix): Crosstalk matrix to implement on the sample
         """
         self.crosstalk = crosstalk
+        self._warn_two_crosstalk_sources()
 
     def set_flux_to_zero(self, bus_list: list[str] | None = None):
         """Set all lines inside the crosstalk / bus list to 0 Phi0, sets everything into the crosstalk offsets.
 
         Args:
-            bus_list (list[str] | None, optional): Optional bus list for all the flux used in the experiment. Defaults to the Crosstalk buses.
+            bus_list (list[str] | None, optional): Optional bus list for all the flux used in the experiment. Defaults to the buses of
+                ``platform.crosstalk`` and of the calibration's crosstalk matrices.
         """
-        if not self.crosstalk:
-            raise ValueError("Crosstalk matrix has not been set")
+        sources = self._crosstalk_sources()
 
         if not bus_list:
-            bus_list = list(self.crosstalk.matrix.keys())
+            bus_list = list(dict.fromkeys(bus for _, matrix in sources for bus in matrix.matrix))
+        self._group_buses_by_crosstalk(bus_list)
 
         for flux_alias in bus_list:
             self.set_parameter(alias=flux_alias, parameter=Parameter.FLUX, value=0)
@@ -857,27 +949,31 @@ class Platform:
         """Set all lines inside the crosstalk / bus list to 0 Volts / Amperes.
 
         Args:
-            bus_list (list[str] | None, optional): Optional bus list for all the flux used in the experiment. Defaults to the Crosstalk buses.
+            bus_list (list[str] | None, optional): Optional bus list for all the flux used in the experiment. Defaults to the buses of
+                ``platform.crosstalk`` and of the calibration's crosstalk matrices.
         """
-
-        if not self.crosstalk:
-            raise ValueError("Crosstalk matrix has not been set")
+        sources = self._crosstalk_sources()
 
         if not bus_list:
-            bus_list = list(self.crosstalk.matrix.keys())
+            bus_list = list(dict.fromkeys(bus for _, matrix in sources for bus in matrix.matrix))
+
+        groups = self._group_buses_by_crosstalk(bus_list)
 
         if not self.flux_vector:
             self.flux_vector = FluxVector()
-        for flux in bus_list:
-            if flux not in self.flux_vector.flux_vector.keys():
-                self.flux_vector[flux] = 0
-            self.flux_vector.bias_vector[flux] = 0
-        self.flux_vector.set_crosstalk_from_bias(self.crosstalk)
+        for crosstalk, buses in groups:
+            if self.flux_vector.crosstalk is not crosstalk:
+                self.flux_vector.set_crosstalk(crosstalk)
+            for flux in buses:
+                if flux not in self.flux_vector.flux_vector:
+                    self.flux_vector[flux] = 0
+                self.flux_vector.bias_vector[flux] = 0
+            self.flux_vector.set_crosstalk_from_bias(crosstalk)
 
-        for flux_alias in bus_list:
-            element = self.get_element(alias=flux_alias)
-            self._set_bias_from_element(element)
-            self.flux_parameter[flux_alias] = float(cast("float", self.flux_vector.flux_vector[flux_alias]))
+            for flux_alias in buses:
+                element = self.get_element(alias=flux_alias)
+                self._write_flux_biases(element, crosstalk)
+                self.flux_parameter[flux_alias] = float(cast("float", self.flux_vector.flux_vector[flux_alias]))
 
     def _load_instruments(self, instruments_dict: list[dict]) -> list[Instrument]:
         """Instantiates all instrument classes from their respective dictionaries.
