@@ -27,6 +27,7 @@ from qililab.qprogram.blocks import Average, Block, Conditional, ForLoop
 from qililab.qprogram.operations import (
     Acquire,
     Measure,
+    MeasureHerald,
     MeasureReset,
     Play,
     PlayWithCalibratedWaveform,
@@ -95,11 +96,16 @@ class QbloxPrepassResult:
     ``if_trigger``."""
 
     latch_buses: list[str]
-    """Qblox buses that need the trigger latch: the control buses of ``measure_reset``."""
+    """Qblox buses that need the trigger latch: the control buses of ``measure_reset`` and the measurement buses of
+    ``measure_herald``."""
 
     trigger_network_addresses: dict[str, int]
     """Qblox buses that send on the trigger network, with their trigger address: the measurement buses of
-    ``measure_reset``."""
+    ``measure_reset`` and ``measure_herald``."""
+
+    herald_bus: str | None
+    """The measurement bus of ``measure_herald``, if any. Its trigger fires on the ground state instead of the excited
+    state."""
 
 
 def prepare_qblox(
@@ -114,8 +120,8 @@ def prepare_qblox(
 
     Applies the crosstalk compensation (the calibration's AC matrix, else the given one, else the calibration's DC
     matrix with a warning) and the bus distortions. Then walks the whole QProgram, including operations on other
-    instruments, to collect the acquisition metadata, validate ``qp.if_trigger()`` and ``qp.qblox.measure_reset()``,
-    and find the trigger requirements. Finally keeps only the operations on Qblox buses.
+    instruments, to collect the acquisition metadata, validate ``qp.if_trigger()``, ``qp.qblox.measure_reset()`` and
+    ``qp.qblox.measure_herald()``, and find the trigger requirements. Finally keeps only the operations on Qblox buses.
 
     Args:
         qprogram (QProgram): The QProgram returned by the shared pre-pass. It is not modified.
@@ -128,11 +134,13 @@ def prepare_qblox(
         QbloxPrepassResult: The QProgram with only Qblox operations, and what the compiler needs to know about it.
 
     Raises:
-        ValueError: If a ``qp.qblox.measure_reset()`` measures or resets on a bus that isn't a Qblox bus, or if a
+        ValueError: If a ``qp.qblox.measure_reset()`` measures or resets on a bus that isn't a Qblox bus, if a
+            ``qp.qblox.measure_herald()`` measures on a bus that isn't a Qblox bus, or if a
             ``qp.if_trigger()`` block has no operation on a Qblox bus, no wait time given or derivable from a QDAC
             ``set_trigger(position='step')`` + ``play(dwell=...)``, or a ``trigger_padding_ns`` below the trigger
             network's propagation delay.
-        NotImplementedError: If ``qp.if_trigger()`` is used in a way that isn't supported.
+        NotImplementedError: If ``qp.if_trigger()`` is used in a way that isn't supported, or if there is more than one
+            ``qp.qblox.measure_herald()``.
     """
     if calibration is not None:
         if calibration.crosstalk_matrix_ac is not None:
@@ -165,6 +173,16 @@ def prepare_qblox(
                 f"'{measure_reset.control_bus}', but both must be Qblox buses; the Qblox buses are {sorted(qblox_buses)}."
             )
 
+    measure_heralds = [leaf for leaf in leaves if isinstance(leaf, MeasureHerald)]
+    if len(measure_heralds) > 1:
+        raise NotImplementedError("Only one qp.qblox.measure_herald() is supported per QProgram.")
+    herald_bus = measure_heralds[0].bus if measure_heralds else None
+    if herald_bus is not None and herald_bus not in qblox_buses:
+        raise ValueError(
+            f"qp.qblox.measure_herald() measures on bus '{herald_bus}', but it must be a Qblox bus; the Qblox buses "
+            f"are {sorted(qblox_buses)}."
+        )
+
     return QbloxPrepassResult(
         qprogram=keep_instrument_operations(qprogram, qblox_bus_set),
         qblox_buses=qblox_buses,
@@ -172,10 +190,17 @@ def prepare_qblox(
         conditional=conditional,
         requires_external_trigger=conditional is not None
         or any(isinstance(leaf, WaitTrigger) and leaf.bus in qblox_buses for leaf in leaves),
-        latch_buses=list(dict.fromkeys(measure_reset.control_bus for measure_reset in measure_resets)),
+        latch_buses=list(
+            dict.fromkeys(
+                [measure_reset.control_bus for measure_reset in measure_resets]
+                + [measure_herald.bus for measure_herald in measure_heralds]
+            )
+        ),
         trigger_network_addresses={
-            measure_reset.bus: measure_reset.trigger_address for measure_reset in measure_resets
+            **{measure_reset.bus: measure_reset.trigger_address for measure_reset in measure_resets},
+            **{measure_herald.bus: measure_herald.trigger_address for measure_herald in measure_heralds},
         },
+        herald_bus=herald_bus,
     )
 
 

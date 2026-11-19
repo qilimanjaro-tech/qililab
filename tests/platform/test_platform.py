@@ -1652,7 +1652,9 @@ class TestMethods:
         ):
             platform_qblox_qdac.execute_compilation_output(output)
 
-        setup_trigger_network.assert_called_once_with(platform_qblox_qdac.buses.get(alias="resonator"), trigger_address=3)
+        setup_trigger_network.assert_called_once_with(
+            platform_qblox_qdac.buses.get(alias="resonator"), trigger_address=3, invert=False
+        )
         device.reset_trigger_monitor_count.assert_called_once_with(address=3)
         set_ext_trigger.assert_not_called()
 
@@ -2871,11 +2873,16 @@ class TestMethods:
 
         assert str(exc_info.value) == "The drawing feature is currently only supported for QBlox."
 
-    def test_trigger_network_setup_and_reset(self, platform):
+    @pytest.mark.parametrize("herald_bus, invert", [(None, False), ("b", True)])
+    def test_trigger_network_setup_and_reset(self, platform, herald_bus, invert):
         # Build a fake compilation output with one bus “b” → trigger 5
         output = QProgramCompilationOutput()
         output.qblox = QbloxCompilationOutput(
-            qprogram=QProgram(), sequences={"b": None}, acquisitions={"b": []}, trigger_network_addresses={"b": 5}
+            qprogram=QProgram(),
+            sequences={"b": None},
+            acquisitions={"b": []},
+            trigger_network_addresses={"b": 5},
+            herald_bus=herald_bus,
         )
 
         # Stub the bus and controller
@@ -2891,7 +2898,7 @@ class TestMethods:
         platform._execute_qblox_compilation_output(output)
 
         # Verify the two lines ran
-        fake_bus._setup_trigger_network.assert_called_once_with(trigger_address=5)
+        fake_bus._setup_trigger_network.assert_called_once_with(trigger_address=5, invert=invert)
         controller.device.reset_trigger_monitor_count.assert_called_once_with(address=5)
 
     def test_qblox_intertwined_results(self, raw_measurement_data_intertwined: dict, platform: Platform):

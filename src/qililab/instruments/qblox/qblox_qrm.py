@@ -441,12 +441,21 @@ class QbloxQRM(QbloxModule):
         """
         cast("QbloxADCSequencer", self.get_sequencer(sequencer_id)).time_of_flight = int(value)
 
-    def _setup_trigger_network(self, trigger_address: int, sequencer_id: int):
-        """Sets the trigger network, currently used if measure_reset is used in qprogram.
+    def _setup_trigger_network(self, trigger_address: int, sequencer_id: int, invert: bool = False) -> None:
+        """Sets the trigger network, used if measure_reset or measure_herald is used in qprogram.
+
+        The sequencer sends its thresholded acquisition result on the trigger address, and its counter on that address
+        reaches its threshold at the first trigger. Every setting is written, since the instrument keeps them between
+        executions.
 
         Args:
-           trigger_address (int): address of the trigger network (1-15).
+            trigger_address (int): address of the trigger network (1-15).
             sequencer_id (int): sequencer to update the value.
+            invert (bool, optional): whether the trigger fires on the ground state instead of the excited state, for
+                measure_herald. Defaults to False.
         """
-        self.device.sequencers[sequencer_id].thresholded_acq_trigger_address(trigger_address)
-        self.device.sequencers[sequencer_id].thresholded_acq_trigger_en(True)
+        sequencer = self.device.sequencers[sequencer_id]
+        sequencer.thresholded_acq_trigger_address(trigger_address)
+        sequencer.thresholded_acq_trigger_invert(invert)
+        sequencer.thresholded_acq_trigger_en(True)
+        sequencer.set_trigger_thresholding(trigger_address, 1, False)
