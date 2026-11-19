@@ -16,6 +16,8 @@ from qililab.qprogram.operations import (
     Acquire,
     AcquireWithCalibratedWeights,
     Measure,
+    MeasureHerald,
+    MeasureHeraldCalibrated,
     MeasureReset,
     MeasureResetCalibrated,
     MeasureWithCalibratedWaveform,
@@ -1941,6 +1943,116 @@ class TestQProgram(TestStructuredProgram):
                 control_bus="drive",
                 reset_pulse=reset_pulse,
             )
+
+    def test_measure_herald_method(self):
+        one_wf = Square(amplitude=1.0, duration=40)
+        zero_wf = Square(amplitude=0.0, duration=40)
+        qp = QProgram()
+        qp.qblox.measure_herald(bus="readout", waveform=IQPair(one_wf, zero_wf), weights=IQPair(one_wf, zero_wf))
+
+        (op,) = qp._body.elements
+        assert isinstance(op, MeasureHerald)
+        assert op.bus == "readout"
+        assert np.equal(op.waveform.I, one_wf)
+        assert np.equal(op.weights.Q, zero_wf)
+        assert op.max_attempts == 20
+        assert qp.buses == {"readout"}
+        assert qp.qblox.weight_duration == {"readout": [40]}
+
+    def test_measure_herald_with_calibration(self):
+        readout = IQPair(I=Square(1.0, 200), Q=Square(0.0, 200))
+        weights = IQPair(I=Square(1.0, 2000), Q=Square(0.0, 2000))
+        calibration = Calibration()
+        calibration.add_waveform(bus="readout_q0_bus", name="readout", waveform=readout)
+        calibration.add_weights(bus="readout_q0_bus", name="weights", weights=weights)
+
+        qp = QProgram()
+        with qp.average(1000):
+            qp.qblox.measure_herald(
+                bus="readout_q0_bus", waveform="readout", weights="weights", max_attempts=7
+            )
+
+        assert qp.has_calibrated_waveforms_or_weights() is True
+        assert isinstance(qp.body.elements[0].elements[0], MeasureHeraldCalibrated)
+        assert qp.qblox.weight_duration == {"readout_q0_bus": ["weights"]}
+
+        new_qp = qp.with_calibration(calibration=calibration)
+
+        assert isinstance(qp.body.elements[0].elements[0], MeasureHeraldCalibrated)
+        assert new_qp.has_calibrated_waveforms_or_weights() is False
+        herald = new_qp.body.elements[0].elements[0]
+        assert isinstance(herald, MeasureHerald)
+        assert herald.waveform is calibration.get_waveform(bus="readout_q0_bus", name="readout")
+        assert herald.weights is calibration.get_weights(bus="readout_q0_bus", name="weights")
+        assert herald.max_attempts == 7
+
+    def test_measure_herald_with_distortions(self):
+        qp = QProgram()
+        qp.qblox.measure_herald(
+            bus="readout",
+            waveform=IQPair(I=Square(1.0, 100), Q=Square(0.0, 100)),
+            weights=IQPair(I=Square(1.0, 100), Q=Square(0.0, 100)),
+        )
+
+        new_qp = qp.with_distortions(bus_distortions={"readout": [ExponentialCorrection(tau_exponential=1.0, amp=0.5)]})
+
+        herald = new_qp.body.elements[0]
+        assert isinstance(herald.waveform, IQPair)
+        assert isinstance(herald.waveform.I, Arbitrary)
+        assert isinstance(herald.waveform.Q, Arbitrary)
+
+    def test_measure_herald_mixing_calibrated_and_not_raises_error(self):
+        qp = QProgram()
+        with pytest.raises(
+            NotImplementedError,
+            match="For the waveform and weights, you must either use the calibration file for both or not use it at all.",
+        ):
+            qp.qblox.measure_herald(bus="readout", waveform="readout", weights=IQPair(I=Square(1.0, 100), Q=Square(0.0, 100)))
+
+    def test_measure_herald_without_attempts_raises_error(self):
+        qp = QProgram()
+        with pytest.raises(
+            ValueError, match=re.escape("qp.qblox.measure_herald() needs at least 1 attempt, got max_attempts=0.")
+        ):
+            qp.qblox.measure_herald(bus="readout", waveform="readout", weights="weights", max_attempts=0)
+
+    @staticmethod
+    def _use_trigger_mode(qp: QProgram, mode: str) -> None:
+        if mode == "wait_trigger":
+            qp.wait_trigger(bus="drive", duration=100)
+        elif mode == "if_trigger":
+            with qp.if_trigger():
+                qp.wait(bus="drive", duration=100)
+        else:
+            qp.qblox.measure_reset(
+                bus="readout2", waveform="readout", weights="weights", control_bus="drive", reset_pulse="reset"
+            )
+
+    @pytest.mark.parametrize(
+        "mode, name",
+        [("wait_trigger", "wait_trigger"), ("if_trigger", "if_trigger()"), ("measure_reset", "qp.qblox.measure_reset()")],
+    )
+    def test_trigger_mode_then_measure_herald_raises_error(self, mode: str, name: str):
+        qp = QProgram()
+        self._use_trigger_mode(qp, mode)
+        with pytest.raises(
+            NotImplementedError,
+            match=re.escape(f"qp.qblox.measure_herald() cannot be used together with {name} in the same QProgram."),
+        ):
+            qp.qblox.measure_herald(bus="readout", waveform="readout", weights="weights")
+
+    @pytest.mark.parametrize(
+        "mode, name",
+        [("wait_trigger", "wait_trigger"), ("if_trigger", "if_trigger()"), ("measure_reset", "qp.qblox.measure_reset()")],
+    )
+    def test_measure_herald_then_trigger_mode_raises_error(self, mode: str, name: str):
+        qp = QProgram()
+        qp.qblox.measure_herald(bus="readout", waveform="readout", weights="weights")
+        with pytest.raises(
+            NotImplementedError,
+            match=re.escape(f"{name} cannot be used together with qp.qblox.measure_herald() in the same QProgram."),
+        ):
+            self._use_trigger_mode(qp, mode)
 
     def test_set_offset_with_numpy_float_stores_python_float(self):
         qp = QProgram()

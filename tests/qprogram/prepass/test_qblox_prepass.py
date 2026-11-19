@@ -170,6 +170,50 @@ class TestPrepareQblox:
         ):
             prepare_qblox(qp, qblox_buses=qblox_buses)
 
+    def test_measure_herald_trigger_requirements(self):
+        """The herald uses LINQ feedback: its bus needs neither the trigger latch nor the trigger network.
+
+        The herald has its own acquisition: it isn't counted in the acquisition metadata.
+        """
+        qp = QProgram()
+        with qp.average(10) as average:
+            qp.qblox.measure_herald(bus="readout", waveform=WEIGHTS, weights=WEIGHTS)
+            qp.measure(bus="readout", waveform=WEIGHTS, weights=WEIGHTS)
+        qp = prepare_shared(qp, bus_mapping={"readout": "readout_q0"})
+
+        result = prepare_qblox(qp, qblox_buses=["readout_q0"])
+
+        assert result.latch_buses == []
+        assert result.trigger_network_addresses == {}
+        assert result.acquisition_metadata == {"readout_q0": {average.uuid: (1, 1)}}
+        assert result.requires_external_trigger is False
+
+    def test_two_measure_heralds_raise_error(self):
+        qp = QProgram()
+        with qp.average(10):
+            qp.qblox.measure_herald(bus="readout_q0", waveform=WEIGHTS, weights=WEIGHTS)
+        with qp.average(10):
+            qp.qblox.measure_herald(bus="readout_q1", waveform=WEIGHTS, weights=WEIGHTS)
+
+        with pytest.raises(
+            NotImplementedError, match=re.escape("Only one qp.qblox.measure_herald() is supported per QProgram.")
+        ):
+            prepare_qblox(qp)
+
+    def test_measure_herald_outside_qblox_buses_raises_error(self):
+        qp = QProgram()
+        qp.qblox.measure_herald(bus="readout", waveform=WEIGHTS, weights=WEIGHTS)
+        qp.play(bus="drive", waveform=DRIVE_WF)
+
+        with pytest.raises(
+            ValueError,
+            match=re.escape(
+                "qp.qblox.measure_herald() measures on bus 'readout', but it must be a Qblox bus; the Qblox buses are "
+                "['drive']."
+            ),
+        ):
+            prepare_qblox(qp, qblox_buses=["drive"])
+
     def test_crosstalk_uses_calibration_ac_matrix_over_explicit_one(self, flux_qprogram: QProgram):
         ac_crosstalk = CrosstalkMatrix().from_array(["flux1", "flux2"], np.linalg.inv([[1, 0.3], [0.3, 1]]))
         explicit_crosstalk = CrosstalkMatrix().from_array(["flux1", "flux2"], np.linalg.inv([[1, 0.5], [0.5, 1]]))
