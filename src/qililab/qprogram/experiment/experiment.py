@@ -1,0 +1,212 @@
+# Copyright 2023 Qilimanjaro Quantum Tech
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""Experiment: platform parameter changes and QProgram executions, looped over on the PC."""
+
+from typing import Any, Callable, cast
+
+import numpy as np
+import qprogram as qp
+from qprogram import Values, Variable
+
+from qililab.qprogram.blocks import reject_variables_swept_by_enclosing_loops, to_scalar
+from qililab.qprogram.calibration import Calibration
+from qililab.qprogram.crosstalk.crosstalk_matrix import CrosstalkMatrix
+from qililab.qprogram.experiment.operations import ExecuteQProgram, GetParameter, SetCrosstalk, SetParameter
+from qililab.qprogram.qprogram import QProgram
+from qililab.qprogram.variable_ids import unique_variable_id
+from qililab.typings.enums import Parameter
+from qililab.yaml import yaml
+
+
+class _ForLoopValues(Values):
+    """The points of an experiment's ``for_loop`` or ``loop``, kept with their type: ``Values`` stores floats, while a
+    loop written with integers sets its parameter to integers.
+
+    Args:
+        points (np.ndarray): The points.
+    """
+
+    def __init__(self, points: np.ndarray) -> None:
+        super().__init__(points)
+        self.points = points
+
+
+def _inclusive_range(start: int | float, stop: int | float, step: int | float) -> np.ndarray:
+    """Return the points an experiment's ``for_loop`` from ``start`` to ``stop`` by ``step`` sweeps.
+
+    The number of points is ``(stop - start) / step + 1`` rounded to the nearest, spread evenly from ``start`` to
+    ``stop``. They are integers when ``start``, ``stop`` and ``step`` all are, else rounded to the precision of
+    ``step``.
+
+    Args:
+        start (int | float): The first point.
+        stop (int | float): The last point.
+        step (int | float): The step the user wrote.
+
+    Returns:
+        np.ndarray: The points.
+    """
+    decimal_places = -int(np.floor(np.log10(step))) if step < 1 else 0
+    num_steps = round((stop - start) / step) + 1
+    # linspace, then rounding, avoids floating-point inaccuracies
+    points = np.linspace(start, stop, num_steps)
+    if all(isinstance(value, int) for value in (start, stop, step)):
+        return np.around(points, decimals=0).astype(int)
+    return np.around(points, decimals=decimal_places)
+
+
+@yaml.register_class
+class Experiment(qp.QProgram):
+    """Represents an experiment.
+
+    This class allows setting platform parameters and executing quantum programs, in loops run on the PC by the
+    ``ExperimentExecutor``.
+
+    Args:
+        label (str): The label of the experiment.
+        description (str | None, optional): A description of the experiment. Defaults to None.
+    """
+
+    def __init__(self, label: str, description: str | None = None) -> None:
+        super().__init__(label=label, description=description)
+
+    def _append_to_active(self, element: Any) -> None:
+        """Append ``element`` to the active block, refusing a loop over a variable an enclosing loop already sweeps.
+
+        Args:
+            element (Any): The operation or block to append.
+
+        Raises:
+            VariableAllocated: If ``element`` is a loop over a variable an enclosing loop already sweeps.
+        """
+        reject_variables_swept_by_enclosing_loops(element, self._block_stack)
+        super()._append_to_active(element)
+
+    def for_loop(self, variable: Variable, start: int | float, stop: int | float, step: int | float = 1) -> Any:
+        """Loop ``variable`` from ``start`` to ``stop`` by ``step``.
+
+        Blocks need to open a scope. The number of points is rounded to the nearest when ``step`` doesn't divide
+        ``stop - start``, and the points are integers when ``start``, ``stop`` and ``step`` all are.
+
+        Args:
+            variable (Variable): The variable to be affected from the loop.
+            start (int | float): The start value.
+            stop (int | float): The stop value.
+            step (int | float, optional): The step value. Defaults to 1.
+
+        Returns:
+            The context manager opening the ``Sweep`` block.
+
+        Raises:
+            ValueError: If ``step`` is zero or negative.
+        """
+        start, stop, step = (cast("int | float", to_scalar(value)) for value in (start, stop, step))
+        if step <= 0:
+            raise ValueError(f"An Experiment's for_loop needs a positive step, got {step}.")
+        return self.sweep(variable, _ForLoopValues(_inclusive_range(start, stop, step)))
+
+    def loop(self, variable: Variable, values: np.ndarray) -> Any:
+        """Loop ``variable`` over ``values``.
+
+        Blocks need to open a scope.
+
+        Args:
+            variable (Variable): The variable to be affected from the loop.
+            values (np.ndarray): The values to iterate over.
+
+        Returns:
+            The context manager opening the ``Sweep`` block.
+        """
+        return self.sweep(variable, _ForLoopValues(np.asarray(values)))
+
+    # Replaces qprogram's QProgram.get_parameter(bus, parameter), which takes other arguments
+    def get_parameter(  # type: ignore[override]
+        self, alias: str, parameter: Parameter, channel_id: int | None = None, output_id: int | None = None
+    ) -> Variable:
+        """Get a platform parameter.
+
+        Appends a GetParameter operation to the active block of the experiment.
+
+        Args:
+            alias (str): The alias for the platform component.
+            parameter (Parameter): The parameter to get.
+            channel_id (int | None, optional): The channel of the component. Defaults to None.
+            output_id (int | None, optional): The output of the component. Defaults to None.
+
+        Returns:
+            Variable: The variable the value is stored in.
+        """
+        variable_id = unique_variable_id(f"{alias}_{parameter.value}", {variable.id for variable in self.variables})
+        variable = self.variable(variable_id, label=f"{parameter.value} of {alias}")
+        self._append_to_active(
+            GetParameter(
+                variable=variable, alias=alias, parameter=parameter, channel_id=channel_id, output_id=output_id
+            )
+        )
+        return variable
+
+    # Replaces qprogram's QProgram.set_parameter(bus, parameter, value), which takes other arguments
+    def set_parameter(  # type: ignore[override]
+        self,
+        alias: str,
+        parameter: Parameter,
+        value: int | float | bool | Variable,
+        channel_id: int | None = None,
+        output_id: int | None = None,
+    ) -> None:
+        """Set a platform parameter.
+
+        Appends a SetParameter operation to the active block of the experiment.
+
+        Args:
+            alias (str): The alias for the platform component.
+            parameter (Parameter): The parameter to set.
+            value (int | float | bool | Variable): The value to set for the parameter.
+            channel_id (int | None, optional): The channel of the component. Defaults to None.
+            output_id (int | None, optional): The output of the component. Defaults to None.
+        """
+        self._append_to_active(
+            SetParameter(alias=alias, parameter=parameter, value=value, channel_id=channel_id, output_id=output_id)
+        )
+
+    def execute_qprogram(
+        self,
+        qprogram: QProgram | Callable[..., QProgram],
+        bus_mapping: dict[str, str] | None = None,
+        debug: bool = False,
+        calibration: Calibration | None = None,
+    ) -> None:
+        """Execute a quantum program within the experiment.
+
+        Appends an ExecuteQProgram operation to the active block of the experiment.
+
+        Args:
+            qprogram (QProgram | Callable[..., QProgram]): The quantum program to be executed, or a function building
+                it from the experiment's variables.
+            bus_mapping (dict[str, str] | None, optional): Mapping of the QProgram's buses to the platform's. Defaults to
+                None.
+            debug (bool, optional): Whether to write the compiled program to a debug file. Defaults to False.
+            calibration (Calibration | None, optional): Calibration used to compile the QProgram. Defaults to None.
+        """
+        self._append_to_active(
+            ExecuteQProgram(qprogram=qprogram, bus_mapping=bus_mapping, calibration=calibration, debug=debug)
+        )
+
+    def set_crosstalk(self, crosstalk: CrosstalkMatrix) -> None:
+        """Set the crosstalk matrix of the platform.
+
+        Args:
+            crosstalk (CrosstalkMatrix): The crosstalk matrix.
+        """
+        self._append_to_active(SetCrosstalk(crosstalk=crosstalk))

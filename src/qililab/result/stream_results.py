@@ -18,12 +18,13 @@ from typing import TYPE_CHECKING, Any
 
 import h5py
 import numpy as np
+import qprogram as qp
+from qprogram import Expression
+from qprogram.operations import SetOffset
+from qprogram_qdac import SetOffset as QdacSetOffset
 
-from qililab.core.variables import Variable
 from qililab.instruments.qblox.qblox_module import QbloxModule
 from qililab.instruments.qdevil.qdevil_qdac2 import QDevilQDac2
-from qililab.qprogram.blocks import Block
-from qililab.qprogram.operations import SetOffset
 from qililab.typings.enums import Parameter
 from qililab.utils.serialization import serialize
 
@@ -125,7 +126,7 @@ class StreamArray:
                     experiment_name=self.experiment_name,
                     qubit_idx=self.qubit_idx,
                     platform=self.platform.to_dict() if self.platform else None,
-                    qprogram=serialize(self.qprogram) if self.qprogram else None,
+                    qprogram=qp.dumps(self.qprogram) if self.qprogram else None,
                     calibration=calibration,
                     parameters=self.loops,
                     data_shape=self.shape,
@@ -138,7 +139,7 @@ class StreamArray:
                     experiment_completed=False,
                     optional_identifier=self.optional_identifier,
                     platform=self.platform.to_dict() if self.platform else None,
-                    qprogram=serialize(self.qprogram) if self.qprogram else None,
+                    qprogram=qp.dumps(self.qprogram) if self.qprogram else None,
                     calibration=serialize(calibration) if calibration else None,
                     debug_file=self._get_debug() if self.platform and self.qprogram else None,
                     dc_offsets=self._get_dc_offsets() if self.platform else None,
@@ -281,9 +282,7 @@ class StreamArray:
                 sequences = compiled.sequences
                 lines = []
                 for bus_alias, seq in sequences.items():
-                    lines.append(f"Bus {bus_alias}:")
-                    lines.append(str(seq._program))
-                    lines.append("")
+                    lines.extend([f"Bus {bus_alias}:", str(seq._program), ""])
                 return "\n".join(lines)
             except Exception as e:  # noqa: BLE001
                 debug_exception = f"Compilation of the debug has failed with the following error:\n{e}"
@@ -313,7 +312,7 @@ class StreamArray:
         return flux_offsets
 
     def _get_qprogram_flux_vector(self) -> dict[str, float]:
-        """Flux vector from the QProgram's constant ``set_offset`` calls on crosstalk buses.
+        """Flux vector from the QProgram's constant ``set_offset`` and ``qdac.set_offset`` calls on crosstalk buses.
 
         Returns empty if any bus is offset more than once; swept offsets are skipped.
         """
@@ -321,23 +320,15 @@ class StreamArray:
             return {}
         crosstalk_buses = set(self.calibration.crosstalk_matrix.matrix.keys())
 
-        offsets: dict[str, list[float | Variable]] = {}
-
-        def traverse(block: Block) -> None:
-            for element in block.elements:
-                if isinstance(element, SetOffset) and element.bus in crosstalk_buses:
-                    offsets.setdefault(element.bus, []).append(element.offset_path0)
-                elif isinstance(element, Block):
-                    traverse(element)
-
-        traverse(self.qprogram._body)
+        offsets: dict[str, list[float | Expression]] = {}
+        for node in self.qprogram.body.walk():
+            if isinstance(node, SetOffset) and node.bus in crosstalk_buses:
+                offsets.setdefault(node.bus, []).append(node.offset_path0)
+            elif isinstance(node, QdacSetOffset) and node.bus in crosstalk_buses:
+                offsets.setdefault(node.bus, []).append(node.offset)
         if any(len(values) > 1 for values in offsets.values()):
             return {}
-        return {
-            bus: float(values[0])
-            for bus, values in offsets.items()
-            if isinstance(values[0], (int, float)) and not isinstance(values[0], Variable)
-        }
+        return {bus: float(values[0]) for bus, values in offsets.items() if isinstance(values[0], (int, float))}
 
     def _get_index_list(self, qubit: int | str | list[str] | None) -> list[str] | None:
         if qubit is None:

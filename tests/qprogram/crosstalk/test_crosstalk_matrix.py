@@ -5,7 +5,7 @@ import numpy as np
 import pytest
 import xarray as xr
 
-from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix, NonLinearCrosstalkMatrix
+from qililab.qprogram.crosstalk.crosstalk_matrix import CrosstalkMatrix, NonLinearCrosstalkMatrix
 from qililab.yaml import yaml
 
 # Insertion orders that diverge from the canonical sort order once names are multi-digit
