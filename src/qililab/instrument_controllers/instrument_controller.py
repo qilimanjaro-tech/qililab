@@ -192,7 +192,9 @@ class InstrumentController(BusElement, ABC):
             return
         """Updates the reference clock settings for the controller."""
         if parameter == Parameter.REFERENCE_CLOCK:
-            self.settings.reference_clock = ReferenceClock(value)
+            # Store the plain string value (validated against ReferenceClock) rather than the
+            # Enum member itself, so the settings remain YAML-serialisable by save_platform.
+            self.settings.reference_clock = ReferenceClock(value).value
             return
         raise ValueError(
             "Reset and reference clock are the only properties that can be set for an Instrument Controller."
