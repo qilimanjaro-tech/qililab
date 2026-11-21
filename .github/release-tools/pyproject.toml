@@ -1,0 +1,19 @@
+[project]
+name = "qililab-release-tools"
+version = "0.0.0"
+requires-python = ">=3.13,<3.14"
+dependencies = ["twine==7.0.0"]
+
+[dependency-groups]
+test = ["pytest>=8.3.5", "ruamel-yaml>=0.18.10"]
+
+[tool.uv]
+package = false
+required-version = "==0.13.8"
+# Retain the applicable runtime security floors in this independent tool environment.
+constraint-dependencies = ["cryptography>=48.0.1", "urllib3>=2.3.0"]
+
+[[tool.uv.index]]
+name = "pypi"
+url = "https://pypi.org/simple"
+default = true
