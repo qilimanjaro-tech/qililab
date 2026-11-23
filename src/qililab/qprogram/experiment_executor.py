@@ -35,6 +35,8 @@ from qililab.qprogram.operations import (
     ExecuteQProgram,
     GetParameter,
     Measure,
+    MeasureHerald,
+    MeasureHeraldCalibrated,
     MeasureReset,
     Operation,
     SetParameter,
@@ -216,6 +218,12 @@ class ExperimentExecutor:
                 # acquisitions), so each must get its own entry in the results structure.
                 if isinstance(element, (Acquire, Measure, MeasureReset)):
                     finalize_measurement_structure()
+                if isinstance(element, (MeasureHerald, MeasureHeraldCalibrated)):
+                    # Its result has one more axis, the attempts, that the results structure has no place for
+                    raise NotImplementedError(
+                        "qp.qblox.measure_herald() is not supported in an Experiment yet: run its QProgram with "
+                        "platform.execute_qprogram()."
+                    )
 
             if isinstance(block, (Loop, ForLoop, Parallel)):
                 del self._qprogram_variables_stack[-1]

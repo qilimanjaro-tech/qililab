@@ -269,12 +269,13 @@ class TestBus:
         mock_instruments[1]._setup_trigger_network = MagicMock()
 
         # Call the helper under test
-        bus._setup_trigger_network(trigger_address=7)
+        bus._setup_trigger_network(trigger_address=7, invert=True)
 
         # QbloxQRM is mock_instruments[1], channel 0
         mock_instruments[1]._setup_trigger_network.assert_called_once_with(
             trigger_address=7,
-            sequencer_id=0
+            sequencer_id=0,
+            invert=True,
         )
         # The QCM should not receive the call
         mock_instruments[0]._setup_trigger_network.assert_not_called()
