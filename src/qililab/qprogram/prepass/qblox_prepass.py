@@ -53,6 +53,10 @@ if TYPE_CHECKING:
 # Default and minimum for qp.if_trigger()'s trigger_padding_ns.
 WAIT_TRIGGER_NETWORK_EXT_TRIGGER = 252
 
+# Default and minimum for qp.qblox.measure_reset()'s padding_after_measure: the time the trigger network takes to carry a
+# result between two modules. 400 ns is conservative, the official guideline is 388 ns.
+WAIT_TRIGGER_NETWORK_INTERMODULES = 400
+
 # Operations carrying no duration
 NON_REALTIME_OPERATIONS = (SetFrequency, SetPhase, ResetPhase, SetGain, SetOffset, SetMarkers)
 
@@ -128,7 +132,8 @@ def prepare_qblox(
         QbloxPrepassResult: The QProgram with only Qblox operations, and what the compiler needs to know about it.
 
     Raises:
-        ValueError: If a ``qp.qblox.measure_reset()`` measures or resets on a bus that isn't a Qblox bus, or if a
+        ValueError: If a ``qp.qblox.measure_reset()`` measures or resets on a bus that isn't a Qblox bus or has a
+            ``padding_after_measure`` below the trigger network's propagation delay, or if a
             ``qp.if_trigger()`` block has no operation on a Qblox bus, no wait time given or derivable from a QDAC
             ``set_trigger(position='step')`` + ``play(dwell=...)``, or a ``trigger_padding_ns`` below the trigger
             network's propagation delay.
@@ -163,6 +168,14 @@ def prepare_qblox(
             raise ValueError(
                 f"qp.qblox.measure_reset() measures on bus '{measure_reset.bus}' and resets on bus "
                 f"'{measure_reset.control_bus}', but both must be Qblox buses; the Qblox buses are {sorted(qblox_buses)}."
+            )
+        if (
+            measure_reset.padding_after_measure is not None
+            and measure_reset.padding_after_measure < WAIT_TRIGGER_NETWORK_INTERMODULES
+        ):
+            raise ValueError(
+                f"qp.qblox.measure_reset()'s padding_after_measure ({measure_reset.padding_after_measure}) cannot be lower "
+                f"than {WAIT_TRIGGER_NETWORK_INTERMODULES} ns, the trigger network's propagation delay between modules."
             )
 
     return QbloxPrepassResult(

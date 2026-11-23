@@ -170,6 +170,21 @@ class TestPrepareQblox:
         ):
             prepare_qblox(qp, qblox_buses=qblox_buses)
 
+    def test_measure_reset_padding_after_measure_below_trigger_network_delay_raises_error(self):
+        qp = QProgram()
+        qp.qblox.measure_reset(
+            bus="readout", waveform=WEIGHTS, weights=WEIGHTS, control_bus="drive", reset_pulse=DRIVE_WF, padding_after_measure=399
+        )
+
+        with pytest.raises(
+            ValueError,
+            match=re.escape(
+                "qp.qblox.measure_reset()'s padding_after_measure (399) cannot be lower than 400 ns, the trigger network's "
+                "propagation delay between modules."
+            ),
+        ):
+            prepare_qblox(qp)
+
     def test_crosstalk_uses_calibration_ac_matrix_over_explicit_one(self, flux_qprogram: QProgram):
         ac_crosstalk = CrosstalkMatrix().from_array(["flux1", "flux2"], np.linalg.inv([[1, 0.3], [0.3, 1]]))
         explicit_crosstalk = CrosstalkMatrix().from_array(["flux1", "flux2"], np.linalg.inv([[1, 0.5], [0.5, 1]]))

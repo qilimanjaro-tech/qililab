@@ -59,6 +59,7 @@ from qililab.qprogram.operations import (
     WaitTrigger,
 )
 from qililab.qprogram.prepass import prepare_qblox, prepare_shared
+from qililab.qprogram.prepass.qblox_prepass import WAIT_TRIGGER_NETWORK_INTERMODULES
 from qililab.qprogram.qprogram import QProgram
 from qililab.waveforms import Arbitrary, FlatTop, IQWaveform, Square, Waveform
 
@@ -77,9 +78,6 @@ MAX_ACQUISITION_INDEX = 31
 
 ENABLE_CONDITIONAL = 1
 DISABLE_CONDITIONAL = 0
-
-# time required by qblox trigger network to send a trigger; 400ns is conservative - the official guideline is 388ns between 2 modules
-WAIT_TRIGGER_NETWORK_INTERMODULES = 400
 
 
 def _trigger_address_mask(address: int) -> int:
@@ -1784,7 +1782,12 @@ class QbloxCompiler:
         play = Play(bus=element.bus, waveform=element.waveform, wait_time=time_of_flight)
         acquire = Acquire(bus=element.bus, weights=element.weights, save_adc=element.save_adc)
         sync = Sync([element.bus, element.control_bus])
-        wait = Wait(bus=element.control_bus, duration=WAIT_TRIGGER_NETWORK_INTERMODULES)
+        padding = (
+            element.padding_after_measure
+            if element.padding_after_measure is not None
+            else WAIT_TRIGGER_NETWORK_INTERMODULES
+        )
+        wait = Wait(bus=element.control_bus, duration=padding)
         play_reset_pulse = Play(bus=element.control_bus, waveform=element.reset_pulse)
 
         self._handle_latch_rst(bus=element.control_bus, duration=INST_MIN_WAIT)

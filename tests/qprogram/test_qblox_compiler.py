@@ -3465,6 +3465,110 @@ class TestQBloxCompiler:
         assert is_q1asm_equal(sequences["drive"], drive_str)
         assert is_q1asm_equal(sequences["readout"], readout_str)
         
+    @pytest.mark.parametrize(
+        "padding_after_measure, drive_str",
+        [
+            (
+                400,
+                """
+                setup:
+                                set_latch_en     1, 4
+                                wait_sync        4
+                                set_mrk          0
+                                upd_param        4
+
+                main:
+                                latch_rst        4
+                                wait             2000
+                                wait             400
+                                set_cond         1, 1, 0, 100
+                                play             0, 1, 100
+                                set_cond         0, 0, 0, 4
+                                set_mrk          0
+                                upd_param        4
+                                stop
+                """,
+            ),
+            (
+                1000,
+                """
+                setup:
+                                set_latch_en     1, 4
+                                wait_sync        4
+                                set_mrk          0
+                                upd_param        4
+
+                main:
+                                latch_rst        4
+                                wait             2000
+                                wait             1000
+                                set_cond         1, 1, 0, 100
+                                play             0, 1, 100
+                                set_cond         0, 0, 0, 4
+                                set_mrk          0
+                                upd_param        4
+                                stop
+                """,
+            ),
+            (
+                100_000,
+                """
+                setup:
+                                set_latch_en     1, 4
+                                wait_sync        4
+                                set_mrk          0
+                                upd_param        4
+
+                main:
+                                latch_rst        4
+                                wait             2000
+                                wait             65535
+                                wait             34465
+                                set_cond         1, 1, 0, 100
+                                play             0, 1, 100
+                                set_cond         0, 0, 0, 4
+                                set_mrk          0
+                                upd_param        4
+                                stop
+                """,
+            ),
+        ],
+    )
+    def test_measure_reset_with_padding_after_measure(self, padding_after_measure: int, drive_str: str):
+        """The control bus waits padding_after_measure between the acquisition and the conditional reset pulse, split into
+        several waits above the Q1ASM maximum."""
+        readout_pair = IQPair(I=Square(amplitude=1.0, duration=1000), Q=Square(amplitude=0.0, duration=1000))
+        weights_pair = IQPair(I=Square(amplitude=1.0, duration=2000), Q=Square(amplitude=0.0, duration=2000))
+        drag_wf = IQDrag(amplitude=1.0, duration=100, num_sigmas=5, drag_coefficient=1.5)
+        qp = QProgram()
+        qp.qblox.measure_reset(
+            bus="readout",
+            waveform=readout_pair,
+            weights=weights_pair,
+            control_bus="drive",
+            reset_pulse=drag_wf,
+            padding_after_measure=padding_after_measure,
+        )
+
+        sequences, _ = QbloxCompiler().compile(qprogram=qp)
+
+        readout_str = """
+            setup:
+                wait_sync        4
+                set_mrk          0
+                upd_param        4
+
+            main:
+                play             0, 1, 4
+                acquire_weighed  0, 0, 0, 1, 2000
+                set_mrk          0
+                upd_param        4
+                stop
+        """
+
+        assert is_q1asm_equal(sequences["drive"], drive_str)
+        assert is_q1asm_equal(sequences["readout"], readout_str)
+
     def test_dynamic_sync(self, dynamic_sync_delay: QProgram):
         compiler = QbloxCompiler()
         sequences, _ = compiler.compile(qprogram=dynamic_sync_delay)

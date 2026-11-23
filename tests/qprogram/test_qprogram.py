@@ -491,6 +491,29 @@ class TestQProgram(TestStructuredProgram):
 
         assert isinstance(new_qp.body.elements[0].elements[0], MeasureReset)
 
+    def test_with_calibration_keeps_measure_reset_padding_after_measure(self):
+        calibration = Calibration()
+        calibration.add_waveform(bus="readout", name="readout", waveform=IQPair(I=Square(1.0, 200), Q=Square(1.0, 200)))
+        calibration.add_weights(bus="readout", name="weights", weights=IQPair(I=Square(1.0, 2000), Q=Square(1.0, 2000)))
+        calibration.add_waveform(
+            bus="drive", name="drag_reset", waveform=IQDrag(amplitude=0.5, duration=40, num_sigmas=4.5, drag_coefficient=-4.5)
+        )
+
+        qp = QProgram()
+        qp.qblox.measure_reset(
+            bus="readout",
+            waveform="readout",
+            weights="weights",
+            control_bus="drive",
+            reset_pulse="drag_reset",
+            padding_after_measure=1000,
+        )
+
+        new_qp = qp.with_calibration(calibration=calibration)
+
+        assert isinstance(new_qp.body.elements[0], MeasureReset)
+        assert new_qp.body.elements[0].padding_after_measure == 1000
+
     def test_average_method(self):
         """Test acquire_loop method"""
         qp = QProgram()
@@ -1791,9 +1814,10 @@ class TestQProgram(TestStructuredProgram):
         assert op.control_bus == "control"
         assert np.equal(op.reset_pulse.I, one_wf)
         assert np.equal(op.reset_pulse.Q, zero_wf)
-        # Defaults for trigger and ADC saving
+        # Defaults for trigger, ADC saving and padding after the measurement
         assert op.trigger_address == 1
         assert not op.save_adc
+        assert op.padding_after_measure is None
 
         # Interface flags updated
         assert qp.qblox.weight_duration == {"readout": [40]}

@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from typing import Any
+
 from qililab.qprogram.operations.operation import Operation
 from qililab.waveforms import IQWaveform
 from qililab.yaml import yaml
@@ -28,6 +30,7 @@ class MeasureReset(Operation):
         reset_pulse: IQWaveform,
         trigger_address: int = 1,
         save_adc: bool = False,
+        padding_after_measure: int | None = None,
     ) -> None:
         super().__init__()
         self.bus: str = bus
@@ -37,6 +40,16 @@ class MeasureReset(Operation):
         self.reset_pulse: IQWaveform = reset_pulse
         self.trigger_address: int = trigger_address
         self.save_adc: bool = save_adc
+        self.padding_after_measure: int | None = padding_after_measure
+
+    def __setstate__(self, state: dict[str, Any]) -> None:
+        """Restore the operation during deserialization, with ``padding_after_measure`` set to None when the YAML was
+        written before it existed: ``ruamel`` builds the object with ``cls.__new__`` and never calls ``__init__``.
+
+        Args:
+            state (dict[str, Any]): The attribute mapping reconstructed from the document.
+        """
+        self.__dict__.update({"padding_after_measure": None, **state})
 
 
 @yaml.register_class
@@ -50,6 +63,7 @@ class MeasureResetCalibrated(Operation):
         reset_pulse: str,
         trigger_address: int = 1,
         save_adc: bool = False,
+        padding_after_measure: int | None = None,
     ) -> None:
         super().__init__()
         self.bus: str = bus
@@ -59,3 +73,13 @@ class MeasureResetCalibrated(Operation):
         self.reset_pulse: str = reset_pulse
         self.trigger_address: int = trigger_address
         self.save_adc: bool = save_adc
+        self.padding_after_measure: int | None = padding_after_measure
+
+    def __setstate__(self, state: dict[str, Any]) -> None:
+        """Restore the operation during deserialization, with ``padding_after_measure`` set to None when the YAML was
+        written before it existed: ``ruamel`` builds the object with ``cls.__new__`` and never calls ``__init__``.
+
+        Args:
+            state (dict[str, Any]): The attribute mapping reconstructed from the document.
+        """
+        self.__dict__.update({"padding_after_measure": None, **state})
