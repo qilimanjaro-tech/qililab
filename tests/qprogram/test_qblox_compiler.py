@@ -3606,6 +3606,121 @@ class TestQBloxCompiler:
         assert output.acquisitions["readout"]["Acquisition 0"].shape == (3,)
         assert output.trigger_network_addresses == {}
 
+    @pytest.mark.parametrize(
+        "padding_after_measure, readout_str",
+        [
+            (
+                200,
+                """
+                setup:
+                                wait_sync        4
+                                set_mrk          0
+                                upd_param        4
+
+                                move             1, R0
+                                move             0, R1
+                main:
+                                fb_acq_tb_id     1, 4
+                                move             0, R2
+                                move             3, R3
+                herald:
+                                play             0, 1, 4
+                                acquire_weighed  0, R2, R1, R0, 100
+                                add              R2, 1, R2
+                                wait             200
+                                fb_pop_data      1, R4
+                                nop
+                                cmp              R4, 2
+                                jz               @herald_done
+                                loop             R3, @herald
+                herald_done:
+                                fb_acq_tb_id     0, 4
+                                wait_sync        4
+                                set_mrk          0
+                                upd_param        4
+                                stop
+                """,
+            ),
+            (
+                1000,
+                """
+                setup:
+                                wait_sync        4
+                                set_mrk          0
+                                upd_param        4
+
+                                move             1, R0
+                                move             0, R1
+                main:
+                                fb_acq_tb_id     1, 4
+                                move             0, R2
+                                move             3, R3
+                herald:
+                                play             0, 1, 4
+                                acquire_weighed  0, R2, R1, R0, 100
+                                add              R2, 1, R2
+                                wait             1000
+                                fb_pop_data      1, R4
+                                nop
+                                cmp              R4, 2
+                                jz               @herald_done
+                                loop             R3, @herald
+                herald_done:
+                                fb_acq_tb_id     0, 4
+                                wait_sync        4
+                                set_mrk          0
+                                upd_param        4
+                                stop
+                """,
+            ),
+            (
+                100_000,
+                """
+                setup:
+                                wait_sync        4
+                                set_mrk          0
+                                upd_param        4
+
+                                move             1, R0
+                                move             0, R1
+                main:
+                                fb_acq_tb_id     1, 4
+                                move             0, R2
+                                move             3, R3
+                herald:
+                                play             0, 1, 4
+                                acquire_weighed  0, R2, R1, R0, 100
+                                add              R2, 1, R2
+                                wait             65535
+                                wait             34465
+                                fb_pop_data      1, R4
+                                nop
+                                cmp              R4, 2
+                                jz               @herald_done
+                                loop             R3, @herald
+                herald_done:
+                                fb_acq_tb_id     0, 4
+                                wait_sync        4
+                                set_mrk          0
+                                upd_param        4
+                                stop
+                """,
+            ),
+        ],
+    )
+    def test_measure_herald_with_padding_after_measure(self, padding_after_measure: int, readout_str: str):
+        """Each attempt waits padding_after_measure between its acquisition and fb_pop_data, split into several waits
+        above the Q1ASM maximum."""
+        wf = IQPair(I=Square(amplitude=1.0, duration=100), Q=Square(amplitude=0.0, duration=100))
+        qp = QProgram()
+        qp.qblox.measure_herald(
+            bus="readout", waveform=wf, weights=wf, max_attempts=3, padding_after_measure=padding_after_measure
+        )
+
+        output = QbloxCompiler().compile(qprogram=qp)
+
+        assert is_q1asm_equal(output.sequences["readout"], readout_str)
+
     def test_measure_herald_in_average_inside_for_loop(self):
         """Every shot of a loop iteration writes the same herald bins, which move on once per loop iteration.
 

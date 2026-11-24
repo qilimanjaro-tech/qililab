@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from qililab.constants import QBLOXCONSTANTS
 from qililab.qprogram.operations.operation import Operation
 from qililab.waveforms import IQWaveform
 from qililab.yaml import yaml
@@ -25,12 +26,14 @@ class MeasureHerald(Operation):
         waveform: IQWaveform,
         weights: IQWaveform,
         max_attempts: int = 20,
+        padding_after_measure: int = QBLOXCONSTANTS.WAIT_LINQ_SELF_CAST,
     ) -> None:
         super().__init__()
         self.bus: str = bus
         self.waveform: IQWaveform = waveform
         self.weights: IQWaveform = weights
         self.max_attempts: int = max_attempts
+        self.padding_after_measure: int = padding_after_measure
 
 
 @yaml.register_class
@@ -41,9 +44,11 @@ class MeasureHeraldCalibrated(Operation):
         waveform: str,
         weights: str,
         max_attempts: int = 20,
+        padding_after_measure: int = QBLOXCONSTANTS.WAIT_LINQ_SELF_CAST,
     ) -> None:
         super().__init__()
         self.bus: str = bus
         self.waveform: str = waveform
         self.weights: str = weights
         self.max_attempts: int = max_attempts
+        self.padding_after_measure: int = padding_after_measure

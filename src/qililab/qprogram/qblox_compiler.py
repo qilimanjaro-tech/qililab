@@ -88,10 +88,6 @@ HERALD_LINQ_ID = 1
 # Value fb_pop_data reads for a result below the threshold, the ground state: the validation bit set (0b10) and the
 # thresholded result clear. Above the threshold it reads 3 (0b11)
 LINQ_GROUND_STATE = 2
-# Time qp.qblox.measure_herald() leaves each attempt's result to arrive, from the end of the acquisition to fb_pop_data.
-# Qblox recommends 1.25 times the Q1-to-Q1 latency of LINQ feedback, 160 ns for a self-cast identifier. The shortest wait
-# that worked on the QHC lab QRM (firmware 2.2.0, 1000 ns weights) was 196 ns
-HERALD_RESULT_WAIT = 200
 
 
 def _trigger_address_mask(address: int) -> int:
@@ -1825,10 +1821,10 @@ class QbloxCompiler:
         """Measure until the ground state is found, then realign every bus with a ``wait_sync``.
 
         The bus sends the thresholded result of each attempt back to itself over LINQ feedback, with the self-cast
-        identifier ``HERALD_LINQ_ID``. After each attempt, the bus waits ``HERALD_RESULT_WAIT`` for that result, which
-        the Q1 core reads with ``fb_pop_data`` to leave the attempts loop on the ground state. The sending stops after
-        the loop, so the other measurements of the bus leave no result behind for the next herald. Requires Qblox
-        cluster firmware 2.x.
+        identifier ``HERALD_LINQ_ID``. After each attempt, the bus waits ``padding_after_measure`` for that result,
+        which the Q1 core reads with ``fb_pop_data`` to leave the attempts loop on the ground state. The sending stops
+        after the loop, so the other measurements of the bus leave no result behind for the next herald. Requires
+        Qblox cluster firmware 2.x.
 
         The herald has its own acquisition, whose last axis is the attempts: attempt ``k`` writes bin ``k`` after the
         bins of the enclosing loops.
@@ -1898,7 +1894,7 @@ class QbloxCompiler:
         )
         herald_loop.add(QPyInstructions.Add(a=bin_register, b=1, destination=bin_register))
         # The attempt's result arrives during this wait; fb_pop_data blocks the Q1 core until it does
-        herald_loop.add(QPyInstructions.Wait(duration=HERALD_RESULT_WAIT))
+        self._handle_add_waits(bus=bus, duration=element.padding_after_measure)
         result_register = QPyProgram.Register()
         herald_loop.add(QPyInstructions.FbPopData(id=HERALD_LINQ_ID, data=result_register))
         herald_loop.add(QPyInstructions.Cmp(a=result_register, b=LINQ_GROUND_STATE))

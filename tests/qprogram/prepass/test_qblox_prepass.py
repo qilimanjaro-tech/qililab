@@ -301,6 +301,19 @@ class TestPrepareQblox:
 
         prepare_qblox(qp)
 
+    def test_measure_herald_padding_after_measure_below_linq_latency_raises_error(self):
+        qp = QProgram()
+        qp.qblox.measure_herald(bus="readout", waveform=WEIGHTS, weights=WEIGHTS, padding_after_measure=199)
+
+        with pytest.raises(
+            ValueError,
+            match=re.escape(
+                "qp.qblox.measure_herald()'s padding_after_measure (199) cannot be lower than 200 ns, the time LINQ "
+                "feedback takes to bring the result back."
+            ),
+        ):
+            prepare_qblox(qp)
+
     def test_crosstalk_uses_calibration_ac_matrix_over_explicit_one(self, flux_qprogram: QProgram):
         ac_crosstalk = CrosstalkMatrix().from_array(["flux1", "flux2"], np.linalg.inv([[1, 0.3], [0.3, 1]]))
         explicit_crosstalk = CrosstalkMatrix().from_array(["flux1", "flux2"], np.linalg.inv([[1, 0.5], [0.5, 1]]))

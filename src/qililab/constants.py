@@ -277,6 +277,10 @@ class QBLOXCONSTANTS:
     SCOPE_LENGTH = 16380
     FILTER_FIR_COEFF_LENGTH = 32
     EXT_TRIGGER_ADDRESS = 15
+    # Default and minimum for qp.qblox.measure_herald()'s padding_after_measure: the time each attempt's result takes to
+    # come back to the same sequencer over LINQ feedback. Qblox recommends 1.25 times the Q1-to-Q1 latency, 160 ns for a
+    # self-cast thresholded result. The shortest wait that worked on the QHC lab QRM (firmware 2.2.0) was 196 ns
+    WAIT_LINQ_SELF_CAST = 200
 
 
 class QDACCONSTANTS:

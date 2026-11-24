@@ -21,7 +21,7 @@ from typing import TYPE_CHECKING
 from uuid import UUID
 
 from qililab.config import logger
-from qililab.constants import QDACCONSTANTS
+from qililab.constants import QBLOXCONSTANTS, QDACCONSTANTS
 from qililab.core.variables import Variable
 from qililab.qprogram.blocks import Average, Block, Conditional, ForLoop, InfiniteLoop, Loop, Parallel
 from qililab.qprogram.operations import (
@@ -141,8 +141,9 @@ def prepare_qblox(
 
     Raises:
         ValueError: If a ``qp.qblox.measure_reset()`` measures or resets on a bus that isn't a Qblox bus, if a
-            ``qp.qblox.measure_herald()`` measures on a bus that isn't a Qblox bus or doesn't come right after a wait of
-            at least ``MEASURE_HERALD_MIN_GAP_NS`` on its bus, or if a
+            ``qp.qblox.measure_herald()`` measures on a bus that isn't a Qblox bus, has a ``padding_after_measure`` below
+            the time LINQ feedback takes to bring its result back, or doesn't come right after a wait of at least
+            ``MEASURE_HERALD_MIN_GAP_NS`` on its bus, or if a
             ``qp.if_trigger()`` block has no operation on a Qblox bus, no wait time given or derivable from a QDAC
             ``set_trigger(position='step')`` + ``play(dwell=...)``, or a ``trigger_padding_ns`` below the trigger
             network's propagation delay.
@@ -187,6 +188,11 @@ def prepare_qblox(
         raise ValueError(
             f"qp.qblox.measure_herald() measures on bus '{measure_heralds[0].bus}', but it must be a Qblox bus; the "
             f"Qblox buses are {sorted(qblox_buses)}."
+        )
+    if measure_heralds and measure_heralds[0].padding_after_measure < QBLOXCONSTANTS.WAIT_LINQ_SELF_CAST:
+        raise ValueError(
+            f"qp.qblox.measure_herald()'s padding_after_measure ({measure_heralds[0].padding_after_measure}) cannot be "
+            f"lower than {QBLOXCONSTANTS.WAIT_LINQ_SELF_CAST} ns, the time LINQ feedback takes to bring the result back."
         )
     if measure_heralds:
         _validate_measure_herald_gap(qprogram.body, measure_heralds[0])

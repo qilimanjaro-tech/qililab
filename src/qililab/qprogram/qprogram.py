@@ -17,6 +17,7 @@ from typing import TYPE_CHECKING, ClassVar, overload
 
 import numpy as np
 
+from qililab.constants import QBLOXCONSTANTS
 from qililab.core.variables import Domain, Variable, requires_domain
 from qililab.qprogram.blocks import Block, Conditional, ForLoop, Parallel, for_loop_iterations
 from qililab.qprogram.calibration import Calibration
@@ -391,6 +392,7 @@ class QProgram(StructuredProgram):
                         waveform=calibration.get_waveform(bus=element.bus, name=element.waveform),
                         weights=calibration.get_weights(bus=element.bus, name=element.weights),
                         max_attempts=element.max_attempts,
+                        padding_after_measure=element.padding_after_measure,
                     )
 
                 if hasattr(element, "bus"):
@@ -1880,6 +1882,7 @@ class QProgram(StructuredProgram):
             waveform: IQWaveform,
             weights: IQWaveform,
             max_attempts: int = 20,
+            padding_after_measure: int = QBLOXCONSTANTS.WAIT_LINQ_SELF_CAST,
         ) -> None:
             """Measure until the qubit is found in the ground state, then continue. See the main overload."""
 
@@ -1890,6 +1893,7 @@ class QProgram(StructuredProgram):
             waveform: str,
             weights: str,
             max_attempts: int = 20,
+            padding_after_measure: int = QBLOXCONSTANTS.WAIT_LINQ_SELF_CAST,
         ) -> None:
             """Measure until the qubit is found in the ground state, then continue. See the main overload."""
 
@@ -1899,6 +1903,7 @@ class QProgram(StructuredProgram):
             waveform: IQWaveform | str,
             weights: IQWaveform | str,
             max_attempts: int = 20,
+            padding_after_measure: int = QBLOXCONSTANTS.WAIT_LINQ_SELF_CAST,
         ) -> None:
             """Measure until the qubit is found in the ground state, then continue: heralding on the ground state.
 
@@ -1927,11 +1932,15 @@ class QProgram(StructuredProgram):
                 waveform (IQWaveform | str): Waveform played during each measurement.
                 weights (IQWaveform | str): Weights used for demodulation/integration.
                 max_attempts (int, optional): Maximum number of measurements per shot. Defaults to 20.
+                padding_after_measure (int, optional): Wait, in ns, on ``bus`` after each attempt's acquisition, to
+                    cover the time its result takes to come back over LINQ feedback before the bus reads it. Defaults
+                    to, and cannot be set lower than, 200 ns.
 
             Raises:
                 NotImplementedError: If ``qp.wait_trigger()``, ``qp.if_trigger()`` or ``qp.qblox.measure_reset()`` is
                     also used in this QProgram, or if only one of ``waveform`` and ``weights`` is a calibrated name.
-                ValueError: If ``max_attempts`` is lower than 1.
+                ValueError: If ``max_attempts`` is lower than 1. When compiling, if ``padding_after_measure`` is lower
+                    than 200 ns.
 
             Examples:
 
@@ -1955,6 +1964,7 @@ class QProgram(StructuredProgram):
                     waveform=waveform,
                     weights=weights,
                     max_attempts=max_attempts,
+                    padding_after_measure=padding_after_measure,
                 )
             elif isinstance(waveform, str) and isinstance(weights, str):
                 operation = MeasureHeraldCalibrated(
@@ -1962,6 +1972,7 @@ class QProgram(StructuredProgram):
                     waveform=waveform,
                     weights=weights,
                     max_attempts=max_attempts,
+                    padding_after_measure=padding_after_measure,
                 )
             else:
                 raise NotImplementedError(

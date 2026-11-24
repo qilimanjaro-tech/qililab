@@ -1956,6 +1956,7 @@ class TestQProgram(TestStructuredProgram):
         assert np.equal(op.waveform.I, one_wf)
         assert np.equal(op.weights.Q, zero_wf)
         assert op.max_attempts == 20
+        assert op.padding_after_measure == 200
         assert qp.buses == {"readout"}
         assert qp.qblox.weight_duration == {"readout": [40]}
 
@@ -1969,7 +1970,7 @@ class TestQProgram(TestStructuredProgram):
         qp = QProgram()
         with qp.average(1000):
             qp.qblox.measure_herald(
-                bus="readout_q0_bus", waveform="readout", weights="weights", max_attempts=7
+                bus="readout_q0_bus", waveform="readout", weights="weights", max_attempts=7, padding_after_measure=1000
             )
 
         assert qp.has_calibrated_waveforms_or_weights() is True
@@ -1985,6 +1986,7 @@ class TestQProgram(TestStructuredProgram):
         assert herald.waveform is calibration.get_waveform(bus="readout_q0_bus", name="readout")
         assert herald.weights is calibration.get_weights(bus="readout_q0_bus", name="weights")
         assert herald.max_attempts == 7
+        assert herald.padding_after_measure == 1000
 
     def test_measure_herald_with_distortions(self):
         qp = QProgram()
