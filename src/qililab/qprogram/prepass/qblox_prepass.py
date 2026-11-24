@@ -21,12 +21,13 @@ from typing import TYPE_CHECKING
 from uuid import UUID
 
 from qililab.config import logger
-from qililab.constants import QDACCONSTANTS
+from qililab.constants import QBLOXCONSTANTS, QDACCONSTANTS
 from qililab.core.variables import Variable
-from qililab.qprogram.blocks import Average, Block, Conditional, ForLoop
+from qililab.qprogram.blocks import Average, Block, Conditional, ForLoop, InfiniteLoop, Loop, Parallel
 from qililab.qprogram.operations import (
     Acquire,
     Measure,
+    MeasureHerald,
     MeasureReset,
     Play,
     PlayWithCalibratedWaveform,
@@ -44,6 +45,8 @@ from qililab.qprogram.operations import (
 from qililab.qprogram.prepass.utils_prepass import keep_instrument_operations
 
 if TYPE_CHECKING:
+    from collections.abc import Iterator
+
     from qililab.pulse_distortion.pulse_distortion import PulseDistortion
     from qililab.qprogram.calibration import Calibration
     from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
@@ -55,6 +58,15 @@ WAIT_TRIGGER_NETWORK_EXT_TRIGGER = 252
 
 # Operations carrying no duration
 NON_REALTIME_OPERATIONS = (SetFrequency, SetPhase, ResetPhase, SetGain, SetOffset, SetMarkers)
+
+# Shortest time between the end of a measurement and qp.qblox.measure_herald() on the same bus. The herald turns on the
+# sending of results with fb_acq_tb_id. On the QHC lab QRM (firmware 2.2.0, 1000 ns weights), a measurement that ended 0
+# to 23 ns before was read as the herald's first attempt, 24 to 27 ns before made the sequencer hang, and from 28 ns on
+# was safe. 50 ns leaves a margin
+MEASURE_HERALD_MIN_GAP_NS = 50
+
+# Blocks whose body runs again right after its end
+LOOP_BLOCKS = (Average, ForLoop, Loop, Parallel, InfiniteLoop)
 
 # Per Qblox bus and per block uuid: (acquisitions directly in the block, block nesting depth)
 AcquisitionMetadata = dict[str, dict[UUID, tuple[int, int]]]
@@ -114,8 +126,8 @@ def prepare_qblox(
 
     Applies the crosstalk compensation (the calibration's AC matrix, else the given one, else the calibration's DC
     matrix with a warning) and the bus distortions. Then walks the whole QProgram, including operations on other
-    instruments, to collect the acquisition metadata, validate ``qp.if_trigger()`` and ``qp.qblox.measure_reset()``,
-    and find the trigger requirements. Finally keeps only the operations on Qblox buses.
+    instruments, to collect the acquisition metadata, validate ``qp.if_trigger()``, ``qp.qblox.measure_reset()`` and
+    ``qp.qblox.measure_herald()``, and find the trigger requirements. Finally keeps only the operations on Qblox buses.
 
     Args:
         qprogram (QProgram): The QProgram returned by the shared pre-pass. It is not modified.
@@ -128,11 +140,15 @@ def prepare_qblox(
         QbloxPrepassResult: The QProgram with only Qblox operations, and what the compiler needs to know about it.
 
     Raises:
-        ValueError: If a ``qp.qblox.measure_reset()`` measures or resets on a bus that isn't a Qblox bus, or if a
+        ValueError: If a ``qp.qblox.measure_reset()`` measures or resets on a bus that isn't a Qblox bus, if a
+            ``qp.qblox.measure_herald()`` measures on a bus that isn't a Qblox bus, has a ``padding_after_measure`` below
+            the time LINQ feedback takes to bring its result back, or doesn't come right after a wait of at least
+            ``MEASURE_HERALD_MIN_GAP_NS`` on its bus, or if a
             ``qp.if_trigger()`` block has no operation on a Qblox bus, no wait time given or derivable from a QDAC
             ``set_trigger(position='step')`` + ``play(dwell=...)``, or a ``trigger_padding_ns`` below the trigger
             network's propagation delay.
-        NotImplementedError: If ``qp.if_trigger()`` is used in a way that isn't supported.
+        NotImplementedError: If ``qp.if_trigger()`` is used in a way that isn't supported, or if there is more than one
+            ``qp.qblox.measure_herald()``.
     """
     if calibration is not None:
         if calibration.crosstalk_matrix_ac is not None:
@@ -164,6 +180,22 @@ def prepare_qblox(
                 f"qp.qblox.measure_reset() measures on bus '{measure_reset.bus}' and resets on bus "
                 f"'{measure_reset.control_bus}', but both must be Qblox buses; the Qblox buses are {sorted(qblox_buses)}."
             )
+
+    measure_heralds = [leaf for leaf in leaves if isinstance(leaf, MeasureHerald)]
+    if len(measure_heralds) > 1:
+        raise NotImplementedError("Only one qp.qblox.measure_herald() is supported per QProgram.")
+    if measure_heralds and measure_heralds[0].bus not in qblox_buses:
+        raise ValueError(
+            f"qp.qblox.measure_herald() measures on bus '{measure_heralds[0].bus}', but it must be a Qblox bus; the "
+            f"Qblox buses are {sorted(qblox_buses)}."
+        )
+    if measure_heralds and measure_heralds[0].padding_after_measure < QBLOXCONSTANTS.WAIT_LINQ_SELF_CAST:
+        raise ValueError(
+            f"qp.qblox.measure_herald()'s padding_after_measure ({measure_heralds[0].padding_after_measure}) cannot be "
+            f"lower than {QBLOXCONSTANTS.WAIT_LINQ_SELF_CAST} ns, the time LINQ feedback takes to bring the result back."
+        )
+    if measure_heralds:
+        _validate_measure_herald_gap(qprogram.body, measure_heralds[0])
 
     return QbloxPrepassResult(
         qprogram=keep_instrument_operations(qprogram, qblox_bus_set),
@@ -244,6 +276,55 @@ def _count_acquisition(
         block_metadata = acquisition_metadata.setdefault(element.bus, {})
         count, _ = block_metadata.get(block.uuid, (0, depth))
         block_metadata[block.uuid] = (count + 1, depth)
+
+
+def _validate_measure_herald_gap(body: Block, herald: MeasureHerald) -> None:
+    """Check that what runs on the herald's bus just before ``qp.qblox.measure_herald()`` is a wait of at least
+    ``MEASURE_HERALD_MIN_GAP_NS``, so no measurement on the bus ends closer to the herald.
+
+    That is the element before the herald in its block, or, when the herald comes first in a loop, the loop's last
+    element, which ends the previous iteration. Only the operations on the herald's bus and the nested blocks count.
+    Nothing is checked for a herald that comes first in a block that isn't a loop, or that is alone on its bus in a loop.
+
+    Args:
+        body (Block): The body of the QProgram.
+        herald (MeasureHerald): The QProgram's herald.
+
+    Raises:
+        ValueError: If what runs on the herald's bus just before it isn't a wait of at least
+            ``MEASURE_HERALD_MIN_GAP_NS``.
+    """
+
+    def blocks(block: Block) -> Iterator[Block]:
+        """``block`` and every block nested in it."""
+        yield block
+        for element in block.elements:
+            if isinstance(element, Block):
+                yield from blocks(element)
+
+    block = next(block for block in blocks(body) if any(element is herald for element in block.elements))
+    elements = [
+        element
+        for element in block.elements
+        if isinstance(element, Block) or getattr(element, "bus", None) == herald.bus
+    ]
+    index = next(i for i, element in enumerate(elements) if element is herald)
+    if index == 0 and not isinstance(block, LOOP_BLOCKS):
+        return
+    # First in a loop: index - 1 is the loop's last element, which ends the previous iteration
+    previous = elements[index - 1]
+    if previous is herald or (
+        isinstance(previous, Wait)
+        and not isinstance(previous.duration, Variable)
+        and previous.duration >= MEASURE_HERALD_MIN_GAP_NS
+    ):
+        return
+    raise ValueError(
+        f"On bus '{herald.bus}', qp.qblox.measure_herald() must come right after a "
+        f"qp.wait(bus='{herald.bus}', duration={MEASURE_HERALD_MIN_GAP_NS}) or longer, at the end of the loop when the "
+        f"herald comes first in it: a measurement on that bus ending less than {MEASURE_HERALD_MIN_GAP_NS} ns before "
+        "the herald can be read as its first attempt or make the sequencer hang."
+    )
 
 
 def _validate_conditional_trigger(

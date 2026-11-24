@@ -17,6 +17,7 @@ from typing import TYPE_CHECKING, ClassVar, overload
 
 import numpy as np
 
+from qililab.constants import QBLOXCONSTANTS
 from qililab.core.variables import Domain, Variable, requires_domain
 from qililab.qprogram.blocks import Block, Conditional, ForLoop, Parallel, for_loop_iterations
 from qililab.qprogram.calibration import Calibration
@@ -26,6 +27,8 @@ from qililab.qprogram.operations import (
     Acquire,
     AcquireWithCalibratedWeights,
     Measure,
+    MeasureHerald,
+    MeasureHeraldCalibrated,
     MeasureReset,
     MeasureResetCalibrated,
     MeasureWithCalibratedWaveform,
@@ -122,10 +125,11 @@ class QProgram(StructuredProgram):
         "wait_trigger": "wait_trigger",
         "if_trigger": "if_trigger()",
         "measure_reset": "qp.qblox.measure_reset()",
+        "measure_herald": "qp.qblox.measure_herald()",
     }
 
-    # if_trigger() is mutually exclusive with wait_trigger() and measure_reset() (checked both ways below).
-    # Class-level default so QPrograms deserialized without this field still have it.
+    # if_trigger() and measure_herald() are each mutually exclusive with every other trigger mode (checked both ways
+    # below). Class-level default so QPrograms deserialized without this field still have it.
     _trigger_mode: str | None = None
 
     def __init__(self) -> None:
@@ -137,9 +141,10 @@ class QProgram(StructuredProgram):
     def _reject_conflicting_trigger_mode(self, this_op: str, conflicting_modes: tuple[str, ...]) -> None:
         """Raise if ``_trigger_mode`` is already set to one of ``conflicting_modes``.
 
-        Only one hardware-trigger mechanism (``wait_trigger()``, ``if_trigger()``,
-        ``qp.qblox.measure_reset()``) can gate real-time execution per QProgram; ``if_trigger()`` is
-        mutually exclusive with the other two, which aren't mutually exclusive with each other.
+        Only one mechanism (``wait_trigger()``, ``if_trigger()``,
+        ``qp.qblox.measure_reset()``, ``qp.qblox.measure_herald()``) can gate real-time execution per QProgram;
+        ``if_trigger()`` and ``qp.qblox.measure_herald()`` are each mutually exclusive with all the others, while
+        ``wait_trigger()`` and ``qp.qblox.measure_reset()`` aren't mutually exclusive with each other.
         """
         if self._trigger_mode in conflicting_modes:
             raise NotImplementedError(
@@ -224,6 +229,7 @@ class QProgram(StructuredProgram):
                         MeasureWithCalibratedWeights,
                         MeasureWithCalibratedWaveformWeights,
                         MeasureResetCalibrated,
+                        MeasureHeraldCalibrated,
                     ),
                 ):
                     return True
@@ -376,6 +382,18 @@ class QProgram(StructuredProgram):
                     )
                     block.elements[index] = measure_reset_operation
                     buses_to_add.add(element.control_bus)
+                elif (
+                    isinstance(element, MeasureHeraldCalibrated)
+                    and calibration.has_waveform(bus=element.bus, name=element.waveform)
+                    and calibration.has_weights(bus=element.bus, name=element.weights)
+                ):
+                    block.elements[index] = MeasureHerald(
+                        bus=element.bus,
+                        waveform=calibration.get_waveform(bus=element.bus, name=element.waveform),
+                        weights=calibration.get_weights(bus=element.bus, name=element.weights),
+                        max_attempts=element.max_attempts,
+                        padding_after_measure=element.padding_after_measure,
+                    )
 
                 if hasattr(element, "bus"):
                     bus = getattr(element, "bus")
@@ -1291,7 +1309,7 @@ class QProgram(StructuredProgram):
     def with_distortions(self, bus_distortions: dict[str, list["PulseDistortion"]]) -> "QProgram":
         """Returns a copy of the QProgram with pulse distortions applied to the played waveforms.
 
-        For every ``Play``, ``Measure`` and ``MeasureReset`` operation whose bus is present in
+        For every ``Play``, ``Measure``, ``MeasureReset`` and ``MeasureHerald`` operation whose bus is present in
         ``bus_distortions``, the corresponding distortions are applied in order to the operation's
         waveform. Each distortion is evaluated on the waveform's envelope and the result is stored as
         an ``Arbitrary`` waveform (an ``IQPair`` of ``Arbitrary`` waveforms for I/Q waveforms), so the
@@ -1321,7 +1339,7 @@ class QProgram(StructuredProgram):
             for index, element in enumerate(block.elements):
                 if isinstance(element, Block):
                     traverse(element)
-                elif isinstance(element, (Play, Measure, MeasureReset)):
+                elif isinstance(element, (Play, Measure, MeasureReset, MeasureHerald)):
                     if isinstance(element, MeasureReset) and element.control_bus in bus_distortions:
                         raise NotImplementedError(
                             "Applying pulse distortions to the control bus of a `MeasureReset` (active "
@@ -1418,9 +1436,10 @@ class QProgram(StructuredProgram):
                 Qblox buses always wait on the cluster's external trigger address. Defaults to None.
 
         Raises:
-            NotImplementedError: If ``qp.if_trigger()`` is also used in this QProgram.
+            NotImplementedError: If ``qp.if_trigger()`` or ``qp.qblox.measure_herald()`` is also used in this
+                QProgram.
         """
-        self._reject_conflicting_trigger_mode("wait_trigger", ("if_trigger",))
+        self._reject_conflicting_trigger_mode("wait_trigger", ("if_trigger", "measure_herald"))
         self._trigger_mode = "wait_trigger"
         operation = WaitTrigger(bus=bus, duration=_to_scalar(duration), port=port)
         self._active_block.append(operation)
@@ -1450,8 +1469,8 @@ class QProgram(StructuredProgram):
             Conditional: The conditional block.
 
         Raises:
-            NotImplementedError: If ``qp.wait_trigger`` or ``qp.qblox.measure_reset`` is also used in this
-                QProgram.
+            NotImplementedError: If ``qp.wait_trigger``, ``qp.qblox.measure_reset`` or ``qp.qblox.measure_herald``
+                is also used in this QProgram.
             ValueError: If ``trigger_padding_ns`` is given and is lower than the trigger network's own
                 propagation delay.
 
@@ -1460,7 +1479,7 @@ class QProgram(StructuredProgram):
             >>> with qp.if_trigger():
             >>> # operations that shall be executed if the trigger was received
         """
-        self._reject_conflicting_trigger_mode("if_trigger()", ("wait_trigger", "measure_reset"))
+        self._reject_conflicting_trigger_mode("if_trigger()", ("wait_trigger", "measure_reset", "measure_herald"))
         self._trigger_mode = "if_trigger"
         return QProgram._ConditionalContext(
             program=self, trigger_padding_ns=trigger_padding_ns, expected_wait_time_ns=expected_wait_time_ns
@@ -1812,9 +1831,10 @@ class QProgram(StructuredProgram):
                 save_adc (bool, optional): Whether to save ADC data. Defaults to False.
 
             Raises:
-                NotImplementedError: If ``qp.if_trigger()`` is also used in this QProgram.
+                NotImplementedError: If ``qp.if_trigger()`` or ``qp.qblox.measure_herald()`` is also used in this
+                    QProgram.
             """
-            self.qprogram._reject_conflicting_trigger_mode("qp.qblox.measure_reset()", ("if_trigger",))
+            self.qprogram._reject_conflicting_trigger_mode("qp.qblox.measure_reset()", ("if_trigger", "measure_herald"))
             self.qprogram._trigger_mode = "measure_reset"
             operation: MeasureReset | MeasureResetCalibrated
             if (
@@ -1851,6 +1871,118 @@ class QProgram(StructuredProgram):
             self.qprogram._active_block.append(operation)
             self.qprogram._buses.add(bus)
             self.qprogram._buses.add(control_bus)
+            self._weight_duration.setdefault(bus, []).append(
+                weights.get_duration() if isinstance(weights, IQWaveform) else weights
+            )
+
+        @overload
+        def measure_herald(
+            self,
+            bus: str,
+            waveform: IQWaveform,
+            weights: IQWaveform,
+            max_attempts: int = 20,
+            padding_after_measure: int = QBLOXCONSTANTS.WAIT_LINQ_SELF_CAST,
+        ) -> None:
+            """Measure until the qubit is found in the ground state, then continue. See the main overload."""
+
+        @overload
+        def measure_herald(
+            self,
+            bus: str,
+            waveform: str,
+            weights: str,
+            max_attempts: int = 20,
+            padding_after_measure: int = QBLOXCONSTANTS.WAIT_LINQ_SELF_CAST,
+        ) -> None:
+            """Measure until the qubit is found in the ground state, then continue. See the main overload."""
+
+        def measure_herald(
+            self,
+            bus: str,
+            waveform: IQWaveform | str,
+            weights: IQWaveform | str,
+            max_attempts: int = 20,
+            padding_after_measure: int = QBLOXCONSTANTS.WAIT_LINQ_SELF_CAST,
+        ) -> None:
+            """Measure until the qubit is found in the ground state, then continue: heralding on the ground state.
+
+            Each attempt measures ``bus`` and thresholds the result with the bus threshold. The bus sends the result
+            back to itself over LINQ feedback and waits for it: on the ground state it stops measuring, otherwise it
+            runs the next attempt. After the herald, every Qblox bus of the QProgram waits for the others, so the
+            operations that follow start together. Requires Qblox cluster firmware 2.x.
+
+            A QProgram can have only one herald, and compiling raises otherwise. Place it inside ``qp.average(...)``
+            so it runs every shot: placed above, only the first shot is heralded.
+
+            On ``bus``, the herald must come right after a ``qp.wait()`` of at least 50 ns, placed at the end of the
+            loop when the herald comes first in it, as in the example: a measurement on the bus ending closer to the
+            herald can be read as its first attempt, or the sequencer can hang. Compiling raises otherwise.
+
+            If no attempt finds the ground state, the shot runs unheralded.
+
+            The herald returns one result on ``bus``, with one more axis than a ``qp.measure()`` at the same place: the
+            attempts, of length ``max_attempts``. Attempt ``k`` writes entry ``k``, and the attempts after the one that
+            found the ground state don't run. Inside ``qp.average()``, entry ``k`` is the average over the shots that
+            reached attempt ``k``, and stays NaN if no shot reached it. The thresholded value of the last entry is then
+            the fraction of the shots reaching the last attempt that were still excited there: those shots ran
+            unheralded. The results come in program order, except that a herald placed after a measurement of the
+            same block comes after every measurement of that block.
+
+            Args:
+                bus (str): Identifier of the measurement bus.
+                waveform (IQWaveform | str): Waveform played during each measurement.
+                weights (IQWaveform | str): Weights used for demodulation/integration.
+                max_attempts (int, optional): Maximum number of measurements per shot. Defaults to 20.
+                padding_after_measure (int, optional): Wait, in ns, on ``bus`` after each attempt's acquisition, to
+                    cover the time its result takes to come back over LINQ feedback before the bus reads it. Defaults
+                    to, and cannot be set lower than, 200 ns.
+
+            Raises:
+                NotImplementedError: If ``qp.wait_trigger()``, ``qp.if_trigger()`` or ``qp.qblox.measure_reset()`` is
+                    also used in this QProgram, or if only one of ``waveform`` and ``weights`` is a calibrated name.
+                ValueError: If ``max_attempts`` is lower than 1. When compiling, if ``padding_after_measure`` is lower
+                    than 200 ns.
+
+            Examples:
+
+                >>> with qp.average(shots):
+                >>>     qp.qblox.measure_herald(bus="readout_q0", waveform="Measure", weights="Weights")
+                >>>     qp.play(bus="drive_q0", waveform="Drag")
+                >>>     qp.measure(bus="readout_q0", waveform="Measure", weights="Weights")
+                >>>     qp.wait(bus="readout_q0", duration=50)  # before the next shot's herald
+            """
+            self.qprogram._reject_conflicting_trigger_mode(
+                "qp.qblox.measure_herald()", ("wait_trigger", "if_trigger", "measure_reset")
+            )
+            if max_attempts < 1:
+                raise ValueError(
+                    f"qp.qblox.measure_herald() needs at least 1 attempt, got max_attempts={max_attempts}."
+                )
+            operation: MeasureHerald | MeasureHeraldCalibrated
+            if isinstance(waveform, IQWaveform) and isinstance(weights, IQWaveform):
+                operation = MeasureHerald(
+                    bus=bus,
+                    waveform=waveform,
+                    weights=weights,
+                    max_attempts=max_attempts,
+                    padding_after_measure=padding_after_measure,
+                )
+            elif isinstance(waveform, str) and isinstance(weights, str):
+                operation = MeasureHeraldCalibrated(
+                    bus=bus,
+                    waveform=waveform,
+                    weights=weights,
+                    max_attempts=max_attempts,
+                    padding_after_measure=padding_after_measure,
+                )
+            else:
+                raise NotImplementedError(
+                    "For the waveform and weights, you must either use the calibration file for both or not use it at all."
+                )
+            self.qprogram._trigger_mode = "measure_herald"
+            self.qprogram._active_block.append(operation)
+            self.qprogram._buses.add(bus)
             self._weight_duration.setdefault(bus, []).append(
                 weights.get_duration() if isinstance(weights, IQWaveform) else weights
             )

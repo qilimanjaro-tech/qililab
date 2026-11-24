@@ -36,7 +36,7 @@ dependencies = [
     "pydantic>=2.9.0",
     "pydantic-settings>=2.12.0",
     "pyvisa-py>=0.7.2",
-    "qblox-instruments==1.0.3",
+    "qblox-instruments==1.4.1",
     "qcodes==0.54.3",
     "qcodes-contrib-drivers>=0.23.0",
     "qpysequence>=0.12.0",
@@ -123,7 +123,10 @@ url = "https://aws@qilimanjaro-723412851021.d.codeartifact.eu-west-1.amazonaws.c
 explicit = true
 
 [tool.uv.sources]
-qpysequence = { index = "qilimanjaro" }
+# Taken from the branch of qpysequence's PR #101 until its release is out (the LINQ feedback instructions, cmp, jz
+# and jnz, and real-time durations of 0, QHC-1922): run `uv lock --upgrade-package qpysequence` after a new commit
+# on it. The git source is replaced by a version pin once it is released.
+qpysequence = { git = "https://github.com/qilimanjaro-tech/qpysequence", branch = "qhc-1922-linq-herald-instructions" }
 
 [tool.ruff]
 line-length = 120

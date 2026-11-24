@@ -44,6 +44,7 @@ from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
 from qililab.qprogram.operations import (
     Acquire,
     Measure,
+    MeasureHerald,
     MeasureReset,
     Operation,
     Play,
@@ -80,6 +81,13 @@ DISABLE_CONDITIONAL = 0
 
 # time required by qblox trigger network to send a trigger; 400ns is conservative - the official guideline is 388ns between 2 modules
 WAIT_TRIGGER_NETWORK_INTERMODULES = 400
+
+# LINQ identifier qp.qblox.measure_herald() sends its results with. Identifiers 1 to 15 send them back to the same
+# sequencer only (self-cast), so no route is needed; a QProgram has only one herald, so a fixed identifier is enough
+HERALD_LINQ_ID = 1
+# Value fb_pop_data reads for a result below the threshold, the ground state: the validation bit set (0b10) and the
+# thresholded result clear. Above the threshold it reads 3 (0b11)
+LINQ_GROUND_STATE = 2
 
 
 def _trigger_address_mask(address: int) -> int:
@@ -265,6 +273,7 @@ class QbloxCompiler:
             Sync: self._handle_sync,
             Measure: self._handle_measure,
             MeasureReset: self._handle_measure_reset,
+            MeasureHerald: self._handle_measure_herald,
             Acquire: self._handle_acquire,
             Play: self._handle_play,
             Conditional: self._handle_block,
@@ -340,6 +349,10 @@ class QbloxCompiler:
                 if not handler:
                     raise NotImplementedError(f"{element.__class__} is currently not supported in QBlox.")
                 appended = handler(element)
+                if isinstance(element, MeasureHerald):
+                    # Its wait_sync realigns every bus, dropping the delays already applied: the next play applies
+                    # them again
+                    delay_implemented = False
                 if isinstance(element, Block):
                     if isinstance(element, Conditional):
                         self._handle_conditional_trigger_prologue()
@@ -1803,6 +1816,111 @@ class QbloxCompiler:
         self._handle_conditional(
             bus=element.control_bus, enable=DISABLE_CONDITIONAL, address=0, operator=0, else_duration=INST_MIN_WAIT
         )
+
+    def _handle_measure_herald(self, element: MeasureHerald) -> None:
+        """Measure until the ground state is found, then realign every bus with a ``wait_sync``.
+
+        The bus sends the thresholded result of each attempt back to itself over LINQ feedback, with the self-cast
+        identifier ``HERALD_LINQ_ID``. After each attempt, the bus waits ``padding_after_measure`` for that result,
+        which the Q1 core reads with ``fb_pop_data`` to leave the attempts loop on the ground state. The sending stops
+        after the loop, so the other measurements of the bus leave no result behind for the next herald. Requires
+        Qblox cluster firmware 2.x.
+
+        The herald has its own acquisition, whose last axis is the attempts: attempt ``k`` writes bin ``k`` after the
+        bins of the enclosing loops.
+
+        Args:
+            element (MeasureHerald): The herald to compile.
+
+        Raises:
+            ValueError: If the bus needs more acquisition indices than the sequencer has.
+        """
+        bus = element.bus
+        bus_info = self._buses[bus]
+
+        # The other acquisitions of the bus take the indices before: one per block, or only 0 when exceeds_depth
+        acquisition_index = 1 if bus_info.exceeds_depth else len(self._acquisition_metadata.get(bus, {}))
+        if acquisition_index > MAX_ACQUISITION_INDEX:
+            raise ValueError(
+                f"Bus '{bus}' needs {acquisition_index + 1} acquisition indices with its qp.qblox.measure_herald(), but "
+                f"a sequencer has {MAX_ACQUISITION_INDEX + 1}."
+            )
+        loops = [
+            (i, loop)
+            for i, loop in enumerate(bus_info.qpy_block_stack)
+            if isinstance(loop, QPyProgram.IterativeLoop) and not loop.name.startswith("avg")
+        ]
+        shape = (*(loop.iterations for _, loop in loops), element.max_attempts)
+        acquisition_name = f"Acquisition {acquisition_index}"
+        bus_info.acquisitions[acquisition_name] = AcquisitionData(bus=bus, save_adc=False, shape=shape, intertwined=1)
+        bus_info.qpy_sequence._acquisitions.add(
+            name=acquisition_name, num_bins=math.prod(shape), index=acquisition_index
+        )
+
+        # Every acquisition from here sends its thresholded result back to this sequencer
+        bus_info.qpy_block_stack[-1].add(component=QPyInstructions.FbAcqTbId(id=HERALD_LINQ_ID, duration=INST_MIN_WAIT))
+
+        # Start from the first bin of the current iteration of the enclosing loops. That first bin is reset where the
+        # other acquisitions reset their bin register, and moves on by max_attempts at each iteration of the innermost
+        # loop
+        bin_register = QPyProgram.Register()
+        if loops:
+            first_bin_register = QPyProgram.Register()
+            bus_info.qpy_block_stack[loops[0][0] - 1].add(
+                component=QPyInstructions.Move(source=0, destination=first_bin_register), insert_idx=0
+            )
+            bus_info.qpy_block_stack[-1].add(
+                component=QPyInstructions.Move(source=first_bin_register, destination=bin_register)
+            )
+        else:
+            bus_info.qpy_block_stack[-1].add(component=QPyInstructions.Move(source=0, destination=bin_register))
+
+        index_I, index_Q, integration_length = self._append_to_weights_of_bus(bus, element.weights)
+        register_I = self._get_or_create_weight_register(bus, index_I, block_index=0)
+        register_Q = self._get_or_create_weight_register(bus, index_Q, block_index=0)
+
+        herald_loop = QPyProgram.Loop(name="herald", begin=element.max_attempts)
+        bus_info.qpy_block_stack[-1].add(herald_loop)
+        bus_info.qpy_block_stack.append(herald_loop)
+        self._handle_play(Play(bus=bus, waveform=element.waveform, wait_time=bus_info.time_of_flight))
+        herald_loop.add(
+            QPyInstructions.AcquireWeighed(
+                acquisition=acquisition_index,
+                bin=bin_register,
+                weight_0=register_I,
+                weight_1=register_Q,
+                duration=integration_length,
+            )
+        )
+        herald_loop.add(QPyInstructions.Add(a=bin_register, b=1, destination=bin_register))
+        # The attempt's result arrives during this wait; fb_pop_data blocks the Q1 core until it does
+        self._handle_add_waits(bus=bus, duration=element.padding_after_measure)
+        result_register = QPyProgram.Register()
+        herald_loop.add(QPyInstructions.FbPopData(id=HERALD_LINQ_ID, data=result_register))
+        herald_loop.add(QPyInstructions.Cmp(a=result_register, b=LINQ_GROUND_STATE))
+        herald_loop.add(QPyInstructions.Jz(address="herald_done"))
+        bus_info.qpy_block_stack.pop()
+
+        # Unique: a QProgram has only one herald, and the compiler names no other block or loop herald_done
+        bus_info.qpy_block_stack[-1].add(QPyProgram.Block(name="herald_done"))
+        # Stop sending: the bus's other acquisitions would otherwise leave results for the next herald to pop
+        bus_info.qpy_block_stack[-1].add(component=QPyInstructions.FbAcqTbId(id=0, duration=INST_MIN_WAIT))
+
+        # The herald takes a variable time: every bus waits for the others, then counts its durations from there
+        for info in self._buses.values():
+            info.qpy_block_stack[-1].add(component=QPyInstructions.WaitSync(INST_MIN_WAIT))
+            info.static_duration = 0
+            info.duration_since_sync = 0
+            info.marked_for_sync = False
+            info.marked_for_dynamic_sync = False
+            info.has_pending_dynamic_expression = False
+
+        if loops:
+            bus_info.qpy_block_stack[loops[-1][0]].add(
+                component=QPyInstructions.Add(
+                    a=first_bin_register, b=element.max_attempts, destination=first_bin_register
+                )
+            )
 
     def _handle_play(self, element: Play) -> None:
         waveform_I, waveform_Q = element.get_waveforms()
