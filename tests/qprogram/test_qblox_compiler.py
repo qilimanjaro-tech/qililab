@@ -3531,7 +3531,7 @@ class TestQBloxCompiler:
                             play             0, 1, 28
                             acquire_weighed  1, R7, R1, R0, 100
                             add              R7, 1, R7
-                            wait             0
+                            wait             200
                             fb_pop_data      1, R9
                             nop
                             cmp              R9, 2
@@ -3589,7 +3589,7 @@ class TestQBloxCompiler:
                             play             0, 1, 4
                             acquire_weighed  0, R2, R1, R0, 100
                             add              R2, 1, R2
-                            wait             0
+                            wait             200
                             fb_pop_data      1, R4
                             nop
                             cmp              R4, 2
@@ -3651,7 +3651,7 @@ class TestQBloxCompiler:
                             play             0, 1, 4
                             acquire_weighed  1, R8, R3, R1, 100
                             add              R8, 1, R8
-                            wait             0
+                            wait             200
                             fb_pop_data      1, R10
                             nop
                             cmp              R10, 2
