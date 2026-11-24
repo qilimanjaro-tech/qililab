@@ -1910,6 +1910,10 @@ class QProgram(StructuredProgram):
             A QProgram can have only one herald, and compiling raises otherwise. Place it inside ``qp.average(...)``
             so it runs every shot: placed above, only the first shot is heralded.
 
+            On ``bus``, the herald must come right after a ``qp.wait()`` of at least 50 ns, placed at the end of the
+            loop when the herald comes first in it, as in the example: a measurement on the bus ending closer to the
+            herald can be read as its first attempt, or the sequencer can hang. Compiling raises otherwise.
+
             If no attempt finds the ground state, the shot runs unheralded. It shows in the results: every attempt is
             filled and the last one is excited.
 
@@ -1935,6 +1939,7 @@ class QProgram(StructuredProgram):
                 >>>     qp.qblox.measure_herald(bus="readout_q0", waveform="Measure", weights="Weights")
                 >>>     qp.play(bus="drive_q0", waveform="Drag")
                 >>>     qp.measure(bus="readout_q0", waveform="Measure", weights="Weights")
+                >>>     qp.wait(bus="readout_q0", duration=50)  # before the next shot's herald
             """
             self.qprogram._reject_conflicting_trigger_mode(
                 "qp.qblox.measure_herald()", ("wait_trigger", "if_trigger", "measure_reset")

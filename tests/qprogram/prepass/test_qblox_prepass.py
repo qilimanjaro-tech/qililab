@@ -15,6 +15,13 @@ DRIVE_WF = IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, 
 WEIGHTS = IQPair(I=Square(amplitude=1.0, duration=100), Q=Square(amplitude=0.0, duration=100))
 
 
+HERALD_WAIT_ERROR = (
+    "On bus 'readout', qp.qblox.measure_herald() must come right after a qp.wait(bus='readout', duration=50) or "
+    "longer, at the end of the loop when the herald comes first in it: a measurement on that bus ending less than 50 ns "
+    "before the herald can be read as its first attempt or make the sequencer hang."
+)
+
+
 @pytest.fixture(name="flux_qprogram")
 def fixture_flux_qprogram() -> QProgram:
     qp = QProgram()
@@ -179,6 +186,7 @@ class TestPrepareQblox:
         with qp.average(10) as average:
             qp.qblox.measure_herald(bus="readout", waveform=WEIGHTS, weights=WEIGHTS)
             qp.measure(bus="readout", waveform=WEIGHTS, weights=WEIGHTS)
+            qp.wait(bus="readout", duration=50)
         qp = prepare_shared(qp, bus_mapping={"readout": "readout_q0"})
 
         result = prepare_qblox(qp, qblox_buses=["readout_q0"])
@@ -213,6 +221,85 @@ class TestPrepareQblox:
             ),
         ):
             prepare_qblox(qp, qblox_buses=["drive"])
+
+    def test_measure_herald_after_measurement_ending_previous_shot_raises_error(self):
+        """The shot's last operation on the herald's bus is a measurement: the drive and the sync don't count."""
+        qp = QProgram()
+        with qp.average(10):
+            qp.qblox.measure_herald(bus="readout", waveform=WEIGHTS, weights=WEIGHTS)
+            qp.play(bus="drive", waveform=DRIVE_WF)
+            qp.sync()
+            qp.measure(bus="readout", waveform=WEIGHTS, weights=WEIGHTS)
+
+        with pytest.raises(ValueError, match=re.escape(HERALD_WAIT_ERROR)):
+            prepare_qblox(qp)
+
+    def test_measure_herald_right_after_measurement_raises_error(self):
+        qp = QProgram()
+        with qp.average(10):
+            qp.measure(bus="readout", waveform=WEIGHTS, weights=WEIGHTS)
+            qp.qblox.measure_herald(bus="readout", waveform=WEIGHTS, weights=WEIGHTS)
+            qp.wait(bus="readout", duration=1000)
+
+        with pytest.raises(ValueError, match=re.escape(HERALD_WAIT_ERROR)):
+            prepare_qblox(qp)
+
+    def test_measure_herald_after_loop_raises_error(self):
+        """A nested block on the herald's bus counts as what runs just before it, even if it ends with a wait."""
+        qp = QProgram()
+        with qp.average(10):
+            qp.qblox.measure_herald(bus="readout", waveform=WEIGHTS, weights=WEIGHTS)
+            with qp.average(2):
+                qp.measure(bus="readout", waveform=WEIGHTS, weights=WEIGHTS)
+                qp.wait(bus="readout", duration=50)
+
+        with pytest.raises(ValueError, match=re.escape(HERALD_WAIT_ERROR)):
+            prepare_qblox(qp)
+
+    def test_measure_herald_after_too_short_wait_raises_error(self):
+        qp = QProgram()
+        with qp.average(10):
+            qp.qblox.measure_herald(bus="readout", waveform=WEIGHTS, weights=WEIGHTS)
+            qp.measure(bus="readout", waveform=WEIGHTS, weights=WEIGHTS)
+            qp.wait(bus="readout", duration=20)
+
+        with pytest.raises(ValueError, match=re.escape(HERALD_WAIT_ERROR)):
+            prepare_qblox(qp)
+
+    def test_measure_herald_after_variable_wait_raises_error(self):
+        """A variable wait's duration isn't known at compile time."""
+        qp = QProgram()
+        duration = qp.variable(label="duration", domain=Domain.Time)
+        with qp.average(10):
+            with qp.for_loop(variable=duration, start=100, stop=200, step=100):
+                qp.qblox.measure_herald(bus="readout", waveform=WEIGHTS, weights=WEIGHTS)
+                qp.measure(bus="readout", waveform=WEIGHTS, weights=WEIGHTS)
+                qp.wait(bus="readout", duration=duration)
+
+        with pytest.raises(ValueError, match=re.escape(HERALD_WAIT_ERROR)):
+            prepare_qblox(qp)
+
+    def test_measure_herald_after_wait_of_50_ns(self):
+        """Operations on another bus after the wait don't count: only the herald's bus gets its results back."""
+        qp = QProgram()
+        frequency = qp.variable(label="frequency", domain=Domain.Frequency)
+        with qp.average(10):
+            with qp.for_loop(variable=frequency, start=1e6, stop=2e6, step=1e6):
+                qp.qblox.measure_herald(bus="readout", waveform=WEIGHTS, weights=WEIGHTS)
+                qp.measure(bus="readout", waveform=WEIGHTS, weights=WEIGHTS)
+                qp.wait(bus="readout", duration=50)
+                qp.measure(bus="readout2", waveform=WEIGHTS, weights=WEIGHTS)
+
+        prepare_qblox(qp)
+
+    def test_measure_herald_alone_on_its_bus(self):
+        """Alone on its bus in the loop, the herald follows itself, whose last attempt waits for its own result."""
+        qp = QProgram()
+        with qp.average(10):
+            qp.play(bus="drive", waveform=DRIVE_WF)
+            qp.qblox.measure_herald(bus="readout", waveform=WEIGHTS, weights=WEIGHTS)
+
+        prepare_qblox(qp)
 
     def test_crosstalk_uses_calibration_ac_matrix_over_explicit_one(self, flux_qprogram: QProgram):
         ac_crosstalk = CrosstalkMatrix().from_array(["flux1", "flux2"], np.linalg.inv([[1, 0.3], [0.3, 1]]))

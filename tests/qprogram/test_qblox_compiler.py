@@ -3617,8 +3617,10 @@ class TestQBloxCompiler:
         with qp.for_loop(variable=frequency, start=1e6, stop=2e6, step=1e6):
             with qp.average(10):
                 qp.measure(bus="readout", waveform=wf, weights=wf)
+                qp.wait(bus="readout", duration=50)
                 qp.qblox.measure_herald(bus="readout", waveform=wf, weights=wf, max_attempts=3)
                 qp.measure(bus="readout", waveform=wf, weights=wf)
+                qp.wait(bus="readout", duration=50)
 
         output = QbloxCompiler().compile(qprogram=qp)
 
@@ -3641,6 +3643,7 @@ class TestQBloxCompiler:
             avg_0:
                             play             0, 1, 4
                             acquire_weighed  0, R4, R3, R1, 100
+                            wait             50
                             fb_acq_tb_id     1, 4
                             move             R2, R8
                             move             3, R9
@@ -3659,6 +3662,7 @@ class TestQBloxCompiler:
                             wait_sync        4
                             play             0, 1, 4
                             acquire_weighed  0, R0, R3, R1, 100
+                            wait             50
                             loop             R7, @avg_0
                             add              R4, 2, R4
                             add              R2, 3, R2
@@ -3715,6 +3719,7 @@ class TestQBloxCompiler:
         for _ in range(33):
             with qp.average(1):
                 qp.measure(bus="readout", waveform=wf, weights=wf)
+        qp.wait(bus="readout", duration=50)
         qp.qblox.measure_herald(bus="readout", waveform=wf, weights=wf, max_attempts=2)
 
         output = QbloxCompiler().compile(qprogram=qp)
@@ -3731,6 +3736,7 @@ class TestQBloxCompiler:
         for _ in range(32):
             with qp.average(1):
                 qp.measure(bus="readout", waveform=wf, weights=wf)
+        qp.wait(bus="readout", duration=50)
         qp.qblox.measure_herald(bus="readout", waveform=wf, weights=wf)
 
         with pytest.raises(
