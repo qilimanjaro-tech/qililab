@@ -25,10 +25,11 @@ from qililab.instruments.utils import InstrumentFactory
 from qililab.typings import ChannelID, InstrumentName, OutputID, Parameter, ParameterValue
 
 from .qblox_qcm import QbloxQCM
+from .qblox_rf_mixin import QbloxRFMixin
 
 
 @InstrumentFactory.register
-class QbloxQCMRF(QbloxQCM):
+class QbloxQCMRF(QbloxRFMixin, QbloxQCM):
     """Qblox QCM-RF driver."""
 
     name = InstrumentName.QCMRF
@@ -191,34 +192,5 @@ class QbloxQCMRF(QbloxQCM):
         dictionary.pop("filters")
         return dictionary
 
-    def calibrate_mixers(self, cal_type: str, channel_id: ChannelID | None = None):
-        """Calibrate the mixer of the output the given sequencer is connected to.
-
-        The LO is calibrated through the public per-output driver method (``out{n}_lo_cal``), picked from the
-        sequencer's output rather than from its id, so the right LO is always calibrated. The sideband
-        calibration, when requested, runs only on the targeted sequencer. The calibration stops every
-        sequencer of the module, so the prepared sequencers are re-armed afterwards (QHC-1655).
-
-        Args:
-            cal_type (str): one of ``"off"``, ``"lo only"`` or ``"lo and sidebands"`` (the runcard/driver
-                vocabulary). The legacy ``"lo"``/``"lo_and_sidebands"`` spellings are accepted but deprecated.
-            channel_id (ChannelID): sequencer id of the bus to calibrate. Required; ``None`` raises.
-
-        Raises:
-            ValueError: if ``channel_id`` is ``None`` or ``cal_type`` is not recognised.
-        """
-        cal_type = self._normalise_mixer_cal_type(cal_type)
-        if channel_id is None:
-            raise ValueError(
-                "`channel_id` cannot be None when calibrating mixers. "
-                "Please specify the sequencer id of the bus channel to calibrate."
-            )
-        if cal_type == "off":
-            return
-
-        sequencer = self.get_sequencer(sequencer_id=int(channel_id))
-        output = sequencer.outputs[0]
+    def _calibrate_lo(self, output: int) -> None:
         getattr(self.device, f"out{output}_lo_cal")()
-        if cal_type == "lo and sidebands":
-            self.device.sequencers[sequencer.identifier].sideband_cal()
-        self._rearm_sequencers_after_calibration()

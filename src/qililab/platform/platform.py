@@ -67,7 +67,15 @@ from qililab.result.database import get_db_manager
 from qililab.result.qprogram.qblox_measurement_result import QbloxMeasurementResult
 from qililab.result.qprogram.qprogram_results import QProgramResults
 from qililab.result.stream_results import StreamArray
-from qililab.typings import ChannelID, DistortionState, InstrumentName, OutputID, Parameter, ParameterValue
+from qililab.typings import (
+    ChannelID,
+    DistortionState,
+    InstrumentName,
+    MixerCalibrationType,
+    OutputID,
+    Parameter,
+    ParameterValue,
+)
 from qililab.utils.serialization import deserialize_from
 
 if TYPE_CHECKING:
@@ -1835,19 +1843,41 @@ class Platform:
                     if isinstance(instrument, QbloxModule):
                         instrument.desync_sequencer(sequencer_id=int(channel))  # type: ignore[arg-type]
 
-    def calibrate_mixers(self, alias: str, cal_type: str, channel_id: ChannelID | None = None):
-        if channel_id is None:
-            raise ValueError(
-                "`channel_id` cannot be None when calibrating mixers. "
-                "Please specify the sequencer id of the bus channel to calibrate."
-            )
+    def calibrate_mixers(
+        self, alias: str, cal_type: MixerCalibrationType | str, channel_id: ChannelID | None = None
+    ) -> None:
+        """Calibrate the mixer of the Qblox RF module (QCM-RF or QRM-RF) of a bus.
+
+        The output calibrated is the one the bus's sequencer is connected to. The LO calibration applies to the whole
+        output, so it also affects every other bus on that output, and it stops the module's other sequencers. See
+        :meth:`QbloxQCMRF.calibrate_mixers <qililab.instruments.qblox.QbloxQCMRF.calibrate_mixers>` for details.
+
+        Args:
+            alias (str): alias of the bus to calibrate.
+            cal_type (MixerCalibrationType | str): ``"off"``, ``"lo only"`` or ``"lo and sidebands"``, as in the
+                runcard. The ``"lo"`` and ``"lo_and_sidebands"`` spellings are deprecated.
+            channel_id (ChannelID, optional): channel of the bus to calibrate. Defaults to None, which calibrates the
+                bus's own channel.
+
+        Raises:
+            ValueError: if ``cal_type`` is not a recognised calibration type, or ``channel_id`` is not a channel of
+                the bus.
+            AttributeError: if the bus has no Qblox RF module.
+        """
+        cal_type = MixerCalibrationType.parse(cal_type, stacklevel=2)
         bus = self.get_element(alias=alias)
-        for instrument, instrument_channel in zip(bus.instruments, bus.channels):
-            if instrument.name in (InstrumentName.QRMRF, InstrumentName.QCMRF):
-                if channel_id == instrument_channel:
-                    instrument.calibrate_mixers(cal_type, channel_id)
-            else:
-                raise AttributeError("Mixers calibration not implemented for this instrument.")
+        if channel_id is not None and channel_id not in bus.channels:
+            raise ValueError(f"ChannelID {channel_id} is not linked to bus with alias {alias}.")
+        rf_modules = [
+            (instrument, instrument_channel)
+            for instrument, instrument_channel in zip(bus.instruments, bus.channels)
+            if instrument.name in (InstrumentName.QRMRF, InstrumentName.QCMRF)
+            and (channel_id is None or channel_id == instrument_channel)
+        ]
+        if not rf_modules:
+            raise AttributeError("Mixers calibration not implemented for this instrument.")
+        for instrument, instrument_channel in rf_modules:
+            instrument.calibrate_mixers(cal_type, instrument_channel)
 
     def draw(
         self,

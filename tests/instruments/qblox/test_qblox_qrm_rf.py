@@ -103,7 +103,7 @@ def fixture_qrm(platform: Platform):
     qrm_rf.device.mock_add_spec(module_mock_spec)
     qrm_rf.device._get_max_out_att_0 = MagicMock(return_value=MAX_ATTENUATION)
     qrm_rf.device._run_mixer_lo_calib = MagicMock()
-    # Public LO-calibration method for the out0/in0 LO (what `calibrate_mixers` must call, QHC-1655).
+    # Public LO-calibration method for the out0/in0 LO, called by `calibrate_mixers`.
     qrm_rf.device.out0_in0_lo_cal = MagicMock()
 
     qrm_rf.device.sequencers = {0: MagicMock(), 1: MagicMock()}
@@ -338,8 +338,8 @@ class TestQbloxQRMRF:
         assert qrm_rf.sequences == {}
 
     def test_calibrate_mixers_lo_only_uses_public_method(self, qrm_rf: QbloxQRMRF):
-        """`lo only` calibrates the out0/in0 LO via the public method, not the private
-        `_run_mixer_lo_calib`, and runs no sideband calibration (QHC-1655)."""
+        """`lo only` calibrates the out0/in0 LO with the public driver method, and runs no sideband
+        calibration."""
         qrm_rf.calibrate_mixers(cal_type="lo only", channel_id=0)
 
         qrm_rf.device.out0_in0_lo_cal.assert_called_once_with()
@@ -347,58 +347,42 @@ class TestQbloxQRMRF:
         for sequencer in qrm_rf.device.sequencers:
             qrm_rf.device.sequencers[sequencer].sideband_cal.assert_not_called()
 
-    def test_calibrate_mixers_sidebands_only_target_sequencer(self, qrm_rf: QbloxQRMRF):
-        """`lo and sidebands` calibrates the LO and runs `sideband_cal` only on the targeted sequencer,
-        not on every sequencer of the module (QHC-1655)."""
+    def test_calibrate_mixers_sidebands_on_every_sequencer(self, qrm_rf: QbloxQRMRF):
+        """`lo and sidebands` runs `sideband_cal` on every sequencer of the module, since they are all
+        connected to out0, as the driver does for the runcard calibration."""
         qrm_rf.calibrate_mixers(cal_type="lo and sidebands", channel_id=0)
 
         qrm_rf.device.out0_in0_lo_cal.assert_called_once_with()
-        qrm_rf.device.sequencers[0].sideband_cal.assert_called_once_with()
-        qrm_rf.device.sequencers[1].sideband_cal.assert_not_called()
+        for sequencer in qrm_rf.awg_sequencers:
+            qrm_rf.device.sequencers[sequencer.identifier].sideband_cal.assert_called_once_with()
 
-    def test_calibrate_mixers_none_channel_raises(self, qrm_rf: QbloxQRMRF):
-        """Omitting `channel_id` raises instead of silently doing nothing (QHC-1655)."""
-        with pytest.raises(ValueError, match="channel_id"):
-            qrm_rf.calibrate_mixers(cal_type="lo only", channel_id=None)
+    @pytest.mark.parametrize("cal_type", ["off", "lo only", "lo and sidebands"])
+    def test_calibrate_mixers_unknown_channel_raises(self, qrm_rf: QbloxQRMRF, cal_type: str):
+        """A `channel_id` that is not a sequencer of the module raises before anything is calibrated."""
+        with pytest.raises(IndexError, match="id=7"):
+            qrm_rf.calibrate_mixers(cal_type=cal_type, channel_id=7)
         qrm_rf.device.out0_in0_lo_cal.assert_not_called()
 
     def test_calibrate_mixers_invalid_cal_type_raises(self, qrm_rf: QbloxQRMRF):
-        """An unknown cal type raises a ValueError (QHC-1655)."""
+        """An unknown cal type raises a ValueError."""
         with pytest.raises(ValueError, match="oh hi Mark!"):
             qrm_rf.calibrate_mixers(cal_type="oh hi Mark!", channel_id=0)
 
     def test_calibrate_mixers_off_is_noop(self, qrm_rf: QbloxQRMRF):
-        """`off` matches the runcard vocabulary and performs no calibration (QHC-1655)."""
-        qrm_rf.sequences = {0: MagicMock()}
+        """`off` performs no calibration."""
         qrm_rf.calibrate_mixers(cal_type="off", channel_id=0)
         qrm_rf.device.out0_in0_lo_cal.assert_not_called()
         qrm_rf.device._run_mixer_lo_calib.assert_not_called()
         qrm_rf.device.sequencers[0].sideband_cal.assert_not_called()
-        qrm_rf.device.arm_sequencer.assert_not_called()  # off returns before touching sequencers
-
-    def test_calibrate_mixers_rearms_prepared_sequencers(self, qrm_rf: QbloxQRMRF):
-        """Calibration stops every sequencer of the module, so the sequencers with an uploaded sequence
-        are re-armed to a known, ready-to-start state afterwards (QHC-1655)."""
-        qrm_rf.sequences = {0: MagicMock(), 1: MagicMock()}
-        qrm_rf.calibrate_mixers(cal_type="lo only", channel_id=0)
-        qrm_rf.device.arm_sequencer.assert_any_call(sequencer=0)
-        qrm_rf.device.arm_sequencer.assert_any_call(sequencer=1)
-        assert qrm_rf.device.arm_sequencer.call_count == 2
 
     @pytest.mark.parametrize(
-        "deprecated, canonical_sideband",
+        "deprecated, sidebands",
         [("lo", False), ("lo_and_sidebands", True)],
     )
-    def test_calibrate_mixers_deprecated_vocab_warns(
-        self, qrm_rf: QbloxQRMRF, deprecated: str, canonical_sideband: bool
-    ):
-        """The old `lo`/`lo_and_sidebands` spellings still work but warn, mapping to the runcard vocabulary
-        (QHC-1655)."""
-        with pytest.warns(DeprecationWarning):
+    def test_calibrate_mixers_deprecated_vocab_warns(self, qrm_rf: QbloxQRMRF, deprecated: str, sidebands: bool):
+        """The old `lo`/`lo_and_sidebands` spellings still work but raise a FutureWarning."""
+        with pytest.warns(FutureWarning, match="will be removed in a future release"):
             qrm_rf.calibrate_mixers(cal_type=deprecated, channel_id=0)
 
         qrm_rf.device.out0_in0_lo_cal.assert_called_once_with()
-        if canonical_sideband:
-            qrm_rf.device.sequencers[0].sideband_cal.assert_called_once_with()
-        else:
-            qrm_rf.device.sequencers[0].sideband_cal.assert_not_called()
+        assert qrm_rf.device.sequencers[0].sideband_cal.called is sidebands

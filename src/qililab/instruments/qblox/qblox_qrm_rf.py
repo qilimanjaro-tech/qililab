@@ -25,10 +25,12 @@ from qililab.instruments.utils import InstrumentFactory
 from qililab.typings import ChannelID, InstrumentName, OutputID, Parameter, ParameterValue
 
 from .qblox_qrm import QbloxQRM
+from .qblox_rf_mixin import QbloxRFMixin
+from .qblox_sequencer import QbloxSequencer
 
 
 @InstrumentFactory.register
-class QbloxQRMRF(QbloxQRM):
+class QbloxQRMRF(QbloxRFMixin, QbloxQRM):
     """Qblox QRM-RF driver."""
 
     name = InstrumentName.QRMRF
@@ -154,33 +156,10 @@ class QbloxQRMRF(QbloxQRM):
         dictionary.pop("filters")
         return dictionary
 
-    def calibrate_mixers(self, cal_type: str, channel_id: ChannelID | None = None):
-        """Calibrate the out0/in0 mixer of the module.
-
-        The LO is calibrated through the public ``out0_in0_lo_cal`` driver method (which targets the correct LO
-        index internally). The sideband calibration, when requested, runs only on the targeted sequencer. The
-        calibration stops every sequencer of the module, so the prepared sequencers are re-armed afterwards
-        (QHC-1655).
-
-        Args:
-            cal_type (str): one of ``"off"``, ``"lo only"`` or ``"lo and sidebands"`` (the runcard/driver
-                vocabulary). The legacy ``"lo"``/``"lo_and_sidebands"`` spellings are accepted but deprecated.
-            channel_id (ChannelID): sequencer id of the bus to calibrate. Required; ``None`` raises.
-
-        Raises:
-            ValueError: if ``channel_id`` is ``None`` or ``cal_type`` is not recognised.
-        """
-        cal_type = self._normalise_mixer_cal_type(cal_type)
-        if channel_id is None:
-            raise ValueError(
-                "`channel_id` cannot be None when calibrating mixers. "
-                "Please specify the sequencer id of the bus channel to calibrate."
-            )
-        if cal_type == "off":
-            return
-
+    def _calibrate_lo(self, output: int) -> None:
+        # out0 and in0 share one LO, calibrated as a whole.
         self.device.out0_in0_lo_cal()
-        if cal_type == "lo and sidebands":
-            sequencer = self.get_sequencer(sequencer_id=int(channel_id))
-            self.device.sequencers[sequencer.identifier].sideband_cal()
-        self._rearm_sequencers_after_calibration()
+
+    def _sequencers_on_output(self, output: int) -> list[QbloxSequencer]:
+        # `_map_connections` connects every sequencer to out0.
+        return list(self.awg_sequencers)
