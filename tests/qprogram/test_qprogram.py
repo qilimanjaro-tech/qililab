@@ -1817,7 +1817,7 @@ class TestQProgram(TestStructuredProgram):
         # Defaults for trigger, ADC saving and padding after the measurement
         assert op.trigger_address == 1
         assert not op.save_adc
-        assert op.padding_after_measure is None
+        assert op.padding_after_measure == 400
 
         # Interface flags updated
         assert qp.qblox.weight_duration == {"readout": [40]}

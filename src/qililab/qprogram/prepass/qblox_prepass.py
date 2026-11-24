@@ -21,7 +21,7 @@ from typing import TYPE_CHECKING
 from uuid import UUID
 
 from qililab.config import logger
-from qililab.constants import QDACCONSTANTS
+from qililab.constants import QBLOXCONSTANTS, QDACCONSTANTS
 from qililab.core.variables import Variable
 from qililab.qprogram.blocks import Average, Block, Conditional, ForLoop
 from qililab.qprogram.operations import (
@@ -52,10 +52,6 @@ if TYPE_CHECKING:
 
 # Default and minimum for qp.if_trigger()'s trigger_padding_ns.
 WAIT_TRIGGER_NETWORK_EXT_TRIGGER = 252
-
-# Default and minimum for qp.qblox.measure_reset()'s padding_after_measure: the time the trigger network takes to carry a
-# result between two modules. 400 ns is conservative, the official guideline is 388 ns.
-WAIT_TRIGGER_NETWORK_INTERMODULES = 400
 
 # Operations carrying no duration
 NON_REALTIME_OPERATIONS = (SetFrequency, SetPhase, ResetPhase, SetGain, SetOffset, SetMarkers)
@@ -169,13 +165,10 @@ def prepare_qblox(
                 f"qp.qblox.measure_reset() measures on bus '{measure_reset.bus}' and resets on bus "
                 f"'{measure_reset.control_bus}', but both must be Qblox buses; the Qblox buses are {sorted(qblox_buses)}."
             )
-        if (
-            measure_reset.padding_after_measure is not None
-            and measure_reset.padding_after_measure < WAIT_TRIGGER_NETWORK_INTERMODULES
-        ):
+        if measure_reset.padding_after_measure < QBLOXCONSTANTS.WAIT_TRIGGER_NETWORK_INTERMODULES:
             raise ValueError(
                 f"qp.qblox.measure_reset()'s padding_after_measure ({measure_reset.padding_after_measure}) cannot be lower "
-                f"than {WAIT_TRIGGER_NETWORK_INTERMODULES} ns, the trigger network's propagation delay between modules."
+                f"than {QBLOXCONSTANTS.WAIT_TRIGGER_NETWORK_INTERMODULES} ns, the trigger network's propagation delay between modules."
             )
 
     return QbloxPrepassResult(

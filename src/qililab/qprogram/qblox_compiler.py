@@ -59,7 +59,6 @@ from qililab.qprogram.operations import (
     WaitTrigger,
 )
 from qililab.qprogram.prepass import prepare_qblox, prepare_shared
-from qililab.qprogram.prepass.qblox_prepass import WAIT_TRIGGER_NETWORK_INTERMODULES
 from qililab.qprogram.qprogram import QProgram
 from qililab.waveforms import Arbitrary, FlatTop, IQWaveform, Square, Waveform
 
@@ -1782,12 +1781,7 @@ class QbloxCompiler:
         play = Play(bus=element.bus, waveform=element.waveform, wait_time=time_of_flight)
         acquire = Acquire(bus=element.bus, weights=element.weights, save_adc=element.save_adc)
         sync = Sync([element.bus, element.control_bus])
-        padding = (
-            element.padding_after_measure
-            if element.padding_after_measure is not None
-            else WAIT_TRIGGER_NETWORK_INTERMODULES
-        )
-        wait = Wait(bus=element.control_bus, duration=padding)
+        wait = Wait(bus=element.control_bus, duration=element.padding_after_measure)
         play_reset_pulse = Play(bus=element.control_bus, waveform=element.reset_pulse)
 
         self._handle_latch_rst(bus=element.control_bus, duration=INST_MIN_WAIT)

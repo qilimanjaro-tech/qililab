@@ -14,6 +14,7 @@
 
 from typing import Any
 
+from qililab.constants import QBLOXCONSTANTS
 from qililab.qprogram.operations.operation import Operation
 from qililab.waveforms import IQWaveform
 from qililab.yaml import yaml
@@ -30,7 +31,7 @@ class MeasureReset(Operation):
         reset_pulse: IQWaveform,
         trigger_address: int = 1,
         save_adc: bool = False,
-        padding_after_measure: int | None = None,
+        padding_after_measure: int = QBLOXCONSTANTS.WAIT_TRIGGER_NETWORK_INTERMODULES,
     ) -> None:
         super().__init__()
         self.bus: str = bus
@@ -40,16 +41,16 @@ class MeasureReset(Operation):
         self.reset_pulse: IQWaveform = reset_pulse
         self.trigger_address: int = trigger_address
         self.save_adc: bool = save_adc
-        self.padding_after_measure: int | None = padding_after_measure
+        self.padding_after_measure: int = padding_after_measure
 
     def __setstate__(self, state: dict[str, Any]) -> None:
-        """Restore the operation during deserialization, with ``padding_after_measure`` set to None when the YAML was
-        written before it existed: ``ruamel`` builds the object with ``cls.__new__`` and never calls ``__init__``.
+        """Restore the operation during deserialization, with ``padding_after_measure`` set to its default when the YAML
+        was written before it existed: ``ruamel`` builds the object with ``cls.__new__`` and never calls ``__init__``.
 
         Args:
             state (dict[str, Any]): The attribute mapping reconstructed from the document.
         """
-        self.__dict__.update({"padding_after_measure": None, **state})
+        self.__dict__.update({"padding_after_measure": QBLOXCONSTANTS.WAIT_TRIGGER_NETWORK_INTERMODULES, **state})
 
 
 @yaml.register_class
@@ -63,7 +64,7 @@ class MeasureResetCalibrated(Operation):
         reset_pulse: str,
         trigger_address: int = 1,
         save_adc: bool = False,
-        padding_after_measure: int | None = None,
+        padding_after_measure: int = QBLOXCONSTANTS.WAIT_TRIGGER_NETWORK_INTERMODULES,
     ) -> None:
         super().__init__()
         self.bus: str = bus
@@ -73,13 +74,13 @@ class MeasureResetCalibrated(Operation):
         self.reset_pulse: str = reset_pulse
         self.trigger_address: int = trigger_address
         self.save_adc: bool = save_adc
-        self.padding_after_measure: int | None = padding_after_measure
+        self.padding_after_measure: int = padding_after_measure
 
     def __setstate__(self, state: dict[str, Any]) -> None:
-        """Restore the operation during deserialization, with ``padding_after_measure`` set to None when the YAML was
-        written before it existed: ``ruamel`` builds the object with ``cls.__new__`` and never calls ``__init__``.
+        """Restore the operation during deserialization, with ``padding_after_measure`` set to its default when the YAML
+        was written before it existed: ``ruamel`` builds the object with ``cls.__new__`` and never calls ``__init__``.
 
         Args:
             state (dict[str, Any]): The attribute mapping reconstructed from the document.
         """
-        self.__dict__.update({"padding_after_measure": None, **state})
+        self.__dict__.update({"padding_after_measure": QBLOXCONSTANTS.WAIT_TRIGGER_NETWORK_INTERMODULES, **state})

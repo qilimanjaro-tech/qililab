@@ -17,6 +17,7 @@ from typing import TYPE_CHECKING, ClassVar, overload
 
 import numpy as np
 
+from qililab.constants import QBLOXCONSTANTS
 from qililab.core.variables import Domain, Variable, requires_domain
 from qililab.qprogram.blocks import Block, Conditional, ForLoop, Parallel, for_loop_iterations
 from qililab.qprogram.calibration import Calibration
@@ -1746,7 +1747,7 @@ class QProgram(StructuredProgram):
             reset_pulse: IQWaveform,
             trigger_address: int = 1,
             save_adc: bool = False,
-            padding_after_measure: int | None = None,
+            padding_after_measure: int = QBLOXCONSTANTS.WAIT_TRIGGER_NETWORK_INTERMODULES,
         ):
             """Play a measurement and conditionally apply a reset pulse based on the result. This enables active reset for transmon qubits.
 
@@ -1761,7 +1762,7 @@ class QProgram(StructuredProgram):
                 reset_pulse (IQWaveform): Pulse used for active reset.
                 trigger_address (int, optional): Trigger address for synchronization. Defaults to 1.
                 save_adc (bool, optional): Whether to save ADC data. Defaults to False.
-                padding_after_measure (int | None, optional): Wait, in ns, on the control bus between the end of the
+                padding_after_measure (int, optional): Wait, in ns, on the control bus between the end of the
                     acquisition and the conditional reset pulse, to cover the propagation delay of the trigger network
                     carrying the measurement result. Defaults to, and cannot be set lower than, 400 ns.
             """
@@ -1776,7 +1777,7 @@ class QProgram(StructuredProgram):
             reset_pulse: str,
             trigger_address: int = 1,
             save_adc: bool = False,
-            padding_after_measure: int | None = None,
+            padding_after_measure: int = QBLOXCONSTANTS.WAIT_TRIGGER_NETWORK_INTERMODULES,
         ):
             """Play a measurement and conditionally apply a reset pulse based on the result. This enables active reset for transmon qubits.
 
@@ -1791,7 +1792,7 @@ class QProgram(StructuredProgram):
                 reset_pulse (str): Pulse used for active reset.
                 trigger_address (int, optional): Trigger address for synchronization. Defaults to 1.
                 save_adc (bool, optional): Whether to save ADC data. Defaults to False.
-                padding_after_measure (int | None, optional): Wait, in ns, on the control bus between the end of the
+                padding_after_measure (int, optional): Wait, in ns, on the control bus between the end of the
                     acquisition and the conditional reset pulse, to cover the propagation delay of the trigger network
                     carrying the measurement result. Defaults to, and cannot be set lower than, 400 ns.
             """
@@ -1805,7 +1806,7 @@ class QProgram(StructuredProgram):
             reset_pulse: IQWaveform | str,
             trigger_address: int = 1,
             save_adc: bool = False,
-            padding_after_measure: int | None = None,
+            padding_after_measure: int = QBLOXCONSTANTS.WAIT_TRIGGER_NETWORK_INTERMODULES,
         ):
             """Play a measurement and conditionally apply a reset pulse based on the result. This enables active reset for transmon qubits.
 
@@ -1820,7 +1821,7 @@ class QProgram(StructuredProgram):
                 reset_pulse (IQWaveform | str): Pulse used for active reset.
                 trigger_address (int, optional): Trigger address for synchronization. Defaults to 1.
                 save_adc (bool, optional): Whether to save ADC data. Defaults to False.
-                padding_after_measure (int | None, optional): Wait, in ns, on the control bus between the end of the
+                padding_after_measure (int, optional): Wait, in ns, on the control bus between the end of the
                     acquisition and the conditional reset pulse, to cover the propagation delay of the trigger network
                     carrying the measurement result. Defaults to, and cannot be set lower than, 400 ns.
 
