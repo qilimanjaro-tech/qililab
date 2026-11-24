@@ -1919,13 +1919,15 @@ class QProgram(StructuredProgram):
             loop when the herald comes first in it, as in the example: a measurement on the bus ending closer to the
             herald can be read as its first attempt, or the sequencer can hang. Compiling raises otherwise.
 
-            If no attempt finds the ground state, the shot runs unheralded. It shows in the results: every attempt is
-            filled and the last one is excited.
+            If no attempt finds the ground state, the shot runs unheralded.
 
             The herald returns one result on ``bus``, with one more axis than a ``qp.measure()`` at the same place: the
             attempts, of length ``max_attempts``. Attempt ``k`` writes entry ``k``, and the attempts after the one that
-            found the ground state don't run, so their entries stay NaN. The results come in program order, except that
-            a herald placed after a measurement of the same block comes after every measurement of that block.
+            found the ground state don't run. Inside ``qp.average()``, entry ``k`` is the average over the shots that
+            reached attempt ``k``, and stays NaN if no shot reached it. The thresholded value of the last entry is then
+            the fraction of the shots reaching the last attempt that were still excited there: those shots ran
+            unheralded. The results come in program order, except that a herald placed after a measurement of the
+            same block comes after every measurement of that block.
 
             Args:
                 bus (str): Identifier of the measurement bus.
