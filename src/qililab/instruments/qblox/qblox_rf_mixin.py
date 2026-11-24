@@ -14,11 +14,15 @@
 
 """Mixer calibration shared by the Qblox RF modules."""
 
-from typing import TYPE_CHECKING, Any, Sequence
+from typing import TYPE_CHECKING
 
 from qililab.typings import ChannelID, MixerCalibrationType
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
+
+    from qblox_instruments.qcodes_drivers.module import Module as QcmQrm
+
     from .qblox_sequencer import QbloxSequencer
 
 
@@ -31,7 +35,7 @@ class QbloxRFMixin:
 
     if TYPE_CHECKING:
         # Provided by `QbloxModule`.
-        device: Any
+        device: QcmQrm
 
         @property
         def awg_sequencers(self) -> Sequence[QbloxSequencer]: ...
