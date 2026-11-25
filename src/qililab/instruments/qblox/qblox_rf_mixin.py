@@ -1,4 +1,4 @@
-# Copyright 2023 Qilimanjaro Quantum Tech
+# Copyright 2026 Qilimanjaro Quantum Tech
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -51,8 +51,8 @@ class QbloxRFMixin:
 
         The LO calibration applies to the whole output, so it affects every bus whose sequencer is on that output
         (e.g. two drive buses on the same QCM-RF output, or every readout bus of a QRM-RF, whose out0 and in0 share
-        one LO). A calibration also stops the module's other sequencers: they need to be armed and started again
-        before they are used.
+        one LO). A calibration also interrupts any sequencer of the module that is playing; the next
+        execution arms and starts it again.
 
         Args:
             cal_type (MixerCalibrationType | str): ``"off"``, ``"lo only"`` or ``"lo and sidebands"``. The
