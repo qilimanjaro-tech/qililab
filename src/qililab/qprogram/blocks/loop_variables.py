@@ -13,7 +13,7 @@
 # limitations under the License.
 """The variables a loop sweeps, and the check that nested loops sweep different ones."""
 
-from collections.abc import Iterable
+from collections.abc import Sequence
 
 from qprogram import Variable
 from qprogram.blocks import Block, Parallel, Sweep
@@ -37,15 +37,18 @@ def swept_variables(block: Block) -> list[Variable]:
     return []
 
 
-def reject_variables_swept_by_enclosing_loops(element: object, enclosing: Iterable[Block]) -> None:
-    """Raise if ``element`` is a loop over a variable one of the ``enclosing`` blocks, or the loop itself, already sweeps.
+def reject_variables_swept_by_enclosing_loops(element: object, enclosing: Sequence[Block]) -> None:
+    """Raise if ``element``, or a block inside it, is a loop over a variable an enclosing loop already sweeps.
+
+    The enclosing loops are those of the ``enclosing`` blocks, and of the blocks of ``element`` around the loop: an
+    inserted block can hold loops of its own.
 
     Args:
         element (object): The element being added.
-        enclosing (Iterable[Block]): The blocks it is added in.
+        enclosing (Sequence[Block]): The blocks it is added in.
 
     Raises:
-        VariableAllocated: If the loop sweeps a variable an enclosing loop already sweeps.
+        VariableAllocated: If a loop sweeps a variable an enclosing loop already sweeps.
     """
     if not isinstance(element, Block):
         return
@@ -55,3 +58,6 @@ def reject_variables_swept_by_enclosing_loops(element: object, enclosing: Iterab
             raise VariableAllocated(variable)
         # a parallel cannot sweep one variable twice either
         swept.add(variable.id)
+    # an inserted block can hold loops of its own
+    for child in element.elements:
+        reject_variables_swept_by_enclosing_loops(child, [*enclosing, element])

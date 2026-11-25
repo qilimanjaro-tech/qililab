@@ -2793,6 +2793,33 @@ class TestMethods:
         assert state.dims == ("outer", "inner")
         assert state.values.tolist() == [[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]]
 
+    @pytest.mark.parametrize("parallel", [False, True])
+    def test_qblox_results_of_a_wait_sweep_are_labelled_with_the_whole_ns_it_runs(
+        self, platform: Platform, parallel: bool
+    ):
+        """A wait runs whole ns, so a loop over a wait, alone or in a parallel, is labelled with the points its Q1ASM
+        runs: from 4 to 14 in 4 points, the register steps by 3, the whole part of the step."""
+        bus = "feedline_input_output_bus"
+        weights = IQPair(I=Square(amplitude=1.0, duration=120), Q=Square(amplitude=0.0, duration=120))
+        qprogram = QProgram()
+        t = qprogram.variable("t", units="ns")
+        gain = qprogram.variable("gain")
+        loop = qprogram.sweep(t).from_linspace(4, 14, 4)
+        with qprogram.average(10):
+            with loop | qprogram.sweep(gain).from_linspace(0.0, 0.3, 4) if parallel else loop:
+                qprogram.wait(bus=bus, duration=t)
+                qprogram.set_gain(bus=bus, gain=gain if parallel else 0.5)
+                m0 = qprogram.qblox.acquire(bus=bus, weights=weights)
+        raw = _raw_acquisition(path0=[1, 2, 3, 4], path1=[5, 6, 7, 8])
+
+        result, _, _ = self._execute_with_raw_acquisitions(platform, qprogram, [raw])
+
+        iq = result.get(m0)
+        assert iq.dims == (("t|gain", "IQ") if parallel else ("t", "IQ"))
+        assert iq.coords["t"].values.tolist() == [4, 7, 10, 13]
+        if parallel:
+            assert iq.coords["gain"].values.tolist() == pytest.approx([0.0, 0.1, 0.2, 0.3])
+
     def test_qblox_results_without_state_field_have_no_state(self, platform: Platform):
         """A measurement only returns the fields it asked for: the IQ ones by default."""
         weights = IQPair(I=Square(amplitude=1.0, duration=120), Q=Square(amplitude=0.0, duration=120))

@@ -17,6 +17,7 @@ from qililab.qprogram.experiment.experiment_executor import ExperimentExecutor
 from qililab.qprogram.qprogram import QProgram
 from qililab.result.experiment_results import ExperimentResults
 from qililab.typings.enums import Parameter
+from qililab.utils.serialization import deserialize, serialize
 
 
 def make_iq_data(i_values, q_values, sweep_dims: tuple[str, ...]) -> xr.DataArray:
@@ -278,6 +279,32 @@ class TestExperimentExecutor:
         assert calls == expected
         assert platform.execute_qprogram.call_count == (6 if trailing_static_lambda else 4)
         assert os.path.isfile(result_path)
+
+    def test_execute_gives_a_lambda_its_loop_values_after_a_serialization_round_trip(self, override_settings, tmp_path):
+        """An Experiment read back with deserialize runs as before: its lambda gets each point of the loop."""
+        readout = IQPair(I=Square(1.0, 40), Q=Square(1.0, 40))
+
+        def build(gain):
+            qp = QProgram()
+            qp.set_gain(bus="readout", gain=gain)
+            qp.measure(bus="readout", waveform=readout, weights=readout)
+            return qp
+
+        experiment = Experiment(label="round_trip")
+        gain = experiment.variable("gain")
+        with experiment.for_loop(gain, 0.0, 1.0, 0.5):
+            experiment.execute_qprogram(lambda gain=gain: build(gain))
+        platform = make_platform_returning(make_qprogram_result(make_iq_data(1.0, 2.0, ())))
+        with override_settings(
+            experiment_results_base_path=str(tmp_path),
+            experiment_results_save_in_database=False,
+            experiment_live_plot_enabled=False,
+            experiment_live_plot_on_slurm=False,
+        ):
+            ExperimentExecutor(platform=platform, experiment=deserialize(serialize(experiment))).execute()
+
+        gains = [call.kwargs["qprogram"].body.elements[0].gain for call in platform.execute_qprogram.call_args_list]
+        assert gains == [0.0, 0.5, 1.0]
 
     def test_execute(self, platform, experiment, qprogram, crosstalk, override_settings):
         """Test the execute method to ensure the experiment is executed correctly and results are stored."""

@@ -29,14 +29,15 @@ MeasurementFields = dict[str, xr.DataArray]
 """The arrays of one measurement, keyed by field name (``iq``, ``state``, ``raw``)."""
 
 
-def _dimension(loop: Sweep | Parallel) -> tuple[str, dict[str, Any]]:
+def _dimension(loop: Sweep | Parallel, wait_points: dict[str, np.ndarray]) -> tuple[str, dict[str, Any]]:
     """Return the dimension a loop gives a measurement, named as qprogram names it, with its coordinates.
 
     A sweep gives a dimension named after its variable; a parallel gives one dimension, ``"a|b"``, carrying the
-    coordinates of each of its variables.
+    coordinates of each of its variables. A loop over a wait is labelled with the whole ns it runs.
 
     Args:
         loop (Sweep | Parallel): The loop.
+        wait_points (dict[str, np.ndarray]): The points the variable of each loop over a wait runs, by variable id.
 
     Returns:
         tuple[str, dict[str, Any]]: The dimension's name, and its coordinates as xarray takes them.
@@ -46,7 +47,7 @@ def _dimension(loop: Sweep | Parallel) -> tuple[str, dict[str, Any]]:
     coordinates = {
         sweep.variable.id: xr.Variable(
             name,
-            sweep.source.values(),
+            wait_points.get(sweep.variable.id, sweep.source.values()),
             attrs={
                 key: value
                 for key, value in (("long_name", sweep.variable.label), ("units", sweep.variable.units))
@@ -73,7 +74,7 @@ def measurement_fields(raw: dict, acquisition: AcquisitionData) -> list[tuple[st
     Returns:
         list[tuple[str, MeasurementFields]]: The name and the arrays of each measurement, in bin order.
     """
-    dimensions = [_dimension(loop) for loop in acquisition.loops]
+    dimensions = [_dimension(loop, acquisition.wait_points) for loop in acquisition.loops]
     dims = tuple(name for name, _ in dimensions)
     coords = {key: value for _, coordinates in dimensions for key, value in coordinates.items()}
     bins = raw["bins"]

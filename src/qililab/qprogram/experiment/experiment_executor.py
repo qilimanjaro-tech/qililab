@@ -53,9 +53,8 @@ if TYPE_CHECKING:
 class VariableInfo:
     """Dataclass to store information of a Variable"""
 
-    key: int
-    """The ``id`` of the variable: qprogram variables compare by name, and an experiment's and a QProgram's may share
-    one."""
+    key: str
+    """The variable's id, unique within its program, which an Experiment keeps through ``serialize``/``deserialize``."""
     label: str
     values: np.ndarray
 
@@ -286,7 +285,7 @@ class ExperimentExecutor:
         self.loop_indices: dict[int, int] = {}
 
         # A mapping from variable id to current value of the variable
-        current_value_of_variable: dict[int, int | float] = {}
+        current_value_of_variable: dict[str, int | float] = {}
 
         def handle_loop(block: Sweep | Parallel) -> list[Callable]:
             """Common logic for handling Sweep and Parallel blocks."""
@@ -351,12 +350,12 @@ class ExperimentExecutor:
             for element in elements:
                 if isinstance(element, GetParameter):
                     # Set current value of the variable to None
-                    current_value_of_variable[id(element.variable)] = None  # type: ignore[assignment]
+                    current_value_of_variable[element.variable.id] = None  # type: ignore[assignment]
                     # Append a lambda that will call the `platform.get_parameter` method and assign the returned value to the variable
                     elements_operations.append(
                         lambda operation=element: current_value_of_variable.update(
                             {
-                                id(operation.variable): self.platform.get_parameter(
+                                operation.variable.id: self.platform.get_parameter(
                                     alias=operation.alias,
                                     parameter=operation.parameter,
                                     channel_id=operation.channel_id,
@@ -372,13 +371,13 @@ class ExperimentExecutor:
                 if isinstance(element, SetParameter):
                     # Append a lambda that will call the `platform.set_parameter` method
                     if isinstance(element.value, Variable):
-                        if current_value_of_variable[id(element.value)] is None:
+                        if current_value_of_variable[element.value.id] is None:
                             # Variable has no value and it will get it from a `GetOperation` in the future. Thus, don't bind `value` in lambda.
                             elements_operations.append(
                                 lambda operation=element: self.platform.set_parameter(
                                     alias=operation.alias,
                                     parameter=operation.parameter,
-                                    value=current_value_of_variable[id(operation.value)],
+                                    value=current_value_of_variable[operation.value.id],
                                     channel_id=operation.channel_id,
                                     output_id=operation.output_id,
                                 )
@@ -386,7 +385,7 @@ class ExperimentExecutor:
                         else:
                             # Variable has a value that was set from a loop. Thus, bind `value` in lambda with the current value of the variable.
                             elements_operations.append(
-                                lambda operation=element, value=current_value_of_variable[id(element.value)]: (
+                                lambda operation=element, value=current_value_of_variable[element.value.id]: (
                                     self.platform.set_parameter(
                                         alias=operation.alias,
                                         parameter=operation.parameter,
@@ -413,17 +412,17 @@ class ExperimentExecutor:
                     if isinstance(element.qprogram, LambdaType):
                         signature = inspect.signature(element.qprogram)
                         call_parameters: dict[str, int | float] = {}
-                        deferred_parameters: dict[str, int] = {}
+                        deferred_parameters: dict[str, str] = {}
 
                         # Iterate through parameters and separate the ones that have values and the ones that don't
                         for param in signature.parameters.values():
                             if isinstance(param.default, Variable):
-                                variable_value = current_value_of_variable.get(id(param.default), None)
+                                variable_value = current_value_of_variable.get(param.default.id, None)
                                 if variable_value is None:
                                     # The variable doesn't have a value yet; defer binding
-                                    deferred_parameters[param.name] = id(param.default)
+                                    deferred_parameters[param.name] = param.default.id
                                     # Make sure key exists
-                                    current_value_of_variable[id(param.default)] = None  # type: ignore[assignment]
+                                    current_value_of_variable[param.default.id] = None  # type: ignore[assignment]
                                 else:
                                     # The variable has a current value; bind it immediately
                                     call_parameters[param.name] = variable_value
@@ -510,14 +509,14 @@ class ExperimentExecutor:
         progress.refresh()
 
     def _get_variables_of_loop(self, block: Sweep | Parallel) -> list[VariableInfo]:
-        variables: dict[int, VariableInfo] = {}
+        variables: dict[str, VariableInfo] = {}
 
         loops = block.loops if isinstance(block, Parallel) else [block]
         for loop in loops:
             values = loop.source.values()
             label = loop.variable.label or loop.variable.id
-            variable = VariableInfo(key=id(loop.variable), label=label, values=values)
-            variables[id(loop.variable)] = variable
+            variable = VariableInfo(key=loop.variable.id, label=label, values=values)
+            variables[loop.variable.id] = variable
 
         self._variables_per_block[id(block)] = list(variables.values())
 

@@ -98,6 +98,8 @@ class AcquisitionData:
         measurements (list[str]): The names of those measurements, in the order their bins come.
         fields (list[tuple[str, ...]]): The fields each of those measurements returns.
         loops (list[Sweep | Parallel]): The loops around the acquisitions, outermost first, one per entry of ``shape``.
+        wait_points (dict[str, np.ndarray]): The points the variable of each loop over a wait runs, by variable id. A
+            wait runs whole ns, so they can differ from the points of its sweep.
     """
 
     bus: str
@@ -106,6 +108,7 @@ class AcquisitionData:
     measurements: list[str] = field(default_factory=list)
     fields: list[tuple[str, ...]] = field(default_factory=list)
     loops: list[Sweep | Parallel] = field(default_factory=list)
+    wait_points: dict[str, np.ndarray] = field(default_factory=dict)
 
 
 Sequences = dict[str, QPy.Sequence]
@@ -300,6 +303,7 @@ class QbloxCompiler:
         self._single_channel: list[str] = []
         self._scopes: dict[str, Scope] = {}
         self._loop_origins: dict[str, Sweep | Parallel] = {}
+        self._wait_points: dict[str, np.ndarray] = {}
 
     def compile(
         self,
@@ -393,6 +397,7 @@ class QbloxCompiler:
 
         self._sync_counter = 0
         self._scopes = {}
+        self._wait_points = {}
         self._buses = self._populate_buses()
         self._single_channel = single_channel if single_channel is not None else []
         self._acquisition_metadata = prepass.acquisition_metadata
@@ -641,6 +646,8 @@ class QbloxCompiler:
             )
             scale_factor = qpysequence_operation.scale_factor if qpysequence_operation is not None else None
             start, step, iters = QbloxCompiler._compute_loop_sweep(source.start, source.stop, source.num, scale_factor)
+            if isinstance(operation, Wait):
+                self._wait_points[sweep.variable.id] = QbloxCompiler._points_of_wait_loop(start, step, iters)
             loops.append((start, step, qpysequence_operation))
             iterations.append(iters)
         min_iterations = min(iterations)
@@ -680,6 +687,8 @@ class QbloxCompiler:
         )
         scale_factor = qpysequence_operation.scale_factor if qpysequence_operation is not None else None
         start, step, iterations = QbloxCompiler._compute_loop_sweep(source.start, source.stop, source.num, scale_factor)
+        if isinstance(operation, Wait):
+            self._wait_points[sweep.variable.id] = QbloxCompiler._points_of_wait_loop(start, step, iterations)
 
         if isinstance(operation, Wait) and source.stop > INST_MAX_WAIT:
             self._long_wait_dynamic = True
@@ -1637,6 +1646,7 @@ class QbloxCompiler:
                     for block in self._buses[element.bus].qprogram_block_stack
                     if isinstance(block, (Sweep, Parallel))
                 ],
+                wait_points=dict(self._wait_points),
             )
             self._buses[element.bus].qpy_sequence._acquisitions.add(
                 name=acquisition_name,
@@ -2019,6 +2029,20 @@ class QbloxCompiler:
         nudge = 0.5 if step_int >= 0 else -0.5
         qblox_step = (step_int + nudge) / scale_factor
         return (start, qblox_step, iterations)
+
+    @staticmethod
+    def _points_of_wait_loop(start: float, step: float, iterations: int) -> np.ndarray:
+        """Return the points a loop over a wait runs: its register starts at ``int(start)`` and steps by ``int(step)``.
+
+        Args:
+            start (float): The start of the loop.
+            step (float): The step of the loop, as ``_compute_loop_sweep`` gives it.
+            iterations (int): The number of points.
+
+        Returns:
+            np.ndarray: The points, in ns.
+        """
+        return int(start) + int(step) * np.arange(iterations)
 
     @staticmethod
     def _hash_waveform(waveform: Waveform) -> str:

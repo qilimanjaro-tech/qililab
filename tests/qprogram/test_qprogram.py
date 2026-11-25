@@ -1279,6 +1279,27 @@ class TestQProgram:
         assert qp.variables[0] is own_gain
         assert str(QProgram.from_qp(str(qp))) == str(qp)
 
+    def test_insert_block_with_a_nested_loop_over_a_swept_variable_raises_error(self):
+        """The loops nested in an inserted block are checked too: one over the id an enclosing loop sweeps would
+        share its register, so it raises VariableAllocated."""
+        block_qp = QProgram()
+        inner = block_qp.variable("g")
+        with block_qp.average(2):
+            with block_qp.sweep(inner).from_linspace(0, 0.5, 3):
+                block_qp.set_gain(bus="drive", gain=inner)
+
+        qp = QProgram()
+        g = qp.variable("g")
+        with qp.sweep(g).from_linspace(0, 1, 3):
+            with pytest.raises(
+                VariableAllocated,
+                match=re.escape(
+                    "Variable 'g' is already swept by an enclosing loop or by another loop of the same parallel block: "
+                    "each loop needs its own variable."
+                ),
+            ):
+                qp.insert_block(block_qp.body)
+
     def test_average_method(self):
         """Test average method"""
         qp = QProgram()

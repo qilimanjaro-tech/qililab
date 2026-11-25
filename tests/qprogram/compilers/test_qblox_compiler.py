@@ -7575,6 +7575,110 @@ class TestQBloxCompiler:
         assert is_q1asm_equal(sequences["readout"], readout_str)
         assert acquisitions["readout"]["Acquisition 0"].shape == (4,)
 
+    def test_loop_over_a_wait_records_the_whole_ns_it_runs(self):
+        """A wait runs whole ns: from 4 to 14 in 4 points, the register steps by 3, the whole part of the step, so it
+        runs 4, 7, 10, 13. The acquisition records those points, to label the results with."""
+        weights = IQPair(I=Square(amplitude=1.0, duration=100), Q=Square(amplitude=0.0, duration=100))
+        qp = QProgram()
+        t = qp.variable("t", units="ns")
+        with qp.average(shots=10):
+            with qp.sweep(t).from_linspace(4, 14, 4):
+                qp.wait(bus="readout", duration=t)
+                qp.qblox.acquire(bus="readout", weights=weights)
+
+        sequences, acquisitions = QbloxCompiler().compile(qprogram=qp)
+
+        readout_str = """
+            setup:
+                            wait_sync        4
+                            set_mrk          0
+                            upd_param        4
+
+            main:
+                            move             1, R0
+                            move             0, R1
+                            move             10, R2
+            avg_0:
+                            move             0, R3
+                            move             4, R4
+                            move             4, R5
+            loop_0:
+                            wait             R4
+                            acquire_weighed  0, R3, R1, R0, 100
+                            add              R3, 1, R3
+                            add              R4, 3, R4
+                            loop             R5, @loop_0
+                            loop             R2, @avg_0
+                            set_mrk          0
+                            upd_param        4
+                            stop
+        """
+        assert is_q1asm_equal(sequences["readout"], readout_str)
+        wait_points = acquisitions["readout"]["Acquisition 0"].wait_points
+        assert {variable: points.tolist() for variable, points in wait_points.items()} == {"t": [4, 7, 10, 13]}
+
+    def test_descending_loop_over_a_wait_records_the_whole_ns_it_runs(self):
+        """A descending loop over a wait steps by the whole part of its step too: from 14 to 4 in 4 points, it runs 14,
+        11, 8, 5."""
+        weights = IQPair(I=Square(amplitude=1.0, duration=100), Q=Square(amplitude=0.0, duration=100))
+        qp = QProgram()
+        t = qp.variable("t", units="ns")
+        with qp.average(shots=10):
+            with qp.sweep(t).from_linspace(14, 4, 4):
+                qp.wait(bus="readout", duration=t)
+                qp.qblox.acquire(bus="readout", weights=weights)
+
+        sequences, acquisitions = QbloxCompiler().compile(qprogram=qp)
+
+        readout_str = """
+            setup:
+                            wait_sync        4
+                            set_mrk          0
+                            upd_param        4
+
+            main:
+                            move             1, R0
+                            move             0, R1
+                            move             10, R2
+            avg_0:
+                            move             0, R3
+                            move             14, R4
+                            move             4, R5
+            loop_0:
+                            wait             R4
+                            acquire_weighed  0, R3, R1, R0, 100
+                            add              R3, 1, R3
+                            sub              R4, 3, R4
+                            loop             R5, @loop_0
+                            loop             R2, @avg_0
+                            set_mrk          0
+                            upd_param        4
+                            stop
+        """
+        assert is_q1asm_equal(sequences["readout"], readout_str)
+        wait_points = acquisitions["readout"]["Acquisition 0"].wait_points
+        assert {variable: points.tolist() for variable, points in wait_points.items()} == {"t": [14, 11, 8, 5]}
+
+    def test_only_loops_over_a_wait_record_their_points(self):
+        """In a parallel, only the loop over the wait records its points, and a loop over an offset records none: their
+        results keep the points of their sweeps."""
+        weights = IQPair(I=Square(amplitude=1.0, duration=100), Q=Square(amplitude=0.0, duration=100))
+        qp = QProgram()
+        offset = qp.variable("offset")
+        t = qp.variable("t", units="ns")
+        gain = qp.variable("gain")
+        with qp.sweep(offset).from_linspace(0.0, 1.0, 3):
+            qp.set_offset(bus="readout", offset_path0=offset, offset_path1=offset)
+            with qp.sweep(t).from_linspace(4, 14, 4) | qp.sweep(gain).from_linspace(0.0, 0.3, 4):
+                qp.set_gain(bus="readout", gain=gain)
+                qp.wait(bus="readout", duration=t)
+                qp.qblox.acquire(bus="readout", weights=weights)
+
+        _, acquisitions = QbloxCompiler().compile(qprogram=qp)
+
+        wait_points = acquisitions["readout"]["Acquisition 0"].wait_points
+        assert {variable: points.tolist() for variable, points in wait_points.items()} == {"t": [4, 7, 10, 13]}
+
     def test_parallel_sweeps_with_different_number_of_points_raise_error(self):
         """Sweeps in parallel must have the same number of points: combining them with ``|`` raises when the program
         is built."""
