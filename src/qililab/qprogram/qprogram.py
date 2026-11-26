@@ -17,6 +17,7 @@ from typing import TYPE_CHECKING, ClassVar, overload
 
 import numpy as np
 
+from qililab.constants import QBLOXCONSTANTS
 from qililab.core.variables import Domain, Variable, requires_domain
 from qililab.qprogram.blocks import Block, Conditional, ForLoop, Parallel, for_loop_iterations
 from qililab.qprogram.calibration import Calibration
@@ -373,6 +374,7 @@ class QProgram(StructuredProgram):
                         reset_pulse=reset_pulse,
                         trigger_address=element.trigger_address,
                         save_adc=element.save_adc,
+                        padding_after_measure=element.padding_after_measure,
                     )
                     block.elements[index] = measure_reset_operation
                     buses_to_add.add(element.control_bus)
@@ -1745,11 +1747,15 @@ class QProgram(StructuredProgram):
             reset_pulse: IQWaveform,
             trigger_address: int = 1,
             save_adc: bool = False,
+            padding_after_measure: int = QBLOXCONSTANTS.WAIT_TRIGGER_NETWORK_INTERMODULES,
         ):
             """Play a measurement and conditionally apply a reset pulse based on the result. This enables active reset for transmon qubits.
 
             If the thresholded measurement result is 1, a corrective pulse is applied on the control_bus.
             If the result is 0, the control_bus waits instead.
+
+            The measurement bus doesn't wait for the reset pulse: add a ``qp.sync()`` after ``measure_reset`` before
+            measuring again.
 
             Args:
                 bus (str): Identifier of the measurement bus.
@@ -1759,6 +1765,9 @@ class QProgram(StructuredProgram):
                 reset_pulse (IQWaveform): Pulse used for active reset.
                 trigger_address (int, optional): Trigger address for synchronization. Defaults to 1.
                 save_adc (bool, optional): Whether to save ADC data. Defaults to False.
+                padding_after_measure (int, optional): Wait, in ns, on the control bus between the end of the
+                    acquisition and the conditional reset pulse, to cover the propagation delay of the trigger network
+                    carrying the measurement result. Defaults to, and cannot be set lower than, 400 ns.
             """
 
         @overload
@@ -1771,11 +1780,15 @@ class QProgram(StructuredProgram):
             reset_pulse: str,
             trigger_address: int = 1,
             save_adc: bool = False,
+            padding_after_measure: int = QBLOXCONSTANTS.WAIT_TRIGGER_NETWORK_INTERMODULES,
         ):
             """Play a measurement and conditionally apply a reset pulse based on the result. This enables active reset for transmon qubits.
 
             If the thresholded measurement result is 1, a corrective pulse is applied on the control_bus.
             If the result is 0, the control_bus waits instead.
+
+            The measurement bus doesn't wait for the reset pulse: add a ``qp.sync()`` after ``measure_reset`` before
+            measuring again.
 
             Args:
                 bus (str): Identifier of the measurement bus.
@@ -1785,6 +1798,9 @@ class QProgram(StructuredProgram):
                 reset_pulse (str): Pulse used for active reset.
                 trigger_address (int, optional): Trigger address for synchronization. Defaults to 1.
                 save_adc (bool, optional): Whether to save ADC data. Defaults to False.
+                padding_after_measure (int, optional): Wait, in ns, on the control bus between the end of the
+                    acquisition and the conditional reset pulse, to cover the propagation delay of the trigger network
+                    carrying the measurement result. Defaults to, and cannot be set lower than, 400 ns.
             """
 
         def measure_reset(
@@ -1796,11 +1812,15 @@ class QProgram(StructuredProgram):
             reset_pulse: IQWaveform | str,
             trigger_address: int = 1,
             save_adc: bool = False,
+            padding_after_measure: int = QBLOXCONSTANTS.WAIT_TRIGGER_NETWORK_INTERMODULES,
         ):
             """Play a measurement and conditionally apply a reset pulse based on the result. This enables active reset for transmon qubits.
 
             If the thresholded measurement result is 1, a corrective pulse is applied on the control_bus.
             If the result is 0, the control_bus waits instead.
+
+            The measurement bus doesn't wait for the reset pulse: add a ``qp.sync()`` after ``measure_reset`` before
+            measuring again.
 
             Args:
                 bus (str): Identifier of the measurement bus.
@@ -1810,9 +1830,14 @@ class QProgram(StructuredProgram):
                 reset_pulse (IQWaveform | str): Pulse used for active reset.
                 trigger_address (int, optional): Trigger address for synchronization. Defaults to 1.
                 save_adc (bool, optional): Whether to save ADC data. Defaults to False.
+                padding_after_measure (int, optional): Wait, in ns, on the control bus between the end of the
+                    acquisition and the conditional reset pulse, to cover the propagation delay of the trigger network
+                    carrying the measurement result. Defaults to, and cannot be set lower than, 400 ns.
 
             Raises:
-                NotImplementedError: If ``qp.if_trigger()`` is also used in this QProgram.
+                NotImplementedError: If ``qp.if_trigger()`` is also used in this QProgram, or, when compiling, if
+                    ``padding_after_measure`` is a variable.
+                ValueError: When compiling, if ``padding_after_measure`` is lower than 400 ns.
             """
             self.qprogram._reject_conflicting_trigger_mode("qp.qblox.measure_reset()", ("if_trigger",))
             self.qprogram._trigger_mode = "measure_reset"
@@ -1830,6 +1855,7 @@ class QProgram(StructuredProgram):
                     reset_pulse=reset_pulse,
                     trigger_address=trigger_address,
                     save_adc=save_adc,
+                    padding_after_measure=padding_after_measure,
                 )
             elif isinstance(waveform, str) and isinstance(weights, str) and isinstance(reset_pulse, str):
                 operation = MeasureResetCalibrated(
@@ -1840,6 +1866,7 @@ class QProgram(StructuredProgram):
                     reset_pulse=reset_pulse,
                     trigger_address=trigger_address,
                     save_adc=save_adc,
+                    padding_after_measure=padding_after_measure,
                 )
 
             #  Raise an error if a calibrated component has been used in conjunction with a non calibrated one
