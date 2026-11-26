@@ -25,10 +25,12 @@ from qililab.instruments.utils import InstrumentFactory
 from qililab.typings import ChannelID, InstrumentName, OutputID, Parameter, ParameterValue
 
 from .qblox_qrm import QbloxQRM
+from .qblox_rf_mixin import QbloxRFMixin
+from .qblox_sequencer import QbloxSequencer
 
 
 @InstrumentFactory.register
-class QbloxQRMRF(QbloxQRM):
+class QbloxQRMRF(QbloxRFMixin, QbloxQRM):
     """Qblox QRM-RF driver."""
 
     name = InstrumentName.QRMRF
@@ -154,17 +156,10 @@ class QbloxQRMRF(QbloxQRM):
         dictionary.pop("filters")
         return dictionary
 
-    def calibrate_mixers(self, cal_type: str, channel_id: ChannelID | None = None):
-        if cal_type == "lo":
-            self.device._run_mixer_lo_calib(channel_id)
-        elif cal_type == "lo_and_sidebands":
-            self.device._run_mixer_lo_calib(channel_id)
-            for sequencer_dataclass in self.awg_sequencers:
-                sequencer = self.device.sequencers[sequencer_dataclass.identifier]
-                sequencer.sideband_cal()
-        else:
-            raise Exception(
-                f"`{cal_type}` for this module must be one of the following values: 'lo' or 'lo_and_sidebands'."
-            )
+    def _calibrate_lo(self, output: int) -> None:
+        # out0 and in0 share one LO, calibrated as a whole.
+        self.device.out0_in0_lo_cal()
 
-        return
+    def _sequencers_on_output(self, output: int) -> list[QbloxSequencer]:
+        # `_map_connections` connects every sequencer to out0.
+        return list(self.awg_sequencers)

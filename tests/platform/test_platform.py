@@ -2633,51 +2633,82 @@ class TestMethods:
             for msg in caplog.messages
         )
 
-    def test_calibrate_mixers(self, platform: Platform):
-        """Test calibrating the Qblox mixers."""
-        channel_id = 0
-        cal_type = "lo"
-        alias_drive_bus = "drive_line_q1_bus"
-        alias_readout_bus = "feedline_input_output_bus_1"
-        drive_bus = platform.get_element(alias=alias_drive_bus)
-        readout_bus = platform.get_element(alias=alias_readout_bus)
-        qcm_rf = drive_bus.instruments[0]
-        qrm_rf = readout_bus.instruments[0]
+    @staticmethod
+    def _mock_rf_devices(platform: Platform):
+        """Replace the devices of the QCM-RF and QRM-RF with mocks, leaving the qililab instruments real."""
+        qcm_rf = platform.get_element(alias="drive_line_q1_bus").instruments[0]
+        qrm_rf = platform.get_element(alias="feedline_input_output_bus_1").instruments[0]
+        for module in (qcm_rf, qrm_rf):
+            module.device = MagicMock()
+            module.device.sequencers = {sequencer.identifier: MagicMock() for sequencer in module.awg_sequencers}
+        return qcm_rf, qrm_rf
 
-        qcm_rf.calibrate_mixers = MagicMock()
-        qrm_rf.calibrate_mixers = MagicMock()
+    def test_calibrate_mixers_reaches_the_driver(self, platform: Platform):
+        """`Platform.calibrate_mixers` calibrates the LO of the bus's output, mocking only the driver."""
+        qcm_rf, qrm_rf = self._mock_rf_devices(platform)
 
-        platform.calibrate_mixers(alias=alias_drive_bus, cal_type=cal_type, channel_id=channel_id)
-        qcm_rf.calibrate_mixers.assert_called_with(cal_type, channel_id)
+        # drive_line_q1_bus owns sequencer 0 (output 0), drive_line_q2_bus owns sequencer 1 (output 1).
+        platform.calibrate_mixers(alias="drive_line_q2_bus", cal_type="lo only")
+        qcm_rf.device.out1_lo_cal.assert_called_once_with()
+        qcm_rf.device.out0_lo_cal.assert_not_called()
 
-        platform.calibrate_mixers(alias=alias_readout_bus, cal_type=cal_type, channel_id=channel_id)
-        qrm_rf.calibrate_mixers.assert_called_with(cal_type, channel_id)
+        platform.calibrate_mixers(alias="drive_line_q1_bus", cal_type="lo and sidebands", channel_id=0)
+        qcm_rf.device.out0_lo_cal.assert_called_once_with()
+        qcm_rf.device.sequencers[0].sideband_cal.assert_called_once_with()
+        qcm_rf.device.sequencers[1].sideband_cal.assert_not_called()
 
-        cal_type = "lo_and_sidebands"
+        platform.calibrate_mixers(alias="feedline_input_output_bus_1", cal_type="lo and sidebands")
+        qrm_rf.device.out0_in0_lo_cal.assert_called_once_with()
+        qrm_rf.device.sequencers[0].sideband_cal.assert_called_once_with()
 
-        platform.calibrate_mixers(alias=alias_drive_bus, cal_type=cal_type, channel_id=channel_id)
-        qcm_rf.calibrate_mixers.assert_called_with(cal_type, channel_id)
+        for device in (qcm_rf.device, qrm_rf.device):
+            device._run_mixer_lo_calib.assert_not_called()
+            device.arm_sequencer.assert_not_called()
 
-        platform.calibrate_mixers(alias=alias_readout_bus, cal_type=cal_type, channel_id=channel_id)
-        qrm_rf.calibrate_mixers.assert_called_with(cal_type, channel_id)
+    def test_calibrate_mixers_off_is_noop(self, platform: Platform):
+        """`off` reaches the module but calibrates nothing."""
+        qcm_rf, _ = self._mock_rf_devices(platform)
 
-        cal_type = "lo"
-        non_rf_drive_bus = "drive_line_q0_bus"
-        non_rf_readout_bus = "feedline_input_output_bus"
+        platform.calibrate_mixers(alias="drive_line_q1_bus", cal_type="off")
 
+        qcm_rf.device.out0_lo_cal.assert_not_called()
+        qcm_rf.device.sequencers[0].sideband_cal.assert_not_called()
+
+    def test_calibrate_mixers_channel_not_on_bus_raises(self, platform: Platform):
+        """A `channel_id` that is not a channel of the bus raises instead of silently doing nothing."""
+        qcm_rf, _ = self._mock_rf_devices(platform)
+
+        with pytest.raises(ValueError, match="ChannelID 1 is not linked to bus with alias drive_line_q1_bus"):
+            platform.calibrate_mixers(alias="drive_line_q1_bus", cal_type="lo only", channel_id=1)
+
+        qcm_rf.device.out0_lo_cal.assert_not_called()
+        qcm_rf.device.out1_lo_cal.assert_not_called()
+
+    def test_calibrate_mixers_deprecated_cal_type_warns_at_the_caller(self, platform: Platform):
+        """The deprecated spellings raise a FutureWarning attributed to the caller of `Platform.calibrate_mixers`."""
+        qcm_rf, _ = self._mock_rf_devices(platform)
+
+        with pytest.warns(FutureWarning, match="will be removed in a future release") as record:
+            platform.calibrate_mixers(alias="drive_line_q1_bus", cal_type="lo_and_sidebands")
+
+        assert len(record) == 1
+        assert record[0].filename == __file__
+        qcm_rf.device.out0_lo_cal.assert_called_once_with()
+        qcm_rf.device.sequencers[0].sideband_cal.assert_called_once_with()
+
+    def test_calibrate_mixers_invalid_cal_type_raises(self, platform: Platform):
+        """An unknown cal type raises a ValueError."""
+        self._mock_rf_devices(platform)
+
+        with pytest.raises(ValueError, match="oh hi Mark!"):
+            platform.calibrate_mixers(alias="drive_line_q1_bus", cal_type="oh hi Mark!")
+
+    @pytest.mark.parametrize("alias", ["drive_line_q0_bus", "feedline_input_output_bus"])
+    @pytest.mark.parametrize("channel_id", [None, 0])
+    def test_calibrate_mixers_non_rf_bus_raises(self, platform: Platform, alias: str, channel_id: int | None):
+        """A bus without a Qblox RF module cannot calibrate mixers."""
         with pytest.raises(AttributeError, match="Mixers calibration not implemented for this instrument."):
-            platform.calibrate_mixers(alias=non_rf_drive_bus, cal_type=cal_type, channel_id=channel_id)
-
-        with pytest.raises(AttributeError, match="Mixers calibration not implemented for this instrument."):
-            platform.calibrate_mixers(alias=non_rf_readout_bus, cal_type=cal_type, channel_id=channel_id)
-
-        cal_type = "lo_and_sidebands"
-
-        with pytest.raises(AttributeError, match="Mixers calibration not implemented for this instrument."):
-            platform.calibrate_mixers(alias=non_rf_drive_bus, cal_type=cal_type, channel_id=channel_id)
-
-        with pytest.raises(AttributeError, match="Mixers calibration not implemented for this instrument."):
-            platform.calibrate_mixers(alias=non_rf_readout_bus, cal_type=cal_type, channel_id=channel_id)
+            platform.calibrate_mixers(alias=alias, cal_type="lo only", channel_id=channel_id)
 
     @patch("qililab.platform.platform.get_db_manager")
     @patch("qililab.result.database.database_manager._load_config")

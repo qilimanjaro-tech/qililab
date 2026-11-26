@@ -23,6 +23,10 @@ Pending deprecations
     - Deprecated in an upcoming release (`#1112 <https://github.com/qilimanjaro-tech/qililab/pull/1112>`_)
     - No removal version set yet
 
+- The `"lo"` and `"lo_and_sidebands"` values of `cal_type` in `calibrate_mixers` (on `Platform`, `QbloxQCMRF` and `QbloxQRMRF`) are deprecated in favor of `"lo only"` and `"lo and sidebands"`, the runcard's values.
+    - Deprecated in an upcoming release (`#1246 <https://github.com/qilimanjaro-tech/qililab/pull/1246>`_)
+    - No removal version set yet
+
 Completed deprecation cycles
 -----------------------------
 - The `path` argument in `qililab.build_platform` was changed to `runcard`, since it not only accepts a path to the YAML file but also the dictionary directly.

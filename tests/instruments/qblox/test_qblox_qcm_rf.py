@@ -18,7 +18,7 @@ from qililab.data_management import build_platform
 from qililab.instruments.instrument import ParameterNotFound
 from qililab.instruments.qblox import QbloxQCMRF
 from qililab.platform import Platform
-from qililab.typings import Parameter
+from qililab.typings import MixerCalibrationType, Parameter
 
 MAX_ATTENUATION = 30
 
@@ -109,6 +109,9 @@ def fixture_qrm(platform: Platform):
     qcm_rf.device._get_max_out_att_0 = MagicMock(return_value=MAX_ATTENUATION)
     qcm_rf.device._get_max_out_att_1 = MagicMock(return_value=MAX_ATTENUATION)
     qcm_rf.device._run_mixer_lo_calib = MagicMock()
+    # Public per-output LO-calibration methods, called by `calibrate_mixers`.
+    qcm_rf.device.out0_lo_cal = MagicMock()
+    qcm_rf.device.out1_lo_cal = MagicMock()
 
     qcm_rf.device.sequencers = {0: MagicMock(), 1: MagicMock()}
 
@@ -363,23 +366,76 @@ class TestQbloxQCMRF:
         assert qcm_rf.cache == {}
         assert qcm_rf.sequences == {}
 
-    def test_calibrate_mixers(self, qcm_rf: QbloxQCMRF):
-        """Test calibrating the QCM mixers."""
-        channel_id = 0
-        cal_type = "lo"
-
-        qcm_rf.calibrate_mixers(cal_type=cal_type, channel_id=channel_id)
-        qcm_rf.device._run_mixer_lo_calib.assert_called_with(channel_id)
-
-        cal_type = "lo_and_sidebands"
-
-        qcm_rf.calibrate_mixers(cal_type=cal_type, channel_id=channel_id)
-        qcm_rf.device._run_mixer_lo_calib.assert_called_with(channel_id)
-
+    def test_calibrate_mixers_lo_only_uses_output_method(self, qcm_rf: QbloxQCMRF):
+        """`lo only` calibrates the LO of the sequencer's output with the public driver method, and runs no
+        sideband calibration."""
+        # Sequencer 0 -> output 0, sequencer 1 -> output 1 in the runcard.
+        qcm_rf.calibrate_mixers(cal_type="lo only", channel_id=0)
+        qcm_rf.device.out0_lo_cal.assert_called_once_with()
+        qcm_rf.device.out1_lo_cal.assert_not_called()
+        qcm_rf.device._run_mixer_lo_calib.assert_not_called()
         for sequencer in qcm_rf.device.sequencers:
-            qcm_rf.device.sequencers[sequencer].sideband_cal.assert_called()
+            qcm_rf.device.sequencers[sequencer].sideband_cal.assert_not_called()
 
-        cal_type = "oh hi Mark!"
+        qcm_rf.calibrate_mixers(cal_type="lo only", channel_id=1)
+        qcm_rf.device.out1_lo_cal.assert_called_once_with()
 
-        with pytest.raises(Exception):
-            qcm_rf.calibrate_mixers(cal_type=cal_type, channel_id=channel_id)
+    def test_calibrate_mixers_uses_output_not_channel_id(self, qcm_rf: QbloxQCMRF):
+        """The LO method is picked from the sequencer's output, not its id."""
+        qcm_rf.get_sequencer(0).outputs = [1, 0]
+
+        qcm_rf.calibrate_mixers(cal_type="lo only", channel_id=0)
+
+        qcm_rf.device.out1_lo_cal.assert_called_once_with()
+        qcm_rf.device.out0_lo_cal.assert_not_called()
+
+    def test_calibrate_mixers_sidebands_on_sequencers_of_the_output(self, qcm_rf: QbloxQCMRF):
+        """`lo and sidebands` runs `sideband_cal` on the sequencers connected to the calibrated output only, as
+        the driver does for the runcard calibration."""
+        qcm_rf.calibrate_mixers(cal_type="lo and sidebands", channel_id=0)
+
+        qcm_rf.device.out0_lo_cal.assert_called_once_with()
+        qcm_rf.device.sequencers[0].sideband_cal.assert_called_once_with()
+        qcm_rf.device.sequencers[1].sideband_cal.assert_not_called()
+
+    def test_calibrate_mixers_sidebands_on_every_sequencer_sharing_the_output(self, qcm_rf: QbloxQCMRF):
+        """When two sequencers share the output, both get their sidebands calibrated."""
+        qcm_rf.get_sequencer(1).outputs = [0]
+
+        qcm_rf.calibrate_mixers(cal_type=MixerCalibrationType.LO_AND_SIDEBANDS, channel_id=1)
+
+        qcm_rf.device.out0_lo_cal.assert_called_once_with()
+        qcm_rf.device.sequencers[0].sideband_cal.assert_called_once_with()
+        qcm_rf.device.sequencers[1].sideband_cal.assert_called_once_with()
+
+    @pytest.mark.parametrize("cal_type", ["off", "lo only", "lo and sidebands"])
+    def test_calibrate_mixers_unknown_channel_raises(self, qcm_rf: QbloxQCMRF, cal_type: str):
+        """A `channel_id` that is not a sequencer of the module raises before anything is calibrated."""
+        with pytest.raises(IndexError, match="id=7"):
+            qcm_rf.calibrate_mixers(cal_type=cal_type, channel_id=7)
+        qcm_rf.device.out0_lo_cal.assert_not_called()
+        qcm_rf.device.out1_lo_cal.assert_not_called()
+
+    def test_calibrate_mixers_invalid_cal_type_raises(self, qcm_rf: QbloxQCMRF):
+        """An unknown cal type raises a ValueError."""
+        with pytest.raises(ValueError, match="oh hi Mark!"):
+            qcm_rf.calibrate_mixers(cal_type="oh hi Mark!", channel_id=0)
+
+    def test_calibrate_mixers_off_is_noop(self, qcm_rf: QbloxQCMRF):
+        """`off` performs no calibration."""
+        qcm_rf.calibrate_mixers(cal_type="off", channel_id=0)
+        qcm_rf.device.out0_lo_cal.assert_not_called()
+        qcm_rf.device._run_mixer_lo_calib.assert_not_called()
+        qcm_rf.device.sequencers[0].sideband_cal.assert_not_called()
+
+    @pytest.mark.parametrize(
+        "deprecated, sidebands",
+        [("lo", False), ("lo_and_sidebands", True)],
+    )
+    def test_calibrate_mixers_deprecated_vocab_warns(self, qcm_rf: QbloxQCMRF, deprecated: str, sidebands: bool):
+        """The old `lo`/`lo_and_sidebands` spellings still work but raise a FutureWarning."""
+        with pytest.warns(FutureWarning, match="will be removed in a future release"):
+            qcm_rf.calibrate_mixers(cal_type=deprecated, channel_id=0)
+
+        qcm_rf.device.out0_lo_cal.assert_called_once_with()
+        assert qcm_rf.device.sequencers[0].sideband_cal.called is sidebands

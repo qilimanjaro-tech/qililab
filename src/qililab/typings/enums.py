@@ -15,6 +15,7 @@
 
 """Enum classes"""
 
+import warnings
 from enum import Enum
 
 from qililab.yaml import yaml
@@ -563,3 +564,50 @@ class Line(str, Enum):
     FLUX = "flux"
     DRIVE = "drive"
     READOUT = "readout"
+
+
+class MixerCalibrationType(str, Enum):
+    """Qblox RF mixer calibration type, in the runcard/driver vocabulary.
+
+    Options:
+        * off: no calibration.
+        * lo only: calibrate the LO leakage of the output.
+        * lo and sidebands: calibrate the LO leakage, then the sidebands of every sequencer on that output.
+    """
+
+    OFF = "off"
+    LO_ONLY = "lo only"
+    LO_AND_SIDEBANDS = "lo and sidebands"
+
+    @classmethod
+    def parse(cls, value: "str | MixerCalibrationType", stacklevel: int = 1) -> "MixerCalibrationType":
+        """Return the member for ``value``, accepting the deprecated ``"lo"``/``"lo_and_sidebands"`` spellings.
+
+        Args:
+            value (str | MixerCalibrationType): calibration type to parse.
+            stacklevel (int, optional): frame the deprecation warning is attributed to, counted from the caller
+                of this method (``1`` is the caller itself). Defaults to 1.
+
+        Returns:
+            MixerCalibrationType: the matching member.
+
+        Raises:
+            ValueError: if ``value`` is not a recognised calibration type.
+        """
+        deprecated_aliases = {"lo": cls.LO_ONLY, "lo_and_sidebands": cls.LO_AND_SIDEBANDS}
+        if value in deprecated_aliases:
+            canonical = deprecated_aliases[value]
+            warnings.warn(
+                f"`cal_type='{value}'` is deprecated and will be removed in a future release; "
+                f"use `'{canonical.value}'` instead.",
+                FutureWarning,
+                stacklevel=stacklevel + 1,
+            )
+            return canonical
+        try:
+            return cls(value)
+        except ValueError:
+            raise ValueError(
+                f"`{value}` is not a valid mixer calibration type. "
+                f"Valid values are: {', '.join(member.value for member in cls)}."
+            ) from None
