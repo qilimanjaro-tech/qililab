@@ -59,7 +59,7 @@ from .database import (
     get_db_manager,
     load_by_id,
 )
-from .stream_results import StreamArray, stream_results
+from .stream_results import RawStreamArray, StreamArray, stream_results
 from .qprogram import MeasurementResult, QbloxMeasurementResult
 
 __all__ = [
@@ -76,6 +76,7 @@ __all__ = [
     "MeasurementResult",
     "QaaS_Experiment",
     "QbloxMeasurementResult",
+    "RawStreamArray",
     "Result",
     "Sample",
     "StreamArray",
