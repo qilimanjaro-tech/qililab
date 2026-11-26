@@ -1,0 +1,13 @@
+# Only these locked third-party sdists may execute build backends in GitHub CI.
+# A lock update that changes an entry must include a fresh compatibility review.
+[[exception]]
+name = "qblox-instruments"
+version = "1.0.3"
+sdist-hash = "sha256:798528d69253c64f6e70b283c623a7cb6b5265806320bd90cec424a9f384f5ff"
+reason = "Firmware-compatible hardware pin. This release has no wheel in uv.lock."
+
+[[exception]]
+name = "marshmallow-polyfield"
+version = "5.11"
+sdist-hash = "sha256:8075a9cc490da4af58b902b4a40a99882dd031adb7aaa96abd147a4fcd53415f"
+reason = "Source-only dependency of qm-qua 1.2.4, selected by the quantum-machines extra in CI."
