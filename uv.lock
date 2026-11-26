@@ -3855,8 +3855,8 @@ wheels = [
 
 [[package]]
 name = "qpysequence"
-version = "0.12.1.dev6+gfb763f0"
-source = { git = "https://github.com/qilimanjaro-tech/qpysequence?branch=qhc-1922-linq-herald-instructions#fb763f042bc934814aa2d1948f39b1fac04a4ecf" }
+version = "0.12.1.dev7+g64aaef8"
+source = { git = "https://github.com/qilimanjaro-tech/qpysequence?branch=qhc-1922-linq-herald-instructions#64aaef801915803844f91d0fb42fb85232ed9e5b" }
 dependencies = [
     { name = "loguru" },
     { name = "numpy", version = "2.4.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
