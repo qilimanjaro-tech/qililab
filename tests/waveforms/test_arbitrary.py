@@ -28,7 +28,7 @@ class TestArbitrary:
         assert math.isclose(envelope[0], samples[0], abs_tol=1e-9)
         assert math.isclose(envelope[-1], samples[-1], abs_tol=1e-9)
         assert max(envelope) == max(samples)
-        assert min(envelope) == min(envelope)
+        assert min(envelope) == min(samples)
         assert np.allclose(envelope, np.array([
             0.00000000e+00, 1.11111111e+03, 2.22222222e+03, 3.33333333e+03,
             4.44444444e+03, 5.55555556e+03, 6.66666667e+03, 7.77777778e+03,
@@ -36,6 +36,13 @@ class TestArbitrary:
             7.77777778e+03, 6.66666667e+03, 5.55555556e+03, 4.44444444e+03,
             3.33333333e+03, 2.22222222e+03, 1.11111111e+03, 0.00000000e+00
         ]))
+
+    @pytest.mark.parametrize("minimum", [-2.0, 2.0])
+    def test_higher_resolution_preserves_interior_minimum(self, minimum):
+        input_samples = np.array([4.0, 4.0, minimum, minimum, 10.0, 10.0, 4.0, 4.0])
+        envelope = Arbitrary(samples=input_samples).envelope(resolution=2)
+        assert min(envelope) == minimum
+        np.testing.assert_allclose(envelope, [4.0, minimum, 10.0, 4.0])
 
     def test_envelope_with_constant_values(self):
         resolution = 20_000
