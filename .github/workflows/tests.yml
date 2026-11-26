@@ -120,9 +120,32 @@ jobs:
           use_oidc: true
           flags: "unittests"
 
+  # Publishing tests do not need private runtime dependencies or AWS credentials.
+  release-tools:
+    name: Release tools
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    env:
+      RELEASE_TOOLS_INTEGRATION: "1"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+      - name: Install uv
+        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2  # v10.3.3
+        with:
+          version: "0.13.8"
+          python-version: "3.13"
+          enable-cache: false
+      - name: Install release test tools
+        run: uv sync --project .github/release-tools --locked --no-build --no-default-groups --group test
+      - name: Test release tools
+        run: uv run --project .github/release-tools --no-sync pytest --confcutdir=tests/ci tests/ci -q
+
   all-tests:
     name: Tests
-    needs: [tests]
+    needs: [tests, release-tools]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 5
