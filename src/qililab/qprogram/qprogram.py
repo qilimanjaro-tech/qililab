@@ -1754,6 +1754,9 @@ class QProgram(StructuredProgram):
             If the thresholded measurement result is 1, a corrective pulse is applied on the control_bus.
             If the result is 0, the control_bus waits instead.
 
+            The measurement bus doesn't wait for the reset pulse: add a ``qp.sync()`` after ``measure_reset`` before
+            measuring again.
+
             Args:
                 bus (str): Identifier of the measurement bus.
                 waveform (IQWaveform): Waveform played during measurement.
@@ -1784,6 +1787,9 @@ class QProgram(StructuredProgram):
             If the thresholded measurement result is 1, a corrective pulse is applied on the control_bus.
             If the result is 0, the control_bus waits instead.
 
+            The measurement bus doesn't wait for the reset pulse: add a ``qp.sync()`` after ``measure_reset`` before
+            measuring again.
+
             Args:
                 bus (str): Identifier of the measurement bus.
                 waveform (str): Waveform played during measurement.
@@ -1812,6 +1818,9 @@ class QProgram(StructuredProgram):
 
             If the thresholded measurement result is 1, a corrective pulse is applied on the control_bus.
             If the result is 0, the control_bus waits instead.
+
+            The measurement bus doesn't wait for the reset pulse: add a ``qp.sync()`` after ``measure_reset`` before
+            measuring again.
 
             Args:
                 bus (str): Identifier of the measurement bus.
