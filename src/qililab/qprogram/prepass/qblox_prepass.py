@@ -50,9 +50,6 @@ if TYPE_CHECKING:
     from qililab.qprogram.operations import Operation
     from qililab.qprogram.qprogram import QProgram
 
-# Default and minimum for qp.if_trigger()'s trigger_padding_ns.
-WAIT_TRIGGER_NETWORK_EXT_TRIGGER = 252
-
 # Operations carrying no duration
 NON_REALTIME_OPERATIONS = (SetFrequency, SetPhase, ResetPhase, SetGain, SetOffset, SetMarkers)
 
@@ -128,12 +125,12 @@ def prepare_qblox(
         QbloxPrepassResult: The QProgram with only Qblox operations, and what the compiler needs to know about it.
 
     Raises:
-        ValueError: If a ``qp.qblox.measure_reset()`` measures or resets on a bus that isn't a Qblox bus or has a
-            ``padding_after_measure`` below the trigger network's propagation delay, or if a
-            ``qp.if_trigger()`` block has no operation on a Qblox bus, no wait time given or derivable from a QDAC
-            ``set_trigger(position='step')`` + ``play(dwell=...)``, or a ``trigger_padding_ns`` below the trigger
-            network's propagation delay.
-        NotImplementedError: If ``qp.if_trigger()`` is used in a way that isn't supported.
+        ValueError: If a ``qp.qblox.measure_reset()`` measures or resets on a bus that isn't a Qblox bus, or its
+            ``padding_after_measure`` is below 400 ns, or if a ``qp.if_trigger()`` block has no operation on a Qblox
+            bus, no wait time given or derivable from a QDAC ``set_trigger(position='step')`` + ``play(dwell=...)``,
+            or a ``trigger_padding_ns`` below the trigger network's propagation delay.
+        NotImplementedError: If ``qp.if_trigger()`` is used in a way that isn't supported, or a
+            ``qp.qblox.measure_reset()``'s ``padding_after_measure`` is a variable.
     """
     if calibration is not None:
         if calibration.crosstalk_matrix_ac is not None:
@@ -165,10 +162,13 @@ def prepare_qblox(
                 f"qp.qblox.measure_reset() measures on bus '{measure_reset.bus}' and resets on bus "
                 f"'{measure_reset.control_bus}', but both must be Qblox buses; the Qblox buses are {sorted(qblox_buses)}."
             )
+        if isinstance(measure_reset.padding_after_measure, Variable):
+            raise NotImplementedError("qp.qblox.measure_reset()'s padding_after_measure cannot be a variable.")
         if measure_reset.padding_after_measure < QBLOXCONSTANTS.WAIT_TRIGGER_NETWORK_INTERMODULES:
             raise ValueError(
                 f"qp.qblox.measure_reset()'s padding_after_measure ({measure_reset.padding_after_measure}) cannot be lower "
-                f"than {QBLOXCONSTANTS.WAIT_TRIGGER_NETWORK_INTERMODULES} ns, the trigger network's propagation delay between modules."
+                f"than {QBLOXCONSTANTS.WAIT_TRIGGER_NETWORK_INTERMODULES} ns, the minimum wait for the trigger network to "
+                "carry the measurement result between modules."
             )
 
     return QbloxPrepassResult(
@@ -309,17 +309,22 @@ def _validate_conditional_trigger(
             "set_trigger(position='step') + play(dwell=...) in this QProgram to derive it from."
         )
 
-    if element.trigger_padding_ns is not None and element.trigger_padding_ns < WAIT_TRIGGER_NETWORK_EXT_TRIGGER:
+    if (
+        element.trigger_padding_ns is not None
+        and element.trigger_padding_ns < QBLOXCONSTANTS.WAIT_TRIGGER_NETWORK_EXT_TRIGGER
+    ):
         raise ValueError(
             f"qp.if_trigger()'s trigger_padding_ns ({element.trigger_padding_ns}) cannot be lower than "
-            f"{WAIT_TRIGGER_NETWORK_EXT_TRIGGER} ns, the trigger network's propagation delay."
+            f"{QBLOXCONSTANTS.WAIT_TRIGGER_NETWORK_EXT_TRIGGER} ns, the trigger network's propagation delay."
         )
 
     return ConditionalTrigger(
         bus=bus,
         expected_wait_time_ns=expected_wait_time_ns,
         trigger_padding_ns=(
-            element.trigger_padding_ns if element.trigger_padding_ns is not None else WAIT_TRIGGER_NETWORK_EXT_TRIGGER
+            element.trigger_padding_ns
+            if element.trigger_padding_ns is not None
+            else QBLOXCONSTANTS.WAIT_TRIGGER_NETWORK_EXT_TRIGGER
         ),
     )
 

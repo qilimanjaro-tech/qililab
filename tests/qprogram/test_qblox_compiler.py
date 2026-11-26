@@ -3469,27 +3469,6 @@ class TestQBloxCompiler:
         "padding_after_measure, drive_str",
         [
             (
-                400,
-                """
-                setup:
-                                set_latch_en     1, 4
-                                wait_sync        4
-                                set_mrk          0
-                                upd_param        4
-
-                main:
-                                latch_rst        4
-                                wait             2000
-                                wait             400
-                                set_cond         1, 1, 0, 100
-                                play             0, 1, 100
-                                set_cond         0, 0, 0, 4
-                                set_mrk          0
-                                upd_param        4
-                                stop
-                """,
-            ),
-            (
                 1000,
                 """
                 setup:

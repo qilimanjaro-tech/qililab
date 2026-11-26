@@ -179,9 +179,28 @@ class TestPrepareQblox:
         with pytest.raises(
             ValueError,
             match=re.escape(
-                "qp.qblox.measure_reset()'s padding_after_measure (399) cannot be lower than 400 ns, the trigger network's "
-                "propagation delay between modules."
+                "qp.qblox.measure_reset()'s padding_after_measure (399) cannot be lower than 400 ns, the minimum wait for "
+                "the trigger network to carry the measurement result between modules."
             ),
+        ):
+            prepare_qblox(qp)
+
+    def test_measure_reset_padding_after_measure_variable_raises_error(self):
+        qp = QProgram()
+        padding = qp.variable(label="padding", domain=Domain.Time)
+        with qp.for_loop(variable=padding, start=400, stop=1000, step=200):
+            qp.qblox.measure_reset(
+                bus="readout",
+                waveform=WEIGHTS,
+                weights=WEIGHTS,
+                control_bus="drive",
+                reset_pulse=DRIVE_WF,
+                padding_after_measure=padding,
+            )
+
+        with pytest.raises(
+            NotImplementedError,
+            match=re.escape("qp.qblox.measure_reset()'s padding_after_measure cannot be a variable."),
         ):
             prepare_qblox(qp)
 

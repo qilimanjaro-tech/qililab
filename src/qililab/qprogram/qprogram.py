@@ -1826,7 +1826,8 @@ class QProgram(StructuredProgram):
                     carrying the measurement result. Defaults to, and cannot be set lower than, 400 ns.
 
             Raises:
-                NotImplementedError: If ``qp.if_trigger()`` is also used in this QProgram.
+                NotImplementedError: If ``qp.if_trigger()`` is also used in this QProgram, or, when compiling, if
+                    ``padding_after_measure`` is a variable.
                 ValueError: When compiling, if ``padding_after_measure`` is lower than 400 ns.
             """
             self.qprogram._reject_conflicting_trigger_mode("qp.qblox.measure_reset()", ("if_trigger",))
