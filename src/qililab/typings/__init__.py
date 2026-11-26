@@ -40,7 +40,6 @@ from .instruments import (
     QbloxS4g,
     QcmQrm,
     QDevilQDac2,
-    QMMDriver,
     RohdeSchwarzSGS100A,
     YokogawaGS200,
 )
@@ -68,7 +67,6 @@ __all__ = [
     "ParameterValue",
     "PulseDistortionName",
     "QDevilQDac2",
-    "QMMDriver",
     "QbloxD5a",
     "QbloxS4g",
     "QcmQrm",

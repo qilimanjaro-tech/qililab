@@ -6,6 +6,7 @@
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 import os
+import re
 import sys
 
 from sphinxawesome_theme.postprocess import Icons
@@ -104,3 +105,25 @@ html_theme_options = {
 }
 html_static_path = ["_static"]
 html_css_files = ["custom.css"]
+
+
+# qprogram writes its docstrings for mkdocs. In the ones qililab re-exports (the waveforms, the QProgram methods), turn
+# the Markdown cross-references into Sphinx ones, and escape a "|" reStructuredText would read as a substitution, as in
+# "|2⟩".
+_MKDOCS_REFERENCE = re.compile(r"\[`?([^\]`]+)`?\]\[([\w.]+)\]")
+_SUBSTITUTION_START = re.compile(r"(?<![\w`|\\])\|(?=[^\s|])")
+
+
+def _convert_qprogram_docstring(app, what, name, obj, options, lines) -> None:
+    """Rewrite the mkdocs Markdown of a qprogram docstring into reStructuredText, in place."""
+    module = getattr(obj, "__module__", None) or getattr(getattr(obj, "fget", None), "__module__", None) or ""
+    if not module.startswith("qprogram"):
+        return
+    for index, line in enumerate(lines):
+        line = _MKDOCS_REFERENCE.sub(r":py:obj:`\1 <\2>`", line)
+        lines[index] = _SUBSTITUTION_START.sub(r"\\|", line)
+
+
+def setup(app) -> None:
+    """Register the qprogram docstring conversion."""
+    app.connect("autodoc-process-docstring", _convert_qprogram_docstring)

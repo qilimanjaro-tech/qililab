@@ -20,12 +20,12 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 from qcodes_contrib_drivers.drivers.QDevil.QDAC2 import QDac2Trigger_Context
+from qprogram.waveforms import Waveform
 
 from qililab.instruments import InstrumentFactory, ParameterNotFound, check_device_initialized, log_set_parameter
 from qililab.instruments.voltage_source import VoltageSource
 from qililab.typings import ChannelID, InstrumentName, OutputID, Parameter, ParameterValue
 from qililab.typings import QDevilQDac2 as QDevilQDac2Driver
-from qililab.waveforms import Waveform
 
 if TYPE_CHECKING:
     from qcodes_contrib_drivers.drivers.QDevil.QDAC2 import Awg_Context, List_Context

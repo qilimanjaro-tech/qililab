@@ -34,7 +34,7 @@ from qililab.utils.serialization import serialize
 if TYPE_CHECKING:
     from qililab.platform.platform import Platform
     from qililab.qprogram.calibration import Calibration
-    from qililab.qprogram.experiment import Experiment
+    from qililab.qprogram.experiment.experiment import Experiment
     from qililab.qprogram.qprogram import QProgram
 
 DatabaseSchema = Literal["measurements", "autocal", "qaas"]

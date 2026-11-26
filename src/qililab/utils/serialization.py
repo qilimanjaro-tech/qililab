@@ -76,8 +76,11 @@ def deserialize(string: str, cls: type[T]) -> T: ...
 def deserialize(string: str, cls: type[T] | None = None) -> Any | T:
     """Deserialize a YAML string to an object.
 
+    A QProgram's ``.qp`` text, which starts with ``#!QProgram``, is read as a QProgram too: the results database holds
+    programs saved as YAML before qililab moved to qprogram, and as ``.qp`` text since.
+
     Args:
-        string (str): The YAML string to deserialize.
+        string (str): The YAML string, or ``.qp`` text, to deserialize.
         cls (type[T], optional): The class type to cast the deserialized object to. Defaults to None.
 
     Raises:
@@ -87,8 +90,14 @@ def deserialize(string: str, cls: type[T] | None = None) -> Any | T:
         Any | T: The deserialized object, optionally cast to the specified class type.
     """
     try:
-        with StringIO(string) as stream:
-            result = yaml.load(stream)
+        if string.lstrip().startswith("#!QProgram"):
+            # Imported here: qililab.qprogram imports this module
+            from qililab.qprogram.qprogram import QProgram
+
+            result = QProgram.from_qp(string)
+        else:
+            with StringIO(string) as stream:
+                result = yaml.load(stream)
     except Exception as e:
         raise DeserializationError(f"Failed to deserialize YAML string: {e}") from e
     if cls is not None and not isinstance(result, cls):

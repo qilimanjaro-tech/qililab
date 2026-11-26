@@ -20,5 +20,4 @@ define a set of operations that will be executed in real time by the FPGA of you
 
 .. note::
 
-    Qililab is currently compatible with Qblox hardware, and we are actively in the process of expanding
-    its compatibility to include Quantum Machines.
+    Qililab compiles QPrograms for Qblox hardware and for the QDevil QDAC-II.

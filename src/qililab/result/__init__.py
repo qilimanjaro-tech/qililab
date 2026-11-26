@@ -24,8 +24,6 @@ Classes
 
     experiment_results.ExperimentResults
     Result
-    MeasurementResult
-    QbloxMeasurementResult
     InputLoopData
     LoopData
 
@@ -60,7 +58,6 @@ from .database import (
     load_by_id,
 )
 from .stream_results import StreamArray, stream_results
-from .qprogram import MeasurementResult, QbloxMeasurementResult
 
 __all__ = [
     "AutocalMeasurement",
@@ -73,9 +70,7 @@ __all__ = [
     "InputLoopData",
     "LoopData",
     "Measurement",
-    "MeasurementResult",
     "QaaS_Experiment",
-    "QbloxMeasurementResult",
     "Result",
     "Sample",
     "StreamArray",

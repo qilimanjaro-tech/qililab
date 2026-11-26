@@ -201,15 +201,6 @@ class QBLOXMEASUREMENTRESULT:
     RAW_MEASUREMENT_DATA = "raw_measurement_data"
 
 
-class QMRESULT:
-    """Quantum Machines Results attribute names."""
-
-    I = "i"
-    Q = "q"
-    ADC1 = "adc1"
-    ADC2 = "adc2"
-
-
 class RESULTSDATAFRAME:
     """Results DataFrame Attributes"""
 

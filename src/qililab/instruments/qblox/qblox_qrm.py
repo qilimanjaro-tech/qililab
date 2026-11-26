@@ -23,8 +23,7 @@ from qililab.instruments.decorators import check_device_initialized
 from qililab.instruments.qblox.qblox_adc_sequencer import QbloxADCSequencer
 from qililab.instruments.qblox.qblox_module import QbloxModule
 from qililab.instruments.utils import InstrumentFactory
-from qililab.qprogram.qblox_compiler import AcquisitionData
-from qililab.result.qprogram.qblox_measurement_result import QbloxMeasurementResult
+from qililab.qprogram.compilers.qblox_compiler import AcquisitionData
 from qililab.typings import (
     AcquireTriggerMode,
     ChannelID,
@@ -45,7 +44,6 @@ class QbloxQRM(QbloxModule):
     """
 
     name = InstrumentName.QBLOX_QRM
-    _scoping_sequencer: int | None = None
 
     @dataclass
     class QbloxQRMSettings(QbloxModule.QbloxModuleSettings):
@@ -83,7 +81,6 @@ class QbloxQRM(QbloxModule):
         Device threshold is not set here: the integration_length is only known
         once a QProgram is compiled. It is applied in the platform execution flow."""
         super().initial_setup()
-        self._obtain_scope_sequencer()
         for sequencer in self.awg_sequencers:
             sequencer_id = sequencer.identifier
             # Remove all acquisition data
@@ -95,12 +92,6 @@ class QbloxQRM(QbloxModule):
                 "program": "",
             }
             self.device.sequencers[sequencer_id].sequence(empty_sequence)
-            self._set_acquisition_mode(
-                value=cast("QbloxADCSequencer", sequencer).scope_acquire_trigger_mode, sequencer_id=sequencer_id
-            )
-            self._set_scope_hardware_averaging(
-                value=cast("QbloxADCSequencer", sequencer).scope_hardware_averaging, sequencer_id=sequencer_id
-            )
             self._set_hardware_demodulation(
                 value=cast("QbloxADCSequencer", sequencer).hardware_demodulation, sequencer_id=sequencer_id
             )
@@ -122,54 +113,53 @@ class QbloxQRM(QbloxModule):
             sequencer.connect_acq_I("in0")
             sequencer.connect_acq_Q("in1")
 
-    def _obtain_scope_sequencer(self):
-        """Checks that only one sequencer is storing the scope and saves that sequencer in `_scoping_sequencer`
+    @check_device_initialized
+    def setup_scope(self, sequencer_id: int, averaging: bool, trigger_level: float | None) -> None:
+        """Configure the module's scope for a ``qp.qblox.scope``: the sequencer whose acquisitions trigger it, how.
 
-        Raises:
-            ValueError: The scope can only be stores in one sequencer at a time.
+        Args:
+            sequencer_id (int): The sequencer whose acquisitions trigger the scope.
+            averaging (bool): Whether every trigger is added into the buffer and averaged, else the last one is kept.
+            trigger_level (float | None): None to trigger on the sequencer's acquisitions, else the input level to
+                trigger at.
         """
-        for sequencer in self.awg_sequencers:
-            if sequencer.scope_store_enabled:
-                if self._scoping_sequencer in (None, sequencer.identifier):
-                    self._scoping_sequencer = sequencer.identifier
-                    return
-                raise ValueError("The scope can only be stored in one sequencer at a time.")
-            if self._scoping_sequencer == sequencer.identifier:
-                self._scoping_sequencer = None
+        self.device.scope_acq_sequencer_select(sequencer_id)
+        mode = AcquireTriggerMode.SEQUENCER if trigger_level is None else AcquireTriggerMode.LEVEL
+        self.device.scope_acq_trigger_mode_path0(mode.value)
+        self.device.scope_acq_trigger_mode_path1(mode.value)
+        self.device.scope_acq_avg_mode_en_path0(averaging)
+        self.device.scope_acq_avg_mode_en_path1(averaging)
+        if trigger_level is not None:
+            self.device.scope_acq_trigger_level_path0(trigger_level)
+            self.device.scope_acq_trigger_level_path1(trigger_level)
 
     @check_device_initialized
     def acquire_qprogram_results(
-        self, acquisitions: dict[str, AcquisitionData], channel_id: ChannelID
-    ) -> list[QbloxMeasurementResult]:
+        self, acquisitions: dict[str, AcquisitionData], channel_id: ChannelID, scope: bool = False
+    ) -> list[dict]:
         """Read the result from the AWG instrument
 
         Args:
-            acquisitions (list[str]): A list of acquisitions names.
+            acquisitions (dict[str, AcquisitionData]): The acquisitions, by name.
+            channel_id (ChannelID): The sequencer acquiring.
+            scope (bool, optional): Whether the bus is scoped: the scope trace is then stored into its first
+                acquisition. Defaults to False.
 
         Returns:
-            list[QbloxQProgramMeasurementResult]: Acquired Qblox results in chronological order.
+            list[dict]: The raw acquisitions, as the instrument returns them, in chronological order.
         """
         results = []
         sequencer = next((sequencer for sequencer in self.awg_sequencers if sequencer.identifier == channel_id), None)
-        for acquisition, acquisition_data in acquisitions.items():
+        for index, acquisition in enumerate(acquisitions):
             if sequencer is not None and sequencer.identifier in self.sequences:
                 self.device.get_acquisition_status(
                     sequencer=sequencer.identifier,
                     timeout=cast("QbloxADCSequencer", sequencer).acquisition_timeout,
                 )
-                if acquisition_data.save_adc:
+                # The module has one scope buffer: copy it into the bus's first acquisition, where the platform reads it
+                if scope and index == 0:
                     self.device.store_scope_acquisition(sequencer=sequencer.identifier, name=acquisition)
-                raw_measurement_data = self.device.get_acquisitions(sequencer=sequencer.identifier)[acquisition][
-                    "acquisition"
-                ]
-                measurement_result = QbloxMeasurementResult(
-                    bus=acquisitions[acquisition].bus,
-                    raw_measurement_data=raw_measurement_data,
-                    shape=acquisition_data.shape,
-                )
-                results.append(measurement_result)
-
-                # always deleting acquisitions without checking save_adc flag
+                results.append(self.device.get_acquisitions(sequencer=sequencer.identifier)[acquisition]["acquisition"])
                 self.device.delete_acquisition_data(sequencer=sequencer.identifier, name=acquisition)
         empty_sequence = {
             "waveforms": {},
@@ -189,38 +179,6 @@ class QbloxQRM(QbloxModule):
             sequencer_id (int): sequencer to update the value
         """
         self.device.sequencers[sequencer_id].demod_en_acq(value)
-
-    def _set_device_acquisition_mode(self, mode: AcquireTriggerMode, sequencer_id: int):
-        """set acquisition_mode for the specific channel
-
-        Args:
-            mode (AcquireTriggerMode): value to update
-            sequencer_id (int): sequencer to update the value
-
-        Raises:
-            ValueError: when value type is not string
-        """
-        if sequencer_id != self._scoping_sequencer:
-            return
-        self.device.scope_acq_sequencer_select(sequencer_id)
-        self.device.scope_acq_trigger_mode_path0(mode.value)
-        self.device.scope_acq_trigger_mode_path1(mode.value)
-
-    def _set_device_scope_hardware_averaging(self, value: bool, sequencer_id: int):
-        """set scope_hardware_averaging for the specific channel
-
-        Args:
-            value (bool): value to update
-            sequencer_id (int): sequencer to update the value
-
-        Raises:
-            ValueError: when value type is not bool
-        """
-        if sequencer_id != self._scoping_sequencer:
-            return
-        self.device.scope_acq_sequencer_select(sequencer_id)
-        self.device.scope_acq_avg_mode_en_path0(value)
-        self.device.scope_acq_avg_mode_en_path1(value)
 
     def _set_device_threshold(self, value: float, sequencer_id: int, integration_length: int):
         """Sets the threshold for classification at the specific channel.
@@ -266,14 +224,8 @@ class QbloxQRM(QbloxModule):
             raise ValueError("channel not specified to update instrument")
 
         channel_id = int(channel_id)
-        if parameter == Parameter.SCOPE_HARDWARE_AVERAGING:
-            self._set_scope_hardware_averaging(value=float(value), sequencer_id=channel_id)
-            return
         if parameter == Parameter.HARDWARE_DEMODULATION:
             self._set_hardware_demodulation(value=value, sequencer_id=channel_id)
-            return
-        if parameter == Parameter.SCOPE_ACQUIRE_TRIGGER_MODE:
-            self._set_acquisition_mode(value=value, sequencer_id=channel_id)
             return
 
         if parameter == Parameter.SAMPLING_RATE:
@@ -287,9 +239,6 @@ class QbloxQRM(QbloxModule):
             return
         if parameter == Parameter.TIMEOUT_REPETITIONS:
             self._set_timeout_repetitions(value=int(value), sequencer_id=channel_id)
-            return
-        if parameter == Parameter.SCOPE_STORE_ENABLED:
-            self._set_scope_store_enabled(value=value, sequencer_id=channel_id)
             return
         if parameter == Parameter.THRESHOLD:
             sequencer = cast("QbloxADCSequencer", self.get_sequencer(channel_id))
@@ -306,21 +255,6 @@ class QbloxQRM(QbloxModule):
             self._set_time_of_flight(value=int(value), sequencer_id=channel_id)
             return
         super().set_parameter(parameter=parameter, value=value, channel_id=channel_id, output_id=output_id)
-
-    def _set_scope_hardware_averaging(self, value: float | str | bool, sequencer_id: int):
-        """set scope_hardware_averaging for the specific channel
-
-        Args:
-            value (float | str | bool): value to update
-            sequencer_id (int): sequencer to update the value
-
-        Raises:
-            ValueError: when value type is not bool
-        """
-        cast("QbloxADCSequencer", self.get_sequencer(sequencer_id)).scope_hardware_averaging = bool(value)
-
-        if self.is_device_active():
-            self._set_device_scope_hardware_averaging(value=bool(value), sequencer_id=sequencer_id)
 
     def _set_threshold_rotation(self, value: float | str | bool, sequencer_id: int):
         """Set threshold rotation value for the specific channel.
@@ -346,22 +280,6 @@ class QbloxQRM(QbloxModule):
         cast("QbloxADCSequencer", self.get_sequencer(sequencer_id)).hardware_demodulation = bool(value)
         if self.is_device_active():
             self._set_device_hardware_demodulation(value=bool(value), sequencer_id=sequencer_id)
-
-    def _set_acquisition_mode(self, value: float | str | bool | AcquireTriggerMode, sequencer_id: int):
-        """set acquisition_mode for the specific channel
-
-        Args:
-            value (float | str | bool): value to update
-            sequencer_id (int): sequencer to update the value
-
-        Raises:
-            ValueError: when value type is not string
-        """
-        cast("QbloxADCSequencer", self.get_sequencer(sequencer_id)).scope_acquire_trigger_mode = AcquireTriggerMode(
-            value
-        )
-        if self.is_device_active():
-            self._set_device_acquisition_mode(mode=AcquireTriggerMode(value), sequencer_id=sequencer_id)
 
     def _set_sampling_rate(self, value: int | float | str | bool, sequencer_id: int):
         """set sampling_rate for the specific channel
@@ -407,27 +325,6 @@ class QbloxQRM(QbloxModule):
             sequencer_id (int): sequencer to update the value
         """
         cast("QbloxADCSequencer", self.get_sequencer(sequencer_id)).timeout_repetitions = int(value)
-
-    def _set_scope_store_enabled(self, value: float | str | bool, sequencer_id: int):
-        """set scope_store_enable
-
-        Args:
-            value (float | str | bool): value to update
-            sequencer_id (int): sequencer to update the value
-
-        Raises:
-            ValueError: when value type is not bool
-        """
-        cast("QbloxADCSequencer", self.get_sequencer(sequencer_id)).scope_store_enabled = bool(value)
-
-        self._obtain_scope_sequencer()
-        sequencer = self.get_sequencer(sequencer_id)
-        self._set_acquisition_mode(
-            value=cast("QbloxADCSequencer", sequencer).scope_acquire_trigger_mode, sequencer_id=sequencer_id
-        )
-        self._set_scope_hardware_averaging(
-            value=cast("QbloxADCSequencer", sequencer).scope_hardware_averaging, sequencer_id=sequencer_id
-        )
 
     def _set_time_of_flight(self, value: int | float | str | bool, sequencer_id: int):
         """set time_of_flight
