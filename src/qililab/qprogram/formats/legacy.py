@@ -53,6 +53,7 @@ from qprogram_qdac import Play as QdacPlay
 from qprogram_qdac import SetTrigger as QdacSetTrigger
 from qprogram_qdac import WaitTrigger as QdacWaitTrigger
 
+from qililab.constants import QBLOXCONSTANTS
 from qililab.qprogram.blocks import IfTrigger, InfiniteLoop, for_loop_linspace, to_scalar
 from qililab.qprogram.operations import MeasureReset, QbloxPlay
 from qililab.qprogram.variable_ids import unique_variable_id
@@ -289,6 +290,7 @@ def _construct_measure_reset(constructor: BaseConstructor, node: MappingNode) ->
         reset_pulse=mapping["reset_pulse"],
         handle=_measurement_handle(),
         trigger_address=mapping.get("trigger_address", 1),
+        padding_after_measure=mapping.get("padding_after_measure", QBLOXCONSTANTS.WAIT_TRIGGER_NETWORK_INTERMODULES),
     )
 
 

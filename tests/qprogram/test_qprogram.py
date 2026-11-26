@@ -1217,6 +1217,29 @@ class TestQProgram:
         assert isinstance(new_qp.body.elements[0].elements[0], MeasureReset)
         assert new_qp.has_calibrated_waveforms_or_weights() is False
 
+    def test_with_calibration_keeps_measure_reset_padding_after_measure(self):
+        calibration = Calibration()
+        calibration.add_waveform(bus="readout", name="readout", waveform=IQPair(I=Square(1.0, 200), Q=Square(1.0, 200)))
+        calibration.add_weights(bus="readout", name="weights", weights=IQPair(I=Square(1.0, 2000), Q=Square(1.0, 2000)))
+        calibration.add_waveform(
+            bus="drive", name="drag_reset", waveform=IQDrag(amplitude=0.5, duration=40, num_sigmas=4.5, drag_coefficient=-4.5)
+        )
+
+        qp = QProgram()
+        qp.qblox.measure_reset(
+            bus="readout",
+            waveform="readout",
+            weights="weights",
+            control_bus="drive",
+            reset_pulse="drag_reset",
+            padding_after_measure=1000,
+        )
+
+        new_qp = qp.with_calibration(calibration=calibration)
+
+        assert isinstance(new_qp.body.elements[0], MeasureReset)
+        assert new_qp.body.elements[0].padding_after_measure == 1000
+
     def test_insert_block_names_each_measurement(self):
         """A block can be inserted several times: each copy of a measurement gets a new name."""
         weights = IQPair(I=Square(1.0, 100), Q=Square(0.0, 100))
@@ -2661,13 +2684,27 @@ class TestQProgram:
         assert op.control_bus == "control"
         assert op.reset_pulse.I == one_wf
         assert op.reset_pulse.Q == zero_wf
-        # Default trigger address, and the handle the results are stored under
+        # Defaults for trigger address and padding after the measurement, and the handle the results are stored under
         assert op.trigger_address == 1
+        assert op.padding_after_measure == 400
         assert op.handle == handle
         assert handle.name == "m0"
 
         # Interface flags updated
         assert qp.qblox.weight_duration == {"readout": [40]}
+
+    def test_measure_reset_padding_after_measure_round_trips_through_qp_text(self):
+        """A padding_after_measure other than the default is written in the .qp text, and read back."""
+        pair = IQPair(I=Square(1.0, 40), Q=Square(0.0, 40))
+        qp = QProgram()
+        qp.qblox.measure_reset(
+            bus="readout", waveform=pair, weights=pair, control_bus="drive", reset_pulse=pair, padding_after_measure=1000
+        )
+
+        loaded = QProgram.from_qp(str(qp))
+
+        assert 'name="m0" padding_after_measure=1000' in str(qp)
+        assert loaded.body.elements[0].padding_after_measure == 1000
 
     def test_with_bus_mapping_measure_reset(self):
         """Test with_bus_mapping method"""

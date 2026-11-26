@@ -268,6 +268,11 @@ class QBLOXCONSTANTS:
     SCOPE_LENGTH = 16380
     FILTER_FIR_COEFF_LENGTH = 32
     EXT_TRIGGER_ADDRESS = 15
+    # Default and minimum for qp.if_trigger()'s trigger_padding_ns.
+    WAIT_TRIGGER_NETWORK_EXT_TRIGGER = 252
+    # Default and minimum for qp.qblox.measure_reset()'s padding_after_measure: the time the trigger network takes to
+    # carry a result between two modules. 400 ns is conservative, the official guideline is 388 ns.
+    WAIT_TRIGGER_NETWORK_INTERMODULES = 400
 
 
 class QDACCONSTANTS:

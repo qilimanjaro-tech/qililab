@@ -21,6 +21,8 @@ from qprogram.operations.operation import MeasurementField, MeasurementOperation
 from qprogram.protocol import waveform_token
 from qprogram.waveforms import IQWaveform
 
+from qililab.constants import QBLOXCONSTANTS
+
 
 class MeasureReset(MeasurementOperation):
     """A measurement followed by a reset pulse on ``control_bus`` when the thresholded result is 1 (active reset).
@@ -37,6 +39,8 @@ class MeasureReset(MeasurementOperation):
         handle (MeasurementHandle): The handle the results are stored under.
         trigger_address (int, optional): Trigger network address the result is sent on. Defaults to 1.
         fields (Iterable[MeasurementField], optional): The measurement fields to return. Defaults to ``(IQ,)``.
+        padding_after_measure (int, optional): Wait, in ns, on the control bus between the end of the acquisition and
+            the conditional reset pulse. Defaults to 400 ns.
     """
 
     BUS_ATTRS: ClassVar[tuple[str, ...]] = ("bus", "control_bus")
@@ -52,6 +56,7 @@ class MeasureReset(MeasurementOperation):
         handle: MeasurementHandle,
         trigger_address: int = 1,
         fields: Iterable[MeasurementField] = (MeasurementField.IQ,),
+        padding_after_measure: int = QBLOXCONSTANTS.WAIT_TRIGGER_NETWORK_INTERMODULES,
     ) -> None:
         self.bus = bus
         self.waveform = waveform
@@ -61,6 +66,7 @@ class MeasureReset(MeasurementOperation):
         self.handle = handle
         self.trigger_address = trigger_address
         self.fields: tuple[str, ...] = normalize_fields(fields)
+        self.padding_after_measure = padding_after_measure
 
     def required_capabilities(self) -> set[str]:
         """Return ``vendor.qililab.measure_reset`` plus the waveform and requested-field tokens.

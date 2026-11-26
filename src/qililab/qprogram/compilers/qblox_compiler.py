@@ -63,9 +63,6 @@ NEG_ONE_TO_THREE = (2**32) - 3
 ENABLE_CONDITIONAL = 1
 DISABLE_CONDITIONAL = 0
 
-# time required by qblox trigger network to send a trigger; 400ns is conservative - the official guideline is 388ns between 2 modules
-WAIT_TRIGGER_NETWORK_INTERMODULES = 400
-
 
 def _trigger_address_mask(address: int) -> int:
     """``SetCond``/``Conditional`` mask bit for a trigger address (address=0 is a don't-care, no bit)."""
@@ -1801,7 +1798,7 @@ class QbloxCompiler:
         time_of_flight = self._buses[element.bus].time_of_flight
         play = QbloxPlay(bus=element.bus, waveform=element.waveform, wait_time=time_of_flight)
         sync = Sync([element.bus, element.control_bus])
-        wait = Wait(bus=element.control_bus, duration=WAIT_TRIGGER_NETWORK_INTERMODULES)
+        wait = Wait(bus=element.control_bus, duration=element.padding_after_measure)
         play_reset_pulse = CorePlay(bus=element.control_bus, waveform=element.reset_pulse)
 
         self._handle_latch_rst(bus=element.control_bus, duration=INST_MIN_WAIT)

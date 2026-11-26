@@ -21,6 +21,7 @@ from qprogram.operations.operation import MeasurementField
 from qprogram.waveforms import IQWaveform, Waveform
 from qprogram_qblox import Acquire, QbloxNamespace
 
+from qililab.constants import QBLOXCONSTANTS
 from qililab.qprogram.blocks.for_loop import to_scalar
 from qililab.qprogram.operations.disable_autosync import DisableAutosync
 from qililab.qprogram.operations.measure_reset import MeasureReset
@@ -133,6 +134,7 @@ class QililabQbloxNamespace(QbloxNamespace):
         reset_pulse: IQWaveform | str,
         trigger_address: int = 1,
         fields: Iterable[MeasurementField] = (MeasurementField.IQ,),
+        padding_after_measure: int = QBLOXCONSTANTS.WAIT_TRIGGER_NETWORK_INTERMODULES,
         *,
         name: str | None = None,
     ) -> MeasurementHandle:
@@ -140,6 +142,9 @@ class QililabQbloxNamespace(QbloxNamespace):
 
         If the thresholded measurement result is 1, a corrective pulse is applied on the control_bus.
         If the result is 0, the control_bus waits instead.
+
+        The measurement bus doesn't wait for the reset pulse: add a ``qp.sync()`` after ``measure_reset`` before
+        measuring again.
 
         Args:
             bus (str): Identifier of the measurement bus.
@@ -149,6 +154,9 @@ class QililabQbloxNamespace(QbloxNamespace):
             reset_pulse (IQWaveform | str): Pulse used for active reset.
             trigger_address (int, optional): Trigger address for synchronization. Defaults to 1.
             fields (Iterable[MeasurementField], optional): The measurement fields to return. Defaults to ``(IQ,)``.
+            padding_after_measure (int, optional): Wait, in ns, on the control bus between the end of the
+                acquisition and the conditional reset pulse, to cover the propagation delay of the trigger network
+                carrying the measurement result. Defaults to, and cannot be set lower than, 400 ns.
             name (str | None, optional): Name of the measurement. Allocated like any measurement's when omitted.
 
         Returns:
@@ -156,7 +164,8 @@ class QililabQbloxNamespace(QbloxNamespace):
 
         Raises:
             NotImplementedError: If the waveform, weights and reset pulse are not all calibrated names or all
-                waveforms.
+                waveforms, or, when compiling, if ``padding_after_measure`` is a variable.
+            ValueError: When compiling, if ``padding_after_measure`` is lower than 400 ns.
         """
         calibrated = [isinstance(component, str) for component in (waveform, weights, reset_pulse)]
         if any(calibrated) and not all(calibrated):
@@ -174,4 +183,5 @@ class QililabQbloxNamespace(QbloxNamespace):
             reset_pulse=reset_pulse,
             trigger_address=trigger_address,
             fields=fields,
+            padding_after_measure=padding_after_measure,
         )

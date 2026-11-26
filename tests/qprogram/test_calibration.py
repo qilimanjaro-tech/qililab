@@ -53,6 +53,30 @@ weights:
     weights_name: *id001
 """
 
+# A calibration with a measure_reset block, as qililab saved it before it moved to qprogram and before
+# measure_reset had a padding_after_measure.
+OLD_MEASURE_RESET_CALIBRATION_YAML = """!Calibration
+blocks:
+  reset: !Block
+    _uuid: !UUID {int: 265981568310034474503696302391359908558}
+    elements:
+    - !MeasureResetCalibrated
+      _uuid: !UUID {int: 34713420467203583849171411753172202696}
+      bus: readout
+      control_bus: drive
+      reset_pulse: drag_reset
+      save_adc: false
+      trigger_address: 1
+      waveform: readout
+      weights: weights
+crosstalk_history: []
+crosstalk_matrix: null
+crosstalk_matrix_ac: null
+parameters: {}
+waveforms: {}
+weights: {}
+"""
+
 
 class TestCalibration:
     """Unit tests checking the Calibration attributes and methods."""
@@ -291,6 +315,26 @@ class TestCalibration:
         assert loaded.crosstalk_matrix["flux_0"]["flux_1"] == 0.1
 
         os.remove(path="old_calibration.yml")
+
+    def test_load_old_format_measure_reset_block_backfills_padding_after_measure(self):
+        """A calibration file whose measure_reset block was written before `padding_after_measure` existed must still
+        load, with the missing attribute set to its default (400 ns)."""
+        loaded = deserialize(OLD_MEASURE_RESET_CALIBRATION_YAML, Calibration)
+
+        (measure_reset,) = loaded.get_block(name="reset").elements
+        assert measure_reset.padding_after_measure == 400
+        assert measure_reset.control_bus == "drive"
+
+    def test_load_old_format_measure_reset_block_keeps_its_padding_after_measure(self):
+        """qililab writes `padding_after_measure` in a measure_reset block since it exists: such a file loads with it."""
+        text = OLD_MEASURE_RESET_CALIBRATION_YAML.replace(
+            "      trigger_address: 1\n", "      padding_after_measure: 1000\n      trigger_address: 1\n"
+        )
+
+        loaded = deserialize(text, Calibration)
+
+        (measure_reset,) = loaded.get_block(name="reset").elements
+        assert measure_reset.padding_after_measure == 1000
 
     def test_dump_load_methods(self):
         """Test dump and load methods"""
