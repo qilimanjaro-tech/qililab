@@ -1,3 +1,29 @@
+# qililab 0.37.0 (2026-11-19)
+
+## Bugfixes
+
+- QPrograms where a QDAC-II triggers the Qblox (`qp.set_trigger(...)` with `qp.wait_trigger()` or `qp.if_trigger()`) no longer hang on the last `wait_trigger` with cluster firmware 2.x and qblox-instruments 1.4.1 (installed in place of the pinned 1.0.3 to use firmware 2.x). With this combination, `start_sequencer` in qblox-instruments returns without waiting for a reply from the module, so the QDAC-II's first trigger could arrive before the sequencer was waiting for it. qililab now asks for the sequencer status after starting each Qblox sequencer, so it waits for the module's reply before starting the QDAC-II. With the pinned qblox-instruments 1.0.3, `start_sequencer` already waits for that reply, so the status query only adds one round trip. If the module reports the sequencer as still `IDLE` or `ARMED`, qililab raises a `RuntimeError` saying the sequencer did not start.
+  ([PR #1272](https://github.com/qilimanjaro-tech/qililab/pull/1272))
+
+- Keep each experiment QProgram factory's deferred parameters separate, while reading their values at execution time.
+  ([PR #1280](https://github.com/qilimanjaro-tech/qililab/pull/1280))
+
+- Fixed `save_platform` wiping an existing runcard when serialisation failed. The target file was opened in write mode before the platform was serialised, so it was truncated to 0 bytes and then, if the dump raised, left empty. `save_platform` now serialises to a string first and only writes the file once the dump succeeds, so a failed save leaves the previous runcard untouched. Relatedly, `InstrumentController.set_parameter` now stores `ReferenceClock(value).value` rather than the raw `Enum`, so the controller's hand-written `to_dict` no longer emits an `Enum` that the YAML dumper cannot represent.
+  ([PR #1283](https://github.com/qilimanjaro-tech/qililab/pull/1283))
+
+- Fixed `Platform.set_bias_to_zero` raising `KeyError` when `bus_list` covered only part of the crosstalk matrix and no flux had been set yet, and using the previous matrix's biases after `platform.crosstalk` was replaced. It now loads the current matrix before zeroing.
+  ([PR #1287](https://github.com/qilimanjaro-tech/qililab/pull/1287))
+
+- Fixed `Platform.get_parameter(Parameter.FLUX)` returning the value of a `set_parameter(Parameter.FLUX)` call rejected by the crosstalk checks, e.g. for a bus outside the crosstalk matrix. The value is now stored only after the checks pass.
+  ([PR #1287](https://github.com/qilimanjaro-tech/qililab/pull/1287))
+
+- Fixed `Platform.set_parameter(Parameter.FLUX)` rewriting buses of a previously used crosstalk matrix with their raw flux value, e.g. after replacing `platform.crosstalk` with a matrix over other buses. Only the buses of the matrix in use are written now.
+  ([PR #1287](https://github.com/qilimanjaro-tech/qililab/pull/1287))
+
+- Fixed `Platform.set_parameter(Parameter.FLUX)`, `set_flux_to_zero` and `set_bias_to_zero` raising `ValueError: Crosstalk matrix has not been set` when the crosstalk matrices were only in `platform.calibration`, although QProgram compilation already used them. Each bus now uses the same matrix as in compilation: Qblox buses use `calibration.crosstalk_matrix_ac`, then `platform.crosstalk`, then `calibration.crosstalk_matrix`; other buses use `platform.crosstalk`, then `calibration.crosstalk_matrix`. A bus outside its matrix raises, as before. `set_flux_to_zero` and `set_bias_to_zero` without `bus_list` now cover the buses of every matrix in use, and `set_flux_to_zero` checks every bus before writing any. `set_bias_to_zero` now raises for a bus outside its matrix instead of writing 0 to it. `set_crosstalk` and `set_calibration` warn when a new matrix or calibration makes one source replace the other.
+  ([PR #1287](https://github.com/qilimanjaro-tech/qililab/pull/1287))
+
+
 # qililab 0.36.0 (2026-11-09)
 
 ## Features

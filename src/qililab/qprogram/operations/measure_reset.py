@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from qililab.constants import QBLOXCONSTANTS
 from qililab.qprogram.operations.operation import Operation
 from qililab.waveforms import IQWaveform
 from qililab.yaml import yaml
@@ -19,6 +20,10 @@ from qililab.yaml import yaml
 
 @yaml.register_class
 class MeasureReset(Operation):
+    # Used when loading a YAML written before padding_after_measure existed: ruamel builds the object without calling
+    # __init__, so the missing attribute falls back to this class attribute.
+    padding_after_measure: int = QBLOXCONSTANTS.WAIT_TRIGGER_NETWORK_INTERMODULES
+
     def __init__(
         self,
         bus: str,
@@ -28,6 +33,7 @@ class MeasureReset(Operation):
         reset_pulse: IQWaveform,
         trigger_address: int = 1,
         save_adc: bool = False,
+        padding_after_measure: int = QBLOXCONSTANTS.WAIT_TRIGGER_NETWORK_INTERMODULES,
     ) -> None:
         super().__init__()
         self.bus: str = bus
@@ -37,10 +43,15 @@ class MeasureReset(Operation):
         self.reset_pulse: IQWaveform = reset_pulse
         self.trigger_address: int = trigger_address
         self.save_adc: bool = save_adc
+        self.padding_after_measure = padding_after_measure
 
 
 @yaml.register_class
 class MeasureResetCalibrated(Operation):
+    # Used when loading a YAML written before padding_after_measure existed: ruamel builds the object without calling
+    # __init__, so the missing attribute falls back to this class attribute.
+    padding_after_measure: int = QBLOXCONSTANTS.WAIT_TRIGGER_NETWORK_INTERMODULES
+
     def __init__(
         self,
         bus: str,
@@ -50,6 +61,7 @@ class MeasureResetCalibrated(Operation):
         reset_pulse: str,
         trigger_address: int = 1,
         save_adc: bool = False,
+        padding_after_measure: int = QBLOXCONSTANTS.WAIT_TRIGGER_NETWORK_INTERMODULES,
     ) -> None:
         super().__init__()
         self.bus: str = bus
@@ -59,3 +71,4 @@ class MeasureResetCalibrated(Operation):
         self.reset_pulse: str = reset_pulse
         self.trigger_address: int = trigger_address
         self.save_adc: bool = save_adc
+        self.padding_after_measure = padding_after_measure

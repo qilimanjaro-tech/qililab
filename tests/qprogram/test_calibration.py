@@ -250,6 +250,32 @@ class TestCalibration:
 
         os.remove(path="old_calibration.yml")
 
+    def test_load_old_format_measure_reset_block_backfills_padding_after_measure(self, tmp_path):
+        """A calibration file whose measure_reset block was written before `padding_after_measure` existed must still
+        load, with the missing attribute set to its default (400 ns)."""
+        measure_reset_qp = QProgram()
+        measure_reset_qp.qblox.measure_reset(
+            bus="readout", waveform="readout", weights="weights", control_bus="drive", reset_pulse="drag_reset"
+        )
+        calibration = Calibration()
+        calibration.add_block(name="reset", block=measure_reset_qp.body)
+        file = str(tmp_path / "old_calibration.yml")
+        serialize_to(calibration, file)
+
+        # Simulate an "old" file that predates the field by removing the key entirely.
+        with open(file) as f:
+            content = f.read()
+        assert "padding_after_measure" in content
+        content = "\n".join(line for line in content.splitlines() if "padding_after_measure" not in line) + "\n"
+        with open(file, "w") as f:
+            f.write(content)
+
+        loaded = deserialize_from(file, Calibration)
+
+        (measure_reset,) = loaded.get_block(name="reset").elements
+        assert measure_reset.padding_after_measure == 400
+        assert measure_reset.control_bus == "drive"
+
     def test_dump_load_methods(self):
         """Test dump and load methods"""
         qp = QProgram()
