@@ -1173,6 +1173,9 @@ class Testdatabase:
         query_mock.all.assert_called()
         assert result == ["result1", "result2"]
 
+        query_mock.with_entities.return_value.all.return_value = [(1, "light result")]
+        assert db_manager.tail(light_read=True) == [(1, "light result")]
+
         # Mock connection to Pandas
         conn_mock = MagicMock()
         db_manager.engine.connect.return_value.__enter__.return_value = conn_mock
@@ -1188,6 +1191,7 @@ class Testdatabase:
         query_mock.with_entities.assert_called()
         mock_read_sql.assert_called_once()
         assert result_pandas == df_mock
+        assert db_manager.tail(pandas_output=True, light_read=False) is df_mock
 
     @patch("qililab.result.database.database_manager.read_sql")
     def test_head(self, mock_read_sql, db_manager: DatabaseManager):
@@ -1212,6 +1216,9 @@ class Testdatabase:
         query_mock.all.assert_called()
         assert result == ["result1", "result2"]
 
+        query_mock.with_entities.return_value.all.return_value = [(1, "light result")]
+        assert db_manager.head(light_read=True) == [(1, "light result")]
+
         # Mock connection to Pandas
         conn_mock = MagicMock()
         db_manager.engine.connect.return_value.__enter__.return_value = conn_mock
@@ -1226,6 +1233,7 @@ class Testdatabase:
         assert query_mock.order_by.called
         mock_read_sql.assert_called_once()
         assert result_pandas == df_mock
+        assert db_manager.head(pandas_output=True, light_read=False) is df_mock
 
     def test_get_qprogram(self, db_manager: DatabaseManager):
         """Test get qprogram function from the database manager"""
@@ -1660,17 +1668,19 @@ def test_get_db_manager_passes_database_schema(mock_db_manager):
     mock_db_manager.assert_called_once_with(filename, "postgresql", database_schema="autocal")
 
 
-@patch("qililab.result.database.database_manager.create_engine")
-def test_get_engine(mock_create_engine):
-    user = "user"
-    passwd = "password"
-    host = "localhost"
-    port = "5432"
-    database = "mydb"
-    expected_url = f"postgresql://{user}:{passwd}@{host}:{port}/{database}"
-
-    get_engine(user, passwd, host, port, database)
-    mock_create_engine.assert_called_once_with(expected_url)
+@pytest.mark.parametrize("password, decoded_password", [("password", "password"), ("p%40ss%2Fword", "p@ss/word")])
+def test_get_engine_uses_shipped_postgresql_driver(password, decoded_password):
+    engine = get_engine("user", password, "localhost", "5432", "mydb")
+    try:
+        assert engine.url.drivername == "postgresql+psycopg2"
+        assert engine.dialect.dbapi.__name__ == "psycopg2"
+        assert engine.url.username == "user"
+        assert engine.url.password == decoded_password
+        assert engine.url.host == "localhost"
+        assert engine.url.port == 5432
+        assert engine.url.database == "mydb"
+    finally:
+        engine.dispose()
 
 
 @patch("qililab.result.database.database_manager.get_db_manager")

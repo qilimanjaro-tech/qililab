@@ -53,6 +53,10 @@ To run it the same way CI does (parallelized, with coverage):
 pytest -n auto --dist loadfile --cov=qililab --cov-report=xml tests
 ```
 
+Qililab uses the shipped `psycopg2` driver with SQLAlchemy 2.1. Existing database
+INI fields are unchanged. See the [database validation guide](docs/development/sqlalchemy_21_validation.rst)
+for the opt-in PostgreSQL tests.
+
 ### Linting & Formatting
 
 We enforce code style using [**ruff**](https://docs.astral.sh/ruff/):
